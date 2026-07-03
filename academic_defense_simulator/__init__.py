@@ -1,0 +1,1 @@
+"""Academic Defense Simulator package."""
