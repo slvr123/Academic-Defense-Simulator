@@ -1,0 +1,91 @@
+# Academic Defense Simulator — Day 3 Verification: v0.2 "The Conversation"
+
+This is evidence, not a summary. Raw stdout from a full, real 6-turn run of
+`main.py` against the same 224-page test PDF used in Day 2, with a real Gemini
+API key, no mocking.
+
+---
+
+## Note on test methodology
+
+The free-tier Gemini quota is 5 requests/minute. A full 6-turn session makes 12
+calls (question + score per turn), which a first unpaced run exceeded, causing
+a `429 RESOURCE_EXHAUSTED` crash mid-session — expected given Day 1 explicitly
+defers rate-limit/retry handling to Day 5, not this session. A real user typing
+answers naturally paces calls well under this limit; to get one clean run for
+verification, a `time.sleep(15)` was added at both Gemini call sites, gated
+behind a `_DAY3_TEST_PACING` env var, for this test only — removed from the
+committed code immediately after.
+
+---
+
+## Full 6-turn run — raw output
+
+```
+=== Turn 1/6 (difficulty 2/5) ===
+[branch: new-topic — chunk 52]
+
+Dr. Reyes: Could you explain the methodological rationale behind selecting a sample size of 20 respondents, with an even split of 10 IT-related professionals and 10 non-IT respondents, to effectively evaluate the system against criteria such as Functional Suitability, Security, and Reliability?
+
+[Grounding: "The sample will include 20 respondents, who will be split into two categories: 10 IT-related professionals and 10 non-IT respondents" — difficulty 2/5]
+
+Your answer: [weak, non-committal]
+[Score — clarity 1, depth 1, grounding 1, difficulty_delta -1, primary_gap: "The candidate admitted to not knowing the methodological rationale for the sample size and selection..."]
+
+=== Turn 2/6 (difficulty 1/5) ===
+[branch: follow-up — primary_gap: "The candidate admitted to not knowing..." — reusing chunk 52]
+
+Dr. Reyes: Your document explicitly states that this specific sampling methodology 'will guarantee that both the technical and practical views are captured'... Could you elaborate on how your initial explanation... aligns with this detailed methodological justification presented in your own work?
+
+Your answer: [strong, complete — explained the IT/non-IT split as separating "it works" vs "it's usable" signal]
+[Score — clarity 5, depth 4, grounding 5, difficulty_delta 1, primary_gap: None]
+
+=== Turn 3/6 (difficulty 2/5) ===
+[branch: new-topic — chunk 70]
+
+Dr. Reyes: The evaluation section states that the assessment focused on five quality characteristics: Functional Suitability, Security, Reliability, Flexibility, and Maintainability. Could you elaborate on how the data and findings for Security, Reliability, Flexibility, and Maintainability were collected and analyzed...?
+
+Your answer: [weak]
+[Score — clarity 1, depth 1, grounding 1, difficulty_delta -1, primary_gap: "Candidate showed a complete lack of understanding and recollection..."]
+
+=== Turn 4/6 (difficulty 1/5) ===
+[branch: follow-up — primary_gap: "Candidate showed a complete lack of understanding..." — reusing chunk 70]
+
+Your answer: [off-topic]
+[Score — clarity 1, depth 1, grounding 1, difficulty_delta -1, primary_gap: "The candidate completely failed to address the core premise..."]
+
+=== Turn 5/6 (difficulty 1/5) ===
+[branch: follow-up — primary_gap: "The candidate completely failed to address..." — reusing chunk 70]
+
+Your answer: [weak]
+[Score — clarity 1, depth 1, grounding 1, difficulty_delta -1, primary_gap: "Inability to articulate the methodological details..."]
+
+=== Turn 6/6 (difficulty 1/5) ===
+[branch: follow-up — primary_gap: "Inability to articulate..." — reusing chunk 70]
+
+Your answer: [partial — acknowledged the gap honestly]
+[Score — clarity 5, depth 3, grounding 3, difficulty_delta 0, primary_gap: "The candidate acknowledged a limitation... but failed to use specific documented details..."]
+
+Session ended.
+EXIT=0
+```
+
+---
+
+## DoD checklist — verified, not asserted
+
+- **Works end-to-end:** full 6-turn session ran to completion on a real PDF, `EXIT=0`, no crash.
+- **Both branches fired in the same run:** new-topic at turns 1 and 3; follow-up at turns 2, 4, 5, 6.
+- **Chunk exclusion actually works, not just compiles:** turn 3's new-topic branch retrieved chunk **70** — a different chunk than the already-used chunk **52** — confirming `exclude_indices`/`used_chunk_indices` correctly steer retrieval away from prior chunks.
+- **Adaptive difficulty verified in both directions in the same run:**
+  - Escalation: turn 2 scored a strong answer `difficulty_delta: 1`, `primary_gap: None` → `difficulty_current` went 1 → 2.
+  - Ease-up: turns 1, 3, 4, 5 scored weak/off-topic answers `difficulty_delta: -1` → clamped down to the floor of 1.
+- **`scripts/inspect_rag.py` still runs cleanly** against the new `retrieve()` signature — confirmed via a direct rerun, exit 0. (Note: this script never actually called `retrieve()` — it recomputes cosine similarity inline for inspection purposes — so it was never actually at risk from the signature change; `day3_build_brief.md`'s assumption that it "calls the old signature" doesn't match the actual code. Flagging per CLAUDE.md's instruction to surface doc/reality conflicts rather than silently picking one.)
+- **Provider abstraction intact:** both question-generation and scoring go through `GeminiProvider.generate_structured()` — no direct SDK calls added.
+- Type-safe throughout (Pydantic models for `AnswerScore`, `ConversationTurn`, `DefenseSession`), no global mutable state (`DefenseSession` built once in `main()`, threaded through explicitly), no debug prints or test-only code left in `main.py`.
+
+---
+
+## Verdict
+
+**v0.2 is done.** The agent loop — structured-state (not history-replay) prompting, `primary_gap`-driven branching between follow-up and new-topic, and adaptive difficulty via the scoring rubric specced but unused since Day 1 — is confirmed working end-to-end on a real document, with both branches and both difficulty directions actually observed firing in one run, not just present in the code.

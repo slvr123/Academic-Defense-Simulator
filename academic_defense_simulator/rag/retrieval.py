@@ -21,20 +21,23 @@ def retrieve(
     top_k: int = 1,
     *,
     embedding_model: EmbeddingModel | None = None,
-) -> list[Chunk]:
-    """Embed query, cosine-match against chunk embeddings, return top_k.
+    exclude_indices: frozenset[int] = frozenset(),
+) -> list[tuple[int, Chunk]]:
+    """Embed query, cosine-match against chunk embeddings (skipping any index
+    in exclude_indices), return top_k as (index, chunk) pairs.
 
     Has zero knowledge of archetypes, panelists, or personas — the caller
     decides what `query` is.
     """
-    if not chunks:
+    candidates = [(i, c) for i, c in enumerate(chunks) if i not in exclude_indices]
+    if not candidates:
         return []
 
     model = embedding_model if embedding_model is not None else EmbeddingModel()
     query_vec = np.array(model.encode([query])[0])
-    chunk_matrix = np.array([c.embedding for c in chunks])
+    chunk_matrix = np.array([c.embedding for _, c in candidates])
 
     # Embeddings are unit-normalized, so cosine similarity == dot product.
     scores = chunk_matrix @ query_vec
-    top_indices = np.argsort(scores)[::-1][:top_k]
-    return [chunks[i] for i in top_indices]
+    top_order = np.argsort(scores)[::-1][:top_k]
+    return [candidates[i] for i in top_order]

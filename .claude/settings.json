@@ -20,5 +20,27 @@
       "Read(./.env)",
       "Edit(./.env)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/notify.ps1\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/notify.ps1\""
+          }
+        ]
+      }
+    ]
   }
 }

@@ -27,6 +27,66 @@ Respond ONLY with JSON matching this schema, no other text:
 }}
 """
 
+FOLLOWUP_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
+
+Your focus: {archetype_focus}
+
+You previously asked the candidate this question:
+\"\"\"
+{previous_question}
+\"\"\"
+
+The candidate answered:
+\"\"\"
+{previous_answer}
+\"\"\"
+
+The specific weakness identified in their answer: {primary_gap}
+
+This was grounded in the following excerpt from their document:
+\"\"\"
+{retrieved_chunk}
+\"\"\"
+
+Generate exactly ONE follow-up question that presses directly on the identified weakness — it should read as a real cross-examination follow-up, not an independent question. Stay in your lane: {archetype_lane}. Match difficulty {difficulty_level}/5.
+
+Respond ONLY with JSON matching this schema, no other text:
+{{
+  "question": "the question text",
+  "grounding_reference": "the specific phrase/claim/number this question targets",
+  "difficulty_level": <int 1-5>
+}}
+"""
+
+SCORING_SYSTEM_PROMPT = """You are scoring a candidate's answer during a {defense_type} defense, in the voice of {panelist_name}, the {archetype_title}.
+
+Question asked:
+\"\"\"
+{question}
+\"\"\"
+
+Candidate's answer:
+\"\"\"
+{answer}
+\"\"\"
+
+Relevant document excerpt this question was grounded in:
+\"\"\"
+{retrieved_chunk}
+\"\"\"
+
+Score the answer honestly and specifically — do not default to the middle of the scale. Then decide whether the next question should escalate, hold steady, or ease up in difficulty.
+
+Respond ONLY with JSON matching this schema, no other text:
+{{
+  "clarity": <int 1-5>,
+  "depth": <int 1-5>,
+  "grounding": <int 1-5>,
+  "difficulty_delta": <int -1, 0, or 1>,
+  "primary_gap": "<the single most significant weakness observed, or null if the answer was strong>"
+}}
+"""
+
 ARCHETYPE_CONFIG = {
     "methodology_expert": {
         "archetype_title": "Methodology Expert",

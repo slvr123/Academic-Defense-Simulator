@@ -1,0 +1,86 @@
+# Day 3 Build Brief — v0.2 "The Conversation" (Agent Loop)
+
+Full specs for everything below are locked in `day3_decisions.md` — treat that
+file as resolved spec, not a starting point for discussion. `day1_decisions.md`
+schemas (`DefenseProfile`, `AnswerScore`, `PANELIST_SYSTEM_PROMPT`,
+`SCORING_SYSTEM_PROMPT`, `ARCHETYPE_CONFIG`) are unchanged and stay as-is.
+
+**File paths below are assumed from the Day 2 structure** (`main.py`,
+`scripts/inspect_rag.py`, plus whatever modules currently hold the retriever,
+prompts, and schemas). Adjust to actual paths — the assumption is flagged so it
+doesn't derail the session if wrong.
+
+---
+
+## Goal for this session
+
+Turn the v0.1 single-question skeleton into a working multi-turn loop: up to 6
+turns, one panelist (Methodology Expert only — no multi-panelist yet), follow-up
+vs. new-topic branching driven by `primary_gap`, adaptive difficulty via the
+already-specced scoring rubric. Terminal I/O only.
+
+---
+
+## Build items
+
+1. **Update `retrieve()` signature and return type** (breaking change — see
+   `day3_decisions.md` §5). Update every existing call site, including
+   `scripts/inspect_rag.py`. Verify that script still runs after the change.
+
+2. **Add `FOLLOWUP_SYSTEM_PROMPT`** to wherever `PANELIST_SYSTEM_PROMPT` currently
+   lives (prompts stay separate from Python logic, per architecture rules).
+
+3. **Add `ConversationTurn` and `DefenseSession` Pydantic models** (§6). No
+   global mutable state — session object is constructed once in `main.py` and
+   passed through explicitly.
+
+4. **Add `MAX_TURNS = 6`** as a module-level constant. Not a config file, not a
+   range — a single constant.
+
+5. **Wire in the scoring call.** `SCORING_SYSTEM_PROMPT` and `AnswerScore` were
+   specced in Day 1 but never called in v0.1 (v0.1 had no scoring). This session
+   is what actually invokes Gemini with that template and parses the response.
+
+6. **Rewrite the `main.py` flow** to implement the 8-step loop in
+   `day3_decisions.md` §8: branch on previous `primary_gap`, retrieve-or-reuse
+   chunk accordingly, generate question, take terminal input for the answer,
+   score it, clamp difficulty, append the turn, repeat until `MAX_TURNS`.
+   `difficulty_current` initializes from `profile.difficulty_start` — not
+   hardcoded.
+
+7. **Provider abstraction stays intact.** Both the question-generation call and
+   the new scoring call go through the existing Gemini provider abstraction —
+   no direct SDK calls added outside that boundary.
+
+---
+
+## Explicitly out of scope — do not build
+
+- Streamlit or any UI work (Day 5)
+- Multi-panelist orchestration or persona generation (v0.3)
+- Scoring Report generation — `primary_gap` is only consumed for branching this
+  session, not aggregated into a report
+- Redundancy prevention across follow-ups (§9 — deferred, watch for it in Day 5
+  evals instead)
+- Any change to `Chunk`, `DefenseProfile`, `AnswerScore`, or the two Day 1
+  prompt templates beyond adding the new follow-up template
+
+---
+
+## Definition of Done
+
+- Works: a full 6-turn session runs end-to-end on a real document without
+  crashing
+- At least one turn takes the follow-up branch and at least one takes the
+  new-topic branch in the same test run — confirm both paths actually fire, not
+  just that the code compiles
+- Adaptive difficulty verified with a deliberately weak answer and a
+  deliberately strong answer in the same or separate runs — confirm
+  `difficulty_current` actually diverges, not just that `clamp()` exists
+- `scripts/inspect_rag.py` still runs cleanly against the new `retrieve()`
+  signature
+- Understandable, type-safe, no debugging prints left in
+- **Verification standard:** paste actual raw stdout for at least one full turn
+  cycle showing which branch was taken and why (i.e., show the `primary_gap`
+  value that drove the branch) — a condensed self-report of "wired and tested"
+  is not sufficient, per the Day 2 standard already set

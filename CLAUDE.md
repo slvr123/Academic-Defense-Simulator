@@ -7,7 +7,7 @@ current version, don't make choices that box in later versions either.
 
 Full plan: `academic-defense-simulator-plan.md`
 Current locked design decisions: `day1_decisions.md`
-Current build scope: `day2_build_brief.md` (update this pointer each time a new day's
+Current build scope: `day3_build_brief.md` (update this pointer each time a new day's
 brief is committed — it's the single source of truth for "what am I building right now")
 
 ## Tech Stack

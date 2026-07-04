@@ -1,0 +1,223 @@
+# Academic Defense Simulator — Day 3 Decisions
+
+Design lock-in for v0.2 "The Conversation" — the agent loop. Builds directly on
+`day1_decisions.md` (schemas, prompt templates, scoring rubric all still hold
+unchanged) and `day2_verification.md` (v0.1 confirmed working end-to-end). Treat
+this file as the source of truth for the agent loop; don't re-derive it in the
+Code session.
+
+---
+
+## 1. Agent Loop Pattern — Structured State, Not History Replay
+
+Two ways to carry state across turns in a stateless API:
+
+- **Pattern 1 (rejected):** append every turn to a growing chat history, replay
+  the whole thing each call.
+- **Pattern 2 (chosen):** keep a typed `DefenseSession` as the source of truth;
+  each call renders a *fresh* prompt template pulling only the specific fields
+  it needs, not raw transcript.
+
+**Why:** persona consistency is a named architecture rule. Pattern 1 has a known
+failure mode — as raw history grows, character framing set at turn 1 dilutes by
+turn 5. Pattern 2 avoids this structurally: the full persona framing
+(`"You are Dr. {panelist_name}, the {archetype_title}..."`) is re-rendered fresh
+on every single call, never diluted by distance.
+
+**Tradeoff accepted:** the model never sees the literal full transcript, only
+what's deliberately injected. Fine for v0.2 (one panelist, single-threaded).
+Cross-turn context beyond "the one immediately prior" is a v0.3 problem
+(Devil's Advocate needs it for cross-panelist referencing — a harder version of
+this same question).
+
+---
+
+## 2. Follow-up Branching Logic
+
+After scoring an answer, branch on `primary_gap`:
+
+- **`primary_gap` is not `None`** → follow-up path. Reuse the *same* chunk, press
+  on the specific weakness. No new retrieval.
+- **`primary_gap` is `None`** (answer was strong) → new-topic path. Fresh
+  `retrieve()` call excluding all previously used chunk indices.
+
+No new schema field required — `primary_gap` was already locked in `AnswerScore`
+for the v0.3 Scoring Report; it doubles as the control-flow signal here. Nothing
+about this boxes in v0.3 — the report can still aggregate every `primary_gap`
+regardless of which branch fired when it was produced.
+
+---
+
+## 3. Follow-up Prompt Template
+
+New template, sits alongside `PANELIST_SYSTEM_PROMPT` from Day 1. Same output
+schema (`question`, `grounding_reference`, `difficulty_level`) — no new Pydantic
+model needed.
+
+```python
+FOLLOWUP_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
+
+Your focus: {archetype_focus}
+
+You previously asked the candidate this question:
+\"\"\"
+{previous_question}
+\"\"\"
+
+The candidate answered:
+\"\"\"
+{previous_answer}
+\"\"\"
+
+The specific weakness identified in their answer: {primary_gap}
+
+This was grounded in the following excerpt from their document:
+\"\"\"
+{retrieved_chunk}
+\"\"\"
+
+Generate exactly ONE follow-up question that presses directly on the identified weakness — it should read as a real cross-examination follow-up, not an independent question. Stay in your lane: {archetype_lane}. Match difficulty {difficulty_level}/5.
+
+Respond ONLY with JSON matching this schema, no other text:
+{{
+  "question": "the question text",
+  "grounding_reference": "the specific phrase/claim/number this question targets",
+  "difficulty_level": <int 1-5>
+}}
+"""
+```
+
+---
+
+## 4. Injection Fields — Exhaustive List
+
+**New-topic path** (`PANELIST_SYSTEM_PROMPT`, unchanged from Day 1):
+`panelist_name`, `archetype_title`, `archetype_focus`, `archetype_lane`,
+`defense_type`, `other_subtype_line`, `domain`, `topic`, `difficulty_level`
+(current session difficulty), `retrieved_chunk` (freshly retrieved this turn).
+
+**Follow-up path** (`FOLLOWUP_SYSTEM_PROMPT`):
+`panelist_name`, `archetype_title`, `archetype_focus`, `archetype_lane`,
+`previous_question`, `previous_answer`, `primary_gap`, `retrieved_chunk` (the
+**same** chunk from the previous turn — re-injected, not re-retrieved),
+`difficulty_level`.
+
+**Deliberately excluded from both:**
+- Raw `clarity` / `depth` / `grounding` subscores — consumed in Python only, to
+  compute `difficulty_delta`'s downstream effect. `primary_gap` is already the
+  distilled, actionable version; feeding raw scores in adds tokens with no new
+  signal.
+- Turns older than the immediately preceding one — see Pattern 2 rationale above.
+
+---
+
+## 5. Retriever Signature Change
+
+**Breaking change from v0.1.** Old signature returned `list[Chunk]`. New
+signature must support exclusion and tell the caller which chunk indices were
+used, so `list[tuple[int, Chunk]]`:
+
+```python
+def retrieve(
+    query: str,
+    chunks: list[Chunk],
+    top_k: int = 1,
+    exclude_indices: frozenset[int] = frozenset(),
+) -> list[tuple[int, Chunk]]:
+    """Embed query, cosine-match against chunk embeddings (skipping any index
+    in exclude_indices), return top_k as (index, chunk) pairs.
+    Still has zero knowledge of archetypes, panelists, or personas."""
+```
+
+**No `Chunk` model changes.** Chunk list order is stable for the lifetime of a
+session (built once at upload), so tracking exclusions by list index is
+sufficient — no need to add an id field to `Chunk` for this.
+
+**Flag for Code:** `scripts/inspect_rag.py` calls the old signature. Update its
+call site to match, or the "existing functionality still works" DoD criterion
+fails on this session.
+
+---
+
+## 6. Session State Models
+
+```python
+from typing import Optional
+from pydantic import BaseModel, Field
+
+class ConversationTurn(BaseModel):
+    question: str
+    grounding_reference: str
+    chunk_index: int
+    chunk_text: str
+    difficulty_level: int
+    answer: Optional[str] = None
+    score: Optional[AnswerScore] = None  # AnswerScore from day1_decisions.md
+
+class DefenseSession(BaseModel):
+    profile: DefenseProfile  # from day1_decisions.md
+    difficulty_current: int
+    turns: list[ConversationTurn] = Field(default_factory=list)
+
+    @property
+    def used_chunk_indices(self) -> set[int]:
+        return {t.chunk_index for t in self.turns}
+```
+
+**`difficulty_current` initializes from `profile.difficulty_start`** — Day 1
+flagged `difficulty_start` as present-but-inert until v0.2. It goes live today.
+Do not hardcode an initial value here.
+
+No global mutable state — `DefenseSession` is constructed once per run and
+threaded through the loop explicitly.
+
+---
+
+## 7. Turn Count
+
+Fixed constant, not a configurable range — nothing is gained from a range at
+this stage:
+
+```python
+MAX_TURNS = 6
+```
+
+---
+
+## 8. Loop Shape
+
+Per turn:
+
+1. If first turn, or previous turn's `primary_gap is None` → call `retrieve()`
+   excluding `session.used_chunk_indices`, render `PANELIST_SYSTEM_PROMPT`.
+2. Else → render `FOLLOWUP_SYSTEM_PROMPT` using the previous `ConversationTurn`'s
+   chunk/question/answer/`primary_gap`.
+3. Generate question via Gemini, parse into the existing question schema.
+4. Get answer from user (terminal input for this build — see §10).
+5. Score via `SCORING_SYSTEM_PROMPT` (from `day1_decisions.md`, unused until now)
+   → parse into `AnswerScore`.
+6. `next_difficulty = clamp(session.difficulty_current + score.difficulty_delta, 1, 5)`
+   — no scoring math beyond this clamp lives in Python.
+7. Append completed `ConversationTurn` to `session.turns`; update
+   `session.difficulty_current`.
+8. Repeat until `len(session.turns) == MAX_TURNS`.
+
+---
+
+## 9. Known Limitation — Deferred, Not Built Around
+
+Single-previous-turn context can't stop a panelist from asking something
+semantically redundant with turn 2 while on turn 5 — chunk exclusion stops
+re-grounding on the same excerpt, but not conceptual overlap. Not designing
+around this now; it's untested speculation until Day 5's eval sessions either
+show it or don't. If it shows up, the fix is additive and cheap: inject the last
+2 `grounding_reference` strings as a "don't re-ask about these" list. Not built
+preemptively.
+
+---
+
+## 10. UI Status — Unchanged
+
+Still terminal-only for this build. Streamlit wrap remains Day 5 per the
+sprint schedule and the "AI core before UI" philosophy — this session does not
+touch UI at all.

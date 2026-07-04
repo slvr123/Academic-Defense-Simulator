@@ -2,20 +2,29 @@
 
 from __future__ import annotations
 
+import time
 from uuid import uuid4
 
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
+from academic_defense_simulator.llm.provider import LLMProvider
+from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
-from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PANELIST_SYSTEM_PROMPT
+from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
+from academic_defense_simulator.prompts.panelist_prompts import (
+    ARCHETYPE_CONFIG,
+    FOLLOWUP_SYSTEM_PROMPT,
+    PANELIST_SYSTEM_PROMPT,
+    SCORING_SYSTEM_PROMPT,
+)
 from academic_defense_simulator.rag.chunking import chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk, retrieve
 
 _PANELIST_NAME = "Reyes"
 _ACTIVE_ARCHETYPE = "methodology_expert"
-_DIFFICULTY = 2
+MAX_TURNS = 6
 
 
 def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
@@ -38,6 +47,93 @@ def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
     return defense_type, other_subtype
 
 
+def _clamp_difficulty(value: int) -> int:
+    return max(1, min(5, value))
+
+
+def _generate_question(
+    provider: LLMProvider,
+    session: DefenseSession,
+    chunks: list[Chunk],
+    embedding_model: EmbeddingModel,
+    archetype: dict[str, str],
+    other_subtype_line: str,
+) -> ConversationTurn:
+    previous_turn = session.turns[-1] if session.turns else None
+    is_followup = previous_turn is not None and previous_turn.score is not None and previous_turn.score.primary_gap is not None
+
+    if not is_followup:
+        query = archetype["archetype_focus"]
+        results = retrieve(
+            query,
+            chunks,
+            top_k=1,
+            embedding_model=embedding_model,
+            exclude_indices=frozenset(session.used_chunk_indices),
+        )
+        if not results:
+            raise RuntimeError("Retrieval returned no chunks — document may be exhausted.")
+        chunk_index, chunk = results[0]
+        chunk_text = chunk.text
+        prompt = PANELIST_SYSTEM_PROMPT.format(
+            panelist_name=_PANELIST_NAME,
+            archetype_title=archetype["archetype_title"],
+            archetype_focus=archetype["archetype_focus"],
+            archetype_lane=archetype["archetype_lane"],
+            defense_type=session.profile.defense_type.value,
+            other_subtype_line=other_subtype_line,
+            domain=session.profile.domain,
+            topic=session.profile.topic,
+            difficulty_level=session.difficulty_current,
+            retrieved_chunk=chunk_text,
+        )
+        print(f"[branch: new-topic — chunk {chunk_index}]")
+    else:
+        assert previous_turn is not None and previous_turn.score is not None
+        chunk_index, chunk_text = previous_turn.chunk_index, previous_turn.chunk_text
+        prompt = FOLLOWUP_SYSTEM_PROMPT.format(
+            panelist_name=_PANELIST_NAME,
+            archetype_title=archetype["archetype_title"],
+            archetype_focus=archetype["archetype_focus"],
+            archetype_lane=archetype["archetype_lane"],
+            defense_type=session.profile.defense_type.value,
+            previous_question=previous_turn.question,
+            previous_answer=previous_turn.answer,
+            primary_gap=previous_turn.score.primary_gap,
+            retrieved_chunk=chunk_text,
+            difficulty_level=session.difficulty_current,
+        )
+        print(f"[branch: follow-up — primary_gap: \"{previous_turn.score.primary_gap}\" — reusing chunk {chunk_index}]")
+
+    panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
+    time.sleep(13)
+
+    return ConversationTurn(
+        question=panelist_question.question,
+        grounding_reference=panelist_question.grounding_reference,
+        chunk_index=chunk_index,
+        chunk_text=chunk_text,
+        difficulty_level=session.difficulty_current,
+    )
+
+
+def _score_answer(
+    provider: LLMProvider,
+    turn: ConversationTurn,
+    archetype: dict[str, str],
+    defense_type: str,
+) -> AnswerScore:
+    prompt = SCORING_SYSTEM_PROMPT.format(
+        defense_type=defense_type,
+        panelist_name=_PANELIST_NAME,
+        archetype_title=archetype["archetype_title"],
+        question=turn.question,
+        answer=turn.answer,
+        retrieved_chunk=turn.chunk_text,
+    )
+    return provider.generate_structured(prompt, AnswerScore)
+
+
 def main() -> None:
     settings = load_settings()
 
@@ -49,7 +145,7 @@ def main() -> None:
     domain = input("Domain / discipline: ").strip()
     topic = input("Research title / topic: ").strip()
 
-    # 3–4. Build profile
+    # 3-4. Build profile
     document_id = str(uuid4())
     profile = DefenseProfile(
         defense_type=defense_type,
@@ -70,47 +166,38 @@ def main() -> None:
     embeddings = embedding_model.encode(texts)
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
 
-    # 7. Retrieval query = archetype's focus area
-    archetype = ARCHETYPE_CONFIG[_ACTIVE_ARCHETYPE]
-    query = archetype["archetype_focus"]
-
-    # 8. Retrieve top chunk
-    top_chunks = retrieve(query, chunks, top_k=1, embedding_model=embedding_model)
-    if not top_chunks:
-        raise RuntimeError("Retrieval returned no chunks — document may be empty after chunking.")
-    retrieved_chunk = top_chunks[0]
-
-    # 9. Fill prompt
     other_subtype_line = (
-        f"\n- Defense subtype: {profile.other_subtype.value}"
-        if profile.other_subtype is not None
-        else ""
-    )
-    prompt = PANELIST_SYSTEM_PROMPT.format(
-        panelist_name=_PANELIST_NAME,
-        archetype_title=archetype["archetype_title"],
-        archetype_focus=archetype["archetype_focus"],
-        archetype_lane=archetype["archetype_lane"],
-        defense_type=profile.defense_type.value,
-        other_subtype_line=other_subtype_line,
-        domain=profile.domain,
-        topic=profile.topic,
-        difficulty_level=_DIFFICULTY,
-        retrieved_chunk=retrieved_chunk.text,
+        f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
     )
 
-    # 10. Generate question
+    archetype = ARCHETYPE_CONFIG[_ACTIVE_ARCHETYPE]
     provider = GeminiProvider(api_key=settings.gemini_api_key)
-    print(f"\nDr. {_PANELIST_NAME} is reviewing the document...\n")
-    panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
+    session = DefenseSession(profile=profile, difficulty_current=profile.difficulty_start)
 
-    # 11. Print question
-    print(f"Dr. {_PANELIST_NAME}: {panelist_question.question}\n")
-    print(f"[Grounding: \"{panelist_question.grounding_reference}\" — difficulty {panelist_question.difficulty_level}/5]\n")
+    for turn_num in range(1, MAX_TURNS + 1):
+        print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
 
-    # 12. Capture answer
-    input("Your answer: ")
-    print("\nAnswer recorded. Session ended.")
+        turn = _generate_question(provider, session, chunks, embedding_model, archetype, other_subtype_line)
+
+        print(f"\nDr. {_PANELIST_NAME}: {turn.question}\n")
+        print(f"[Grounding: \"{turn.grounding_reference}\" — difficulty {turn.difficulty_level}/5]\n")
+
+        turn.answer = input("Your answer: ").strip()
+
+        turn.score = _score_answer(provider, turn, archetype, profile.defense_type.value)
+        print(
+            f"[Score — clarity {turn.score.clarity}, depth {turn.score.depth}, "
+            f"grounding {turn.score.grounding}, difficulty_delta {turn.score.difficulty_delta}, "
+            f"primary_gap: {turn.score.primary_gap!r}]"
+        )
+
+        session.turns.append(turn)
+        session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
+
+        if turn_num != MAX_TURNS:
+            time.sleep(13)
+
+    print("\nSession ended.")
 
 
 if __name__ == "__main__":
