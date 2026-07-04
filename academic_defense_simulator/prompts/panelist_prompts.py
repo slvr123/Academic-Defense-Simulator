@@ -15,16 +15,16 @@ You have been given ONE excerpt from the candidate's research document. Generate
 - Match the target difficulty level: {difficulty_level}/5 (1 = foundational/clarifying, 5 = adversarial/stress-testing an assumption)
 
 Document excerpt:
-"""
+\"\"\"
 {retrieved_chunk}
-"""
+\"\"\"
 
 Respond ONLY with JSON matching this schema, no other text:
-{
+{{
   "question": "the question text",
   "grounding_reference": "the specific phrase/claim/number from the excerpt this question targets",
   "difficulty_level": <int 1-5>
-}
+}}
 """
 
 ARCHETYPE_CONFIG = {
@@ -49,4 +49,3 @@ ARCHETYPE_CONFIG = {
         "archetype_lane": "do not ask about methodology rigor or citation gaps unless they directly create a practical or ethical risk",
     },
 }
-

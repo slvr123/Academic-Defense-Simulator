@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel, Field
 
 
-@dataclass(frozen=True)
-class PanelistQuestion:
+class PanelistQuestion(BaseModel):
     question: str
-    context: str | None = None
-    expected_depth: str | None = None
+    grounding_reference: str
+    difficulty_level: int = Field(..., ge=1, le=5)

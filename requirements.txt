@@ -1,0 +1,6 @@
+pymupdf
+sentence-transformers
+google-genai
+pydantic
+numpy
+python-dotenv

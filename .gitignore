@@ -21,3 +21,6 @@ venv/
 # Local temp file cache (document_id-keyed uploads) — update the path once
 # main.py actually creates it; placeholder name for now
 tmp_uploads/
+
+*.pdf
+.claude/settings.local.json
