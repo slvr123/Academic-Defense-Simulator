@@ -12,8 +12,9 @@ brief is committed — it's the single source of truth for "what am I building r
 
 ## Tech Stack
 - Python, Pydantic throughout for structured data
-- LLM: Gemini API, `gemini-2.5-flash`, via `google-genai` (not the deprecated
-  `google-generativeai`) — isolated behind an `LLMProvider` interface, see `llm/provider.py`
+- LLM: Gemini API, `gemini-3.1-flash-lite` default (env-swappable via `GEMINI_MODEL`; see
+  `day4_decisions.md`), via `google-genai` (not the deprecated `google-generativeai`) —
+  isolated behind an `LLMProvider` interface, see `llm/provider.py`
 - Embeddings: `sentence-transformers`, `all-MiniLM-L6-v2`
 - Vector store: numpy cosine similarity, no ChromaDB — MVP scale doesn't need it
 - PDF ingestion: PyMuPDF
