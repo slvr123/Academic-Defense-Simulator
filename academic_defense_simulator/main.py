@@ -51,6 +51,26 @@ def _clamp_difficulty(value: int) -> int:
     return max(1, min(5, value))
 
 
+def _is_strong_answer(score: AnswerScore) -> bool:
+    """Strong = solid on all three quality axes. Kept off difficulty_delta on purpose:
+    under the 'press on weakness' rubric a weak-but-engaged answer also escalates (+1),
+    so difficulty_delta no longer distinguishes strong from weak — the sub-scores do."""
+    return score.clarity >= 4 and score.depth >= 4 and score.grounding >= 4
+
+
+def _should_follow_up(previous_turn: ConversationTurn | None) -> bool:
+    """Follow up only when the prior answer had a real weakness to press: a gap was named
+    AND the answer was not strong. A strong answer advances to a new topic even if the
+    scorer noted a residual gap — primary_gap stays honest for the v0.3 report, and
+    branching no longer collapses to 'always follow up' now that the adversarial rubric
+    surfaces a gap on nearly every answer."""
+    if previous_turn is None or previous_turn.score is None:
+        return False
+    if previous_turn.score.primary_gap is None:
+        return False
+    return not _is_strong_answer(previous_turn.score)
+
+
 def _generate_question(
     provider: LLMProvider,
     session: DefenseSession,
@@ -60,7 +80,7 @@ def _generate_question(
     other_subtype_line: str,
 ) -> ConversationTurn:
     previous_turn = session.turns[-1] if session.turns else None
-    is_followup = previous_turn is not None and previous_turn.score is not None and previous_turn.score.primary_gap is not None
+    is_followup = _should_follow_up(previous_turn)
 
     if not is_followup:
         query = archetype["archetype_focus"]
@@ -171,7 +191,8 @@ def main() -> None:
     )
 
     archetype = ARCHETYPE_CONFIG[_ACTIVE_ARCHETYPE]
-    provider = GeminiProvider(api_key=settings.gemini_api_key)
+    print(f"[model: {settings.gemini_model}]")
+    provider = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     session = DefenseSession(profile=profile, difficulty_current=profile.difficulty_start)
 
     for turn_num in range(1, MAX_TURNS + 1):

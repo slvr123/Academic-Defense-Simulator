@@ -75,7 +75,12 @@ Relevant document excerpt this question was grounded in:
 {retrieved_chunk}
 \"\"\"
 
-Score the answer honestly and specifically — do not default to the middle of the scale. Then decide whether the next question should escalate, hold steady, or ease up in difficulty.
+Score the answer honestly and specifically — do not default to the middle of the scale.
+
+Scoring guidance:
+- clarity: how directly the answer engaged the question and defended its claim — NOT how fluent, confident, or technical the prose sounds. A smoothly-worded non-answer, or a confident assertion that never actually justifies the claim, is LOW clarity, not high.
+- difficulty_delta — set the next question's difficulty: escalate (+1) when the candidate is engaged but their answer is flawed, unjustified, or merely concedes the point — press the weakness; hold steady (0) for a solid answer with only a minor gap; ease up (-1) ONLY when the candidate is completely lost or gives a non-answer.
+- primary_gap: the single most significant weakness, or null. Set it to null when the answer is genuinely strong with no material weakness left to press — do NOT invent a minor nitpick just to have something to say.
 
 Respond ONLY with JSON matching this schema, no other text:
 {{
