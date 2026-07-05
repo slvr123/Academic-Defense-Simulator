@@ -80,7 +80,7 @@ Score the answer honestly and specifically — do not default to the middle of t
 Scoring guidance:
 - clarity: how directly the answer engaged the question and defended its claim — NOT how fluent, confident, or technical the prose sounds. A smoothly-worded non-answer, or a confident assertion that never actually justifies the claim, is LOW clarity, not high.
 - difficulty_delta — set the next question's difficulty: escalate (+1) when the candidate is engaged but their answer is flawed, unjustified, or merely concedes the point — press the weakness; hold steady (0) for a solid answer with only a minor gap; ease up (-1) ONLY when the candidate is completely lost or gives a non-answer.
-- primary_gap: the single most significant weakness, or null. Set it to null when the answer is genuinely strong with no material weakness left to press — do NOT invent a minor nitpick just to have something to say.
+- primary_gap: name the single most significant real weakness — it feeds the end-of-session report, so keep it honest and specific even for an otherwise strong answer. Use null ONLY when there is genuinely no material weakness to name; do NOT invent a minor nitpick just to fill the field.
 
 Respond ONLY with JSON matching this schema, no other text:
 {{
@@ -88,7 +88,7 @@ Respond ONLY with JSON matching this schema, no other text:
   "depth": <int 1-5>,
   "grounding": <int 1-5>,
   "difficulty_delta": <int -1, 0, or 1>,
-  "primary_gap": "<the single most significant weakness observed, or null if the answer was strong>"
+  "primary_gap": "<the single most significant weakness observed, or null only if there is genuinely no material weakness>"
 }}
 """
 

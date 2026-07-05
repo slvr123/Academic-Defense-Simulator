@@ -52,10 +52,16 @@ def _clamp_difficulty(value: int) -> int:
 
 
 def _is_strong_answer(score: AnswerScore) -> bool:
-    """Strong = solid on all three quality axes. Kept off difficulty_delta on purpose:
-    under the 'press on weakness' rubric a weak-but-engaged answer also escalates (+1),
-    so difficulty_delta no longer distinguishes strong from weak — the sub-scores do."""
-    return score.clarity >= 4 and score.depth >= 4 and score.grounding >= 4
+    """Strong = no weak dimension (every quality axis >= 3) AND solidly high overall
+    (clarity + depth + grounding >= 11 of 15). Deliberately not keyed on difficulty_delta:
+    under the 'press on weakness' rubric a weak-but-engaged answer also escalates (+1), so
+    only the sub-scores separate strong from weak. The all-axes-plus-sum test tolerates the
+    model's per-axis noise (a genuinely strong answer may dip to 3 on one axis) without
+    admitting a uniformly mediocre 3/3/3 or a fluent-but-ungrounded answer."""
+    return (
+        min(score.clarity, score.depth, score.grounding) >= 3
+        and (score.clarity + score.depth + score.grounding) >= 11
+    )
 
 
 def _should_follow_up(previous_turn: ConversationTurn | None) -> bool:

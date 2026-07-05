@@ -18,5 +18,5 @@ class AnswerScore(BaseModel):
     )
     primary_gap: Optional[str] = Field(
         None,
-        description="The single most significant weakness or gap observed, if any — feeds the v0.3 end-of-session report. Null if the answer was strong.",
+        description="The single most significant weakness or gap observed — feeds the v0.3 end-of-session report, so kept honest even for a strong answer. Null only if there is genuinely no material weakness.",
     )
