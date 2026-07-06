@@ -12,6 +12,7 @@ Context:
 You have been given ONE excerpt from the candidate's research document. Generate exactly ONE grounded, specific question about this excerpt that a rigorous panelist in this role would ask. The question must:
 - Reference something concrete from the excerpt (a method, a claim, a citation, a design choice, a number) — never a generic question that could apply to any document
 - Stay in your lane: {archetype_lane}
+- If the excerpt has no natural connection to your lane, do NOT pivot into another archetype's territory. Instead, reframe the excerpt through your own lane's lens — e.g., ask why this gap wasn't caught by the kind of scrutiny your role represents — even if that means a softer or more foundational question than usual.
 - Match the target difficulty level: {difficulty_level}/5 (1 = foundational/clarifying, 5 = adversarial/stress-testing an assumption)
 
 Document excerpt:

@@ -71,10 +71,113 @@ v0.3 report regardless of the branch.
   advanced to a new topic (chunk 52 → 70), difficulty diverged in both directions, `EXIT=0`.
   `_should_follow_up` is covered by 11 unit cases including the live 5/3/5 pattern.
 
+## Addendum 1 — gemini-2.5-flash re-validated against rewritten SCORING_SYSTEM_PROMPT
+
+Post-hoc gap identified after this doc was first written: Decision 1/2's diagnostic compared
+models on the *old* prompt to justify the swap; `gemini-2.5-flash` — the model reserved for
+final verification runs — was never re-run against the *new* rubric it's supposed to verify
+against. Closed 2026-07-05 via two runs (raw stdout/JSON, not summarized):
+
+**Rate-limit pacing** (`gemini-3.1-flash-lite`, 2-turn forced session, 4 calls) — PASS. Zero
+429s, inter-request gaps 13.00s / 13.01s / 13.00s (at the pre-trim value — see Addendum 3).
+
+**Rubric divergence** (`gemini-2.5-flash`, 3-way probe: genuine non-answer / fluent hedge /
+confidently-wrong, same question, same document grounding):
+
+| Answer | clarity | depth | grounding | difficulty_delta | primary_gap (paraphrased) |
+|---|---|---|---|---|---|
+| (c) genuine non-answer ("not sure, come back to that") | 1 | 1 | 1 | **-1** | candidate unable to answer |
+| (a) fluent hedge, topic-adjacent, no commitment | 1 | 1 | 1 | **+1** | no specific justification, generic statements |
+| (b) confident, specific, contradicts the document | 2 | 1 | 1 | **+1** | misrepresented actual sample size/method |
+
+Initial read scored this a fail against a pass criterion carried over from
+`day1_decisions.md`'s framing that "mediocre and confidently-wrong deserve opposite difficulty
+responses." That framing is **explicitly retired by Decision 2**, which redefines the axis from
+*correct-vs-wrong* to *engaged-vs-lost*. Under that axis, (a) and (b) are both flawed-but-
+engaged and correctly land on the same delta; (c) is the only true non-answer and correctly
+eases up. `clarity` and `primary_gap` both discriminate all three answers correctly — the
+vague-vs-wrong distinction is preserved there, deliberately, instead of in `difficulty_delta`.
+
+**Conclusion: this is correct behavior, not a rubric gap.** `difficulty_delta` under "press on
+weakness" is a concession detector (did the candidate stay in the fight or not), not a
+correctness detector (was the candidate right or wrong) — matching the adversarial defense-prep
+intent behind Decision 2. If a future version wants vague-hedge and confidently-wrong to
+diverge in difficulty, that is new rubric scope (a third category), not a fix to this one.
+
+`gemini-2.5-flash` is confirmed fit for its reserved role as the final-verification model under
+the current `SCORING_SYSTEM_PROMPT`, with the above behavior understood and accepted rather than
+just observed.
+
+## Addendum 2 — Question generation on gemini-3.1-flash-lite: formally verified, one real gap found and fixed
+
+Reasoning for staying on flash-lite for question-gen (RPD math, no evidence the harder task —
+scoring — needs a stronger model than the easier one — generation — and the standing "no
+premature second model" rule) is unchanged from the original decision. Formal verification
+closed 2026-07-05 across 3 conditions (different archetype, different chunk, different
+difficulty_level):
+
+- **Grounding & schema: PASS across all 3.** Every `grounding_reference` confirmed an exact
+  verbatim substring of its source chunk once a whitespace-normalization bug in the check
+  script itself was fixed (PyMuPDF's line-wrap newlines collapse to spaces in the model's
+  output — same benign artifact class already logged in `day2_verification.md`, correctly
+  caught as a test bug rather than a model bug). Schema conformance held on all 3 outputs.
+- **Difficulty axis: confirmed live** — the difficulty=4 condition (methodology_expert, chunk
+  52) produced a visibly more adversarial question (pressing on unequal weighting between
+  technical and non-technical respondent groups, statistical bias in aggregating ordinal data)
+  than the difficulty=2 baseline. The axis is doing real work, not just passed through inert.
+- **Archetype-lane discipline: 2 of 3 pass, 1 real failure — NOT accepted as an edge case.**
+  On the different-chunk condition, `methodology_expert` was retrieved against chunk 25 (pure
+  implementation content — missing login/access control — with no methodology angle) and
+  generated a question about mitigating security vulnerabilities via architectural modules:
+  squarely `technical_implementation_reviewer` territory, not methodology_expert's stated lane.
+
+  **Root cause, and why this isn't dismissable:** this is not an artifact of an unnatural test
+  input. The new-topic retrieval branch (`day3_decisions.md` §8) excludes every previously-used
+  chunk index as a session progresses. Across a real multi-turn session with several new-topic
+  branches firing, the strongest methodology-relevant chunks get used up, and retrieval will
+  surface progressively weaker matches for `archetype_focus` — chunk 25 is exactly what that
+  looks like once it happens. This will occur in production sessions, not just in this
+  deliberately-varied test condition.
+
+  **Fix applied — prompt-only, shared template:** one bullet added to `PANELIST_SYSTEM_PROMPT`
+  (applies to all four archetypes generically, not per-archetype config):
+
+  ```
+  - If the excerpt has no natural connection to your lane, do NOT pivot into another
+    archetype's territory. Instead, reframe the excerpt through your own lane's lens —
+    e.g., ask why this gap wasn't caught by the kind of scrutiny your role represents —
+    even if that means a softer or more foundational question than usual.
+  ```
+
+  **Status: fix applied, re-verification deferred to Day 5.** Day 5's scheduled 2–3 full eval
+  sessions are a natural, non-redundant place to confirm this holds under real multi-turn
+  chunk exhaustion, rather than spinning up a fourth isolated Day 4 test for a one-line prompt
+  change. Flag it there if the lane still drifts.
+
+## Addendum 3 — time.sleep pacing trimmed for flash-lite: verified, closed
+
+**Supersedes the "left as pre-existing, trim when convenient" note originally in this doc's
+"Still open" section.** At 15 RPM, flash-lite's real floor is 4s (60/15) — the inherited flat
+13s (sized for `gemini-2.5-flash`'s stricter limits) was over 3x more conservative than needed.
+
+```python
+MODEL_CALL_DELAY_SECONDS = {
+    "gemini-3.1-flash-lite": 5,   # 15 RPM floor is 4s; +1s safety margin
+    "gemini-2.5-flash": 13,      # unchanged — RPD-bound not RPM-bound, rarely run
+}
+DEFAULT_CALL_DELAY = 13  # fallback for an unrecognized GEMINI_MODEL — stay conservative
+```
+
+**Verified 2026-07-05** (2-turn forced session, 4 calls, gemini-3.1-flash-lite): zero 429s,
+inter-request gaps 5.00s / 5.00s / 5.00s — exactly the predicted floor. Closed.
+
 ## Still open / deliberately not done
 
-- Question generation also runs on flash-lite (shared provider). Sanity-checked (grounded,
-  in-lane), not formally re-verified to the Day 3 bar. Decouple into its own model only under
-  real pressure — no premature second model.
-- `main.py`'s `time.sleep(13)` at both call sites is now over-conservative for flash-lite's
-  15 RPM; left as pre-existing, trim when convenient.
+- Archetype-lane fallback instruction (Addendum 2) is applied but not yet re-verified under a
+  real multi-turn session — check during Day 5's eval sessions.
+
+## Project Instructions — Tech Stack section
+
+Updated and confirmed by Sean (2026-07-05): `LLM` line reflects `gemini-3.1-flash-lite` as dev
+default / `gemini-2.5-flash` reserved for verification; `LLM Provider` block deduplicated,
+OpenRouter/Groq rejection line intact and uncut. No further action.

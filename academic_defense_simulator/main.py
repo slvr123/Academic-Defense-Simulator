@@ -26,6 +26,12 @@ _PANELIST_NAME = "Reyes"
 _ACTIVE_ARCHETYPE = "methodology_expert"
 MAX_TURNS = 6
 
+MODEL_CALL_DELAY_SECONDS = {
+    "gemini-3.1-flash-lite": 5,  # 15 RPM floor is 4s; +1s safety margin
+    "gemini-2.5-flash": 13,  # unchanged — RPD-bound not RPM-bound, rarely run, no pressure to optimize
+}
+DEFAULT_CALL_DELAY = 13  # fallback if GEMINI_MODEL is something unrecognized — stay conservative, not permissive
+
 
 def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
     options = {str(i + 1): dt for i, dt in enumerate(DefenseType)}
@@ -84,6 +90,7 @@ def _generate_question(
     embedding_model: EmbeddingModel,
     archetype: dict[str, str],
     other_subtype_line: str,
+    model: str,
 ) -> ConversationTurn:
     previous_turn = session.turns[-1] if session.turns else None
     is_followup = _should_follow_up(previous_turn)
@@ -132,7 +139,7 @@ def _generate_question(
         print(f"[branch: follow-up — primary_gap: \"{previous_turn.score.primary_gap}\" — reusing chunk {chunk_index}]")
 
     panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
-    time.sleep(13)
+    time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
 
     return ConversationTurn(
         question=panelist_question.question,
@@ -204,7 +211,9 @@ def main() -> None:
     for turn_num in range(1, MAX_TURNS + 1):
         print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
 
-        turn = _generate_question(provider, session, chunks, embedding_model, archetype, other_subtype_line)
+        turn = _generate_question(
+            provider, session, chunks, embedding_model, archetype, other_subtype_line, settings.gemini_model
+        )
 
         print(f"\nDr. {_PANELIST_NAME}: {turn.question}\n")
         print(f"[Grounding: \"{turn.grounding_reference}\" — difficulty {turn.difficulty_level}/5]\n")
@@ -222,7 +231,7 @@ def main() -> None:
         session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
 
         if turn_num != MAX_TURNS:
-            time.sleep(13)
+            time.sleep(MODEL_CALL_DELAY_SECONDS.get(settings.gemini_model, DEFAULT_CALL_DELAY))
 
     print("\nSession ended.")
 
