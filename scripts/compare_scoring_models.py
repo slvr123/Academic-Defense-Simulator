@@ -62,7 +62,7 @@ QUESTION = (
 )
 
 # The purposive-sampling section retrieved as chunk 52 in Day 2/3 verification.
-# Anchored on the verbatim phrases captured in day2_verification.md / day3_verification.md.
+# Anchored on the verbatim phrases captured in docs/v0.1-skeleton-verification.md / docs/v0.2-agent-loop-verification.md.
 GROUNDING_CHUNK = (
     "Purposive sampling was used to select the evaluators for the system. The sample "
     "will include 20 respondents, who will be split into two categories: 10 IT-related "
