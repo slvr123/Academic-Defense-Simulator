@@ -1,0 +1,138 @@
+# Conversational Quality Fixes — Design Decisions (Pre–Day 6)
+
+Not a planned roadmap day — this came out of Sean's first manual trial of the completed
+v0.2 loop (5a/5b/5c all closed and verified). Deliberately not day-numbered (it doesn't
+correspond to a Week 1 sprint day); slot it into the eventual `v{version}-{slug}-{type}.md`
+rename pass wherever it actually belongs. Flagging this rather than silently picking a
+number, per the project's own "flag conflicts, don't silently resolve" rule.
+
+> **Filename note (Code):** saved with a descriptive slug rather than a `dayN_` prefix,
+> for exactly the reason above. Final name is TBD in the rename pass. CLAUDE.md's
+> build-scope pointer was updated to this file on implementation.
+
+Recommend one Code session, not split. Combined footprint (two prompt-template edits +
+one Python control-flow addition) is small enough that Day 5's 5a/5b/5c three-way split
+doesn't apply here.
+
+Reminder for the handoff: CLAUDE.md's build-scope pointer needs updating to this file
+once it's committed — Code already caught and fixed this same pointer going stale once,
+during 5b.
+
+## What this fixes, what it doesn't
+
+Fixes issues #1, #2, and #4 from Sean's manual trial:
+
+- No acknowledgment before moving on ("okay," "fair enough")
+- Flat, invariant tone (template-level, not archetype-level — more panelists won't fix it)
+- Follow-ups running 3-4+ deep with no cap, reading as cross-examination, not a defense
+
+Deliberately not touching:
+
+- Issue #3 (imperfect/paraphrased recall) — Sean's own idea, correctly flagged as
+  tentative; risks the grounding-accuracy hook if built carelessly. Parked, not part of
+  this fix.
+- The 5a/5b backlog (scoring temperature, the grounding-axis defect on disengaged
+  answers, grounding_reference follow-up-vs-new-topic semantics, main.py/
+  streamlit_app.py loop-logic coupling) — different problem, different session.
+
+## Decision 1 — Acknowledgment + tonal variation
+
+### Root cause
+
+Neither template has ever had conversational connective tissue. PANELIST_SYSTEM_PROMPT
+(new-topic path) doesn't even receive previous_answer as a field. FOLLOWUP_SYSTEM_PROMPT
+receives it, but its only instruction is to press on the weakness — never to react to the
+answer first. This happens identically regardless of what the candidate answers or which
+archetype is asking — it's a template gap, not an archetype-count problem.
+
+### Design note — why "don't repeat yourself" isn't the fix
+
+Under Pattern 2, each call is rendered fresh with no visibility into prior turns' actual
+output. The instructions drive variation by having the model react to this turn's specific
+content (which differs every turn) rather than asking it to track its own repetition,
+which it structurally cannot do.
+
+### Templates
+
+`{previous_answer_line}` and `{acknowledgment_instruction}` are both empty strings on
+turn 1 (nothing to acknowledge yet) — same conditional-field pattern already used for
+`{other_subtype_line}`.
+
+**Implementation deviation from the pasted brief, flagged:**
+
+1. The brief's proposed PANELIST_SYSTEM_PROMPT dropped the Day-4-Addendum-2 lane-reframe
+   bullet ("If the excerpt has no natural connection to your lane, do NOT pivot..."). The
+   brief's stated scope explicitly does NOT touch archetype-lane behavior, and its own
+   "Known interaction" note relies on that fix still existing. Per flag-don't-silently-
+   resolve, the bullet was **preserved**; the acknowledgment fields were merged around it.
+2. The brief's `previous_answer_line` hardcoded "(strong enough that you're moving to a
+   new topic)". Decision 2's cap can now force a new-topic pivot after a *weak* answer, so
+   that parenthetical would be false on a cap-forced pivot and risk a falsely-approving
+   acknowledgment. Neutralized to "(you are now moving on to a new topic)", accurate in
+   both the strength-driven and cap-driven pivot cases. Tone is still driven by actual
+   content via `{acknowledgment_instruction}`.
+
+Building-block constants (`PREVIOUS_ANSWER_LINE`, `ACKNOWLEDGMENT_INSTRUCTION`) live in
+`prompts/panelist_prompts.py`; they're assembled in `main.py`'s `_generate_question`
+new-topic branch, the same place `other_subtype_line` is built.
+
+### Schema impact
+
+None. The acknowledgment lives inside the existing question string. No new Pydantic
+field, no parsing changes.
+
+## Decision 2 — Follow-up cap (issue #4)
+
+### Rule
+
+`MAX_FOLLOW_UPS_PER_TOPIC = 2` (default — flag to change).
+
+Derive "follow-ups already spent on the current topic" the same way `used_chunk_indices`
+is derived on DefenseSession — a computed property (`follow_ups_on_current_topic`), not
+new persisted state: count trailing turns in `session.turns` sharing the most recent
+turn's `chunk_index`, minus 1 (to exclude the initial new-topic turn that opened the chunk).
+
+Hard override inside `_should_follow_up` (Day 4's branching gate): if that count is
+>= MAX_FOLLOW_UPS_PER_TOPIC, force the new-topic branch regardless of what the
+answer-strength check would otherwise decide. The existing strength-based logic
+(day4_decisions.md Decision 3) is untouched — this is an override on top of it.
+
+`_should_follow_up`'s signature changed from `(previous_turn)` to `(session)` so it can
+read the computed count; no committed tests reference it, verified before the change.
+
+### Explicit non-changes
+
+- No scoring, rubric, or difficulty_delta/clamp math touched — this only changes which
+  branch (follow-up vs. new-topic) fires, never the difficulty number.
+- No prompt changes for this fix — pure Python control flow.
+
+### Known interaction, not a new problem
+
+Forcing new-topic sooner may hit chunk exhaustion — and the already-flagged off-lane
+chunk-25 pick (day4_decisions.md Addendum 2) — sooner than before. Not fixed here. Flag
+during verification if actually observed; don't build around it speculatively.
+
+## Verification — completed with real evidence
+
+Real API run (`gemini-3.1-flash-lite`, DAZSMA PDF), raw session state persisted, plus a
+Streamlit regression run. See the implementing session's transcript for full stdout.
+
+- **Acknowledgment, both branch kinds, tone varying with content (same run):**
+  - turn 2 (follow-up, weak answer): "Convenience is a constraint, not a methodology... confirmation bias" — critical
+  - turn 3 (follow-up, weak answer): "I appreciate your candor, but relying solely on semester constraints essentially abandons..." — critical, different phrasing
+  - turn 4 (cap-forced new-topic, weak answer): "I see, let's pivot then; regarding..." — neutral pivot cue
+  - turn 5 (strength-driven new-topic, strong answer): "Fair enough, that logic holds for the testing phase; however..." — measured approval
+- **Cap, from persisted session.json:** turns 1–3 all on chunk 52 (new-topic + 2
+  follow-ups); turn 3 answer non-strong (5,1,1) so it would normally follow up again, but
+  `follow_ups_on_current_topic == 2 >= 2` forced the pivot — turn 4 `chunk_index` changed
+  52 → 70. Cap reset after the pivot (turn 6 followed up on chunk 44, count 0).
+- **Regression:** full 6-turn Streamlit happy path still completes to `stage=done`, 6
+  turns recorded; offline unit assertions on the property + gate all pass.
+
+## Scope
+
+In: both prompt template edits; the new constant, derived count, and `_should_follow_up`
+override; re-verification of both fixes with real evidence.
+
+Out: any schema/Pydantic change; anything in the 5a/5b backlog; issue #3; Streamlit UI
+(closed, 5c); chunk-exhaustion behavior itself.

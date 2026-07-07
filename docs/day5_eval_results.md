@@ -1,0 +1,149 @@
+# Academic Defense Simulator — Day 5b Eval Results
+
+Raw findings, not a rewritten narrative. Per `day5_decisions.md` §5b scope: no rubric
+changes made here — anything surfaced below is logged as a finding, not silently
+patched into `SCORING_SYSTEM_PROMPT` or `PANELIST_SYSTEM_PROMPT`.
+
+## Method
+
+Two new full 6-turn sessions run against the same DAZSMA capstone PDF used in Day 2/3
+(`Group2_Library Management System for DAZSMA Documentation (1).pdf`, 224 pages, 93
+chunks — chunk count matches `day2_verification.md` exactly). Real Gemini API calls
+throughout (`gemini-3.1-flash-lite`), real retrieval, real scoring — nothing mocked.
+
+Because this eval was run by an agent rather than a human typing live, each turn was
+executed as two separate process steps against a session state persisted to disk
+(`chunks.json` / `session.json`) so the live question could actually be read before the
+paired weak/strong answer was drafted — matching the brief's "draft in the moment, not
+purely improvised" instruction rather than pre-writing all six answers blind. Turn 1 of
+each run used the exact scripted weak/strong pair given in `day5_decisions.md`. Turns 2–6
+used freshly drafted answers following the same vague-and-numberless vs.
+specific-and-defends-a-limitation pattern, addressed to the actual question asked.
+
+Raw stdout: `eval_run_1.log`, `eval_run_2.log`. Combined with the one organic run already
+logged in `day4_decisions.md` (`day4_decisions.md` L70–72), this is **3 runs total**
+across Day 4 + Day 5, per the brief's minimum.
+
+---
+
+## Check 1 — Difficulty adaptation
+
+**Pass, with one finding.**
+
+Both runs show `difficulty_current` responding to `difficulty_delta` correctly per the
+clamp rule (`_clamp_difficulty`, 1–5 bounds respected in both runs — run 1 hit the 5
+ceiling at turn 4 and stayed there through turn 6 despite two more +1s; run 2 hit it at
+turn 5 and held through turn 6).
+
+Escalation dominates: 10 of 12 turns across both runs scored `difficulty_delta = +1`,
+including on genuinely strong answers (run 1 turn 3: 5/4/3, delta +1; run 2 turn 6: 5/4/5,
+delta +1). This is expected — Day 4's "press on weakness" rubric escalates on nearly
+everything, confirmed here at scale, not a new finding.
+
+**Finding A — `difficulty_delta` is not a deterministic function of (clarity, depth,
+grounding) even among near-identical answer types.**
+
+Three answers across both runs scored an identical (1, 1, 1) on the quality axes, plus a
+fourth that's near-identical (2, 1, 1) in the same style:
+
+| Run | Turn | clarity/depth/grounding | Answer style | difficulty_delta |
+|---|---|---|---|---|
+| 1 | 1 | 1 / 1 / 1 | fluent hedge, no concession ("we think it's fine for a project of this scope") | **+1** |
+| 1 | 4 | 1 / 1 / 1 | fluent hedge, no concession ("that's what most similar studies use") | **-1** |
+| 2 | 4 | 1 / 1 / 1 | fluent hedge, no concession ("we didn't really think bias would be a big issue") | **+1** |
+| 2 | 2 | 2 / 1 / 1 | fluent hedge, no concession ("easier to manage... nobody complained") — *near-identical, not exact* | **+1** |
+
+`day4_decisions.md` Addendum 1 already established (and accepted) that `difficulty_delta`
+diverges between a *genuine concession* ("not sure, come back to that" → -1) and a
+*fluent hedge that stays in the fight* (→ +1) at identical (1,1,1) sub-scores — that's
+intentional, a concession-detector not a correctness-detector. All four answers above are
+the *same* category under that framework (none of them concede ignorance; all offer a
+weak-but-asserted justification), so Day 4's explanation doesn't cover this: of the three
+exact (1,1,1) instances, 2 landed +1 and 1 landed -1, with no textual feature
+distinguishing run 1 turn 4 from the other two — and the fourth, near-identical (2,1,1)
+instance lands with the +1 majority. This reads as scorer noise on `difficulty_delta`
+within a single answer category, not a rubric design gap. Logged, not patched.
+
+**Finding B — per-axis noise, one concrete instance worth naming.** Run 2 turn 5: "Not
+really, we trusted the librarian's account since they deal with the system every day so
+cross-checking felt unnecessary" — a two-sentence, non-committal, arguably-weak answer —
+scored `clarity 5, depth 1, grounding 5`. `depth 1` matches the answer's substance; `clarity
+5` and `grounding 5` do not obviously follow from two dismissive sentences. Consistent
+with the "model's per-axis noise" already anticipated in `main.py`'s `_is_strong_answer`
+docstring, but this is a concrete instance of it, not the mild wobble that comment
+assumes — worth watching in a larger eval sample before v0.3's report logic starts
+trusting individual axis scores in isolation.
+
+---
+
+## Check 2 — Persona consistency
+
+**Pass.**
+
+- "Dr. Reyes" held through all 12 turns across both runs — no drift to generic-assistant
+  voice, no dropped honorific, no breaking frame.
+- `archetype_lane` (methodology) held strictly in both runs: every question across both
+  sessions targeted sampling adequacy, instrument validity, statistical aggregation, or
+  triangulation/single-source bias — squarely methodology territory, never literature
+  review or ethics. No repeat of the chunk-25 lane leak already caught and fixed in Day 4
+  (`day4_decisions.md` Addendum 2) — consistent with that fix holding, though neither run
+  progressed far enough into chunk exhaustion to re-stress-test it directly.
+
+**Finding C — `grounding_reference` on follow-up turns often echoes the candidate's own
+prior answer, not the source document.** E.g. run 1 turn 2's `grounding_reference` is the
+candidate's exact turn-1 answer text, not a document quote. This isn't a persona break
+(Dr. Reyes stays in character either way) but it does mean `grounding_reference` carries
+different semantics on a follow-up turn (quotes the candidate) vs. a new-topic turn
+(quotes the source document) — worth knowing before v0.3 builds a report UI that displays
+`grounding_reference` as "what the panelist grounded this question in," since on ~40% of
+turns (7 of 18 across all 3 runs are follow-ups) that framing would be misleading. Logged,
+not patched — this is `FOLLOWUP_SYSTEM_PROMPT` behavior, out of scope for 5b.
+
+---
+
+## Check 3 — Redundancy (`day3_decisions.md` §9)
+
+**The specific risk in §9 did not materialize. A related, more consequential pattern did.**
+
+§9's framing: could a later turn ask something conceptually redundant with an earlier
+turn despite a different `chunk_index`? Checked both runs turn-by-turn — no. Every
+new-topic chunk's questions stayed on that chunk's actual content, and same-chunk
+follow-ups progressively narrowed the same thread rather than repeating it (e.g. run 1
+turns 1→2→3 on chunk 52: sample-size adequacy → statistical saturation → non-expert
+raters assessing technical criteria — a real deepening chain, not a loop).
+
+**Finding D — new-topic chunk selection is fully deterministic across independent
+sessions on this document.** Both eval runs, despite different branch timing (run 1 hit
+new-topic at turns 1/4/6; run 2 hit it at turns 1/2/4) and completely different scripted
+answers, selected the **exact same three chunks in the exact same order**: 52 → 70 → 44.
+Cross-referencing `day4_decisions.md` L71 ("chunk 52 → 70") shows its organic run started
+down the identical path. That's 3 of 3 independent sessions agreeing on the first two
+new-topic picks, and 2 of 2 Day 5 sessions agreeing on the third.
+
+This follows directly from the retrieval design (`day3_decisions.md` §8): a fixed
+`archetype_focus` query string, cosine-ranked against static chunk embeddings, with only
+prior `chunk_index` exclusion as state — nothing about the candidate's actual answers
+feeds back into *which* topic comes next, only *whether* a follow-up or new topic fires.
+For a given document + archetype, the new-topic sequence is therefore a fixed tour, not
+an adaptive one. `day4_decisions.md` Addendum 2 already flagged where this tour eventually
+leads (chunk 25, an off-lane pick, once the strong methodology chunks are exhausted) —
+this eval reconfirms the tour is deterministic up through chunk 44 and adds a second
+independent confirmation of the 52→70 opening.
+
+This isn't the §9 risk as originally described (conceptual overlap despite different
+chunk index), so it doesn't retroactively fail that check. But it's arguably a bigger
+diversity problem for the product: every candidate defending this document, regardless of
+performance, will be walked through the same three topics in the same order for their
+first three new-topic questions. Logged as a new finding for a future session — no rubric
+or retrieval change made here.
+
+---
+
+## Verdict
+
+5b's three checks: difficulty adaptation **passes** (two scorer-noise findings, not
+correctness bugs), persona consistency **passes** (one field-semantics finding on
+`grounding_reference`), and the specific §9 redundancy risk **did not occur** — but eval
+surfaced a more consequential adjacent finding (deterministic new-topic ordering) that
+§9 didn't anticipate. Nothing here blocks 5c. No prompt or rubric changes made in this
+session, per scope.

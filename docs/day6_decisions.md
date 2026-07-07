@@ -1,0 +1,84 @@
+# Academic Defense Simulator — Day 6 Decisions: Deployment Readiness
+
+Scope: repo and deploy-readiness hygiene ONLY. This is not the full "Deploy + Document"
+day from the original roadmap — it's the subset that's actually a Code task. The rest
+(actual Streamlit Cloud deploy, README, case study, LinkedIn) is handled separately —
+see chat.
+
+---
+
+## Task 1 — Confirm/fix the ModuleNotFoundError permanently
+
+**Check first, don't assume.** Confirm whether `streamlit_app.py` already has a
+`sys.path` fix at the top of the file, or whether only the local `PYTHONPATH`
+environment variable workaround was ever used.
+
+If the code fix is missing, add it — before the first `academic_defense_simulator.*`
+import, at the very top of the file:
+
+```python
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+```
+
+**Why this specifically matters for Day 6:** Streamlit Community Cloud runs the app the
+same way local `streamlit run` does — script-directory-on-path, not repo root. Without
+this fix living in the file itself, deployment fails with the identical
+`ModuleNotFoundError`, regardless of any local environment workaround.
+
+**Verify:** fresh `streamlit run academic_defense_simulator/streamlit_app.py` from repo
+root with `PYTHONPATH` **unset**, confirm clean boot.
+
+---
+
+## Task 2 — Pin dependencies in `requirements.txt`
+
+Check whether current entries are pinned (`==x.y.z`) or left loose. Pin exact versions
+for every package actually imported: `pymupdf`, `sentence-transformers`, `google-genai`,
+`pydantic`, `numpy`, `python-dotenv`, `streamlit`.
+
+**Why:** Streamlit Cloud installs fresh from `requirements.txt` on deploy. Unpinned
+versions risk it grabbing a newer release than what's actually been tested, silently
+breaking behavior that's already been verified across 5a/5b/5c.
+
+**Verify:** fresh venv, `pip install -r requirements.txt`, confirm no conflicts, paste
+the exact resolved versions.
+
+---
+
+## Task 3 — `.gitignore` audit
+
+Confirm excluded: `.env`, `__pycache__/`, `.venv/`, generated session/log artifacts
+(`eval_run_*.log`, `session.json`, `chunks.json`), and any ad-hoc test/driver scripts
+from prior sessions (e.g. `e2e_driver.py`) that aren't part of the shipped app.
+
+Confirm `.env.example` still exists with placeholder values only — no real key.
+
+**Verify:** `git status` on a clean checkout, paste actual output showing none of the
+above tracked or staged.
+
+---
+
+## Task 4 — Fix the temp-file-path leak in `DocumentIngestionError`
+
+The current message (flagged during 5c review) surfaces the local machine's temp
+path in the user-facing `st.error()` — e.g. `C:\Users\...\Temp\tmp....pdf`. Reword
+the error to reference the uploaded filename (or nothing filesystem-specific) instead
+of the interpolated temp path. If server-side logging exists, the real path can stay
+there — just not in the user-facing message.
+
+**Verify:** re-trigger the same garbage-bytes upload case from 5a, paste the new
+`st.error()` text confirming the path is gone.
+
+---
+
+## Explicitly out of scope
+- No RAG/scoring/prompt/business-logic changes
+- No README, case study, or LinkedIn content
+- No deployment action itself — Code has no way to click through Streamlit Cloud's UI
+  or paste secrets
+
+## Verification required
+Same standing bar — real command output for every task, not summarized.

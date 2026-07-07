@@ -7,24 +7,28 @@ from uuid import uuid4
 
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
-from academic_defense_simulator.llm.provider import LLMProvider
+from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.prompts.panelist_prompts import (
+    ACKNOWLEDGMENT_INSTRUCTION,
     ARCHETYPE_CONFIG,
     FOLLOWUP_SYSTEM_PROMPT,
     PANELIST_SYSTEM_PROMPT,
+    PREVIOUS_ANSWER_LINE,
     SCORING_SYSTEM_PROMPT,
 )
-from academic_defense_simulator.rag.chunking import chunk_pdf
+from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk, retrieve
 
 _PANELIST_NAME = "Reyes"
 _ACTIVE_ARCHETYPE = "methodology_expert"
 MAX_TURNS = 6
+MAX_BLANK_ATTEMPTS = 3
+MAX_FOLLOW_UPS_PER_TOPIC = 2  # hard cap: after this many follow-ups on one chunk, force a new topic
 
 MODEL_CALL_DELAY_SECONDS = {
     "gemini-3.1-flash-lite": 5,  # 15 RPM floor is 4s; +1s safety margin
@@ -53,6 +57,21 @@ def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
     return defense_type, other_subtype
 
 
+def _prompt_answer() -> str:
+    """Re-prompt in place on a blank answer — doesn't consume a turn, doesn't hit
+    the scorer with empty input. After MAX_BLANK_ATTEMPTS consecutive blanks, give
+    up and let the blank through as a genuine non-answer (real signal at that point)."""
+    for attempt in range(1, MAX_BLANK_ATTEMPTS + 1):
+        answer = input("Your answer: ").strip()
+        if answer:
+            return answer
+        if attempt < MAX_BLANK_ATTEMPTS:
+            print("Answer cannot be blank — please respond.")
+        else:
+            print(f"No answer given after {MAX_BLANK_ATTEMPTS} attempts — proceeding as a non-answer.")
+    return ""
+
+
 def _clamp_difficulty(value: int) -> int:
     return max(1, min(5, value))
 
@@ -70,15 +89,23 @@ def _is_strong_answer(score: AnswerScore) -> bool:
     )
 
 
-def _should_follow_up(previous_turn: ConversationTurn | None) -> bool:
+def _should_follow_up(session: DefenseSession) -> bool:
     """Follow up only when the prior answer had a real weakness to press: a gap was named
     AND the answer was not strong. A strong answer advances to a new topic even if the
     scorer noted a residual gap — primary_gap stays honest for the v0.3 report, and
     branching no longer collapses to 'always follow up' now that the adversarial rubric
-    surfaces a gap on nearly every answer."""
+    surfaces a gap on nearly every answer.
+
+    Hard cap on top of the strength check: once MAX_FOLLOW_UPS_PER_TOPIC follow-ups have
+    already been spent on the current chunk, force the new-topic branch regardless of
+    answer strength — a defense shouldn't read as an endless cross-examination on one
+    point. This only overrides which branch fires; the difficulty/scoring math is untouched."""
+    previous_turn = session.turns[-1] if session.turns else None
     if previous_turn is None or previous_turn.score is None:
         return False
     if previous_turn.score.primary_gap is None:
+        return False
+    if session.follow_ups_on_current_topic >= MAX_FOLLOW_UPS_PER_TOPIC:
         return False
     return not _is_strong_answer(previous_turn.score)
 
@@ -93,7 +120,7 @@ def _generate_question(
     model: str,
 ) -> ConversationTurn:
     previous_turn = session.turns[-1] if session.turns else None
-    is_followup = _should_follow_up(previous_turn)
+    is_followup = _should_follow_up(session)
 
     if not is_followup:
         query = archetype["archetype_focus"]
@@ -108,6 +135,15 @@ def _generate_question(
             raise RuntimeError("Retrieval returned no chunks — document may be exhausted.")
         chunk_index, chunk = results[0]
         chunk_text = chunk.text
+        # Acknowledgment fields: empty on turn 1 (nothing to react to yet), populated on
+        # every later new-topic turn — whether we pivoted because the answer was strong or
+        # because the follow-up cap forced it. Same conditional-field pattern as other_subtype_line.
+        if previous_turn is not None and previous_turn.answer is not None:
+            previous_answer_line = PREVIOUS_ANSWER_LINE.format(previous_answer=previous_turn.answer)
+            acknowledgment_instruction = ACKNOWLEDGMENT_INSTRUCTION
+        else:
+            previous_answer_line = ""
+            acknowledgment_instruction = ""
         prompt = PANELIST_SYSTEM_PROMPT.format(
             panelist_name=_PANELIST_NAME,
             archetype_title=archetype["archetype_title"],
@@ -119,6 +155,8 @@ def _generate_question(
             topic=session.profile.topic,
             difficulty_level=session.difficulty_current,
             retrieved_chunk=chunk_text,
+            previous_answer_line=previous_answer_line,
+            acknowledgment_instruction=acknowledgment_instruction,
         )
         print(f"[branch: new-topic — chunk {chunk_index}]")
     else:
@@ -190,9 +228,11 @@ def main() -> None:
 
     # 5. Chunk PDF
     print("\nProcessing document...")
-    texts = chunk_pdf(pdf_path)
-    if not texts:
-        raise RuntimeError("No text extracted from the PDF — check the file path.")
+    try:
+        texts = chunk_pdf(pdf_path)
+    except DocumentIngestionError as exc:
+        print(f"\nCould not process document: {exc}")
+        return
 
     # 6. Embed chunks
     embedding_model = EmbeddingModel()
@@ -208,30 +248,34 @@ def main() -> None:
     provider = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     session = DefenseSession(profile=profile, difficulty_current=profile.difficulty_start)
 
-    for turn_num in range(1, MAX_TURNS + 1):
-        print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
+    try:
+        for turn_num in range(1, MAX_TURNS + 1):
+            print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
 
-        turn = _generate_question(
-            provider, session, chunks, embedding_model, archetype, other_subtype_line, settings.gemini_model
-        )
+            turn = _generate_question(
+                provider, session, chunks, embedding_model, archetype, other_subtype_line, settings.gemini_model
+            )
 
-        print(f"\nDr. {_PANELIST_NAME}: {turn.question}\n")
-        print(f"[Grounding: \"{turn.grounding_reference}\" — difficulty {turn.difficulty_level}/5]\n")
+            print(f"\nDr. {_PANELIST_NAME}: {turn.question}\n")
+            print(f"[Grounding: \"{turn.grounding_reference}\" — difficulty {turn.difficulty_level}/5]\n")
 
-        turn.answer = input("Your answer: ").strip()
+            turn.answer = _prompt_answer()
 
-        turn.score = _score_answer(provider, turn, archetype, profile.defense_type.value)
-        print(
-            f"[Score — clarity {turn.score.clarity}, depth {turn.score.depth}, "
-            f"grounding {turn.score.grounding}, difficulty_delta {turn.score.difficulty_delta}, "
-            f"primary_gap: {turn.score.primary_gap!r}]"
-        )
+            turn.score = _score_answer(provider, turn, archetype, profile.defense_type.value)
+            print(
+                f"[Score — clarity {turn.score.clarity}, depth {turn.score.depth}, "
+                f"grounding {turn.score.grounding}, difficulty_delta {turn.score.difficulty_delta}, "
+                f"primary_gap: {turn.score.primary_gap!r}]"
+            )
 
-        session.turns.append(turn)
-        session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
+            session.turns.append(turn)
+            session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
 
-        if turn_num != MAX_TURNS:
-            time.sleep(MODEL_CALL_DELAY_SECONDS.get(settings.gemini_model, DEFAULT_CALL_DELAY))
+            if turn_num != MAX_TURNS:
+                time.sleep(MODEL_CALL_DELAY_SECONDS.get(settings.gemini_model, DEFAULT_CALL_DELAY))
+    except LLMProviderError as exc:
+        print(f"\nSession aborted: {exc}")
+        return
 
     print("\nSession ended.")
 

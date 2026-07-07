@@ -28,3 +28,19 @@ class DefenseSession(BaseModel):
     @property
     def used_chunk_indices(self) -> set[int]:
         return {t.chunk_index for t in self.turns}
+
+    @property
+    def follow_ups_on_current_topic(self) -> int:
+        """Consecutive follow-up turns already spent on the most recent chunk. Counts
+        trailing turns sharing the latest turn's chunk_index, minus 1 for the new-topic
+        turn that opened the chunk. 0 right after a fresh new-topic turn. Derived, not
+        persisted — same approach as used_chunk_indices."""
+        if not self.turns:
+            return 0
+        current_chunk = self.turns[-1].chunk_index
+        trailing = 0
+        for turn in reversed(self.turns):
+            if turn.chunk_index != current_chunk:
+                break
+            trailing += 1
+        return trailing - 1

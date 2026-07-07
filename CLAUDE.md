@@ -5,15 +5,18 @@ adversarial, adaptive defense sessions. Differentiator: RAG generates questions,
 answers. Continuous project, not a one-week deliverable — don't over-engineer the
 current version, don't make choices that box in later versions either.
 
-Full plan: `academic-defense-simulator-plan.md`
-Current locked design decisions: `day1_decisions.md`
-Current build scope: `day3_build_brief.md` (update this pointer each time a new day's
+Full plan: `docs/academic-defense-simulator-plan.md`
+Current locked design decisions: `docs/day1_decisions.md`
+Current build scope: `docs/day6_decisions.md` (update this pointer each time a new day's
 brief is committed — it's the single source of truth for "what am I building right now")
+
+All Day-N decision/build/verification docs, eval results, and ad-hoc design docs live in
+`docs/`. Only `CLAUDE.md` itself stays at repo root.
 
 ## Tech Stack
 - Python, Pydantic throughout for structured data
 - LLM: Gemini API, `gemini-3.1-flash-lite` default (env-swappable via `GEMINI_MODEL`; see
-  `day4_decisions.md`), via `google-genai` (not the deprecated `google-generativeai`) —
+  `docs/day4_decisions.md`), via `google-genai` (not the deprecated `google-generativeai`) —
   isolated behind an `LLMProvider` interface, see `llm/provider.py`
 - Embeddings: `sentence-transformers`, `all-MiniLM-L6-v2`
 - Vector store: numpy cosine similarity, no ChromaDB — MVP scale doesn't need it
@@ -37,5 +40,5 @@ functionality still works, and temp debugging code is removed.
 - Explain non-obvious architectural decisions, don't over-explain fundamentals
 - Every feature is a complete vertical slice — no disconnected components built on
   the promise they'll connect later
-- If a build-day brief conflicts with something in `day1_decisions.md`, the more
+- If a build-day brief conflicts with something in `docs/day1_decisions.md`, the more
   recent, more specific doc wins — but flag the conflict, don't silently pick one
