@@ -1,5 +1,11 @@
 """Panelist prompt constants."""
 
+# Version of the prompt/rubric set below. Stamped into every exported transcript so an
+# eval artifact records which prompts produced it — Day 4 proved rubric wording changes
+# silently invalidate earlier verification. Bump manually the next time any template or
+# rubric wording in this file changes; v0.2.5 changes none, so it stays "0.2".
+PROMPT_VERSION = "0.2"
+
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in main.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
 # acknowledge yet), populated on every new-topic turn after the first.

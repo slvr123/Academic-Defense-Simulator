@@ -16,6 +16,7 @@ from pathlib import Path
 # below fail with ModuleNotFoundError unless the repo root is added explicitly here.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import json
 import os
 import tempfile
 import time
@@ -37,7 +38,7 @@ from academic_defense_simulator.main import (
 )
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.session import DefenseSession
-from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
+from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
@@ -179,7 +180,23 @@ elif st.session_state.stage == "aborted":
         st.rerun()
 
 elif st.session_state.stage == "done":
-    st.success(f"Session complete — {len(st.session_state.session.turns)} turns.")
+    session = st.session_state.session
+    st.success(f"Session complete — {len(session.turns)} turns.")
+
+    # PROMPT_VERSION is stamped only here, at export time — DefenseSession stays free of
+    # any coupling to the prompts module. This JSON is the seed of v1.0 analytics and the
+    # artifact format for future eval runs.
+    export_payload = {
+        "prompt_version": PROMPT_VERSION,
+        "session": json.loads(session.model_dump_json()),
+    }
+    st.download_button(
+        "Download transcript",
+        data=json.dumps(export_payload, indent=2),
+        file_name=f"defense_session_{session.profile.document_id}.json",
+        mime="application/json",
+    )
+
     if st.button("Start a new session", key="reset_from_done"):
         _reset()
         st.rerun()

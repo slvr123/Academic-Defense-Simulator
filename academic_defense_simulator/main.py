@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from uuid import uuid4
 
 from academic_defense_simulator.config import load_settings
+from academic_defense_simulator.grounding import is_grounded
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.answer_score import AnswerScore
@@ -23,6 +25,8 @@ from academic_defense_simulator.prompts.panelist_prompts import (
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk, retrieve
+
+logger = logging.getLogger(__name__)
 
 _PANELIST_NAME = "Reyes"
 _ACTIVE_ARCHETYPE = "methodology_expert"
@@ -178,6 +182,18 @@ def _generate_question(
 
     panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
     time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
+
+    # Standing grounding check (both question paths converge here). A miss means the
+    # panelist cited a phrase that isn't in the chunk — signal to collect, not a crash:
+    # warn and continue, never fail the session.
+    if not is_grounded(panelist_question.grounding_reference, chunk_text):
+        logger.warning(
+            "Grounding check failed on chunk %d: reference %r not found in chunk. "
+            "Chunk excerpt: %r",
+            chunk_index,
+            panelist_question.grounding_reference,
+            chunk_text[:200],
+        )
 
     return ConversationTurn(
         question=panelist_question.question,
