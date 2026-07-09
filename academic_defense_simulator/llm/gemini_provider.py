@@ -12,13 +12,18 @@ from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderErro
 T = TypeVar("T", bound=BaseModel)
 
 _RETRY_BACKOFF_SECONDS = 2
+_REQUEST_TIMEOUT_MS = 30_000  # a stalled request must fail into the existing retry path,
+# not hang the caller indefinitely.
 
 
 class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str, model: str = "gemini-2.5-flash") -> None:
         from google import genai
+        from google.genai import types
 
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key, http_options=types.HttpOptions(timeout=_REQUEST_TIMEOUT_MS)
+        )
         self._model = model
 
     def generate_structured(self, prompt: str, response_model: Type[T]) -> T:

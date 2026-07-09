@@ -3,8 +3,9 @@
 # Version of the prompt/rubric set below. Stamped into every exported transcript so an
 # eval artifact records which prompts produced it — Day 4 proved rubric wording changes
 # silently invalidate earlier verification. Bump manually the next time any template or
-# rubric wording in this file changes; v0.2.5 changes none, so it stays "0.2".
-PROMPT_VERSION = "0.2"
+# rubric wording in this file changes; 0.3a adds {persona_framing} to both question-path
+# templates (Decision 3) — SCORING_SYSTEM_PROMPT's wording is untouched.
+PROMPT_VERSION = "0.3"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in main.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -19,6 +20,7 @@ The candidate's previous answer (you are now moving on to a new topic):
 ACKNOWLEDGMENT_INSTRUCTION = """Before asking your question, open with ONE short, natural spoken acknowledgment of their previous answer, reacting specifically to what they actually said — a genuine panelist reaction, not a stock phrase. Let the tone follow from the specific content (measured approval, a brief "fair enough," a pivot cue like "let's move to...") rather than a fixed formula."""
 
 PANELIST_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
+{persona_framing}
 
 Your focus: {archetype_focus}
 
@@ -49,6 +51,7 @@ Respond ONLY with JSON matching this schema, no other text — the question fiel
 """
 
 FOLLOWUP_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
+{persona_framing}
 
 Your focus: {archetype_focus}
 
@@ -112,6 +115,28 @@ Respond ONLY with JSON matching this schema, no other text:
   "grounding": <int 1-5>,
   "difficulty_delta": <int -1, 0, or 1>,
   "primary_gap": "<the single most significant weakness observed, or null only if there is genuinely no material weakness>"
+}}
+"""
+
+PERSONA_GENERATION_PROMPT = """You are configuring an academic defense panel simulation.
+
+Defense type: {defense_type}{other_subtype_line}
+Domain: {domain}
+Topic: {topic}
+
+Generate one distinct panelist persona for each of the following archetype roles, in order:
+{archetype_roster}
+
+For each panelist provide:
+- "archetype_key": the exact role key given above, unchanged
+- "panelist_name": a realistic surname only (no title, no first name) — vary cultural origin across the panel; do not reuse a surname
+- "persona_framing": 1–2 sentences of professional character — their academic background flavor, questioning temperament, and what they are known to press candidates on, calibrated to the domain and topic above. Write it in second person ("You are known for..."), as it will be injected into that panelist's system prompt.
+
+Respond ONLY with JSON matching this schema, no other text:
+{{
+  "panelists": [
+    {{"archetype_key": "...", "panelist_name": "...", "persona_framing": "..."}}
+  ]
 }}
 """
 

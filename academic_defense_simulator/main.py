@@ -12,8 +12,10 @@ from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
+from academic_defense_simulator.panel import compose_panel, generate_panel
 from academic_defense_simulator.prompts.panelist_prompts import (
     ACKNOWLEDGMENT_INSTRUCTION,
     ARCHETYPE_CONFIG,
@@ -28,8 +30,6 @@ from academic_defense_simulator.rag.retrieval import Chunk, retrieve
 
 logger = logging.getLogger(__name__)
 
-_PANELIST_NAME = "Reyes"
-_ACTIVE_ARCHETYPE = "methodology_expert"
 MAX_TURNS = 6
 MAX_BLANK_ATTEMPTS = 3
 MAX_FOLLOW_UPS_PER_TOPIC = 2  # hard cap: after this many follow-ups on one chunk, force a new topic
@@ -119,10 +119,11 @@ def _generate_question(
     session: DefenseSession,
     chunks: list[Chunk],
     embedding_model: EmbeddingModel,
-    archetype: dict[str, str],
+    panelist: Panelist,
     other_subtype_line: str,
     model: str,
 ) -> ConversationTurn:
+    archetype = ARCHETYPE_CONFIG[panelist.archetype_key]
     previous_turn = session.turns[-1] if session.turns else None
     is_followup = _should_follow_up(session)
 
@@ -149,7 +150,8 @@ def _generate_question(
             previous_answer_line = ""
             acknowledgment_instruction = ""
         prompt = PANELIST_SYSTEM_PROMPT.format(
-            panelist_name=_PANELIST_NAME,
+            panelist_name=panelist.panelist_name,
+            persona_framing=panelist.persona_framing,
             archetype_title=archetype["archetype_title"],
             archetype_focus=archetype["archetype_focus"],
             archetype_lane=archetype["archetype_lane"],
@@ -167,7 +169,8 @@ def _generate_question(
         assert previous_turn is not None and previous_turn.score is not None
         chunk_index, chunk_text = previous_turn.chunk_index, previous_turn.chunk_text
         prompt = FOLLOWUP_SYSTEM_PROMPT.format(
-            panelist_name=_PANELIST_NAME,
+            panelist_name=panelist.panelist_name,
+            persona_framing=panelist.persona_framing,
             archetype_title=archetype["archetype_title"],
             archetype_focus=archetype["archetype_focus"],
             archetype_lane=archetype["archetype_lane"],
@@ -207,12 +210,13 @@ def _generate_question(
 def _score_answer(
     provider: LLMProvider,
     turn: ConversationTurn,
-    archetype: dict[str, str],
+    panelist: Panelist,
     defense_type: str,
 ) -> AnswerScore:
+    archetype = ARCHETYPE_CONFIG[panelist.archetype_key]
     prompt = SCORING_SYSTEM_PROMPT.format(
         defense_type=defense_type,
-        panelist_name=_PANELIST_NAME,
+        panelist_name=panelist.panelist_name,
         archetype_title=archetype["archetype_title"],
         question=turn.question,
         answer=turn.answer,
@@ -259,25 +263,30 @@ def main() -> None:
         f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
     )
 
-    archetype = ARCHETYPE_CONFIG[_ACTIVE_ARCHETYPE]
     print(f"[model: {settings.gemini_model}]")
     provider = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
-    session = DefenseSession(profile=profile, difficulty_current=profile.difficulty_start)
+
+    archetype_roster = compose_panel(profile)
+    panel, fallback_used = generate_panel(profile, archetype_roster, provider)
+    print(f"[panel: {[p.archetype_key for p in panel]} — fallback_used={fallback_used}]")
+    active_panelist = panel[0]
+
+    session = DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start)
 
     try:
         for turn_num in range(1, MAX_TURNS + 1):
             print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
 
             turn = _generate_question(
-                provider, session, chunks, embedding_model, archetype, other_subtype_line, settings.gemini_model
+                provider, session, chunks, embedding_model, active_panelist, other_subtype_line, settings.gemini_model
             )
 
-            print(f"\nDr. {_PANELIST_NAME}: {turn.question}\n")
+            print(f"\nDr. {active_panelist.panelist_name}: {turn.question}\n")
             print(f"[Grounding: \"{turn.grounding_reference}\" — difficulty {turn.difficulty_level}/5]\n")
 
             turn.answer = _prompt_answer()
 
-            turn.score = _score_answer(provider, turn, archetype, profile.defense_type.value)
+            turn.score = _score_answer(provider, turn, active_panelist, profile.defense_type.value)
             print(
                 f"[Score — clarity {turn.score.clarity}, depth {turn.score.depth}, "
                 f"grounding {turn.score.grounding}, difficulty_delta {turn.score.difficulty_delta}, "

@@ -38,7 +38,7 @@ def _session(*turns):
     profile = DefenseProfile(
         defense_type=DefenseType.THESIS, domain="library science", topic="t", document_id="doc"
     )
-    return DefenseSession(profile=profile, difficulty_current=2, turns=list(turns))
+    return DefenseSession(profile=profile, panel=[], difficulty_current=2, turns=list(turns))
 
 
 # Each case: (id, session, expected _should_follow_up result). Follow-up counts are driven

@@ -19,6 +19,18 @@ pre-publish rename pass; interim `dayN`-style names until then).
   (Day 6).
 - Development model: `gemini-3.1-flash-lite` (500 RPD / 15 RPM free tier);
   `gemini-2.5-flash` reserved for final verification runs. Both per `docs/v0.2-scoring-model-swap-decisions.md`.
+- **v0.3a — NOT fully complete.** Logic (Tasks 1–7: panel composition, persona
+  generation + fallback, `persona_framing` prompt injection, domain/topic extraction,
+  Streamlit form reorder, question-gen probe re-run against the 0.3 templates) is
+  implemented and verified — via a real 6-turn `main.py` CLI session and a direct
+  production-code-path run, both completing cleanly end-to-end. **Browser execution
+  (Task 8) is blocked**: the Streamlit app deterministically hangs on the ~6th
+  sequential Gemini call within a live session — reproduced 5+ times; diagnosis found
+  (at least in part) overlapping concurrent script executions for the same session
+  racing on `st.session_state`. Not a v0.3a-specific regression — the same blocking-call
+  + `time.sleep()` pattern already existed in v0.2, just never exercised by a full-speed
+  live run before. A dedicated investigation session is pending and is a **hard gate
+  before 0.3d and the deployment decision**.
 
 ## Standing constraints (apply to every session below)
 
