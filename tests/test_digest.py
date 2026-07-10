@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from academic_defense_simulator.digest import DIGEST_MAX_TURNS, render_digest_block, turn_total_score
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
@@ -74,10 +76,16 @@ def test_chronological_order_preserved():
     assert block.index("first question") < block.index("second question")
 
 
-def test_capped_at_max_turns_keeps_most_recent():
-    turns = [_turn("methodology_expert", "Reyes", i, _score(), question=f"question {i}") for i in range(DIGEST_MAX_TURNS + 2)]
+def test_capped_at_max_turns_keeps_exactly_the_last_n_in_order():
+    """Off-by-one guard: drives a session past the N-turn cap (a real defense will
+    eventually do this) and asserts the digest holds exactly the last N turns, in the
+    same chronological order they occurred, with the oldest turns dropped — not just
+    that truncation happened at all."""
+    total = DIGEST_MAX_TURNS + 2
+    turns = [_turn("methodology_expert", "Reyes", i, _score(), question=f"question {i}") for i in range(total)]
     block = render_digest_block(_session(*turns), max_turns=DIGEST_MAX_TURNS)
-    assert "question 0" not in block
-    assert "question 1" not in block
-    assert f"question {DIGEST_MAX_TURNS + 1}" in block
+
+    surviving_question_numbers = [int(n) for n in re.findall(r"question (\d+)", block)]
+    expected = list(range(total - DIGEST_MAX_TURNS, total))  # last N indices, oldest-to-newest
+    assert surviving_question_numbers == expected
     assert block.count("panelist_id:") == DIGEST_MAX_TURNS
