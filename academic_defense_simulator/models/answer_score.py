@@ -20,3 +20,7 @@ class AnswerScore(BaseModel):
         None,
         description="The single most significant weakness or gap observed — feeds the v0.3 end-of-session report, so kept honest even for a strong answer. Null only if there is genuinely no material weakness.",
     )
+    answer_summary: str = Field(
+        ...,
+        description="1-2 sentences summarizing what the candidate CLAIMED — the claim itself, not a judgment of it. Feeds the cross-panelist digest (v0.3b) and Devil's Advocate target selection.",
+    )

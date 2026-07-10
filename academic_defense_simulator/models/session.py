@@ -12,6 +12,8 @@ from academic_defense_simulator.models.panelist import Panelist
 
 
 class ConversationTurn(BaseModel):
+    panelist_archetype_key: str  # which panelist asked — round-robin means this varies turn to turn (v0.3b)
+    panelist_name: str  # surname, denormalized off Panelist for digest rendering without a panel lookup
     question: str
     grounding_reference: str
     chunk_index: int

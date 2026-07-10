@@ -1,0 +1,159 @@
+"""Engine tests (v0.3b Tasks 3-4): round-robin turn-taking with DA last, and Devil's
+Advocate's deterministic target selection. No network — provider is a stub, same
+pattern as tests/test_panel.py's _StubProvider."""
+
+from __future__ import annotations
+
+import logging
+
+import pytest
+
+import academic_defense_simulator.engine as engine_module
+from academic_defense_simulator.engine import _generate_da_question, select_active_panelist
+from academic_defense_simulator.models.answer_score import AnswerScore
+from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
+from academic_defense_simulator.models.panelist import Panelist
+from academic_defense_simulator.models.panelist_output import PanelistQuestion
+from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
+from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
+
+_PANEL = [
+    Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f"),
+    Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f"),
+    Panelist(archetype_key="ethics_practicality_reviewer", panelist_name="Alvarez", persona_framing="f"),
+    Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f"),
+]
+
+
+def _profile():
+    return DefenseProfile(defense_type=DefenseType.THESIS, domain="library science", topic="t", document_id="doc")
+
+
+def _session(*turns, panel=_PANEL):
+    return DefenseSession(profile=_profile(), panel=list(panel), difficulty_current=2, turns=list(turns))
+
+
+def _score(clarity, depth, grounding, *, gap="a gap", summary="a claim"):
+    return AnswerScore(
+        clarity=clarity, depth=depth, grounding=grounding, difficulty_delta=0, primary_gap=gap, answer_summary=summary
+    )
+
+
+def _turn(archetype_key, name, chunk_index, chunk_text, score, question="q"):
+    return ConversationTurn(
+        panelist_archetype_key=archetype_key,
+        panelist_name=name,
+        question=question,
+        grounding_reference="g",
+        chunk_index=chunk_index,
+        chunk_text=chunk_text,
+        difficulty_level=2,
+        answer="a",
+        score=score,
+    )
+
+
+# --- select_active_panelist (Task 4) ---
+
+
+@pytest.mark.parametrize(
+    "turn_num,expected_key",
+    [
+        (1, "methodology_expert"),
+        (2, "literature_theory_specialist"),
+        (3, "ethics_practicality_reviewer"),
+        (4, DEVILS_ADVOCATE_KEY),
+        (5, "methodology_expert"),  # round 2 starts over
+        (8, DEVILS_ADVOCATE_KEY),  # DA again, still last in its round
+    ],
+)
+def test_round_robin_cycles_panel_in_order(turn_num, expected_key):
+    session = _session()
+    assert select_active_panelist(session, turn_num).archetype_key == expected_key
+
+
+def test_devils_advocate_always_sits_last_in_every_round():
+    session = _session()
+    for round_start in (1, 5, 9):
+        keys = [select_active_panelist(session, round_start + i).archetype_key for i in range(len(_PANEL))]
+        assert keys[-1] == DEVILS_ADVOCATE_KEY
+        assert keys[:-1] == [p.archetype_key for p in _PANEL[:-1]]
+
+
+# --- Devil's Advocate target selection (Task 3) ---
+
+
+class _StubProvider:
+    def __init__(self, response):
+        self._response = response
+        self.calls = 0
+
+    def generate_structured(self, prompt, response_model):
+        self.calls += 1
+        self.last_prompt = prompt
+        return self._response
+
+
+_DA_PANELIST = Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f")
+
+
+@pytest.fixture(autouse=True)
+def _no_real_sleep(monkeypatch):
+    """`_generate_da_question` paces real API calls with time.sleep(); these tests use a
+    stub provider (no network), so the pacing delay is pure overhead — patch it out."""
+    monkeypatch.setattr(engine_module.time, "sleep", lambda _seconds: None)
+
+
+def test_da_selects_highest_scored_prior_claim_and_reuses_its_chunk():
+    weak = _turn("methodology_expert", "Reyes", 1, "chunk one text", _score(2, 2, 2), question="q1")
+    strongest = _turn("literature_theory_specialist", "Okafor", 2, "chunk two text", _score(5, 4, 4), question="q2")
+    mid = _turn("ethics_practicality_reviewer", "Alvarez", 3, "chunk three text", _score(3, 3, 3), question="q3")
+    session = _session(weak, strongest, mid)
+
+    response = PanelistQuestion(question="challenge", grounding_reference="chunk two text", difficulty_level=3)
+    provider = _StubProvider(response)
+
+    result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+    assert result.chunk_index == 2
+    assert result.chunk_text == "chunk two text"
+    assert result.panelist_archetype_key == DEVILS_ADVOCATE_KEY
+    assert result.panelist_name == "Marlowe"
+    assert "q2" in provider.last_prompt  # targeted the strongest claim's original question
+    assert "Okafor" in provider.last_prompt
+
+
+def test_da_excludes_its_own_prior_turns_from_target_selection():
+    own_prior = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 9, "da's own chunk", _score(5, 5, 5), question="da q")
+    only_candidate = _turn("methodology_expert", "Reyes", 1, "chunk one text", _score(1, 1, 1), question="q1")
+    session = _session(own_prior, only_candidate)
+
+    response = PanelistQuestion(question="challenge", grounding_reference="chunk one text", difficulty_level=3)
+    provider = _StubProvider(response)
+
+    result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+    assert result.chunk_index == 1  # not DA's own prior chunk 9
+
+
+def test_da_raises_when_no_candidate_turn_exists():
+    session = _session()  # no turns at all
+    provider = _StubProvider(PanelistQuestion(question="x", grounding_reference="x", difficulty_level=1))
+    with pytest.raises(RuntimeError):
+        _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+
+def test_da_grounding_failure_warns_not_crashes(caplog):
+    target = _turn("methodology_expert", "Reyes", 1, "the actual document excerpt", _score(4, 4, 4), question="q1")
+    session = _session(target)
+
+    # grounding_reference deliberately not present in the chunk_text
+    response = PanelistQuestion(
+        question="challenge", grounding_reference="something never in the chunk", difficulty_level=3
+    )
+    provider = _StubProvider(response)
+
+    with caplog.at_level(logging.WARNING):
+        result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+    assert result.grounding_reference == "something never in the chunk"  # not swapped/exempted, just logged
+    assert "Grounding check failed" in caplog.text

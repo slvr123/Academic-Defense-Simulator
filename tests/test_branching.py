@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from academic_defense_simulator.main import MAX_FOLLOW_UPS_PER_TOPIC, _should_follow_up
+from academic_defense_simulator.engine import MAX_FOLLOW_UPS_PER_TOPIC, _should_follow_up
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
@@ -18,12 +18,19 @@ from academic_defense_simulator.models.session import ConversationTurn, DefenseS
 
 def _score(clarity, depth, grounding, *, gap="sampling justification is thin", delta=1):
     return AnswerScore(
-        clarity=clarity, depth=depth, grounding=grounding, difficulty_delta=delta, primary_gap=gap
+        clarity=clarity,
+        depth=depth,
+        grounding=grounding,
+        difficulty_delta=delta,
+        primary_gap=gap,
+        answer_summary="the candidate claimed something",
     )
 
 
 def _turn(chunk_index, score):
     return ConversationTurn(
+        panelist_archetype_key="methodology_expert",
+        panelist_name="Reyes",
         question="q",
         grounding_reference="g",
         chunk_index=chunk_index,

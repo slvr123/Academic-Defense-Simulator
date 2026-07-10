@@ -1,44 +1,31 @@
-"""CLI orchestration for Academic Defense Simulator."""
+"""CLI driver for Academic Defense Simulator — I/O only. Turn-loop orchestration lives
+in `engine.py` (v0.3b Task 6); this module prompts for input, prints output, and calls
+into the engine. No business logic beyond that boundary."""
 
 from __future__ import annotations
 
-import logging
 import time
 from uuid import uuid4
 
 from academic_defense_simulator.config import load_settings
-from academic_defense_simulator.grounding import is_grounded
-from academic_defense_simulator.llm.gemini_provider import GeminiProvider
-from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
-from academic_defense_simulator.models.answer_score import AnswerScore
-from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
-from academic_defense_simulator.models.panelist import Panelist
-from academic_defense_simulator.models.panelist_output import PanelistQuestion
-from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
-from academic_defense_simulator.panel import compose_panel, generate_panel
-from academic_defense_simulator.prompts.panelist_prompts import (
-    ACKNOWLEDGMENT_INSTRUCTION,
-    ARCHETYPE_CONFIG,
-    FOLLOWUP_SYSTEM_PROMPT,
-    PANELIST_SYSTEM_PROMPT,
-    PREVIOUS_ANSWER_LINE,
-    SCORING_SYSTEM_PROMPT,
+from academic_defense_simulator.engine import (
+    DEFAULT_CALL_DELAY,
+    MAX_BLANK_ATTEMPTS,
+    MAX_TURNS,
+    MODEL_CALL_DELAY_SECONDS,
+    _clamp_difficulty,
+    _generate_question,
+    _score_answer,
+    select_active_panelist,
 )
+from academic_defense_simulator.llm.gemini_provider import GeminiProvider
+from academic_defense_simulator.llm.provider import LLMProviderError
+from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.session import DefenseSession
+from academic_defense_simulator.panel import compose_full_roster, generate_panel
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
-from academic_defense_simulator.rag.retrieval import Chunk, retrieve
-
-logger = logging.getLogger(__name__)
-
-MAX_TURNS = 6
-MAX_BLANK_ATTEMPTS = 3
-MAX_FOLLOW_UPS_PER_TOPIC = 2  # hard cap: after this many follow-ups on one chunk, force a new topic
-
-MODEL_CALL_DELAY_SECONDS = {
-    "gemini-3.1-flash-lite": 5,  # 15 RPM floor is 4s; +1s safety margin
-    "gemini-2.5-flash": 13,  # unchanged — RPD-bound not RPM-bound, rarely run, no pressure to optimize
-}
-DEFAULT_CALL_DELAY = 13  # fallback if GEMINI_MODEL is something unrecognized — stay conservative, not permissive
+from academic_defense_simulator.rag.retrieval import Chunk
 
 
 def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
@@ -74,155 +61,6 @@ def _prompt_answer() -> str:
         else:
             print(f"No answer given after {MAX_BLANK_ATTEMPTS} attempts — proceeding as a non-answer.")
     return ""
-
-
-def _clamp_difficulty(value: int) -> int:
-    return max(1, min(5, value))
-
-
-def _is_strong_answer(score: AnswerScore) -> bool:
-    """Strong = no weak dimension (every quality axis >= 3) AND solidly high overall
-    (clarity + depth + grounding >= 11 of 15). Deliberately not keyed on difficulty_delta:
-    under the 'press on weakness' rubric a weak-but-engaged answer also escalates (+1), so
-    only the sub-scores separate strong from weak. The all-axes-plus-sum test tolerates the
-    model's per-axis noise (a genuinely strong answer may dip to 3 on one axis) without
-    admitting a uniformly mediocre 3/3/3 or a fluent-but-ungrounded answer."""
-    return (
-        min(score.clarity, score.depth, score.grounding) >= 3
-        and (score.clarity + score.depth + score.grounding) >= 11
-    )
-
-
-def _should_follow_up(session: DefenseSession) -> bool:
-    """Follow up only when the prior answer had a real weakness to press: a gap was named
-    AND the answer was not strong. A strong answer advances to a new topic even if the
-    scorer noted a residual gap — primary_gap stays honest for the v0.3 report, and
-    branching no longer collapses to 'always follow up' now that the adversarial rubric
-    surfaces a gap on nearly every answer.
-
-    Hard cap on top of the strength check: once MAX_FOLLOW_UPS_PER_TOPIC follow-ups have
-    already been spent on the current chunk, force the new-topic branch regardless of
-    answer strength — a defense shouldn't read as an endless cross-examination on one
-    point. This only overrides which branch fires; the difficulty/scoring math is untouched."""
-    previous_turn = session.turns[-1] if session.turns else None
-    if previous_turn is None or previous_turn.score is None:
-        return False
-    if previous_turn.score.primary_gap is None:
-        return False
-    if session.follow_ups_on_current_topic >= MAX_FOLLOW_UPS_PER_TOPIC:
-        return False
-    return not _is_strong_answer(previous_turn.score)
-
-
-def _generate_question(
-    provider: LLMProvider,
-    session: DefenseSession,
-    chunks: list[Chunk],
-    embedding_model: EmbeddingModel,
-    panelist: Panelist,
-    other_subtype_line: str,
-    model: str,
-) -> ConversationTurn:
-    archetype = ARCHETYPE_CONFIG[panelist.archetype_key]
-    previous_turn = session.turns[-1] if session.turns else None
-    is_followup = _should_follow_up(session)
-
-    if not is_followup:
-        query = archetype["archetype_focus"]
-        results = retrieve(
-            query,
-            chunks,
-            top_k=1,
-            embedding_model=embedding_model,
-            exclude_indices=frozenset(session.used_chunk_indices),
-        )
-        if not results:
-            raise RuntimeError("Retrieval returned no chunks — document may be exhausted.")
-        chunk_index, chunk = results[0]
-        chunk_text = chunk.text
-        # Acknowledgment fields: empty on turn 1 (nothing to react to yet), populated on
-        # every later new-topic turn — whether we pivoted because the answer was strong or
-        # because the follow-up cap forced it. Same conditional-field pattern as other_subtype_line.
-        if previous_turn is not None and previous_turn.answer is not None:
-            previous_answer_line = PREVIOUS_ANSWER_LINE.format(previous_answer=previous_turn.answer)
-            acknowledgment_instruction = ACKNOWLEDGMENT_INSTRUCTION
-        else:
-            previous_answer_line = ""
-            acknowledgment_instruction = ""
-        prompt = PANELIST_SYSTEM_PROMPT.format(
-            panelist_name=panelist.panelist_name,
-            persona_framing=panelist.persona_framing,
-            archetype_title=archetype["archetype_title"],
-            archetype_focus=archetype["archetype_focus"],
-            archetype_lane=archetype["archetype_lane"],
-            defense_type=session.profile.defense_type.value,
-            other_subtype_line=other_subtype_line,
-            domain=session.profile.domain,
-            topic=session.profile.topic,
-            difficulty_level=session.difficulty_current,
-            retrieved_chunk=chunk_text,
-            previous_answer_line=previous_answer_line,
-            acknowledgment_instruction=acknowledgment_instruction,
-        )
-        print(f"[branch: new-topic — chunk {chunk_index}]")
-    else:
-        assert previous_turn is not None and previous_turn.score is not None
-        chunk_index, chunk_text = previous_turn.chunk_index, previous_turn.chunk_text
-        prompt = FOLLOWUP_SYSTEM_PROMPT.format(
-            panelist_name=panelist.panelist_name,
-            persona_framing=panelist.persona_framing,
-            archetype_title=archetype["archetype_title"],
-            archetype_focus=archetype["archetype_focus"],
-            archetype_lane=archetype["archetype_lane"],
-            defense_type=session.profile.defense_type.value,
-            previous_question=previous_turn.question,
-            previous_answer=previous_turn.answer,
-            primary_gap=previous_turn.score.primary_gap,
-            retrieved_chunk=chunk_text,
-            difficulty_level=session.difficulty_current,
-        )
-        print(f"[branch: follow-up — primary_gap: \"{previous_turn.score.primary_gap}\" — reusing chunk {chunk_index}]")
-
-    panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
-    time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
-
-    # Standing grounding check (both question paths converge here). A miss means the
-    # panelist cited a phrase that isn't in the chunk — signal to collect, not a crash:
-    # warn and continue, never fail the session.
-    if not is_grounded(panelist_question.grounding_reference, chunk_text):
-        logger.warning(
-            "Grounding check failed on chunk %d: reference %r not found in chunk. "
-            "Chunk excerpt: %r",
-            chunk_index,
-            panelist_question.grounding_reference,
-            chunk_text[:200],
-        )
-
-    return ConversationTurn(
-        question=panelist_question.question,
-        grounding_reference=panelist_question.grounding_reference,
-        chunk_index=chunk_index,
-        chunk_text=chunk_text,
-        difficulty_level=session.difficulty_current,
-    )
-
-
-def _score_answer(
-    provider: LLMProvider,
-    turn: ConversationTurn,
-    panelist: Panelist,
-    defense_type: str,
-) -> AnswerScore:
-    archetype = ARCHETYPE_CONFIG[panelist.archetype_key]
-    prompt = SCORING_SYSTEM_PROMPT.format(
-        defense_type=defense_type,
-        panelist_name=panelist.panelist_name,
-        archetype_title=archetype["archetype_title"],
-        question=turn.question,
-        answer=turn.answer,
-        retrieved_chunk=turn.chunk_text,
-    )
-    return provider.generate_structured(prompt, AnswerScore)
 
 
 def main() -> None:
@@ -266,15 +104,15 @@ def main() -> None:
     print(f"[model: {settings.gemini_model}]")
     provider = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
 
-    archetype_roster = compose_panel(profile)
+    archetype_roster = compose_full_roster(profile)
     panel, fallback_used = generate_panel(profile, archetype_roster, provider)
     print(f"[panel: {[p.archetype_key for p in panel]} — fallback_used={fallback_used}]")
-    active_panelist = panel[0]
 
     session = DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start)
 
     try:
         for turn_num in range(1, MAX_TURNS + 1):
+            active_panelist = select_active_panelist(session, turn_num)
             print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
 
             turn = _generate_question(

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from academic_defense_simulator.main import _clamp_difficulty
+from academic_defense_simulator.engine import _clamp_difficulty
 
 
 @pytest.mark.parametrize(

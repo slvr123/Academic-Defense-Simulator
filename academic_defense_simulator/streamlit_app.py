@@ -1,6 +1,6 @@
-"""Minimal Streamlit wrap — thin I/O layer over the existing session loop.
+"""Minimal Streamlit wrap — thin I/O layer over `engine.py`'s turn loop (v0.3b Task 6).
 
-Reuses `main.py`'s turn-loop helpers and `DefenseSession` as-is; no changes to
+Reuses `engine.py`'s turn-loop helpers and `DefenseSession` as-is; no changes to
 `retrieve()`, prompt templates, or scoring logic. Flow (0.3a Decision 4): upload ->
 ingest -> extract (one LLM call, cached per document_id) -> profile form (prefilled,
 editable) -> start session. `panel_size` is a form control, capped at the composition
@@ -29,19 +29,20 @@ import streamlit as st
 
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.document_profile import extract_document_profile
-from academic_defense_simulator.llm.gemini_provider import GeminiProvider
-from academic_defense_simulator.llm.provider import LLMProviderError
-from academic_defense_simulator.main import (
+from academic_defense_simulator.engine import (
     DEFAULT_CALL_DELAY,
     MAX_TURNS,
     MODEL_CALL_DELAY_SECONDS,
     _clamp_difficulty,
     _generate_question,
     _score_answer,
+    select_active_panelist,
 )
+from academic_defense_simulator.llm.gemini_provider import GeminiProvider
+from academic_defense_simulator.llm.provider import LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.session import DefenseSession
-from academic_defense_simulator.panel import PANEL_COMPOSITION, compose_panel, generate_panel
+from academic_defense_simulator.panel import PANEL_COMPOSITION, compose_full_roster, generate_panel
 from academic_defense_simulator.prompts.panelist_prompts import PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
@@ -164,7 +165,7 @@ elif st.session_state.stage == "profile":
                 document_id=st.session_state.document_id,
             )
             with st.spinner("Assembling the panel..."):
-                archetype_roster = compose_panel(profile)
+                archetype_roster = compose_full_roster(profile)
                 panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
 
             st.session_state.session = DefenseSession(
@@ -181,7 +182,7 @@ elif st.session_state.stage == "profile":
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
     turn_num = len(session.turns) + 1
-    active_panelist = session.panel[0]
+    active_panelist = select_active_panelist(session, turn_num)
 
     st.subheader(f"Turn {turn_num}/{MAX_TURNS} — difficulty {session.difficulty_current}/5")
 

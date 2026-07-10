@@ -5,7 +5,7 @@ BOTH prompt paths — new-topic (PANELIST_SYSTEM_PROMPT) and follow-up
 (FOLLOWUP_SYSTEM_PROMPT). Question generation was only sanity-checked when scoring moved
 to flash-lite; this is the evidence.
 
-Reuses the real orchestration helpers in `main.py` (retrieval, prompt rendering, scoring,
+Reuses the real orchestration helpers in `engine.py` (retrieval, prompt rendering, scoring,
 branching) so what runs here is what runs in a session — not a re-implementation. Per
 question it records raw model output to a results JSONL:
   (a) grounded  — automated, via grounding.is_grounded() against the turn's chunk
@@ -40,7 +40,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import academic_defense_simulator.main as main
+import academic_defense_simulator.engine as engine
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.grounding import grounding_ratio, is_grounded
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
@@ -133,7 +133,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
     print(f"[chunks: {len(chunks)}]")
 
     provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
-    pacing = main.MODEL_CALL_DELAY_SECONDS.get(model, main.DEFAULT_CALL_DELAY)
+    pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
     records: list[dict] = []
 
@@ -146,7 +146,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
     nt_session = _session(2, persona)
     for requested in (2, 3, 2, 3):
         nt_session.difficulty_current = requested
-        turn = main._generate_question(
+        turn = engine._generate_question(
             provider, nt_session, chunks, embedding_model, persona, "", model
         )
         rec = _record_for(turn, "new_topic", requested)
@@ -164,19 +164,20 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
         # a different chunk (nicer variety; not strictly required by the brief).
         for idx in excluded_parent_chunks:
             fu_session.turns.append(
-                ConversationTurn(question="seed", grounding_reference="seed", chunk_index=idx,
+                ConversationTurn(panelist_archetype_key=persona.archetype_key, panelist_name=persona.panelist_name,
+                                 question="seed", grounding_reference="seed", chunk_index=idx,
                                  chunk_text=chunks[idx].text, difficulty_level=3)
             )
 
-        parent = main._generate_question(provider, fu_session, chunks, embedding_model, persona, "", model)
+        parent = engine._generate_question(provider, fu_session, chunks, embedding_model, persona, "", model)
         fu_session.turns.append(parent)
         excluded_parent_chunks.append(parent.chunk_index)
 
         parent.answer = _WEAK_ANSWER
-        parent.score = main._score_answer(provider, parent, persona, _DEFENSE_TYPE.value)
+        parent.score = engine._score_answer(provider, parent, persona, _DEFENSE_TYPE.value)
         time.sleep(pacing)  # _score_answer doesn't pace itself; keep RPM safe before the next call
-        is_strong = main._is_strong_answer(parent.score)
-        fires = main._should_follow_up(fu_session)
+        is_strong = engine._is_strong_answer(parent.score)
+        fires = engine._should_follow_up(fu_session)
         print(f"  round {round_num}: parent chunk {parent.chunk_index}, "
               f"primary_gap={parent.score.primary_gap!r}, is_strong={is_strong}, follow_up_fires={fires}")
 
@@ -187,7 +188,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
                                        note="intended as follow-up parent; follow-up gate did not fire"))
             continue
 
-        follow_up = main._generate_question(provider, fu_session, chunks, embedding_model, persona, "", model)
+        follow_up = engine._generate_question(provider, fu_session, chunks, embedding_model, persona, "", model)
         rec = _record_for(
             follow_up, "follow_up", 3,
             parent_chunk_index=parent.chunk_index,

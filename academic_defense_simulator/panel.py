@@ -21,6 +21,12 @@ from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 
 logger = logging.getLogger(__name__)
 
+# Devil's Advocate is an orchestration feature, not a fifth composition-table entry
+# (docs/v0.3b-multi-panelist-orchestration-decisions.md Decision 2) — it is appended to
+# every session's roster by `compose_full_roster`, always last, never counted against
+# `panel_size` or listed in PANEL_COMPOSITION.
+DEVILS_ADVOCATE_KEY = "devils_advocate"
+
 FALLBACK_PANELISTS: dict[str, Panelist] = {
     "methodology_expert": Panelist(
         archetype_key="methodology_expert",
@@ -41,6 +47,11 @@ FALLBACK_PANELISTS: dict[str, Panelist] = {
         archetype_key="ethics_practicality_reviewer",
         panelist_name="Alvarez",
         persona_framing="You are a pragmatic reviewer known for pressing candidates on real-world applicability, limitations, and the implications of deploying their work.",
+    ),
+    "devils_advocate": Panelist(
+        archetype_key="devils_advocate",
+        panelist_name="Marlowe",
+        persona_framing="You are the panel's devil's advocate, known for singling out the strongest claim made so far and contesting it hardest — you attack the argument, never the candidate personally.",
     ),
 }
 
@@ -99,6 +110,14 @@ def compose_panel(profile: DefenseProfile) -> list[str]:
             f"({len(roster)}) for '{key}'"
         )
     return roster[: profile.panel_size]
+
+
+def compose_full_roster(profile: DefenseProfile) -> list[str]:
+    """`compose_panel`'s domain roster with Devil's Advocate appended, always last
+    (Decision 3: DA sits last in the round). Pure function, no LLM. This is the roster
+    callers should use to assemble an actual session panel — `compose_panel` stays
+    domain-only so its existing tests and `panel_size` semantics are untouched."""
+    return compose_panel(profile) + [DEVILS_ADVOCATE_KEY]
 
 
 def _render_archetype_roster(archetype_keys: list[str]) -> str:
