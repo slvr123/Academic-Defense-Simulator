@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile
 from academic_defense_simulator.models.panelist import Panelist
+from academic_defense_simulator.models.report import DefenseReport
 
 
 class ConversationTurn(BaseModel):
@@ -28,6 +29,7 @@ class DefenseSession(BaseModel):
     panel: list[Panelist]  # full generated panel, composition order (0.3a Decision 5)
     difficulty_current: int
     turns: list[ConversationTurn] = Field(default_factory=list)
+    report: Optional[DefenseReport] = None  # populated by the engine at session end (0.3c)
 
     @property
     def used_chunk_indices(self) -> set[int]:

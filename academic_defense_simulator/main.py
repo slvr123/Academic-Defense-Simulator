@@ -21,11 +21,13 @@ from academic_defense_simulator.engine import (
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession
 from academic_defense_simulator.panel import compose_full_roster, generate_panel
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
+from academic_defense_simulator.report import build_report
 
 
 def _prompt_defense_type() -> tuple[DefenseType, OtherSubtype | None]:
@@ -141,6 +143,47 @@ def main() -> None:
         return
 
     print("\nSession ended.")
+
+    session.report = build_report(session, provider)
+    _print_report(session.report)
+
+
+def _print_report(report: DefenseReport) -> None:
+    """Plain-text rendering of the numeric report — no new dependency (report
+    *rendering* in a UI is 0.3d; this is just the CLI's own output)."""
+    print("\n=== Defense Report ===")
+    print(f"Difficulty trajectory: {report.difficulty_trajectory}")
+    print(
+        f"Overall — clarity: {report.overall_avg_clarity:.2f}, "
+        f"depth: {report.overall_avg_depth:.2f}, grounding: {report.overall_avg_grounding:.2f}"
+    )
+
+    print("\nPer-panelist:")
+    for section in report.panelist_sections:
+        print(f"  Dr. {section.panelist_name} ({section.archetype_key}) — {section.turns_taken} turn(s)")
+        if section.turns_taken:
+            print(
+                f"    avg clarity: {section.avg_clarity:.2f}, avg depth: {section.avg_depth:.2f}, "
+                f"avg grounding: {section.avg_grounding:.2f}"
+            )
+            for gap in section.primary_gaps:
+                print(f"    gap: {gap}")
+
+    print("\nPushback events:")
+    if not report.pushback_events:
+        print("  (none — difficulty never escalated this session)")
+    for event in report.pushback_events:
+        print(
+            f"  turn {event.prior_turn_index}->{event.turn_index} "
+            f"(difficulty {event.difficulty_from}->{event.difficulty_to}): "
+            f"quality {event.quality_sum_prior}->{event.quality_sum_at} — {event.outcome.value}"
+        )
+
+    print("\nNarrative:")
+    if report.narrative_fallback_used:
+        print("  (narrative generation failed — numbers-only report)")
+    else:
+        print(f"  {report.narrative}")
 
 
 if __name__ == "__main__":

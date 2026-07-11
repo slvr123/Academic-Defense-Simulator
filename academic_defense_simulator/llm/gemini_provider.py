@@ -72,3 +72,43 @@ class GeminiProvider(LLMProvider):
                 f"{label} — retried once and failed again. Session aborted. "
                 f"(first: {first_exc!r}, retry: {retry_exc!r})"
             ) from retry_exc
+
+    def generate_text(self, prompt: str) -> str:
+        """Plain-text call (v0.3c report narrative — Decision 3/4). Same retry-once
+        shape as generate_structured, plus an empty/whitespace-only response is treated
+        as a failure (Decision 4), not a successful empty string."""
+        import httpx
+        from google.genai import errors as genai_errors
+
+        def call() -> str:
+            return self._call_once_text(prompt)
+
+        try:
+            return call()
+        except genai_errors.APIError as exc:
+            if exc.code == 429:
+                raise LLMProviderError(
+                    "Gemini API returned 429 despite confirmed request pacing — this is "
+                    "real quota exhaustion, not a pacing bug."
+                ) from exc
+            return self._retry_text_or_fail(call, "Gemini API error", exc)
+        except httpx.TimeoutException as exc:
+            return self._retry_text_or_fail(call, "Gemini API request timed out", exc)
+        except ValueError as exc:
+            return self._retry_text_or_fail(call, "Gemini returned an empty narrative response", exc)
+
+    def _call_once_text(self, prompt: str) -> str:
+        response = self._client.models.generate_content(model=self._model, contents=prompt)
+        text = (response.text or "").strip()
+        if not text:
+            raise ValueError("empty or whitespace-only response")
+        return text
+
+    def _retry_text_or_fail(self, call: Callable[[], str], label: str, first_exc: Exception) -> str:
+        time.sleep(_RETRY_BACKOFF_SECONDS)
+        try:
+            return call()
+        except Exception as retry_exc:
+            raise LLMProviderError(
+                f"{label} — retried once and failed again. (first: {first_exc!r}, retry: {retry_exc!r})"
+            ) from retry_exc

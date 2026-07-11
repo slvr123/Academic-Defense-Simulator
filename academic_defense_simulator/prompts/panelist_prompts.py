@@ -8,7 +8,9 @@
 # `answer_summary` (Task 1), PANELIST_SYSTEM_PROMPT/FOLLOWUP_SYSTEM_PROMPT gain the
 # `{digest_block}` cross-panelist context (Task 2), FOLLOWUP_SYSTEM_PROMPT gains the
 # grounding-source-document line (Task 5/Miss 2), and DEVILS_ADVOCATE_SYSTEM_PROMPT is new.
-PROMPT_VERSION = "0.3b"
+# 0.3c bumps for one addition only — REPORT_NARRATIVE_PROMPT is new (end-of-session
+# narrative call); no wording change to any existing template in this file.
+PROMPT_VERSION = "0.3c"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -168,6 +170,20 @@ Respond ONLY with JSON matching this schema, no other text:
     {{"archetype_key": "...", "panelist_name": "...", "persona_framing": "..."}}
   ]
 }}
+"""
+
+REPORT_NARRATIVE_PROMPT = """You are writing the closing summary of an academic defense session, addressed directly to the candidate who just completed it.
+
+Below is the complete computed report for this session: the difficulty trajectory across turns, overall and per-panelist average scores, the gaps each panelist surfaced, and pushback events (moments the panel escalated difficulty, and whether the candidate's answer quality then improved, held, or dropped). This report is the ONLY information you have about the session — you were not present for it.
+
+Report data:
+\"\"\"
+{report_json}
+\"\"\"
+
+Write a summary addressed directly to the candidate ("you"), using ONLY the data above. Do not invent facts, scores, events, or details that are not present in this data — every claim you make must be traceable to a number or gap listed above. Target 150-250 words.
+
+Respond with plain text only — no JSON, no markdown formatting, no headers.
 """
 
 ARCHETYPE_CONFIG = {

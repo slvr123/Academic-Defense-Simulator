@@ -40,6 +40,12 @@ MAX_TURNS = 6
 MAX_BLANK_ATTEMPTS = 3
 MAX_FOLLOW_UPS_PER_TOPIC = 2  # hard cap: after this many follow-ups on one chunk, force a new topic
 
+# Quality-sum (clarity + depth + grounding, max 15) floor for a "strong" answer. Named so
+# report.py's pushback classification (v0.3c Decision 1) can reuse it instead of
+# re-declaring the literal — same threshold shaping both the branching logic here and the
+# "recovered" outcome in the end-of-session report.
+STRONG_ANSWER_SUM_THRESHOLD = 11
+
 MODEL_CALL_DELAY_SECONDS = {
     "gemini-3.1-flash-lite": 5,  # 15 RPM floor is 4s; +1s safety margin
     "gemini-2.5-flash": 13,  # unchanged — RPD-bound not RPM-bound, rarely run, no pressure to optimize
@@ -69,7 +75,7 @@ def _is_strong_answer(score: AnswerScore) -> bool:
     admitting a uniformly mediocre 3/3/3 or a fluent-but-ungrounded answer."""
     return (
         min(score.clarity, score.depth, score.grounding) >= 3
-        and (score.clarity + score.depth + score.grounding) >= 11
+        and (score.clarity + score.depth + score.grounding) >= STRONG_ANSWER_SUM_THRESHOLD
     )
 
 

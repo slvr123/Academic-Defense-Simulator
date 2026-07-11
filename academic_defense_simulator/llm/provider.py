@@ -25,3 +25,11 @@ class LLMProvider(ABC):
         Implementations own all provider-specific request/response shape handling.
         """
         ...
+
+    @abstractmethod
+    def generate_text(self, prompt: str) -> str:
+        """Send a fully-rendered prompt, return the raw text response — no schema, no
+        parsing. Used only where the output is prose, not structured data (v0.3c report
+        narrative): demanding JSON there would add a parse failure mode for zero benefit.
+        """
+        ...
