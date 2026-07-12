@@ -27,6 +27,7 @@ from academic_defense_simulator.prompts.panelist_prompts import (
     ARCHETYPE_CONFIG,
     DEVILS_ADVOCATE_SYSTEM_PROMPT,
     FOLLOWUP_SYSTEM_PROMPT,
+    HIGH_DIFFICULTY_GROUNDING_GUARD,
     PANELIST_SYSTEM_PROMPT,
     PREVIOUS_ANSWER_LINE,
     SCORING_SYSTEM_PROMPT,
@@ -104,6 +105,57 @@ def _should_follow_up(session: DefenseSession) -> bool:
     return not _is_strong_answer(previous_turn.score)
 
 
+# Difficulty floor for is_grounded() enforcement escalation (v0.3 hardening, Decision 2).
+# Below this, behavior is unchanged from v0.2.5: warn-and-log only, no retry.
+GROUNDING_ENFORCEMENT_DIFFICULTY_FLOOR = 4
+
+
+def _generate_with_grounding_enforcement(
+    provider: LLMProvider,
+    prompt: str,
+    chunk_text: str,
+    difficulty_level: int,
+    model: str,
+) -> tuple[PanelistQuestion, bool, bool]:
+    """One generation call, checked against `is_grounded()`. Below difficulty 4: unchanged
+    v0.2.5 behavior — warn and log, serve as-is. At difficulty >= 4: a failure triggers
+    exactly one retry — same prompt (same chunk, same target difficulty, no re-retrieval),
+    a fresh generation call (Decision 2). Returns (question, grounding_retry_used,
+    grounding_flagged); grounding_flagged is True only when the retry also fails — still
+    served, just flagged (Decision 4).
+    """
+
+    def _call() -> PanelistQuestion:
+        result = provider.generate_structured(prompt, PanelistQuestion)
+        time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
+        return result
+
+    question = _call()
+    if is_grounded(question.grounding_reference, chunk_text):
+        return question, False, False
+
+    logger.warning(
+        "Grounding check failed (difficulty %d): reference %r not found in chunk. Chunk excerpt: %r",
+        difficulty_level,
+        question.grounding_reference,
+        chunk_text[:200],
+    )
+    if difficulty_level < GROUNDING_ENFORCEMENT_DIFFICULTY_FLOOR:
+        return question, False, False
+
+    retry_question = _call()
+    retry_grounded = is_grounded(retry_question.grounding_reference, chunk_text)
+    if not retry_grounded:
+        logger.warning(
+            "Grounding retry also failed (difficulty %d): reference %r not found in chunk. "
+            "Serving anyway, flagged. Chunk excerpt: %r",
+            difficulty_level,
+            retry_question.grounding_reference,
+            chunk_text[:200],
+        )
+    return retry_question, True, not retry_grounded
+
+
 def _generate_da_question(
     provider: LLMProvider,
     session: DefenseSession,
@@ -141,21 +193,13 @@ def _generate_da_question(
         f"chunk {target_turn.chunk_index} (score {turn_total_score(target_turn)}/15)]"
     )
 
-    panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
-    time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
-
     # Same standing grounding check as every other panelist — no adversarial exemption
     # (Decision 2, Task 3). DA's grounding_reference is checked against the SAME chunk
     # the original claim was grounded in, since that is "the source document" for this
-    # contested claim.
-    if not is_grounded(panelist_question.grounding_reference, target_turn.chunk_text):
-        logger.warning(
-            "Grounding check failed on Devil's Advocate turn (chunk %d): reference %r not found in chunk. "
-            "Chunk excerpt: %r",
-            target_turn.chunk_index,
-            panelist_question.grounding_reference,
-            target_turn.chunk_text[:200],
-        )
+    # contested claim. At difficulty >= 4, a failure escalates to one retry (Decision 2).
+    panelist_question, retry_used, flagged = _generate_with_grounding_enforcement(
+        provider, prompt, target_turn.chunk_text, session.difficulty_current, model
+    )
 
     return ConversationTurn(
         panelist_archetype_key=panelist.archetype_key,
@@ -165,6 +209,8 @@ def _generate_da_question(
         chunk_index=target_turn.chunk_index,
         chunk_text=target_turn.chunk_text,
         difficulty_level=session.difficulty_current,
+        grounding_retry_used=retry_used,
+        grounding_flagged=flagged,
     )
 
 
@@ -184,6 +230,12 @@ def _generate_question(
     previous_turn = session.turns[-1] if session.turns else None
     is_followup = _should_follow_up(session)
     digest_block = render_digest_block(session)
+    # v0.3 hardening, Decision 3 — populated only at difficulty >= 4, empty string otherwise.
+    high_difficulty_guard = (
+        HIGH_DIFFICULTY_GROUNDING_GUARD
+        if session.difficulty_current >= GROUNDING_ENFORCEMENT_DIFFICULTY_FLOOR
+        else ""
+    )
 
     if not is_followup:
         query = archetype["archetype_focus"]
@@ -222,6 +274,7 @@ def _generate_question(
             previous_answer_line=previous_answer_line,
             acknowledgment_instruction=acknowledgment_instruction,
             digest_block=digest_block,
+            high_difficulty_guard=high_difficulty_guard,
         )
         print(f"[branch: new-topic — chunk {chunk_index}]")
     else:
@@ -240,23 +293,16 @@ def _generate_question(
             retrieved_chunk=chunk_text,
             difficulty_level=session.difficulty_current,
             digest_block=digest_block,
+            high_difficulty_guard=high_difficulty_guard,
         )
         print(f"[branch: follow-up — primary_gap: \"{previous_turn.score.primary_gap}\" — reusing chunk {chunk_index}]")
 
-    panelist_question: PanelistQuestion = provider.generate_structured(prompt, PanelistQuestion)
-    time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
-
-    # Standing grounding check (both question paths converge here). A miss means the
-    # panelist cited a phrase that isn't in the chunk — signal to collect, not a crash:
-    # warn and continue, never fail the session.
-    if not is_grounded(panelist_question.grounding_reference, chunk_text):
-        logger.warning(
-            "Grounding check failed on chunk %d: reference %r not found in chunk. "
-            "Chunk excerpt: %r",
-            chunk_index,
-            panelist_question.grounding_reference,
-            chunk_text[:200],
-        )
+    # Standing grounding check (both question paths converge here), escalated at
+    # difficulty >= 4 to one retry (v0.3 hardening, Decision 2). A miss below the floor is
+    # unchanged v0.2.5 behavior: signal to collect, not a crash — warn and continue.
+    panelist_question, retry_used, flagged = _generate_with_grounding_enforcement(
+        provider, prompt, chunk_text, session.difficulty_current, model
+    )
 
     return ConversationTurn(
         panelist_archetype_key=panelist.archetype_key,
@@ -266,6 +312,8 @@ def _generate_question(
         chunk_index=chunk_index,
         chunk_text=chunk_text,
         difficulty_level=session.difficulty_current,
+        grounding_retry_used=retry_used,
+        grounding_flagged=flagged,
     )
 
 

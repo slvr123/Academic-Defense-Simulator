@@ -2,16 +2,41 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 _TARGET_CHARS = 2800   # ~700 tokens * 4 chars/token (midpoint of 600-800 range)
 _OVERLAP_CHARS = 400   # ~100 tokens * 4 chars/token
 _MIN_EXTRACTED_CHARS = 500  # below this, treat the doc as blank/scanned-image/corrupt
 
+# Miss 3 (v0.3 hardening, Decision 8): a page-number footer that PyMuPDF extracts as its
+# own PARAGRAPH (bounded by a blank line on both sides) -- confirmed via a fresh DAZSMA
+# extraction to be the real corruption pattern, e.g. a run of scanned/image-only appendix
+# pages leaving nothing behind but five consecutive standalone "175"/"176"/.../"179"
+# paragraphs. Matched at the whole-paragraph level, not per-line: a table's quantity/price
+# cells (e.g. "1" \n "₱1,810.00") are lines *within* one larger multi-line paragraph, never
+# their own paragraph, so this never touches them -- a naive per-line strip would.
+_PAGE_NUMBER_PARAGRAPH = re.compile(r"^\d{1,4}$")
+
 
 class DocumentIngestionError(Exception):
     """Raised when an uploaded document can't be opened or yields too little
     extractable text. Bad input, not a transient fault — no retry."""
+
+
+def _paragraphs_from_page_text(text: str) -> list[str]:
+    """Split one page's raw extracted text into paragraphs, dropping page-number-footer
+    artifacts (Miss 3 / Decision 8). `re.split` on a whitespace-tolerant blank-line
+    pattern, not a literal `"\\n\\n"` split: PyMuPDF sometimes emits a "blank" line
+    carrying a stray space/tab (`"\\n \\n"`), which a literal split misses, leaving a lone
+    page-number paragraph glued to real preceding text (confirmed via a fresh DAZSMA
+    extraction). This can only split more finely than before, never merge previously-
+    distinct paragraphs, so it carries no risk to real content."""
+    return [
+        p.strip()
+        for p in re.split(r"\n\s*\n", text)
+        if p.strip() and not _PAGE_NUMBER_PARAGRAPH.match(p.strip())
+    ]
 
 
 def chunk_pdf(path: str | Path) -> list[str]:
@@ -27,9 +52,7 @@ def chunk_pdf(path: str | Path) -> list[str]:
         for page in document:
             text = page.get_text("text")
             total_chars += len(text)
-            paragraphs.extend(
-                p.strip() for p in text.split("\n\n") if p.strip()
-            )
+            paragraphs.extend(_paragraphs_from_page_text(text))
     except Exception as exc:
         # Deliberately not interpolating `exc` into the message: PyMuPDF's own exception
         # text embeds the filesystem path it was given (e.g. a temp path on the server),

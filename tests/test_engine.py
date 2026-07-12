@@ -9,13 +9,15 @@ import logging
 import pytest
 
 import academic_defense_simulator.engine as engine_module
-from academic_defense_simulator.engine import _generate_da_question, select_active_panelist
+from academic_defense_simulator.engine import _generate_da_question, _generate_question, select_active_panelist
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
+from academic_defense_simulator.prompts.panelist_prompts import HIGH_DIFFICULTY_GROUNDING_GUARD
+from academic_defense_simulator.rag.retrieval import Chunk
 
 _PANEL = [
     Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f"),
@@ -157,3 +159,132 @@ def test_da_grounding_failure_warns_not_crashes(caplog):
 
     assert result.grounding_reference == "something never in the chunk"  # not swapped/exempted, just logged
     assert "Grounding check failed" in caplog.text
+
+
+# --- v0.3 hardening: is_grounded() enforcement escalation (Decision 2/4, Tasks 2a/2c) ---
+
+
+class _SequenceStubProvider:
+    """Like _StubProvider, but returns a different canned response per call, in order —
+    needed to simulate a first-attempt failure followed by a retry's outcome."""
+
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.calls = 0
+        self.prompts = []
+
+    def generate_structured(self, prompt, response_model):
+        self.prompts.append(prompt)
+        response = self._responses[self.calls]
+        self.calls += 1
+        return response
+
+
+def test_conversation_turn_grounding_fields_default_false():
+    turn = _turn("methodology_expert", "Reyes", 1, "chunk text", _score(3, 3, 3))
+    assert turn.grounding_retry_used is False
+    assert turn.grounding_flagged is False
+
+
+def test_da_below_difficulty_4_grounding_failure_does_not_retry():
+    target = _turn("methodology_expert", "Reyes", 1, "the actual document excerpt", _score(4, 4, 4))
+    session = _session(target)
+    session.difficulty_current = 3  # below the enforcement floor
+
+    response = PanelistQuestion(question="challenge", grounding_reference="never in the chunk", difficulty_level=3)
+    provider = _SequenceStubProvider([response])
+
+    result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+    assert provider.calls == 1  # no retry below difficulty 4 -- unchanged v0.2.5 behavior
+    assert result.grounding_retry_used is False
+    assert result.grounding_flagged is False
+
+
+def test_da_at_difficulty_4_retries_once_and_clears_flag_on_success():
+    target = _turn("methodology_expert", "Reyes", 1, "the actual document excerpt", _score(4, 4, 4))
+    session = _session(target)
+    session.difficulty_current = 4  # at the enforcement floor
+
+    first_attempt = PanelistQuestion(question="q1", grounding_reference="never in the chunk", difficulty_level=4)
+    retry_attempt = PanelistQuestion(question="q2", grounding_reference="the actual document excerpt", difficulty_level=4)
+    provider = _SequenceStubProvider([first_attempt, retry_attempt])
+
+    result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+    assert provider.calls == 2  # exactly one retry, same prompt (no re-retrieval)
+    assert provider.prompts[0] == provider.prompts[1]
+    assert result.question == "q2"  # the retry's output is what gets served
+    assert result.grounding_retry_used is True
+    assert result.grounding_flagged is False  # retry succeeded
+
+
+def test_da_at_difficulty_5_double_failure_serves_anyway_and_flags(caplog):
+    target = _turn("methodology_expert", "Reyes", 1, "the actual document excerpt", _score(4, 4, 4))
+    session = _session(target)
+    session.difficulty_current = 5
+
+    first_attempt = PanelistQuestion(question="q1", grounding_reference="never in the chunk", difficulty_level=5)
+    retry_attempt = PanelistQuestion(question="q2", grounding_reference="still not in the chunk", difficulty_level=5)
+    provider = _SequenceStubProvider([first_attempt, retry_attempt])
+
+    with caplog.at_level(logging.WARNING):
+        result = _generate_da_question(provider, session, _DA_PANELIST, "gemini-3.1-flash-lite")
+
+    assert provider.calls == 2
+    assert result.question == "q2"  # served anyway, per Decision 4 -- never dropped
+    assert result.grounding_retry_used is True
+    assert result.grounding_flagged is True
+    assert "retry also failed" in caplog.text.lower()
+
+
+_METHODOLOGY_PANELIST = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f")
+
+
+def _patch_retrieve(monkeypatch, chunk_index, chunk_text):
+    chunk = Chunk(text=chunk_text, embedding=[0.0])
+    monkeypatch.setattr(engine_module, "retrieve", lambda *a, **kw: [(chunk_index, chunk)])
+    return chunk
+
+
+def test_new_topic_high_difficulty_guard_present_and_retry_fires_at_difficulty_4(monkeypatch):
+    _patch_retrieve(monkeypatch, 0, "the actual document excerpt with real numbers")
+    session = _session()
+    session.difficulty_current = 4
+
+    first_attempt = PanelistQuestion(question="q1", grounding_reference="never in the chunk", difficulty_level=4)
+    retry_attempt = PanelistQuestion(
+        question="q2", grounding_reference="the actual document excerpt", difficulty_level=4
+    )
+    provider = _SequenceStubProvider([first_attempt, retry_attempt])
+
+    turn = _generate_question(
+        provider, session, chunks=[], embedding_model=None, panelist=_METHODOLOGY_PANELIST,
+        other_subtype_line="", model="gemini-3.1-flash-lite",
+    )
+
+    assert provider.calls == 2
+    assert turn.grounding_retry_used is True
+    assert turn.grounding_flagged is False
+    # Decision 3's guard text is injected at difficulty >= 4, identically into both attempts.
+    assert HIGH_DIFFICULTY_GROUNDING_GUARD.strip() in provider.prompts[0]
+    assert HIGH_DIFFICULTY_GROUNDING_GUARD.strip() in provider.prompts[1]
+
+
+def test_new_topic_high_difficulty_guard_absent_below_difficulty_4(monkeypatch):
+    _patch_retrieve(monkeypatch, 0, "the actual document excerpt")
+    session = _session()
+    session.difficulty_current = 3  # below the enforcement floor
+
+    response = PanelistQuestion(question="q1", grounding_reference="never in the chunk", difficulty_level=3)
+    provider = _SequenceStubProvider([response])
+
+    turn = _generate_question(
+        provider, session, chunks=[], embedding_model=None, panelist=_METHODOLOGY_PANELIST,
+        other_subtype_line="", model="gemini-3.1-flash-lite",
+    )
+
+    assert provider.calls == 1  # no retry below the floor -- unchanged v0.2.5 behavior
+    assert turn.grounding_retry_used is False
+    assert turn.grounding_flagged is False
+    assert HIGH_DIFFICULTY_GROUNDING_GUARD.strip() not in provider.prompts[0]

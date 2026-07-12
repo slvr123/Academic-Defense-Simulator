@@ -20,6 +20,8 @@ class ConversationTurn(BaseModel):
     chunk_index: int
     chunk_text: str
     difficulty_level: int
+    grounding_retry_used: bool = False  # first is_grounded() attempt failed at difficulty >= 4; retry issued
+    grounding_flagged: bool = False  # both attempts failed; served anyway (v0.3 hardening Decision 4)
     answer: Optional[str] = None
     score: Optional[AnswerScore] = None
 

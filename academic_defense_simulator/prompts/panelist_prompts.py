@@ -9,8 +9,10 @@
 # `{digest_block}` cross-panelist context (Task 2), FOLLOWUP_SYSTEM_PROMPT gains the
 # grounding-source-document line (Task 5/Miss 2), and DEVILS_ADVOCATE_SYSTEM_PROMPT is new.
 # 0.3c bumps for one addition only — REPORT_NARRATIVE_PROMPT is new (end-of-session
-# narrative call); no wording change to any existing template in this file.
-PROMPT_VERSION = "0.3c"
+# narrative call); no wording change to any existing template in this file. 0.3 hardening
+# adds {high_difficulty_guard} to PANELIST_SYSTEM_PROMPT and FOLLOWUP_SYSTEM_PROMPT only
+# (Decision 3) — zero wording change elsewhere in either template.
+PROMPT_VERSION = "0.3c-hardening"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -23,6 +25,16 @@ The candidate's previous answer (you are now moving on to a new topic):
 """
 
 ACKNOWLEDGMENT_INSTRUCTION = """Before asking your question, open with ONE short, natural spoken acknowledgment of their previous answer, reacting specifically to what they actually said — a genuine panelist reaction, not a stock phrase. Let the tone follow from the specific content (measured approval, a brief "fair enough," a pivot cue like "let's move to...") rather than a fixed formula."""
+
+# Conditional slot (v0.3 hardening, Decision 3) — populated only when difficulty_level >= 4,
+# empty string otherwise. Addresses difficulty-4/5 content fabrication by telling the model
+# explicitly what "harder" is allowed to mean at high difficulty.
+HIGH_DIFFICULTY_GROUNDING_GUARD = """
+At high difficulty, sharpen the CHALLENGE, not the CONTENT. Do not introduce
+facts, numbers, claims, or specifics that are not present in the excerpt —
+adversarial difficulty means harder scrutiny of what IS there, never
+inventing what isn't.
+"""
 
 PANELIST_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
 {persona_framing}
@@ -42,7 +54,7 @@ The question must:
 - Stay in your lane: {archetype_lane}
 - If the excerpt has no natural connection to your lane, do NOT pivot into another archetype's territory. Instead, reframe the excerpt through your own lane's lens — e.g., ask why this gap wasn't caught by the kind of scrutiny your role represents — even if that means a softer or more foundational question than usual.
 - Match the target difficulty level: {difficulty_level}/5 (1 = foundational/clarifying, 5 = adversarial/stress-testing an assumption)
-
+{high_difficulty_guard}
 Document excerpt:
 \"\"\"
 {retrieved_chunk}
@@ -81,7 +93,7 @@ This was grounded in the following excerpt from their document:
 Before your follow-up question, open with ONE short, natural spoken acknowledgment reacting specifically to how THIS particular answer landed — from a grudging concession to a pointed "that doesn't quite address...", driven by the actual weakness described above, not a stock phrase repeated regardless of content.
 
 Then generate exactly ONE follow-up question that presses directly on the identified weakness — it should read as a real cross-examination follow-up, not an independent question. Stay in your lane: {archetype_lane}. Match difficulty {difficulty_level}/5. Your grounding_reference must quote the excerpt above — the source document — never the candidate's own answer, even though your question reacts to what they said.
-
+{high_difficulty_guard}
 Respond ONLY with JSON matching this schema, no other text — the question field should read as one natural connected response, acknowledgment included:
 {{
   "question": "the acknowledgment plus the follow-up question, as one connected response",
