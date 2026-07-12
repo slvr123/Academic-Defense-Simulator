@@ -80,6 +80,40 @@ def _is_strong_answer(score: AnswerScore) -> bool:
     )
 
 
+def _render_prior_exchange_framing(previous_turn: ConversationTurn, active_panelist: Panelist) -> str:
+    """Fills FOLLOWUP_SYSTEM_PROMPT's {prior_exchange_framing} slot (v0.3d, Decision 1/2 —
+    see docs/v0.3d-followup-attribution-fix.md). `select_active_panelist` round-robins by
+    turn number and `_should_follow_up` presses a weakness regardless of who asked it, so
+    the two fire independently — most follow-ups land on a colleague of the original asker,
+    not the asker themselves. The old unconditional "You previously asked..." wording put a
+    false first-person claim in the model's mouth whenever that happened. Compares
+    archetype_key (identity), not panelist_name (denormalized flavor)."""
+    if previous_turn.panelist_archetype_key == active_panelist.archetype_key:
+        return (
+            'You previously asked the candidate this question:\n'
+            '"""\n'
+            f'{previous_turn.question}\n'
+            '"""\n\n'
+            'The candidate answered:\n'
+            '"""\n'
+            f'{previous_turn.answer}\n'
+            '"""'
+        )
+    return (
+        f'Your fellow panelist, Dr. {previous_turn.panelist_name}, asked the candidate this question:\n'
+        '"""\n'
+        f'{previous_turn.question}\n'
+        '"""\n\n'
+        'The candidate answered:\n'
+        '"""\n'
+        f'{previous_turn.answer}\n'
+        '"""\n\n'
+        'You are now taking the floor. Press on the identified weakness from your own\n'
+        "lane's perspective — do not simply repeat your colleague's question or imitate\n"
+        'their framing.'
+    )
+
+
 def _should_follow_up(session: DefenseSession) -> bool:
     """Follow up only when the prior answer had a real weakness to press: a gap was named
     AND the answer was not strong. A strong answer advances to a new topic even if the
@@ -287,8 +321,7 @@ def _generate_question(
             archetype_focus=archetype["archetype_focus"],
             archetype_lane=archetype["archetype_lane"],
             defense_type=session.profile.defense_type.value,
-            previous_question=previous_turn.question,
-            previous_answer=previous_turn.answer,
+            prior_exchange_framing=_render_prior_exchange_framing(previous_turn, panelist),
             primary_gap=previous_turn.score.primary_gap,
             retrieved_chunk=chunk_text,
             difficulty_level=session.difficulty_current,

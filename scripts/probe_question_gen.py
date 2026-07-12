@@ -482,5 +482,163 @@ def _write_hardening_results(records: list[dict], model: str, persona: Panelist,
     print(f"\nWrote {len(records)} question records (+1 meta) to {results_path}")
 
 
+# ============================================================================
+# v0.3d follow-up attribution probe (docs/v0.3d-followup-attribution-fix.md, Decision 4):
+# re-verifies the follow-up path only, now split by {prior_exchange_framing} case
+# (same_asker / colleague). Harness extension, fixture-level only: `_generate_question`'s
+# follow-up branch already takes the presser as an explicit `panelist` argument rather than
+# deriving it from round-robin, so forcing asker != presser is just passing a second persona
+# to the follow-up call -- no engine.py change, no touching select_active_panelist.
+# ============================================================================
+
+_RESULTS_PATH_FOLLOWUP_ATTRIBUTION = Path(__file__).resolve().parent / "probe_followup_attribution_results.jsonl"
+
+# Second persona, distinct archetype from _PROBE_PERSONA (methodology_expert), used as the
+# follow-up presser in colleague-case rounds -- asker (parent question) stays _PROBE_PERSONA.
+_COLLEAGUE_PERSONA = Panelist(
+    archetype_key="literature_theory_specialist",
+    panelist_name="Delacroix",
+    persona_framing=(
+        "You are known for tracing every claim back to its theoretical grounding and "
+        "pressing candidates on citations or framing that don't hold up under scrutiny."
+    ),
+)
+
+
+def _record_followup_attribution(turn: ConversationTurn, framing_case: str, parent: ConversationTurn, **extra) -> dict:
+    grounded = is_grounded(turn.grounding_reference, turn.chunk_text)
+    ratio = grounding_ratio(turn.grounding_reference, turn.chunk_text)
+    record = {
+        "record_type": "question",
+        "timestamp": _now_iso(),
+        "path": "follow_up",
+        "framing_case": framing_case,
+        "asker_archetype_key": parent.panelist_archetype_key,
+        "asker_panelist_name": parent.panelist_name,
+        "presser_archetype_key": turn.panelist_archetype_key,
+        "presser_panelist_name": turn.panelist_name,
+        "chunk_index": turn.chunk_index,
+        "question": turn.question,
+        "grounding_reference": turn.grounding_reference,
+        "grounded": grounded,
+        "grounding_ratio": round(ratio, 4),
+        # Human-judged, per the brief's colleague-case pass bar:
+        "false_first_person_claim": None,  # (1) no first-person claim of having asked the prior question
+        "presses_identified_weakness": None,  # (2) the question still presses the identified weakness
+        "in_lane": None,
+        "difficulty_ok": None,
+    }
+    record.update(extra)
+    return record
+
+
+def main_probe_followup_attribution(
+    asker_persona: Panelist = _PROBE_PERSONA,
+    colleague_persona: Panelist = _COLLEAGUE_PERSONA,
+    results_path: Path = _RESULTS_PATH_FOLLOWUP_ATTRIBUTION,
+) -> None:
+    settings = load_settings()
+    model = settings.gemini_model
+    print(f"[model: {model}] [prompt_version: {PROMPT_VERSION}] "
+          f"[asker: {asker_persona.panelist_name}] [colleague: {colleague_persona.panelist_name}]")
+    print(f"[pdf: {_PDF_PATH.name}]")
+
+    texts = chunk_pdf(str(_PDF_PATH))
+    embedding_model = EmbeddingModel()
+    embeddings = embedding_model.encode(texts)
+    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    print(f"[chunks: {len(chunks)}]")
+
+    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
+
+    records: list[dict] = []
+    excluded_parent_chunks: list[int] = []
+
+    # 2 same-asker rounds (presser == asker, unchanged wording) + 2 colleague rounds
+    # (presser != asker) -- Decision 4's minimum.
+    rounds = [
+        ("same_asker", asker_persona),
+        ("same_asker", asker_persona),
+        ("colleague", colleague_persona),
+        ("colleague", colleague_persona),
+    ]
+
+    for round_num, (framing_case, presser) in enumerate(rounds, start=1):
+        fu_session = _session(3, asker_persona)
+        for idx in excluded_parent_chunks:
+            fu_session.turns.append(
+                ConversationTurn(panelist_archetype_key=asker_persona.archetype_key, panelist_name=asker_persona.panelist_name,
+                                 question="seed", grounding_reference="seed", chunk_index=idx,
+                                 chunk_text=chunks[idx].text, difficulty_level=3)
+            )
+
+        parent = engine._generate_question(provider, fu_session, chunks, embedding_model, asker_persona, "", model)
+        fu_session.turns.append(parent)
+        excluded_parent_chunks.append(parent.chunk_index)
+
+        parent.answer = _WEAK_ANSWER
+        parent.score = engine._score_answer(provider, parent, asker_persona, _DEFENSE_TYPE.value)
+        time.sleep(pacing)  # _score_answer doesn't pace itself; keep RPM safe before the next call
+        fires = engine._should_follow_up(fu_session)
+        print(f"  round {round_num} [{framing_case}]: parent chunk {parent.chunk_index} "
+              f"(asker {parent.panelist_archetype_key}), primary_gap={parent.score.primary_gap!r}, "
+              f"follow_up_fires={fires}")
+
+        if not fires:
+            print(f"  round {round_num} [{framing_case}]: follow-up did not fire -- no row recorded for this case.")
+            continue
+
+        follow_up = engine._generate_question(provider, fu_session, chunks, embedding_model, presser, "", model)
+        rec = _record_followup_attribution(
+            follow_up, framing_case, parent,
+            parent_question=parent.question,
+            scored_answer=_WEAK_ANSWER,
+            primary_gap=parent.score.primary_gap,
+        )
+        records.append(rec)
+        print(f"  round {round_num} [{framing_case}]: follow-up by {presser.panelist_name} "
+              f"({presser.archetype_key}) on chunk {follow_up.chunk_index}: grounded={rec['grounded']} "
+              f"ratio={rec['grounding_ratio']} -- {follow_up.question[:90]}...")
+        time.sleep(pacing)
+
+    _write_followup_attribution_results(records, model, asker_persona, colleague_persona, results_path)
+
+
+def _write_followup_attribution_results(
+    records: list[dict], model: str, asker_persona: Panelist, colleague_persona: Panelist, results_path: Path
+) -> None:
+    meta = {
+        "record_type": "meta",
+        "generated_at": _now_iso(),
+        "model": model,
+        "prompt_version": PROMPT_VERSION,
+        "asker_archetype": asker_persona.archetype_key,
+        "asker_name": asker_persona.panelist_name,
+        "colleague_archetype": colleague_persona.archetype_key,
+        "colleague_name": colleague_persona.panelist_name,
+        "grounding_threshold": 0.85,
+        "document": _PDF_PATH.name,
+        "note": (
+            "Re-verification for docs/v0.3d-followup-attribution-fix.md Decision 4 -- follow-up "
+            "path only. framing_case is same_asker or colleague, forced fixture-level by passing "
+            "a different `panelist` argument to the follow-up call than the parent call, not by "
+            "changing engine.py's round-robin."
+        ),
+        "human_judged_columns": "false_first_person_claim, presses_identified_weakness, in_lane, difficulty_ok",
+    }
+    with results_path.open("w", encoding="utf-8") as f:
+        f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+        for rec in records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    print(f"\n=== Grounding tally by framing_case (threshold 0.85) ===")
+    for case in ("same_asker", "colleague"):
+        rows = [r for r in records if r["framing_case"] == case]
+        passed = sum(1 for r in rows if r["grounded"])
+        print(f"  {case}: {passed}/{len(rows)} grounded; ratios={[r['grounding_ratio'] for r in rows]}")
+    print(f"\nWrote {len(records)} question records (+1 meta) to {results_path}")
+
+
 if __name__ == "__main__":
     main_probe()

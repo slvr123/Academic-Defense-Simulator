@@ -11,8 +11,13 @@
 # 0.3c bumps for one addition only — REPORT_NARRATIVE_PROMPT is new (end-of-session
 # narrative call); no wording change to any existing template in this file. 0.3 hardening
 # adds {high_difficulty_guard} to PANELIST_SYSTEM_PROMPT and FOLLOWUP_SYSTEM_PROMPT only
-# (Decision 3) — zero wording change elsewhere in either template.
-PROMPT_VERSION = "0.3c-hardening"
+# (Decision 3) — zero wording change elsewhere in either template. 0.3d bumps for one fix:
+# FOLLOWUP_SYSTEM_PROMPT's "You previously asked..." passage becomes a
+# {prior_exchange_framing} slot (rendered in engine.py) so the wording is truthful when
+# round-robin hands a follow-up to a panelist other than the original asker (see
+# docs/v0.3d-followup-attribution-fix.md) — zero wording change elsewhere in this file. The
+# 0.3d UI session that follows makes zero further prompt changes and inherits this bump.
+PROMPT_VERSION = "0.3d"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -73,15 +78,7 @@ FOLLOWUP_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} o
 
 Your focus: {archetype_focus}
 {digest_block}
-You previously asked the candidate this question:
-\"\"\"
-{previous_question}
-\"\"\"
-
-The candidate answered:
-\"\"\"
-{previous_answer}
-\"\"\"
+{prior_exchange_framing}
 
 The specific weakness identified in their answer: {primary_gap}
 
