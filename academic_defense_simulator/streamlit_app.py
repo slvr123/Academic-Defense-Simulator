@@ -18,7 +18,9 @@ from pathlib import Path
 # below fail with ModuleNotFoundError unless the repo root is added explicitly here.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import concurrent.futures
 import json
+import logging
 import os
 import tempfile
 import threading
@@ -47,6 +49,45 @@ from academic_defense_simulator.prompts.panelist_prompts import PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
+from academic_defense_simulator.report import build_report
+
+# Thin permanent call-lifecycle logging (v0.3 hardening, Task 1b) — light enough to ship,
+# enough that a future hang recurrence has something to look at. Guarded the same way as
+# `_turn_lock` below: Streamlit re-executes this module's top-level code on every rerun
+# against the same module namespace, so `basicConfig` must only run once.
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+logger = logging.getLogger(__name__)
+
+# Tripwire against infinite silence (v0.3 hardening, Task 1a) — order-of-magnitude, not a
+# latency SLO. A stuck LLM call surfaces a clean "aborted" state instead of a silent
+# spinner. The background thread is deliberately abandoned (not joined) on timeout so the
+# driver can move on immediately rather than blocking on a call that may never return.
+LLM_CALL_TIMEOUT_SECONDS = 120
+
+
+def _call_with_timeout(fn, *args, label: str, **kwargs):
+    st.session_state.call_counter = st.session_state.get("call_counter", 0) + 1
+    call_id = st.session_state.call_counter
+    thread_id = threading.get_ident()
+    logger.info("call #%d (%s) started — thread %s", call_id, label, thread_id)
+
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(fn, *args, **kwargs)
+    try:
+        result = future.result(timeout=LLM_CALL_TIMEOUT_SECONDS)
+    except concurrent.futures.TimeoutError as exc:
+        logger.info(
+            "call #%d (%s) timed out after %ss — thread %s", call_id, label, LLM_CALL_TIMEOUT_SECONDS, thread_id
+        )
+        executor.shutdown(wait=False)
+        raise LLMProviderError(
+            f"The {label} call did not return within {LLM_CALL_TIMEOUT_SECONDS}s — treating as a stuck request."
+        ) from exc
+    executor.shutdown(wait=False)
+    logger.info("call #%d (%s) returned — thread %s", call_id, label, thread_id)
+    return result
+
 
 st.set_page_config(page_title="Academic Defense Simulator")
 st.title("Academic Defense Simulator")
@@ -194,7 +235,8 @@ elif st.session_state.stage == "running":
             if st.session_state.pending_turn is None:
                 with st.spinner(f"Dr. {active_panelist.panelist_name} is preparing a question..."):
                     try:
-                        st.session_state.pending_turn = _generate_question(
+                        st.session_state.pending_turn = _call_with_timeout(
+                            _generate_question,
                             _new_provider(),
                             session,
                             st.session_state.chunks,
@@ -202,6 +244,7 @@ elif st.session_state.stage == "running":
                             active_panelist,
                             st.session_state.other_subtype_line,
                             st.session_state.gemini_model,
+                            label="question generation",
                         )
                     except LLMProviderError as exc:
                         st.session_state.stage = "aborted"
@@ -225,8 +268,13 @@ elif st.session_state.stage == "running":
                     if st.session_state.pending_turn is not None:
                         with st.spinner("Scoring your answer..."):
                             try:
-                                turn.score = _score_answer(
-                                    _new_provider(), turn, active_panelist, session.profile.defense_type.value
+                                turn.score = _call_with_timeout(
+                                    _score_answer,
+                                    _new_provider(),
+                                    turn,
+                                    active_panelist,
+                                    session.profile.defense_type.value,
+                                    label="answer scoring",
                                 )
                             except LLMProviderError as exc:
                                 st.session_state.stage = "aborted"
@@ -240,7 +288,20 @@ elif st.session_state.stage == "running":
                         st.session_state.pending_turn = None
 
                         if len(session.turns) >= MAX_TURNS:
-                            st.session_state.stage = "done"
+                            # Driver-level wire-up (v0.3 hardening, Task 1d): same call CLI's
+                            # `main()` already makes at session-end. Zero changes to
+                            # `report.py`/`engine.py` — orchestration only.
+                            try:
+                                with st.spinner("Building end-of-session report..."):
+                                    session.report = _call_with_timeout(
+                                        build_report, session, _new_provider(), label="report narrative"
+                                    )
+                            except LLMProviderError as exc:
+                                st.session_state.stage = "aborted"
+                                st.session_state.abort_message = str(exc)
+                                st.rerun()
+                            else:
+                                st.session_state.stage = "done"
                         else:
                             time.sleep(MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY))
                 st.rerun()

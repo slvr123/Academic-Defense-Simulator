@@ -19,18 +19,25 @@ pre-publish rename pass; interim `dayN`-style names until then).
   (Day 6).
 - Development model: `gemini-3.1-flash-lite` (500 RPD / 15 RPM free tier);
   `gemini-2.5-flash` reserved for final verification runs. Both per `docs/v0.2-scoring-model-swap-decisions.md`.
-- **v0.3a — NOT fully complete.** Logic (Tasks 1–7: panel composition, persona
-  generation + fallback, `persona_framing` prompt injection, domain/topic extraction,
-  Streamlit form reorder, question-gen probe re-run against the 0.3 templates) is
-  implemented and verified — via a real 6-turn `main.py` CLI session and a direct
-  production-code-path run, both completing cleanly end-to-end. **Browser execution
-  (Task 8) is blocked**: the Streamlit app deterministically hangs on the ~6th
-  sequential Gemini call within a live session — reproduced 5+ times; diagnosis found
-  (at least in part) overlapping concurrent script executions for the same session
-  racing on `st.session_state`. Not a v0.3a-specific regression — the same blocking-call
-  + `time.sleep()` pattern already existed in v0.2, just never exercised by a full-speed
-  live run before. A dedicated investigation session is pending and is a **hard gate
-  before 0.3d and the deployment decision**.
+- **v0.3a complete.** Logic (Tasks 1–7: panel composition, persona generation +
+  fallback, `persona_framing` prompt injection, domain/topic extraction, Streamlit form
+  reorder, question-gen probe re-run against the 0.3 templates) and Task 8 (full browser
+  session) are both verified — Code run 4 (14-call browser session, full end-to-end)
+  corroborated by three of Sean's manual full sessions. The originally-reported
+  deterministic hang ("freezes at ~the 6th sequential Gemini call") did not reproduce
+  under a dedicated investigation across four evidence-anchored conditions; the founding
+  "fixed-count determinism" premise is retired on evidence, not confirmed fixed by a
+  root-cause patch. **Gate converted:** "root-caused and fixed" → "bounded and
+  observable" — a timeout guard plus thin permanent call-lifecycle logging stand in for a
+  root-cause fix as the hard gate before 0.3d and the deployment decision. Full finding:
+  `docs/v0.3-hang-investigation-closure.md`.
+- **Pre-deploy hardening session current** (`docs/v0.3-hardening-decisions.md` /
+  `docs/briefs/v0.3-hardening-brief.md`). Closes the hang-closure carryover (timeout
+  guard, call-lifecycle logging, `sleep(13)`→5s trim's outstanding browser-session
+  verification, `build_report` driver wire-up) plus the difficulty-4/5 content
+  fabrication fix and Miss 3 (PDF extraction corruption).
+- **Deployment-gate confirmation still owed from Sean** — see the Deployment Gate
+  section below; this roadmap's default remains deploy at end of v0.3.
 
 ## Standing constraints (apply to every session below)
 
