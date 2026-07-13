@@ -124,8 +124,9 @@ st.set_page_config(page_title="Academic Defense Simulator")
 
 
 def _inject_theme_css() -> None:
-    """Oxblood two-tone on dark charcoal (v0.3d Decision 7). `config.toml` covers what
-    it can reach (base theme, primary color); this covers what it can't — deep-oxblood
+    """Graphite & Oxblood (v0.3d Decision 7 revised): light warm-gray canvas, charcoal
+    text, one accent. `config.toml` covers what it can reach (base theme, backgrounds,
+    text, borders, primary color); this covers what it can't — the solid-accent
     filled/selected states, serif display headings, small-caps label tracking, and the
     striped/initialed panelist-card avatars carried over from the design prototype."""
     st.markdown(
@@ -139,30 +140,33 @@ def _inject_theme_css() -> None:
             font-variant: small-caps;
             letter-spacing: 0.09em;
             font-size: 0.78rem;
-            opacity: 0.8;
+            color: #8A8378;
         }
 
-        /* Active defense-type pill (Decision 7: deep oxblood filled state) */
+        /* Active defense-type pill (Decision 7 revised: solid single-accent fill) */
         div[data-testid="stButtonGroup"] button[data-testid="stBaseButton-pillsActive"] {
-            background-color: #4A1E22 !important;
+            background-color: #8C3A3F !important;
             border-color: #8C3A3F !important;
-            color: #F1E6E7 !important;
+            color: #F7F2ED !important;
         }
 
         .ads-card {
-            border: 1px solid #33262A;
+            border: 1px solid #DDD6CC;
             border-radius: 12px;
             padding: 0.85rem 1rem;
-            background: #211719;
+            background: #FAF7F3;
             margin-bottom: 0.5rem;
             text-align: center;
         }
         .ads-card.speaking {
             border: 2px solid #8C3A3F;
-            box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.25);
+            box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.18);
+        }
+        .ads-card.speaking .ads-card-status {
+            color: #8C3A3F;
         }
         .ads-card.completed {
-            border-color: #4A3A3D;
+            border-color: #8A8378;
         }
         .ads-card.waiting {
             opacity: 0.55;
@@ -176,17 +180,18 @@ def _inject_theme_css() -> None:
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            color: #F1E6E7;
+            color: #F7F2ED;
             background: repeating-linear-gradient(
                 135deg, #8C3A3F, #8C3A3F 6px, #6E2C30 6px, #6E2C30 12px
             );
         }
         .ads-avatar.da {
-            background: #4A1E22;
+            background: #8C3A3F;
         }
         .ads-card-name {
             font-family: Georgia, serif;
             font-weight: 600;
+            color: #2A2724;
         }
         .ads-card-title {
             margin-top: 0.15rem;
@@ -194,7 +199,7 @@ def _inject_theme_css() -> None:
         .ads-card-status {
             margin-top: 0.35rem;
             font-size: 0.82rem;
-            opacity: 0.85;
+            color: #6B655E;
         }
         </style>
         """,
