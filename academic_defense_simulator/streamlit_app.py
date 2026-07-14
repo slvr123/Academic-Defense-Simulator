@@ -336,8 +336,8 @@ def _render_hero() -> None:
         '<p class="small-caps-label" style="text-align:center;">The panel is waiting</p>'
         '<h1 style="text-align:center;">Academic Defense Simulator</h1>'
         '<p style="text-align:center;color:#B5AEA2;max-width:600px;margin:0 auto 1.5rem;">'
-        "Upload your research. Face a panel that has actually read it — and gets "
-        "harder when your answers get vague.</p>",
+        "Upload your research. Face a panel that has actually read it —  "
+        "Defend your study from their questions that gets harder every turn.</p>",
         unsafe_allow_html=True,
     )
 
@@ -405,6 +405,9 @@ def _render_dev_view() -> None:
                     st.write(f"difficulty_level: {turn.difficulty_level}")
                     st.write(f"grounding_retry_used: {turn.grounding_retry_used}")
                     st.write(f"grounding_flagged: {turn.grounding_flagged}")
+                    # Decision 4 extension — grounding_reference is retired from the
+                    # main-flow transcript entirely and lives only here now.
+                    st.write(f"grounding_reference: {turn.grounding_reference!r}")
                     if turn.score is not None:
                         st.json(turn.score.model_dump())
         if st.session_state.get("abort_message"):
@@ -515,10 +518,10 @@ def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
 
 
 def _render_turn_content(turn) -> None:
-    """Question + grounding + (once answered) the candidate's inset answer — the
-    body shared by a collapsed-history block and the active turn block."""
+    """Question + (once answered) the candidate's inset answer — the body shared
+    by a collapsed-history block and the active turn block. `grounding_reference`
+    never renders here (Decision 4 extension) — it lives in dev-view only."""
     st.write(turn.question)
-    st.caption(f'Grounding: "{turn.grounding_reference}"')
     if turn.answer is not None:
         st.markdown(
             '<div class="ads-answer-inset">'
@@ -598,7 +601,6 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         header = _turn_header(turn_num, turn.panelist_name, turn.panelist_archetype_key)
         st.markdown(f'<div class="ads-turn-header">{html.escape(header)}</div>', unsafe_allow_html=True)
         st.write(turn.question)
-        st.caption(f'Grounding: "{turn.grounding_reference}"')
         answer = st.text_area("Your answer", key=f"answer_{turn_num}")
         submitted = st.button("Submit answer", key=f"submit_{turn_num}")
 
