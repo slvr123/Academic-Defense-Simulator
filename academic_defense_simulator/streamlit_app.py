@@ -799,108 +799,138 @@ if st.session_state.stage == "intake":
     # live on the same screen, matching the design prototype's composition. The
     # profile section only appears once `document_id` exists — that's the real
     # signal ingestion + extraction finished, not a separate navigated-to stage.
+    #
+    # Bug fix (transitional-window leak): a blocking call (_ingest_and_extract,
+    # generate_panel) that runs inside a widget's own script pass does NOT clear
+    # anything already rendered earlier in that SAME pass — Streamlit only
+    # replaces old elements once a fresh script pass (st.rerun()) actually
+    # completes. Concretely, everything below used to render fully (dropzone/
+    # summary, defense-profile card, preview cards, CTA button), THEN a spinner
+    # got appended underneath it, and both sat on screen together for the whole
+    # duration of the blocking call — confirmed live (screenshot: "Assembling
+    # the panel..." spinner directly below a still-fully-rendered intake page).
+    # `intake_slot` (a single st.empty()) lets both blocking-call sites clear
+    # the whole intake UI immediately, before the call starts, instead of
+    # leaving stale content sitting above the spinner.
     document_ready = "document_id" in st.session_state
+    intake_slot = st.empty()
 
-    if not document_ready:
-        st.markdown(
-            '<p style="text-align:center;font-weight:600;margin-bottom:0.25rem;">'
-            "Drop your research document</p>",
-            unsafe_allow_html=True,
-        )
-        uploaded_file = st.file_uploader(
-            "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
-        )
-        st.caption("PDF · thesis, capstone, or paper")
-
-        if st.button("Process document", type="primary", disabled=uploaded_file is None):
-            with st.spinner("Processing document..."):
-                _ingest_and_extract(uploaded_file)
-            if "document_id" in st.session_state:
-                st.rerun()
-    else:
-        # Loaded-document summary (replaces the empty dropzone prompt) — same
-        # composition as the prototype's docLoaded branch: filename, ingestion
-        # stats, a "read by panel" confirmation.
-        st.markdown(
-            '<div class="ads-card" style="text-align:left;display:flex;align-items:center;gap:14px;">'
-            '<div class="ads-avatar" style="border-radius:4px;font-size:0.7rem;">PDF</div>'
-            '<div style="flex:1;min-width:0;">'
-            f'<div class="ads-card-name">{html.escape(st.session_state.uploaded_filename)}</div>'
-            '<div class="ads-card-status" style="margin-top:2px;">'
-            f"ingested · {st.session_state.page_count} pages · {len(st.session_state.chunks)} chunks embedded"
-            "</div></div>"
-            '<div class="ads-speaking-badge">✓ Read by panel</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
-    if document_ready:
-        with st.container(border=True):
-            st.markdown('<p class="small-caps-label">Defense profile</p>', unsafe_allow_html=True)
-
-            defense_type = st.pills(
-                "Defense type",
-                list(DefenseType),
-                format_func=lambda dt: dt.value,
-                default=DefenseType.THESIS,
-                required=True,
-                key="defense_type_pill",
-            )
-            other_subtype = None
-            if defense_type == DefenseType.OTHER:
-                other_subtype = st.selectbox("Subtype", list(OtherSubtype), format_func=lambda ost: ost.value)
-
-            domain_col, topic_col = st.columns(2)
-            with domain_col:
-                domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
-            with topic_col:
-                topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
-
-            max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
-            panel_size = st.number_input(
-                "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
-            )
-            # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
-            # outside panel_size unconditionally, so the visible panel is always one bigger than
-            # the selector value; state the arithmetic explicitly rather than let it read as a bug.
+    with intake_slot.container():
+        if not document_ready:
             st.markdown(
-                f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
-                f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+                '<p style="text-align:center;font-weight:600;margin-bottom:0.25rem;">'
+                "Drop your research document</p>",
+                unsafe_allow_html=True,
+            )
+            uploaded_file = st.file_uploader(
+                "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
+            )
+            st.caption("PDF · thesis, capstone, or paper")
+            process_clicked = st.button("Process document", type="primary", disabled=uploaded_file is None)
+        else:
+            process_clicked = False
+            # Loaded-document summary (replaces the empty dropzone prompt) — same
+            # composition as the prototype's docLoaded branch: filename, ingestion
+            # stats, a "read by panel" confirmation.
+            st.markdown(
+                '<div class="ads-card" style="text-align:left;display:flex;align-items:center;gap:14px;">'
+                '<div class="ads-avatar" style="border-radius:4px;font-size:0.7rem;">PDF</div>'
+                '<div style="flex:1;min-width:0;">'
+                f'<div class="ads-card-name">{html.escape(st.session_state.uploaded_filename)}</div>'
+                '<div class="ads-card-status" style="margin-top:2px;">'
+                f"ingested · {st.session_state.page_count} pages · {len(st.session_state.chunks)} chunks embedded"
+                "</div></div>"
+                '<div class="ads-speaking-badge">✓ Read by panel</div>'
+                "</div>",
                 unsafe_allow_html=True,
             )
 
-            _render_panel_preview_row(defense_type, other_subtype, int(panel_size), st.session_state.document_id)
+        if document_ready:
+            with st.container(border=True):
+                st.markdown('<p class="small-caps-label">Defense profile</p>', unsafe_allow_html=True)
 
-        _, cta_col, _ = st.columns([1, 1, 1])
-        with cta_col:
-            start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+                defense_type = st.pills(
+                    "Defense type",
+                    list(DefenseType),
+                    format_func=lambda dt: dt.value,
+                    default=DefenseType.THESIS,
+                    required=True,
+                    key="defense_type_pill",
+                )
+                other_subtype = None
+                if defense_type == DefenseType.OTHER:
+                    other_subtype = st.selectbox(
+                        "Subtype", list(OtherSubtype), format_func=lambda ost: ost.value
+                    )
 
-        if start_clicked:
-            if not domain.strip() or not topic.strip():
-                st.error("Domain and topic are required.")
-            else:
-                profile = DefenseProfile(
-                    defense_type=defense_type,
-                    other_subtype=other_subtype,
-                    domain=domain.strip(),
-                    topic=topic.strip(),
-                    panel_size=int(panel_size),
-                    document_id=st.session_state.document_id,
-                )
-                with st.spinner("Assembling the panel..."):
-                    archetype_roster = compose_full_roster(profile)
-                    panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
+                domain_col, topic_col = st.columns(2)
+                with domain_col:
+                    domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
+                with topic_col:
+                    topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
 
-                st.session_state.session = DefenseSession(
-                    profile=profile, panel=panel, difficulty_current=profile.difficulty_start
+                max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
+                panel_size = st.number_input(
+                    "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
                 )
-                st.session_state.personas_fallback_used = fallback_used
-                st.session_state.other_subtype_line = (
-                    f"\n- Defense subtype: {other_subtype.value}" if other_subtype is not None else ""
+                # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
+                # outside panel_size unconditionally, so the visible panel is always one bigger
+                # than the selector value; state the arithmetic explicitly rather than let it
+                # read as a bug.
+                st.markdown(
+                    f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
+                    f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+                    unsafe_allow_html=True,
                 )
-                st.session_state.pending_turn = None
-                st.session_state.stage = "running"
-                st.rerun()
+
+                _render_panel_preview_row(
+                    defense_type, other_subtype, int(panel_size), st.session_state.document_id
+                )
+
+            _, cta_col, _ = st.columns([1, 1, 1])
+            with cta_col:
+                start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+        else:
+            start_clicked = False
+
+    if process_clicked:
+        # Deliberately NOT pre-cleared like the Convene path below: on ingestion
+        # failure, _ingest_and_extract shows st.error() and returns without
+        # setting document_id — the dropzone/button must stay on screen so the
+        # user can retry, and no rerun should fire (a rerun would immediately
+        # wipe the just-shown error before anyone could read it).
+        with st.spinner("Processing document..."):
+            _ingest_and_extract(uploaded_file)
+        if "document_id" in st.session_state:
+            st.rerun()
+
+    if start_clicked:
+        if not domain.strip() or not topic.strip():
+            st.error("Domain and topic are required.")
+        else:
+            intake_slot.empty()
+            profile = DefenseProfile(
+                defense_type=defense_type,
+                other_subtype=other_subtype,
+                domain=domain.strip(),
+                topic=topic.strip(),
+                panel_size=int(panel_size),
+                document_id=st.session_state.document_id,
+            )
+            with st.spinner("Assembling the panel..."):
+                archetype_roster = compose_full_roster(profile)
+                panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
+
+            st.session_state.session = DefenseSession(
+                profile=profile, panel=panel, difficulty_current=profile.difficulty_start
+            )
+            st.session_state.personas_fallback_used = fallback_used
+            st.session_state.other_subtype_line = (
+                f"\n- Defense subtype: {other_subtype.value}" if other_subtype is not None else ""
+            )
+            st.session_state.pending_turn = None
+            st.session_state.stage = "running"
+            st.rerun()
 
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
