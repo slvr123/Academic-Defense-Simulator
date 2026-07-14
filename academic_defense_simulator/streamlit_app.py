@@ -7,9 +7,11 @@ cached per document_id) -> profile form (prefilled, editable) -> start session.
 defense type/subtype (0.3a Decision 1); `difficulty_start` stays hidden/hardcoded
 (Pydantic default on `DefenseProfile`).
 
-v0.3d (docs/v0.3d-defense-ui-decisions.md) adds the oxblood theme, panelist cards,
-chat-message exchange rendering, the dev-view toggle, stage-keyed aborted-state copy,
-and the report view — presentation only, zero business-logic changes.
+v0.3d (docs/v0.3d-defense-ui-decisions.md) adds the panelist cards, transcript-block
+exchange rendering (Decision 8), the case-file sidebar (Decision 9), the dev-view
+toggle, stage-keyed aborted-state copy, and the report view — presentation only,
+zero business-logic changes. Palette is Decision 7 (re-revised), the final revision
+before deploy; see that entry for the locked values and their rationale.
 """
 
 from __future__ import annotations
@@ -124,11 +126,15 @@ st.set_page_config(page_title="Academic Defense Simulator")
 
 
 def _inject_theme_css() -> None:
-    """Graphite & Oxblood (v0.3d Decision 7 revised): light warm-gray canvas, charcoal
-    text, one accent. `config.toml` covers what it can reach (base theme, backgrounds,
-    text, borders, primary color); this covers what it can't — the solid-accent
-    filled/selected states, serif display headings, small-caps label tracking, and the
-    striped/initialed panelist-card avatars carried over from the design prototype."""
+    """Dark prototype aesthetic, oxblood accent, gold garnish (v0.3d Decision 7
+    re-revised — final palette before deploy). `config.toml` covers base theme,
+    backgrounds, text, borders, and the primary accent; this covers what it can't —
+    serif display headings, small-caps label tracking (including the gold-only
+    sidebar-section variant), the transcript-block/answer-inset structure
+    (Decision 8), the speaking-state badge and card avatars, and button/pill accent
+    states. Gold (#D2A24C) is a garnish only — sidebar section labels, the speaking
+    badge's outline, fine rules — never a CTA or fill color; that role stays
+    oxblood (#8C3A3F) throughout."""
     st.markdown(
         """
         <style>
@@ -142,31 +148,51 @@ def _inject_theme_css() -> None:
             font-size: 0.78rem;
             color: #8A8378;
         }
+        .sidebar-section-label {
+            font-variant: small-caps;
+            letter-spacing: 0.09em;
+            font-size: 0.78rem;
+            color: #D2A24C;
+            margin-top: 0.6rem;
+        }
+        [data-testid="stExpander"] summary p {
+            font-variant: small-caps;
+            letter-spacing: 0.09em;
+            color: #ECE7DD;
+        }
 
-        /* Active defense-type pill (Decision 7 revised: solid single-accent fill) */
+        /* Primary CTAs (Decision 7 re-revised: oxblood accent, on-accent text) */
+        button[data-testid="stBaseButton-primary"] {
+            background-color: #8C3A3F !important;
+            border-color: #8C3A3F !important;
+            color: #F2E9E4 !important;
+        }
+        button[data-testid="stBaseButton-primary"]:hover {
+            background-color: #A3453F !important;
+            border-color: #A3453F !important;
+        }
+
+        /* Active defense-type pill: solid accent fill, same treatment as a CTA */
         div[data-testid="stButtonGroup"] button[data-testid="stBaseButton-pillsActive"] {
             background-color: #8C3A3F !important;
             border-color: #8C3A3F !important;
-            color: #F7F2ED !important;
+            color: #F2E9E4 !important;
         }
 
         .ads-card {
-            border: 1px solid #DDD6CC;
+            border: 1px solid #2E2A25;
             border-radius: 12px;
             padding: 0.85rem 1rem;
-            background: #FAF7F3;
+            background: #1A1714;
             margin-bottom: 0.5rem;
             text-align: center;
         }
         .ads-card.speaking {
             border: 2px solid #8C3A3F;
-            box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.18);
-        }
-        .ads-card.speaking .ads-card-status {
-            color: #8C3A3F;
+            box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.22);
         }
         .ads-card.completed {
-            border-color: #8A8378;
+            border-color: #6B655E;
         }
         .ads-card.waiting {
             opacity: 0.55;
@@ -180,7 +206,7 @@ def _inject_theme_css() -> None:
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            color: #F7F2ED;
+            color: #ECE7DD;
             background: repeating-linear-gradient(
                 135deg, #8C3A3F, #8C3A3F 6px, #6E2C30 6px, #6E2C30 12px
             );
@@ -191,15 +217,64 @@ def _inject_theme_css() -> None:
         .ads-card-name {
             font-family: Georgia, serif;
             font-weight: 600;
-            color: #2A2724;
+            color: #ECE7DD;
         }
-        .ads-card-title {
+        /* Card archetype labels: tracked tighter and smaller than section labels
+           (0.62rem / 0.06em) so long titles don't break mid-word. */
+        .ads-card-title.small-caps-label {
             margin-top: 0.15rem;
+            letter-spacing: 0.06em;
+            font-size: 0.62rem;
         }
         .ads-card-status {
             margin-top: 0.35rem;
             font-size: 0.82rem;
-            color: #6B655E;
+            color: #B5AEA2;
+        }
+
+        /* Speaking badge: gold outline only (garnish), accent-tinted text — gold
+           never carries a CTA or fill role (Decision 7 re-revised, accent call). */
+        .ads-speaking-badge {
+            display: inline-block;
+            margin-top: 0.35rem;
+            padding: 0.1rem 0.55rem;
+            border: 1px solid #D2A24C;
+            border-radius: 999px;
+            font-variant: small-caps;
+            letter-spacing: 0.09em;
+            font-size: 0.72rem;
+            color: #C96F6F;
+        }
+
+        /* Transcript blocks (Decision 8) */
+        .ads-turn-header {
+            font-variant: small-caps;
+            letter-spacing: 0.09em;
+            font-size: 0.85rem;
+            color: #ECE7DD;
+            margin-bottom: 0.5rem;
+        }
+        .ads-answer-inset {
+            margin-top: 0.75rem;
+            padding: 0.65rem 0.9rem;
+            background: #141210;
+            border-left: 3px solid #2E2A25;
+            border-radius: 0 8px 8px 0;
+        }
+        .ads-answer-label {
+            font-variant: small-caps;
+            letter-spacing: 0.09em;
+            font-size: 0.72rem;
+            color: #8A8378;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Active turn block (Decision 8): a real st.container(border=True, key=
+           "active_turn_block"), so the accent border wraps the question AND the
+           answer box in one DOM container, not just visually adjacent elements. */
+        .st-key-active_turn_block {
+            border: 2px solid #8C3A3F !important;
+            box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.18);
         }
         </style>
         """,
@@ -300,12 +375,19 @@ def _render_panelist_card(panelist: Panelist, state: str, status_line: str) -> s
     title = html.escape(_archetype_title(panelist.archetype_key))
     status = html.escape(status_line)
     avatar_class = "ads-avatar da" if panelist.archetype_key == DEVILS_ADVOCATE_KEY else "ads-avatar"
+    # Speaking state gets the gold-outlined badge (Decision 7 re-revised, accent call —
+    # gold is a garnish only); completed/waiting keep the plain muted status line.
+    status_html = (
+        f'<div class="ads-speaking-badge">{status}</div>'
+        if state == "speaking"
+        else f'<div class="ads-card-status">{status}</div>'
+    )
     return (
         f'<div class="ads-card {state}">'
         f'<div class="{avatar_class}">{initial}</div>'
         f'<div class="ads-card-name">{name}</div>'
         f'<div class="ads-card-title small-caps-label">{title}</div>'
-        f'<div class="ads-card-status">{status}</div>'
+        f"{status_html}"
         f"</div>"
     )
 
@@ -320,19 +402,37 @@ def _render_panel_row(session: DefenseSession, active_panelist: Panelist) -> Non
             st.markdown(_render_panelist_card(panelist, state, status_line), unsafe_allow_html=True)
 
 
-def _render_turn_message(turn) -> None:
-    with st.chat_message("assistant"):
-        st.markdown(f"**Dr. {turn.panelist_name}** — {_archetype_title(turn.panelist_archetype_key)}")
-        st.write(turn.question)
-        st.caption(f'Grounding: "{turn.grounding_reference}"')
+def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
+    """Permanent small-caps header (v0.3d Decision 8) — attribution lives in the
+    transcript block itself, not a floating avatar, so it can't scroll away from
+    its content."""
+    return f"Turn {turn_num} — Dr. {panelist_name} · {_archetype_title(archetype_key)}"
+
+
+def _render_turn_content(turn) -> None:
+    """Question + grounding + (once answered) the candidate's inset answer — the
+    body shared by a collapsed-history block and the active turn block."""
+    st.write(turn.question)
+    st.caption(f'Grounding: "{turn.grounding_reference}"')
     if turn.answer is not None:
-        with st.chat_message("user"):
-            st.write(turn.answer)
+        st.markdown(
+            '<div class="ads-answer-inset">'
+            '<div class="ads-answer-label">You —</div>'
+            f"<div>{html.escape(turn.answer)}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def _render_exchange_history(session: DefenseSession) -> None:
-    for turn in session.turns:
-        _render_turn_message(turn)
+    """Every turn in `session.turns` is, by construction, already scored (appended
+    only after scoring completes) — so every history block collapses to its header
+    line via a native `st.expander` (Decision 8 item 3), making a six-turn session
+    read as a scannable docket rather than an ever-growing feed."""
+    for i, turn in enumerate(session.turns, start=1):
+        header = _turn_header(i, turn.panelist_name, turn.panelist_archetype_key)
+        with st.expander(header, expanded=False):
+            _render_turn_content(turn)
 
 
 def _render_current_exchange(session: DefenseSession, active_panelist: Panelist, turn_num: int) -> None:
@@ -382,11 +482,22 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
     so the "advance past this turn" transitions below are unaffected. Unlike the
     question-generation step above, this fragment's abort paths fire from within a
     widget-triggered (button-click) rerun, not the fragment's unconditional first
-    render — the combination that produced the stale-element bug above."""
-    _render_turn_message(turn)
-    answer = st.text_area("Your answer", key=f"answer_{turn_num}")
+    render — the combination that produced the stale-element bug above.
 
-    if st.button("Submit answer", key=f"submit_{turn_num}"):
+    Rendered inside a real `st.container(border=True, key="active_turn_block")`
+    (Decision 8) — the accent border in `_inject_theme_css`'s `.st-key-
+    active_turn_block` rule then wraps the question AND the answer box in one DOM
+    container, not just visually adjacent elements. The key is a constant, not
+    per-turn: only one active-turn container exists in the render tree at a time."""
+    with st.container(key="active_turn_block", border=True):
+        header = _turn_header(turn_num, turn.panelist_name, turn.panelist_archetype_key)
+        st.markdown(f'<div class="ads-turn-header">{html.escape(header)}</div>', unsafe_allow_html=True)
+        st.write(turn.question)
+        st.caption(f'Grounding: "{turn.grounding_reference}"')
+        answer = st.text_area("Your answer", key=f"answer_{turn_num}")
+        submitted = st.button("Submit answer", key=f"submit_{turn_num}")
+
+    if submitted:
         if not answer.strip():
             st.warning("Answer cannot be blank — please respond.")
         else:
@@ -481,6 +592,21 @@ def _render_report(report: DefenseReport) -> None:
         )
 
 
+def _count_pdf_pages(path: str) -> int:
+    """Page count for the case-file sidebar (v0.3d Decision 9). Reads the same temp
+    file `chunk_pdf` already opened, rather than changing that function's contract
+    (`list[str]` of chunk texts) — kept in the Streamlit layer per the brief's
+    instruction not to touch ingestion modules for a display-only value. PyMuPDF is
+    already a hard dependency via `chunking.py`'s own lazy import of it."""
+    import fitz  # PyMuPDF
+
+    document = fitz.open(path)
+    try:
+        return document.page_count
+    finally:
+        document.close()
+
+
 def _ingest_and_extract(uploaded_file) -> None:
     """Ingestion + extraction only (Decision 4) — no defense profile yet, that's
     collected on the next stage's form. Cached per document_id so re-rendering the
@@ -491,6 +617,7 @@ def _ingest_and_extract(uploaded_file) -> None:
             tmp.write(uploaded_file.getvalue())
             tmp_path = tmp.name
         texts = chunk_pdf(tmp_path)
+        page_count = _count_pdf_pages(tmp_path)
     except DocumentIngestionError as exc:
         st.error(f"Could not process document: {exc}")
         return
@@ -508,6 +635,8 @@ def _ingest_and_extract(uploaded_file) -> None:
         extraction = extract_document_profile(texts, _new_provider())
 
     st.session_state.document_id = str(uuid4())
+    st.session_state.uploaded_filename = uploaded_file.name
+    st.session_state.page_count = page_count
     st.session_state.chunks = chunks
     st.session_state.embedding_model = embedding_model
     st.session_state.gemini_model = settings.gemini_model
@@ -516,7 +645,47 @@ def _ingest_and_extract(uploaded_file) -> None:
     st.session_state.stage = "profile"
 
 
+def _render_case_file_sidebar() -> None:
+    """Case-file sidebar (v0.3d Decision 9): session context that otherwise has no
+    home. Every value here is already computed elsewhere — zero new LLM calls,
+    zero business-logic changes. Deliberately excludes the retrieved excerpt (would
+    make the defense open-book) and anything difficulty- or score-shaped (same
+    never-surfaced rule as dev-view's difficulty hiding, Decision 4)."""
+    session: DefenseSession | None = st.session_state.get("session")
+    if session is None:
+        return
+
+    with st.sidebar:
+        st.markdown('<p class="sidebar-section-label">Case file</p>', unsafe_allow_html=True)
+        st.caption(st.session_state.get("uploaded_filename", "—"))
+        st.write(f"**Domain:** {session.profile.domain}")
+        st.write(f"**Topic:** {session.profile.topic}")
+        page_count = st.session_state.get("page_count", "?")
+        chunk_count = len(st.session_state.get("chunks", []))
+        st.caption(f"{page_count} pages · {chunk_count} chunks embedded")
+
+        st.markdown('<p class="sidebar-section-label">Panel</p>', unsafe_allow_html=True)
+        if session.report is not None:
+            # Session complete — nobody is "speaking" anymore; every card is just
+            # its final count, same wording _panelist_card_state uses.
+            for panelist in session.panel:
+                turns_taken = sum(1 for t in session.turns if t.panelist_archetype_key == panelist.archetype_key)
+                noun = "question" if turns_taken == 1 else "questions"
+                st.caption(f"Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
+        else:
+            turn_num = len(session.turns) + 1
+            active_panelist = select_active_panelist(session, turn_num)
+            for panelist in session.panel:
+                _, status_line = _panelist_card_state(panelist, session, active_panelist)
+                st.caption(f"Dr. {panelist.panelist_name} — {status_line}")
+
+        st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
+        turn_progress = min(len(session.turns) + 1, MAX_TURNS)
+        st.caption(f"Turn {turn_progress} of {MAX_TURNS} · {session.profile.defense_type.value}")
+
+
 _render_dev_view()
+_render_case_file_sidebar()
 
 if st.session_state.stage == "upload":
     st.subheader("Upload your research document")
