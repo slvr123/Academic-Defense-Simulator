@@ -286,6 +286,10 @@ def _inject_theme_css() -> None:
             background: repeating-linear-gradient(
                 -45deg, rgba(255,255,255,0.015) 0 10px, transparent 10px 20px
             ) !important;
+            min-height: 108px !important;
+            padding: 28px !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         /* Panel-composition preview cards (Task 1) — same .ads-card language as
