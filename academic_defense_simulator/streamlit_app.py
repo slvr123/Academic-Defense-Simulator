@@ -306,15 +306,15 @@ def _inject_theme_css() -> None:
 _inject_theme_css()
 
 if "stage" not in st.session_state:
-    st.session_state.stage = "upload"
+    st.session_state.stage = "intake"
 
 
 def _render_hero() -> None:
     """Intake hero (presentation only) — eyebrow, serif title, muted tagline.
     Matches the design prototype's composition under the current oxblood-on-dark
     palette (Decision 7 re-revised), not the prototype's original clay-red. Shown
-    only on the upload/profile stages — the running/aborted/done views have their
-    own headings and don't need the tagline repeated."""
+    only on the intake stage — the running/aborted/done views have their own
+    headings and don't need the tagline repeated."""
     st.markdown(
         '<p class="small-caps-label" style="text-align:center;">The panel is waiting</p>'
         '<h1 style="text-align:center;">Academic Defense Simulator</h1>'
@@ -325,7 +325,7 @@ def _render_hero() -> None:
     )
 
 
-if st.session_state.stage in ("upload", "profile"):
+if st.session_state.stage == "intake":
     _render_hero()
 else:
     st.title("Academic Defense Simulator")
@@ -347,7 +347,7 @@ if "_turn_lock" not in globals():
 def _reset() -> None:
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.session_state.stage = "upload"
+    st.session_state.stage = "intake"
 
 
 def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | None) -> str:
@@ -692,9 +692,12 @@ def _count_pdf_pages(path: str) -> int:
 
 
 def _ingest_and_extract(uploaded_file) -> None:
-    """Ingestion + extraction only (Decision 4) — no defense profile yet, that's
-    collected on the next stage's form. Cached per document_id so re-rendering the
-    form (stage 'profile') never re-triggers this LLM call."""
+    """Ingestion + extraction only (Decision 4) — the defense profile form renders
+    below the dropzone on the same 'intake' stage once `document_id` is set here
+    (Sean's combined-page ask); this function never advances `stage` itself, so
+    a rerun after it just re-renders 'intake' with the profile section now
+    visible. `document_id`'s presence is what gates that, so this never re-fires
+    for the same document."""
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -726,7 +729,6 @@ def _ingest_and_extract(uploaded_file) -> None:
     st.session_state.gemini_model = settings.gemini_model
     st.session_state.extracted_domain = extraction.domain
     st.session_state.extracted_topic = extraction.topic
-    st.session_state.stage = "profile"
 
 
 def _render_case_file_sidebar() -> None:
@@ -771,90 +773,113 @@ def _render_case_file_sidebar() -> None:
 _render_dev_view()
 _render_case_file_sidebar()
 
-if st.session_state.stage == "upload":
-    st.markdown(
-        '<p style="text-align:center;font-weight:600;margin-bottom:0.25rem;">'
-        "Drop your research document</p>",
-        unsafe_allow_html=True,
-    )
-    uploaded_file = st.file_uploader(
-        "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
-    )
-    st.caption("PDF · thesis, capstone, or paper")
+if st.session_state.stage == "intake":
+    # One combined page (Sean's ask): the dropzone and the defense-profile form
+    # live on the same screen, matching the design prototype's composition. The
+    # profile section only appears once `document_id` exists — that's the real
+    # signal ingestion + extraction finished, not a separate navigated-to stage.
+    document_ready = "document_id" in st.session_state
 
-    if st.button("Process document", type="primary", disabled=uploaded_file is None):
-        with st.spinner("Processing document..."):
-            _ingest_and_extract(uploaded_file)
-        if st.session_state.stage == "profile":
-            st.rerun()
-
-elif st.session_state.stage == "profile":
-    with st.container(border=True):
-        st.markdown('<p class="small-caps-label">Defense profile</p>', unsafe_allow_html=True)
-
-        defense_type = st.pills(
-            "Defense type",
-            list(DefenseType),
-            format_func=lambda dt: dt.value,
-            default=DefenseType.THESIS,
-            required=True,
-            key="defense_type_pill",
-        )
-        other_subtype = None
-        if defense_type == DefenseType.OTHER:
-            other_subtype = st.selectbox("Subtype", list(OtherSubtype), format_func=lambda ost: ost.value)
-
-        domain_col, topic_col = st.columns(2)
-        with domain_col:
-            domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
-        with topic_col:
-            topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
-
-        max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
-        panel_size = st.number_input(
-            "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
-        )
-        # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
-        # outside panel_size unconditionally, so the visible panel is always one bigger than
-        # the selector value; state the arithmetic explicitly rather than let it read as a bug.
+    if not document_ready:
         st.markdown(
-            f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
-            f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+            '<p style="text-align:center;font-weight:600;margin-bottom:0.25rem;">'
+            "Drop your research document</p>",
+            unsafe_allow_html=True,
+        )
+        uploaded_file = st.file_uploader(
+            "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
+        )
+        st.caption("PDF · thesis, capstone, or paper")
+
+        if st.button("Process document", type="primary", disabled=uploaded_file is None):
+            with st.spinner("Processing document..."):
+                _ingest_and_extract(uploaded_file)
+            if "document_id" in st.session_state:
+                st.rerun()
+    else:
+        # Loaded-document summary (replaces the empty dropzone prompt) — same
+        # composition as the prototype's docLoaded branch: filename, ingestion
+        # stats, a "read by panel" confirmation.
+        st.markdown(
+            '<div class="ads-card" style="text-align:left;display:flex;align-items:center;gap:14px;">'
+            '<div class="ads-avatar" style="border-radius:4px;font-size:0.7rem;">PDF</div>'
+            '<div style="flex:1;min-width:0;">'
+            f'<div class="ads-card-name">{html.escape(st.session_state.uploaded_filename)}</div>'
+            '<div class="ads-card-status" style="margin-top:2px;">'
+            f"ingested · {st.session_state.page_count} pages · {len(st.session_state.chunks)} chunks embedded"
+            "</div></div>"
+            '<div class="ads-speaking-badge">✓ Read by panel</div>'
+            "</div>",
             unsafe_allow_html=True,
         )
 
-        _render_panel_preview_row(defense_type, other_subtype, int(panel_size), st.session_state.document_id)
+    if document_ready:
+        with st.container(border=True):
+            st.markdown('<p class="small-caps-label">Defense profile</p>', unsafe_allow_html=True)
 
-    _, cta_col, _ = st.columns([1, 1, 1])
-    with cta_col:
-        start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+            defense_type = st.pills(
+                "Defense type",
+                list(DefenseType),
+                format_func=lambda dt: dt.value,
+                default=DefenseType.THESIS,
+                required=True,
+                key="defense_type_pill",
+            )
+            other_subtype = None
+            if defense_type == DefenseType.OTHER:
+                other_subtype = st.selectbox("Subtype", list(OtherSubtype), format_func=lambda ost: ost.value)
 
-    if start_clicked:
-        if not domain.strip() or not topic.strip():
-            st.error("Domain and topic are required.")
-        else:
-            profile = DefenseProfile(
-                defense_type=defense_type,
-                other_subtype=other_subtype,
-                domain=domain.strip(),
-                topic=topic.strip(),
-                panel_size=int(panel_size),
-                document_id=st.session_state.document_id,
-            )
-            with st.spinner("Assembling the panel..."):
-                archetype_roster = compose_full_roster(profile)
-                panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
+            domain_col, topic_col = st.columns(2)
+            with domain_col:
+                domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
+            with topic_col:
+                topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
 
-            st.session_state.session = DefenseSession(
-                profile=profile, panel=panel, difficulty_current=profile.difficulty_start
+            max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
+            panel_size = st.number_input(
+                "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
             )
-            st.session_state.personas_fallback_used = fallback_used
-            st.session_state.other_subtype_line = (
-                f"\n- Defense subtype: {other_subtype.value}" if other_subtype is not None else ""
+            # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
+            # outside panel_size unconditionally, so the visible panel is always one bigger than
+            # the selector value; state the arithmetic explicitly rather than let it read as a bug.
+            st.markdown(
+                f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
+                f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+                unsafe_allow_html=True,
             )
-            st.session_state.pending_turn = None
-            st.session_state.stage = "running"
-            st.rerun()
+
+            _render_panel_preview_row(defense_type, other_subtype, int(panel_size), st.session_state.document_id)
+
+        _, cta_col, _ = st.columns([1, 1, 1])
+        with cta_col:
+            start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+
+        if start_clicked:
+            if not domain.strip() or not topic.strip():
+                st.error("Domain and topic are required.")
+            else:
+                profile = DefenseProfile(
+                    defense_type=defense_type,
+                    other_subtype=other_subtype,
+                    domain=domain.strip(),
+                    topic=topic.strip(),
+                    panel_size=int(panel_size),
+                    document_id=st.session_state.document_id,
+                )
+                with st.spinner("Assembling the panel..."):
+                    archetype_roster = compose_full_roster(profile)
+                    panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
+
+                st.session_state.session = DefenseSession(
+                    profile=profile, panel=panel, difficulty_current=profile.difficulty_start
+                )
+                st.session_state.personas_fallback_used = fallback_used
+                st.session_state.other_subtype_line = (
+                    f"\n- Defense subtype: {other_subtype.value}" if other_subtype is not None else ""
+                )
+                st.session_state.pending_turn = None
+                st.session_state.stage = "running"
+                st.rerun()
 
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
