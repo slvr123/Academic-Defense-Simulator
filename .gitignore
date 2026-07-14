@@ -15,7 +15,8 @@ venv/
 
 # OS / editor noise
 .DS_Store
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 
 # Local temp file cache (document_id-keyed uploads) — update the path once
