@@ -301,6 +301,19 @@ def _inject_theme_css() -> None:
             font-size: 0.85rem;
             font-weight: 500;
         }
+
+        /* Preview-card row (bug fix): flex-wrap with a real min-width per card,
+           instead of st.columns dividing into `len(cards)` equal, floor-less
+           slots — the cause of the illegible mid-word-wrapped cards. */
+        .ads-preview-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+        .ads-preview-row .ads-card {
+            flex: 1 1 165px;
+            min-width: 165px;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -484,10 +497,14 @@ def _render_panel_preview_row(
     )
     archetype_keys = compose_full_roster(preview_profile)
     st.markdown('<p class="small-caps-label">Your panel — composed from the profile</p>', unsafe_allow_html=True)
-    cols = st.columns(len(archetype_keys))
-    for col, key in zip(cols, archetype_keys):
-        with col:
-            st.markdown(_render_panel_preview_card(key), unsafe_allow_html=True)
+    # Flex row instead of st.columns (bug fix): st.columns divides the row into
+    # `len(archetype_keys)` equal-width slots with no floor, and nested one level
+    # inside the bordered "Defense profile" container that width shrinks further
+    # still — five columns there was narrow enough to force mid-word character
+    # breaks ("Implementatio" / "n"). A flex-wrap row gives every card a real
+    # min-width and wraps extra cards onto a second line instead of compressing.
+    cards_html = "".join(_render_panel_preview_card(key) for key in archetype_keys)
+    st.markdown(f'<div class="ads-preview-row">{cards_html}</div>', unsafe_allow_html=True)
 
 
 def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
