@@ -122,7 +122,7 @@ def _abort(label: str, exc: LLMProviderError) -> None:
     st.session_state.abort_message = str(exc)
 
 
-st.set_page_config(page_title="Academic Defense Simulator")
+st.set_page_config(page_title="Academic Defense Simulator", initial_sidebar_state="expanded")
 
 
 def _inject_theme_css() -> None:
@@ -276,6 +276,27 @@ def _inject_theme_css() -> None:
             border: 2px solid #8C3A3F !important;
             box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.18);
         }
+
+        /* Intake dropzone (Task 1) — restyles the native file_uploader's own
+           dropzone chrome; the widget's drag/drop and browse behavior are
+           untouched, only its container border/background change. */
+        [data-testid="stFileUploaderDropzone"] {
+            border: 1px dashed rgba(140, 58, 63, 0.45) !important;
+            border-radius: 12px !important;
+            background: repeating-linear-gradient(
+                -45deg, rgba(255,255,255,0.015) 0 10px, transparent 10px 20px
+            ) !important;
+        }
+
+        /* Panel-composition preview cards (Task 1) — same .ads-card language as
+           the live session's panel row, no state modifier (no session exists
+           yet), placeholder name slot dimmed to read clearly as a placeholder. */
+        .ads-card-name.ads-placeholder {
+            opacity: 0.6;
+            font-style: italic;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -283,10 +304,31 @@ def _inject_theme_css() -> None:
 
 
 _inject_theme_css()
-st.title("Academic Defense Simulator")
 
 if "stage" not in st.session_state:
     st.session_state.stage = "upload"
+
+
+def _render_hero() -> None:
+    """Intake hero (presentation only) — eyebrow, serif title, muted tagline.
+    Matches the design prototype's composition under the current oxblood-on-dark
+    palette (Decision 7 re-revised), not the prototype's original clay-red. Shown
+    only on the upload/profile stages — the running/aborted/done views have their
+    own headings and don't need the tagline repeated."""
+    st.markdown(
+        '<p class="small-caps-label" style="text-align:center;">The panel is waiting</p>'
+        '<h1 style="text-align:center;">Academic Defense Simulator</h1>'
+        '<p style="text-align:center;color:#B5AEA2;max-width:600px;margin:0 auto 1.5rem;">'
+        "Upload your research. Face a panel that has actually read it — and gets "
+        "harder when your answers get vague.</p>",
+        unsafe_allow_html=True,
+    )
+
+
+if st.session_state.stage in ("upload", "profile"):
+    _render_hero()
+else:
+    st.title("Academic Defense Simulator")
 
 # A long blocking LLM call + time.sleep() inside a script run gives Streamlit's cooperative
 # rerun-cancellation no checkpoint to interrupt at, so a second rerun for the same session
@@ -400,6 +442,48 @@ def _render_panel_row(session: DefenseSession, active_panelist: Panelist) -> Non
         state, status_line = _panelist_card_state(panelist, session, active_panelist)
         with col:
             st.markdown(_render_panelist_card(panelist, state, status_line), unsafe_allow_html=True)
+
+
+def _render_panel_preview_card(archetype_key: str) -> str:
+    """Panel-composition preview for the intake screen (Task 1, presentation
+    only) — same `.ads-card` visual language as the live session's panel row, but
+    no name exists yet (persona generation hasn't run), so the name slot shows an
+    honest placeholder rather than a fabricated one."""
+    title = html.escape(_archetype_title(archetype_key))
+    initial = html.escape(title[:1].upper())
+    avatar_class = "ads-avatar da" if archetype_key == DEVILS_ADVOCATE_KEY else "ads-avatar"
+    return (
+        f'<div class="ads-card">'
+        f'<div class="{avatar_class}">{initial}</div>'
+        f'<div class="ads-card-name ads-placeholder">Assigned at convene</div>'
+        f'<div class="ads-card-title small-caps-label">{title}</div>'
+        f"</div>"
+    )
+
+
+def _render_panel_preview_row(
+    defense_type: DefenseType, other_subtype: OtherSubtype | None, panel_size: int, document_id: str
+) -> None:
+    """Live panel-composition preview (Task 1) — `compose_full_roster` is a pure,
+    instant, zero-LLM function (Decision 1's own source), so it's safe to call on
+    every rerun. `domain`/`topic` are irrelevant to roster composition (only
+    `defense_type`/`other_subtype`/`panel_size` feed `compose_panel`'s lookup) —
+    this profile is a disposable preview object, never stored, never the one that
+    starts the session."""
+    preview_profile = DefenseProfile(
+        defense_type=defense_type,
+        other_subtype=other_subtype,
+        domain="preview",
+        topic="preview",
+        panel_size=panel_size,
+        document_id=document_id,
+    )
+    archetype_keys = compose_full_roster(preview_profile)
+    st.markdown('<p class="small-caps-label">Your panel — composed from the profile</p>', unsafe_allow_html=True)
+    cols = st.columns(len(archetype_keys))
+    for col, key in zip(cols, archetype_keys):
+        with col:
+            st.markdown(_render_panel_preview_card(key), unsafe_allow_html=True)
 
 
 def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
@@ -688,9 +772,15 @@ _render_dev_view()
 _render_case_file_sidebar()
 
 if st.session_state.stage == "upload":
-    st.subheader("Upload your research document")
-
-    uploaded_file = st.file_uploader("Upload your research document (PDF)", type=["pdf"])
+    st.markdown(
+        '<p style="text-align:center;font-weight:600;margin-bottom:0.25rem;">'
+        "Drop your research document</p>",
+        unsafe_allow_html=True,
+    )
+    uploaded_file = st.file_uploader(
+        "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
+    )
+    st.caption("PDF · thesis, capstone, or paper")
 
     if st.button("Process document", type="primary", disabled=uploaded_file is None):
         with st.spinner("Processing document..."):
@@ -699,37 +789,47 @@ if st.session_state.stage == "upload":
             st.rerun()
 
 elif st.session_state.stage == "profile":
-    st.subheader("Confirm defense details")
+    with st.container(border=True):
+        st.markdown('<p class="small-caps-label">Defense profile</p>', unsafe_allow_html=True)
 
-    defense_type = st.pills(
-        "Defense type",
-        list(DefenseType),
-        format_func=lambda dt: dt.value,
-        default=DefenseType.THESIS,
-        required=True,
-        key="defense_type_pill",
-    )
-    other_subtype = None
-    if defense_type == DefenseType.OTHER:
-        other_subtype = st.selectbox("Subtype", list(OtherSubtype), format_func=lambda ost: ost.value)
+        defense_type = st.pills(
+            "Defense type",
+            list(DefenseType),
+            format_func=lambda dt: dt.value,
+            default=DefenseType.THESIS,
+            required=True,
+            key="defense_type_pill",
+        )
+        other_subtype = None
+        if defense_type == DefenseType.OTHER:
+            other_subtype = st.selectbox("Subtype", list(OtherSubtype), format_func=lambda ost: ost.value)
 
-    domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
-    topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
+        domain_col, topic_col = st.columns(2)
+        with domain_col:
+            domain = st.text_input("Domain / discipline", value=st.session_state.extracted_domain)
+        with topic_col:
+            topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
 
-    max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
-    panel_size = st.number_input(
-        "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
-    )
-    # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
-    # outside panel_size unconditionally, so the visible panel is always one bigger than
-    # the selector value; state the arithmetic explicitly rather than let it read as a bug.
-    st.markdown(
-        f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
-        f"Devil's Advocate = {int(panel_size) + 1} total</p>",
-        unsafe_allow_html=True,
-    )
+        max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
+        panel_size = st.number_input(
+            "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
+        )
+        # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
+        # outside panel_size unconditionally, so the visible panel is always one bigger than
+        # the selector value; state the arithmetic explicitly rather than let it read as a bug.
+        st.markdown(
+            f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
+            f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+            unsafe_allow_html=True,
+        )
 
-    if st.button("Start Session", type="primary"):
+        _render_panel_preview_row(defense_type, other_subtype, int(panel_size), st.session_state.document_id)
+
+    _, cta_col, _ = st.columns([1, 1, 1])
+    with cta_col:
+        start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+
+    if start_clicked:
         if not domain.strip() or not topic.strip():
             st.error("Domain and topic are required.")
         else:
