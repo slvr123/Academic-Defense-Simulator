@@ -1,8 +1,10 @@
 """Panel composition and persona generation.
 
 Composition (`compose_panel`) is a pure, zero-LLM function: deterministic mapping from
-`(defense_type, other_subtype)` to a priority-ordered archetype list, truncated to
-`profile.panel_size`. See `docs/v0.3a-persona-generation-decisions.md` Decision 1.
+`(defense_type, other_subtype)` to a priority-ordered archetype list, filtered to the
+user's `selected_archetypes`. See `docs/v0.3a-persona-generation-decisions.md` Decision 1
+and `docs/v0.3e-panel-composition-decisions.md` Decision 4 (direct selection replaced
+the old panel_size truncation).
 
 `generate_panel` is the one-upfront-call persona generation step (Decision 2): a single
 structured-output call producing the whole panel's names/framing, with Python-side
@@ -23,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 # Devil's Advocate is an orchestration feature, not a fifth composition-table entry
 # (docs/v0.3b-multi-panelist-orchestration-decisions.md Decision 2) — it is appended to
-# every session's roster by `compose_full_roster`, always last, never counted against
-# `panel_size` or listed in PANEL_COMPOSITION.
+# every session's roster by `compose_full_roster`, always last, never selectable and
+# never listed in PANEL_COMPOSITION (docs/v0.3e-panel-composition-decisions.md Decision 5).
 DEVILS_ADVOCATE_KEY = "devils_advocate"
 
 FALLBACK_PANELISTS: dict[str, Panelist] = {
@@ -99,24 +101,21 @@ def _composition_key(profile: DefenseProfile) -> str:
 
 
 def compose_panel(profile: DefenseProfile) -> list[str]:
-    """Return archetype keys for this profile, truncated to panel_size. Pure function,
-    no LLM. Raises ValueError if panel_size exceeds the composition list length — the
-    UI caps the selector so this never fires from the form (see Task 6)."""
+    """Return the user's selected archetype keys, in PANEL_COMPOSITION's priority
+    order for this defense type — not click order. Pure function, no LLM.
+    Validation (subset check, max 3, no duplicates) already happened at the schema
+    level (DefenseProfile.check_selected_archetypes); this function trusts it and
+    does not re-check (v0.3e Decision 4)."""
     key = _composition_key(profile)
     roster = PANEL_COMPOSITION[key]
-    if profile.panel_size > len(roster):
-        raise ValueError(
-            f"panel_size {profile.panel_size} exceeds the maximum panel size "
-            f"({len(roster)}) for '{key}'"
-        )
-    return roster[: profile.panel_size]
+    return [a for a in roster if a in profile.selected_archetypes]
 
 
 def compose_full_roster(profile: DefenseProfile) -> list[str]:
     """`compose_panel`'s domain roster with Devil's Advocate appended, always last
     (Decision 3: DA sits last in the round). Pure function, no LLM. This is the roster
     callers should use to assemble an actual session panel — `compose_panel` stays
-    domain-only so its existing tests and `panel_size` semantics are untouched."""
+    domain-only so its existing tests stay scoped to domain-selection semantics."""
     return compose_panel(profile) + [DEVILS_ADVOCATE_KEY]
 
 

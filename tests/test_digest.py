@@ -32,7 +32,11 @@ def _turn(archetype_key, name, chunk_index, score, question="q"):
 
 def _session(*turns):
     profile = DefenseProfile(
-        defense_type=DefenseType.THESIS, domain="library science", topic="t", document_id="doc"
+        defense_type=DefenseType.THESIS,
+        domain="library science",
+        topic="t",
+        selected_archetypes=["methodology_expert"],
+        document_id="doc",
     )
     return DefenseSession(profile=profile, panel=[], difficulty_current=2, turns=list(turns))
 

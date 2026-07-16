@@ -3,8 +3,8 @@ v0.3d defense-simulation UI). Reuses `engine.py`'s turn-loop helpers and
 `DefenseSession` as-is; no changes to `retrieve()`, prompt templates, scoring, or
 report logic. Flow (0.3a Decision 4): upload -> ingest -> extract (one LLM call,
 cached per document_id) -> profile form (prefilled, editable) -> start session.
-`panel_size` is a form control, capped at the composition list length for the selected
-defense type/subtype (0.3a Decision 1); `difficulty_start` stays hidden/hardcoded
+Panel composition is a multiselect scoped to the selected defense type/subtype, capped
+at 3 domain archetypes (v0.3e Decision 6); `difficulty_start` stays hidden/hardcoded
 (Pydantic default on `DefenseProfile`).
 
 v0.3d (docs/v0.3d-defense-ui-decisions.md) adds the panelist cards, transcript-block
@@ -482,20 +482,24 @@ def _render_panel_preview_card(archetype_key: str) -> str:
 
 
 def _render_panel_preview_row(
-    defense_type: DefenseType, other_subtype: OtherSubtype | None, panel_size: int, document_id: str
+    defense_type: DefenseType,
+    other_subtype: OtherSubtype | None,
+    selected_archetypes: list[str],
+    document_id: str,
 ) -> None:
-    """Live panel-composition preview (Task 1) — `compose_full_roster` is a pure,
+    """Live panel-composition preview (Task 1; v0.3e Decision 6 updates the input
+    from a count to the user's actual picks) — `compose_full_roster` is a pure,
     instant, zero-LLM function (Decision 1's own source), so it's safe to call on
     every rerun. `domain`/`topic` are irrelevant to roster composition (only
-    `defense_type`/`other_subtype`/`panel_size` feed `compose_panel`'s lookup) —
-    this profile is a disposable preview object, never stored, never the one that
-    starts the session."""
+    `defense_type`/`other_subtype`/`selected_archetypes` feed `compose_panel`'s
+    lookup) — this profile is a disposable preview object, never stored, never the
+    one that starts the session."""
     preview_profile = DefenseProfile(
         defense_type=defense_type,
         other_subtype=other_subtype,
         domain="preview",
         topic="preview",
-        panel_size=panel_size,
+        selected_archetypes=selected_archetypes,
         document_id=document_id,
     )
     archetype_keys = compose_full_roster(preview_profile)
@@ -871,22 +875,30 @@ if st.session_state.stage == "intake":
                 with topic_col:
                     topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
 
-                max_panel_size = len(PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)])
-                panel_size = st.number_input(
-                    "Panel size", min_value=1, max_value=max_panel_size, value=max_panel_size
+                type_roster = PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)]
+                # Default: top 3 in natural (priority) order — st.multiselect returns
+                # selections in option-list order regardless of click order, so this is
+                # already natural order; compose_panel (v0.3e Decision 4) re-derives
+                # natural order from PANEL_COMPOSITION independently either way.
+                selected_archetypes = st.multiselect(
+                    "Panel",
+                    options=type_roster,
+                    default=type_roster[:3],
+                    format_func=_archetype_title,
+                    max_selections=3,
                 )
-                # Panel caption (v0.3d Decision 1) — compose_full_roster appends Devil's Advocate
-                # outside panel_size unconditionally, so the visible panel is always one bigger
-                # than the selector value; state the arithmetic explicitly rather than let it
-                # read as a bug.
+                # Panel caption (v0.3d Decision 1, updated v0.3e) — compose_full_roster
+                # appends Devil's Advocate unconditionally, so the visible panel is always
+                # one bigger than the selection; state the arithmetic explicitly rather
+                # than let it read as a bug.
                 st.markdown(
-                    f'<p class="small-caps-label">{int(panel_size)} domain panelists + '
-                    f"Devil's Advocate = {int(panel_size) + 1} total</p>",
+                    f'<p class="small-caps-label">{len(selected_archetypes)} domain panelists + '
+                    f"Devil's Advocate = {len(selected_archetypes) + 1} total</p>",
                     unsafe_allow_html=True,
                 )
 
                 _render_panel_preview_row(
-                    defense_type, other_subtype, int(panel_size), st.session_state.document_id
+                    defense_type, other_subtype, selected_archetypes, st.session_state.document_id
                 )
 
             _, cta_col, _ = st.columns([1, 1, 1])
@@ -909,6 +921,8 @@ if st.session_state.stage == "intake":
     if start_clicked:
         if not domain.strip() or not topic.strip():
             st.error("Domain and topic are required.")
+        elif not selected_archetypes:
+            st.error("Select at least one panelist.")
         else:
             intake_slot.empty()
             profile = DefenseProfile(
@@ -916,7 +930,7 @@ if st.session_state.stage == "intake":
                 other_subtype=other_subtype,
                 domain=domain.strip(),
                 topic=topic.strip(),
-                panel_size=int(panel_size),
+                selected_archetypes=selected_archetypes,
                 document_id=st.session_state.document_id,
             )
             with st.spinner("Assembling the panel..."):

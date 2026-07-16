@@ -17,13 +17,16 @@ from academic_defense_simulator.models.panelist import Panelist, PanelGeneration
 from academic_defense_simulator.panel import FALLBACK_PANELISTS, PANEL_COMPOSITION, compose_panel, generate_panel
 
 
-def _profile(defense_type, other_subtype=None, panel_size=1):
+def _profile(defense_type, other_subtype=None, selected_archetypes=None):
+    key = defense_type.value if other_subtype is None else f"other/{other_subtype.value}"
+    if selected_archetypes is None:
+        selected_archetypes = PANEL_COMPOSITION[key][:3]
     return DefenseProfile(
         defense_type=defense_type,
         other_subtype=other_subtype,
         domain="library science",
         topic="t",
-        panel_size=panel_size,
+        selected_archetypes=selected_archetypes,
         document_id="doc",
     )
 
@@ -39,28 +42,39 @@ def _profile(defense_type, other_subtype=None, panel_size=1):
         (DefenseType.OTHER, OtherSubtype.CERTIFICATION_INTERVIEW),
     ],
 )
-def test_full_roster_matches_composition_table(defense_type, other_subtype):
+def test_selection_up_to_the_cap_matches_natural_order_slice(defense_type, other_subtype):
+    """v0.3e Decision 3: cap is 3 for every defense type, uniformly — this is the
+    direct-selection replacement for the old 'full roster' truncation test."""
     key = defense_type.value if other_subtype is None else f"other/{other_subtype.value}"
-    full_roster = PANEL_COMPOSITION[key]
-    profile = _profile(defense_type, other_subtype, panel_size=len(full_roster))
-    assert compose_panel(profile) == full_roster
+    roster = PANEL_COMPOSITION[key]
+    selection = roster[:3]  # the max allowed, regardless of how many the type's roster has
+    profile = _profile(defense_type, other_subtype, selected_archetypes=selection)
+    assert compose_panel(profile) == selection
 
 
 @pytest.mark.parametrize("size", [1, 2, 3])
-def test_truncation_at_panel_size(size):
-    profile = _profile(DefenseType.THESIS, panel_size=size)
+def test_selection_size_is_preserved(size):
+    selection = PANEL_COMPOSITION["thesis"][:size]
+    profile = _profile(DefenseType.THESIS, selected_archetypes=selection)
     result = compose_panel(profile)
-    assert result == PANEL_COMPOSITION["thesis"][:size]
+    assert result == selection
     assert len(result) == size
 
 
-def test_underfilled_panel_raises_value_error_naming_subtype_and_max():
-    profile = _profile(DefenseType.OTHER, OtherSubtype.ORAL_COMPS, panel_size=4)
-    with pytest.raises(ValueError) as exc_info:
-        compose_panel(profile)
-    message = str(exc_info.value)
-    assert "other/oral_comps" in message
-    assert "3" in message  # max panel size for this subtype
+def test_compose_panel_returns_natural_order_not_click_order():
+    """v0.3e Decision 4: compose_panel derives speaking order from PANEL_COMPOSITION's
+    priority order, not from the order archetypes appear in selected_archetypes."""
+    roster = PANEL_COMPOSITION["thesis"]
+    assert roster == [
+        "methodology_expert",
+        "literature_theory_specialist",
+        "ethics_practicality_reviewer",
+        "technical_implementation_reviewer",
+    ]
+    # Click order deliberately reversed relative to the roster's priority order.
+    click_order = ["technical_implementation_reviewer", "methodology_expert"]
+    profile = _profile(DefenseType.THESIS, selected_archetypes=click_order)
+    assert compose_panel(profile) == ["methodology_expert", "technical_implementation_reviewer"]
 
 
 # --- generate_panel (Task 3) ---
@@ -84,7 +98,7 @@ class _StubProvider:
 
 
 def _generation_profile():
-    return _profile(DefenseType.THESIS, panel_size=2)
+    return _profile(DefenseType.THESIS, selected_archetypes=_ROSTER)
 
 
 def _gen(panelists):

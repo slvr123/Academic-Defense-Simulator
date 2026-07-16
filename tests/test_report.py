@@ -29,7 +29,13 @@ _PANEL = [
 
 
 def _profile():
-    return DefenseProfile(defense_type=DefenseType.THESIS, domain="library science", topic="t", document_id="doc")
+    return DefenseProfile(
+        defense_type=DefenseType.THESIS,
+        domain="library science",
+        topic="t",
+        selected_archetypes=["methodology_expert"],
+        document_id="doc",
+    )
 
 
 def _session(*turns, panel=_PANEL):
