@@ -31,13 +31,35 @@ pre-publish rename pass; interim `dayN`-style names until then).
   observable" — a timeout guard plus thin permanent call-lifecycle logging stand in for a
   root-cause fix as the hard gate before 0.3d and the deployment decision. Full finding:
   `docs/v0.3-hang-investigation-closure.md`.
-- **Pre-deploy hardening session current** (`docs/v0.3-hardening-decisions.md` /
-  `docs/briefs/v0.3-hardening-brief.md`). Closes the hang-closure carryover (timeout
-  guard, call-lifecycle logging, `sleep(13)`→5s trim's outstanding browser-session
-  verification, `build_report` driver wire-up) plus the difficulty-4/5 content
-  fabrication fix and Miss 3 (PDF extraction corruption).
-- **Deployment-gate confirmation still owed from Sean** — see the Deployment Gate
-  section below; this roadmap's default remains deploy at end of v0.3.
+- **Pre-deploy hardening session complete** (`docs/v0.3-hardening-decisions.md`).
+  Closed the hang-closure carryover (timeout guard, call-lifecycle logging,
+  `sleep(13)`→5s trim verified, `build_report` driver wire-up) plus the
+  difficulty-4/5 content fabrication fix and Miss 3 (PDF extraction corruption).
+- **v0.3b/0.3c/0.3d complete.** Multi-panelist orchestration (structured digest,
+  Devil's Advocate, round-robin turn-taking), the scoring report (pure-Python
+  aggregates + one narrative call), and the defense-simulation UI (oxblood theme,
+  panelist cards, dev-view toggle, report view) all landed and verified per their
+  decisions docs.
+- **v0.3e complete** (`docs/v0.3e-panel-composition-decisions.md`, LOCKED
+  2026-07-13, landed 2026-07-17). `panel_size` retired in favor of direct
+  archetype selection (`DefenseProfile.selected_archetypes`, 1–3, schema-validated
+  against `PANEL_COMPOSITION`) — the intake multiselect replaces the old count
+  input. Uniform 4-total panel cap (max 3 domain archetypes + Devil's Advocate)
+  across every defense type.
+- **v0.3f complete** (`docs/v0.3f-adaptive-turn-retention-decisions.md`, LOCKED
+  2026-07-13, Decision 5 confirmed by Sean 2026-07-17, landed same day). Fixed
+  round-robin retired: a panelist who surfaces a weakness keeps the floor for
+  capped follow-ups (`MAX_FOLLOW_UPS_PER_TOPIC = 2`); new-topic rotation advances
+  only among domain panelists who haven't yet opened their own topic; Devil's
+  Advocate fires exactly once, after every domain panelist has spoken, and gets
+  the same follow-up treatment as everyone else. Session ends the moment DA's own
+  follow-up chain concludes, backstopped by a computed `T_max = 3 × panel size`
+  (12, given v0.3e's uniform cap) circuit breaker.
+- **Every pre-deploy gate is now satisfied.** Hardening, v0.3e, and v0.3f were the
+  three items both decisions docs named as blocking Decision 0's deployment step —
+  all three are closed. **Deployment-gate confirmation is the only thing left
+  before v0.3 can be called fully closed** — see the Deployment Gate section
+  below; this roadmap's default remains deploy at end of v0.3.
 
 ## Standing constraints (apply to every session below)
 
@@ -119,7 +141,10 @@ change; any UI work beyond one download button.
 
 ---
 
-## v0.3 — Panel Simulation *(4 design days + 4 Code sessions: 0.3a → 0.3d, in order)*
+## v0.3 — Panel Simulation *(planned: 4 design days + 4 Code sessions, 0.3a → 0.3d.
+Actual: 0.3a–0.3d as planned, plus a pre-deploy hardening session and two
+scope-refinement sub-versions, 0.3e and 0.3f, added after 0.3d landed — see
+"Current position" above. All complete.)*
 
 The version where the demo starts matching the pitch. Each sub-version gets its own
 design day in chat producing its own decision doc before its Code session opens.
@@ -282,7 +307,9 @@ overridden).
   full-stack-product signal. Gets its own design day(s) if triggered.
 - **Voice I/O** — v1.x garnish at most, after the core is done. Zero AI-engineering
   signal; do not let it compete with orchestration or eval work for time.
-- **Score-driven turn-taking** — v0.3.x, only after round-robin is verified in evals.
+- ~~Score-driven turn-taking — v0.3.x, only after round-robin is verified in
+  evals.~~ **Shipped as v0.3f** (adaptive turn retention: follow-up floor
+  retention + gated new-topic rotation) — no longer parked.
 - **Retriever interface / vector-DB swap** — unchanged from Day 1: revisit at v1.0
   or when a second real implementation exists, whichever comes first.
 
@@ -297,6 +324,9 @@ overridden).
 | v0.3b Orchestration | 1–2 design days + 1 Code | Call budget stated; digest design validated |
 | v0.3c Report | 1 design day + 1 Code | Numbers-then-narrative verified against a real session |
 | v0.3d UI | 1 design day + 1 Code | Import boundary intact; full browser session |
+| Pre-deploy hardening | 1 Code session | Hang-closure carryover + difficulty-4/5 fabrication fix closed |
+| v0.3e Panel composition | 1 design day + 1 Code | Schema validator + `compose_panel` tests green; uniform 4-total cap |
+| v0.3f Adaptive turn retention | 1 design day + 1 Code | Termination logic tested at shortest/longest case; live session verified |
 | **Deployment gate** | ~1 session if taken | Sean's call — default: deploy here |
 | v0.4 Depth | 2–3 Code sessions | Second-doc eval + persistence + key design done |
 | v1.0 Polish | 2–3 sessions + writing | Live URL + README + analytics |
