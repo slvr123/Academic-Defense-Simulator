@@ -314,6 +314,27 @@ def _inject_theme_css() -> None:
             flex: 1 1 165px;
             min-width: 165px;
         }
+
+        /* Sidebar-as-overlay (UI fix): the sidebar was pushing main content, which
+           re-centers .stMainBlockContainer against shrinking/growing leftover space
+           rather than the true viewport — main content visibly shifted left/right on
+           toggle. Fixed-position overlay + a main-container max-width anchored to the
+           viewport fixes the shift; accepted trade-off is that the open sidebar covers
+           left-edge main content instead of squeezing it aside, which is fine for a
+           reference panel (case file), not primary reading content. */
+        [data-testid="stSidebar"] {
+            position: fixed !important;
+            height: 100vh !important;
+            z-index: 999991;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.4);
+        }
+        .stMainBlockContainer {
+            max-width: 900px;
+            margin-left: auto !important;
+            margin-right: auto;
+        }
         </style>
         """,
         unsafe_allow_html=True,
