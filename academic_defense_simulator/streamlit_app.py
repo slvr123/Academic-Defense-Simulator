@@ -404,6 +404,14 @@ def _new_provider() -> GeminiProvider:
     return GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
 
 
+@st.cache_resource
+def _load_embedding_model() -> EmbeddingModel:
+    """Cached across reruns and sessions within a server process (v0.3 deployment
+    Decision 3) — sentence-transformers model loading is the real cold-start cost on
+    Cloud, and without this every new visitor's session pays it again from scratch."""
+    return EmbeddingModel()
+
+
 def _archetype_title(archetype_key: str) -> str:
     return ARCHETYPE_CONFIG[archetype_key]["archetype_title"]
 
@@ -777,7 +785,7 @@ def _ingest_and_extract(uploaded_file) -> None:
         if tmp_path is not None and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
-    embedding_model = EmbeddingModel()
+    embedding_model = _load_embedding_model()
     embeddings = embedding_model.encode(texts)
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
 
