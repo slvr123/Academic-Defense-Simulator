@@ -37,7 +37,6 @@ from academic_defense_simulator.rag.retrieval import Chunk, retrieve
 
 logger = logging.getLogger(__name__)
 
-MAX_TURNS = 6
 MAX_BLANK_ATTEMPTS = 3
 MAX_FOLLOW_UPS_PER_TOPIC = 2  # hard cap: after this many follow-ups on one chunk, force a new topic
 
@@ -54,13 +53,29 @@ MODEL_CALL_DELAY_SECONDS = {
 DEFAULT_CALL_DELAY = 13  # fallback if GEMINI_MODEL is something unrecognized — stay conservative, not permissive
 
 
-def select_active_panelist(session: DefenseSession, turn_num: int) -> Panelist:
-    """Fixed round-robin: one turn per panelist per round, cycling `session.panel` in
-    composition order. Devil's Advocate sits last in `session.panel` (see
-    `panel.compose_full_roster`), so it naturally fires last in every round. No
-    score-driven handoff, no floor retention — that is v0.3.x, gated on this being
-    verified first (Decision 3)."""
-    return session.panel[(turn_num - 1) % len(session.panel)]
+def select_active_panelist(session: DefenseSession) -> Panelist:
+    """v0.3f Decision 3, replacing fixed round-robin: a panelist who surfaced a
+    weakness keeps the floor for follow-ups (Decision 2); new-topic rotation only
+    advances among domain panelists who haven't yet opened their own topic
+    (Decision 1); Devil's Advocate fires exactly once, after every domain panelist
+    has spoken (Decision 4).
+
+    Rotation is derived entirely from `session` state, not a turn counter — the
+    vestigial `turn_num` parameter (kept temporarily because `main.py` called this
+    positionally) is dropped now that `main.py` is being repaired anyway
+    (v0.3e/f cleanup)."""
+    if _should_follow_up(session):
+        prev_key = session.turns[-1].panelist_archetype_key
+        return next(p for p in session.panel if p.archetype_key == prev_key)
+
+    domain_panelists = [p for p in session.panel if p.archetype_key != DEVILS_ADVOCATE_KEY]
+    domain_spoken = {
+        t.panelist_archetype_key for t in session.turns if t.panelist_archetype_key != DEVILS_ADVOCATE_KEY
+    }
+    if all(p.archetype_key in domain_spoken for p in domain_panelists):
+        return next(p for p in session.panel if p.archetype_key == DEVILS_ADVOCATE_KEY)
+
+    return domain_panelists[len(session.used_chunk_indices) % len(domain_panelists)]
 
 
 def _clamp_difficulty(value: int) -> int:
@@ -137,6 +152,32 @@ def _should_follow_up(session: DefenseSession) -> bool:
     if session.follow_ups_on_current_topic >= MAX_FOLLOW_UPS_PER_TOPIC:
         return False
     return not _is_strong_answer(previous_turn.score)
+
+
+def t_max(session: DefenseSession) -> int:
+    """v0.3f Decision 6: a computed backstop, not a chosen number — 1 initial question
+    + MAX_FOLLOW_UPS_PER_TOPIC(2) follow-ups per panelist, worst case. A defensive
+    circuit-breaker against a bug or genuine infinite loop, not the primary
+    termination condition (that's `session_is_complete`'s Decision 5 check). With
+    v0.3e's uniform 4-total panel cap this is 12 for every session."""
+    return 3 * len(session.panel)
+
+
+def session_is_complete(session: DefenseSession) -> bool:
+    """v0.3f Decision 5 (CONFIRMED by Sean 2026-07-17): the session ends the moment
+    Devil's Advocate's own follow-up chain concludes — DA has spoken, and either the
+    candidate's answer to DA was strong (no follow-up triggered) or
+    MAX_FOLLOW_UPS_PER_TOPIC was reached on DA's own challenge. No second round; no
+    loop-back to domain panelists after DA.
+
+    `t_max` is checked first as the circuit-breaker backstop (Decision 6) — under
+    correct operation it never fires before the condition below does."""
+    if len(session.turns) >= t_max(session):
+        return True
+    last_turn = session.turns[-1] if session.turns else None
+    if last_turn is None or last_turn.panelist_archetype_key != DEVILS_ADVOCATE_KEY:
+        return False
+    return not _should_follow_up(session)
 
 
 # Difficulty floor for is_grounded() enforcement escalation (v0.3 hardening, Decision 2).

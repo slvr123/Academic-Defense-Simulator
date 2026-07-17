@@ -40,12 +40,12 @@ from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.document_profile import extract_document_profile
 from academic_defense_simulator.engine import (
     DEFAULT_CALL_DELAY,
-    MAX_TURNS,
     MODEL_CALL_DELAY_SECONDS,
     _clamp_difficulty,
     _generate_question,
     _score_answer,
     select_active_panelist,
+    session_is_complete,
 )
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import LLMProviderError
@@ -521,6 +521,19 @@ def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
     return f"Turn {turn_num} — Dr. {panelist_name} · {_archetype_title(archetype_key)}"
 
 
+def _turn_progress_label(session: DefenseSession) -> str:
+    """v0.3f Decision 8: the old fixed turn-count constant is retired, so a
+    'Turn N of 6' denominator would be misleading now that session length is
+    variable — most sessions end well before the T_max backstop.
+    Domain-panelists-heard-of-total is a real, honest ceiling (unlike the old
+    fixed 6) that doesn't imply the session runs a fixed length."""
+    domain_total = sum(1 for p in session.panel if p.archetype_key != DEVILS_ADVOCATE_KEY)
+    domain_spoken = len(
+        {t.panelist_archetype_key for t in session.turns if t.panelist_archetype_key != DEVILS_ADVOCATE_KEY}
+    )
+    return f"{domain_spoken}/{domain_total} panelists heard"
+
+
 def _render_turn_content(turn) -> None:
     """Question + (once answered) the candidate's inset answer — the body shared
     by a collapsed-history block and the active turn block. `grounding_reference`
@@ -637,10 +650,14 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                     )
                     st.session_state.pending_turn = None
 
-                    if len(session.turns) >= MAX_TURNS:
+                    if session_is_complete(session):
                         # Driver-level wire-up (v0.3 hardening, Task 1d): same call CLI's
                         # `main()` already makes at session-end. Zero changes to
-                        # `report.py`/`engine.py` — orchestration only.
+                        # `report.py` — orchestration only. v0.3f: the old fixed-turn-count
+                        # check is replaced by `engine.session_is_complete` (Decision 5),
+                        # engine.py's own termination condition — this driver call is the
+                        # minimal wiring needed for that condition to have any effect on
+                        # a real session, not a redesign of this file's scope.
                         try:
                             with st.spinner("Building end-of-session report..."):
                                 session.report = _call_with_timeout(
@@ -786,15 +803,13 @@ def _render_case_file_sidebar() -> None:
                 noun = "question" if turns_taken == 1 else "questions"
                 st.caption(f"Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
         else:
-            turn_num = len(session.turns) + 1
-            active_panelist = select_active_panelist(session, turn_num)
+            active_panelist = select_active_panelist(session)
             for panelist in session.panel:
                 _, status_line = _panelist_card_state(panelist, session, active_panelist)
                 st.caption(f"Dr. {panelist.panelist_name} — {status_line}")
 
         st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
-        turn_progress = min(len(session.turns) + 1, MAX_TURNS)
-        st.caption(f"Turn {turn_progress} of {MAX_TURNS} · {session.profile.defense_type.value}")
+        st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
 
 
 _render_dev_view()
@@ -951,12 +966,12 @@ if st.session_state.stage == "intake":
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
     turn_num = len(session.turns) + 1
-    active_panelist = select_active_panelist(session, turn_num)
+    active_panelist = select_active_panelist(session)
 
     # Difficulty is deliberately absent here (v0.3d Decision 4, item 3) — it never
     # renders in the main flow mid-session, only in the report's trajectory after the
     # session ends. It remains visible in dev-view (`_render_dev_view` above).
-    st.subheader(f"Turn {turn_num}/{MAX_TURNS}")
+    st.subheader(f"Turn {turn_num} — {_turn_progress_label(session)}")
 
     _render_panel_row(session, active_panelist)
     _render_exchange_history(session)

@@ -9,7 +9,13 @@ import logging
 import pytest
 
 import academic_defense_simulator.engine as engine_module
-from academic_defense_simulator.engine import _generate_da_question, _generate_question, select_active_panelist
+from academic_defense_simulator.engine import (
+    _generate_da_question,
+    _generate_question,
+    select_active_panelist,
+    session_is_complete,
+    t_max,
+)
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.panelist import Panelist
@@ -61,31 +67,102 @@ def _turn(archetype_key, name, chunk_index, chunk_text, score, question="q"):
     )
 
 
-# --- select_active_panelist (Task 4) ---
+# --- select_active_panelist (v0.3f Decision 3, replacing round-robin) ---
 
 
-@pytest.mark.parametrize(
-    "turn_num,expected_key",
-    [
-        (1, "methodology_expert"),
-        (2, "literature_theory_specialist"),
-        (3, "ethics_practicality_reviewer"),
-        (4, DEVILS_ADVOCATE_KEY),
-        (5, "methodology_expert"),  # round 2 starts over
-        (8, DEVILS_ADVOCATE_KEY),  # DA again, still last in its round
-    ],
-)
-def test_round_robin_cycles_panel_in_order(turn_num, expected_key):
-    session = _session()
-    assert select_active_panelist(session, turn_num).archetype_key == expected_key
+def test_follow_up_returns_the_same_panelist():
+    weak = _turn("methodology_expert", "Reyes", 0, "c0", _score(2, 2, 2))
+    session = _session(weak)
+    assert select_active_panelist(session).archetype_key == "methodology_expert"
 
 
-def test_devils_advocate_always_sits_last_in_every_round():
-    session = _session()
-    for round_start in (1, 5, 9):
-        keys = [select_active_panelist(session, round_start + i).archetype_key for i in range(len(_PANEL))]
-        assert keys[-1] == DEVILS_ADVOCATE_KEY
-        assert keys[:-1] == [p.archetype_key for p in _PANEL[:-1]]
+def test_new_topic_rotation_advances_among_unspoken_domain_panelists():
+    m_strong = _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5))
+    session = _session(m_strong)
+    assert select_active_panelist(session).archetype_key == "literature_theory_specialist"
+
+    l_strong = _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5))
+    session = _session(m_strong, l_strong)
+    assert select_active_panelist(session).archetype_key == "ethics_practicality_reviewer"
+
+
+def test_devils_advocate_triggers_exactly_once_after_all_domain_panelists_spoken():
+    m = _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5))
+    l = _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5))
+    e = _turn("ethics_practicality_reviewer", "Alvarez", 2, "c2", _score(5, 5, 5))
+
+    # Before all three domain panelists have spoken, DA is never selected.
+    assert select_active_panelist(_session(m, l)).archetype_key == "ethics_practicality_reviewer"
+
+    session = _session(m, l, e)
+    assert select_active_panelist(session).archetype_key == DEVILS_ADVOCATE_KEY
+
+
+def test_devils_advocates_own_follow_up_stays_with_devils_advocate():
+    m = _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5))
+    l = _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5))
+    e = _turn("ethics_practicality_reviewer", "Alvarez", 2, "c2", _score(5, 5, 5))
+    da_weak = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 1, "c1", _score(2, 2, 2))
+    session = _session(m, l, e, da_weak)
+    assert select_active_panelist(session).archetype_key == DEVILS_ADVOCATE_KEY
+
+
+# --- session_is_complete / t_max (v0.3f Decisions 5 and 6) ---
+
+
+def test_session_not_complete_before_devils_advocate_speaks():
+    m = _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5))
+    l = _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5))
+    e = _turn("ethics_practicality_reviewer", "Alvarez", 2, "c2", _score(5, 5, 5))
+    assert session_is_complete(_session(m, l, e)) is False
+
+
+def test_shortest_case_all_strong_answers_ends_right_after_devils_advocate():
+    m = _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5))
+    l = _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5))
+    e = _turn("ethics_practicality_reviewer", "Alvarez", 2, "c2", _score(5, 5, 5))
+    da_strong = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 1, "c1", _score(5, 5, 5))
+    session = _session(m, l, e, da_strong)
+    assert session_is_complete(session) is True
+    assert len(session.turns) == 4  # best case: one turn per panelist, no follow-ups
+
+
+def test_longest_case_all_max_follow_ups_reaches_t_max_exactly():
+    turns: list = []
+    # M, then L, then E: initial + 2 follow-ups each, all weak, distinct chunks.
+    for archetype_key, name, chunk_index in [
+        ("methodology_expert", "Reyes", 0),
+        ("literature_theory_specialist", "Okafor", 1),
+        ("ethics_practicality_reviewer", "Alvarez", 2),
+    ]:
+        for _ in range(1 + 2):
+            turns.append(_turn(archetype_key, name, chunk_index, f"c{chunk_index}", _score(2, 2, 2)))
+            assert session_is_complete(_session(*turns)) is False
+
+    # DA: initial + 2 follow-ups, reusing chunk 0 (a different chunk than the turn
+    # immediately preceding it, so follow_ups_on_current_topic starts fresh for DA's
+    # own chain rather than inheriting E's trailing count).
+    for i in range(1 + 2):
+        turns.append(_turn(DEVILS_ADVOCATE_KEY, "Marlowe", 0, "c0", _score(2, 2, 2)))
+        session = _session(*turns)
+        assert session_is_complete(session) is (i == 2)
+
+    assert len(turns) == 12
+    assert t_max(session) == 12
+
+
+def test_t_max_backstop_fires_independently_of_the_natural_conclusion_check():
+    # Contrived: 12 turns from a single panelist, all strong (never triggers DA's own
+    # conclusion path) — isolates the backstop from the natural-termination path.
+    turns = [_turn("methodology_expert", "Reyes", i, f"c{i}", _score(5, 5, 5)) for i in range(12)]
+    session = _session(*turns)
+    assert session_is_complete(session) is True
+
+
+def test_t_max_backstop_does_not_fire_before_reaching_it():
+    turns = [_turn("methodology_expert", "Reyes", i, f"c{i}", _score(5, 5, 5)) for i in range(11)]
+    session = _session(*turns)
+    assert session_is_complete(session) is False
 
 
 # --- Devil's Advocate target selection (Task 3) ---

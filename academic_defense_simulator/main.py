@@ -11,19 +11,19 @@ from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.engine import (
     DEFAULT_CALL_DELAY,
     MAX_BLANK_ATTEMPTS,
-    MAX_TURNS,
     MODEL_CALL_DELAY_SECONDS,
     _clamp_difficulty,
     _generate_question,
     _score_answer,
     select_active_panelist,
+    session_is_complete,
 )
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession
-from academic_defense_simulator.panel import compose_full_roster, generate_panel
+from academic_defense_simulator.panel import PANEL_COMPOSITION, compose_full_roster, generate_panel
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
@@ -76,13 +76,20 @@ def main() -> None:
     domain = input("Domain / discipline: ").strip()
     topic = input("Research title / topic: ").strip()
 
-    # 3-4. Build profile
+    # 3-4. Build profile — selected_archetypes replaces panel_size (v0.3e). This is a
+    # dev driver, not product UX, so it doesn't prompt for a selection: default to the
+    # first (highest-priority) archetype in PANEL_COMPOSITION for the chosen type.
+    composition_key = (
+        f"other/{other_subtype.value}" if defense_type == DefenseType.OTHER else defense_type.value
+    )
+    default_archetype = PANEL_COMPOSITION[composition_key][0]
     document_id = str(uuid4())
     profile = DefenseProfile(
         defense_type=defense_type,
         other_subtype=other_subtype,
         domain=domain,
         topic=topic,
+        selected_archetypes=[default_archetype],
         document_id=document_id,
     )
 
@@ -113,9 +120,11 @@ def main() -> None:
     session = DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start)
 
     try:
-        for turn_num in range(1, MAX_TURNS + 1):
-            active_panelist = select_active_panelist(session, turn_num)
-            print(f"\n=== Turn {turn_num}/{MAX_TURNS} (difficulty {session.difficulty_current}/5) ===")
+        turn_num = 0
+        while not session_is_complete(session):
+            turn_num += 1
+            active_panelist = select_active_panelist(session)
+            print(f"\n=== Turn {turn_num} (difficulty {session.difficulty_current}/5) ===")
 
             turn = _generate_question(
                 provider, session, chunks, embedding_model, active_panelist, other_subtype_line, settings.gemini_model
@@ -136,7 +145,7 @@ def main() -> None:
             session.turns.append(turn)
             session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
 
-            if turn_num != MAX_TURNS:
+            if not session_is_complete(session):
                 time.sleep(MODEL_CALL_DELAY_SECONDS.get(settings.gemini_model, DEFAULT_CALL_DELAY))
     except LLMProviderError as exc:
         print(f"\nSession aborted: {exc}")
