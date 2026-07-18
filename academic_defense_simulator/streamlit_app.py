@@ -38,6 +38,7 @@ import streamlit as st
 
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.document_profile import extract_document_profile
+from academic_defense_simulator.document_relevance import assess_document
 from academic_defense_simulator.engine import (
     DEFAULT_CALL_DELAY,
     MODEL_CALL_DELAY_SECONDS,
@@ -402,6 +403,18 @@ def _new_provider() -> GeminiProvider:
     threads was observed to hang indefinitely on a later call in the same session."""
     settings = load_settings()
     return GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
+
+
+# v0.3g Brief: the relevance gate is a judgment task, pinned to gemini-2.5-flash
+# regardless of GEMINI_MODEL — flash-lite is already on record as unfit for judgment
+# calls (inverted difficulty_delta, inflated clarity scores). One call per upload, so
+# the RPD cost is negligible even off the dev-default model.
+_RELEVANCE_ASSESSMENT_MODEL = "gemini-2.5-flash"
+
+
+def _new_relevance_provider() -> GeminiProvider:
+    settings = load_settings()
+    return GeminiProvider(api_key=settings.gemini_api_key, model=_RELEVANCE_ASSESSMENT_MODEL)
 
 
 @st.cache_resource(show_spinner=False)
@@ -783,13 +796,26 @@ def _count_pdf_pages(path: str) -> int:
         document.close()
 
 
-def _ingest_and_extract(uploaded_file) -> None:
+def _ingest_and_extract(uploaded_file, *, skip_relevance_check: bool = False) -> None:
     """Ingestion + extraction only (Decision 4) — the defense profile form renders
     below the dropzone on the same 'intake' stage once `document_id` is set here
     (Sean's combined-page ask); this function never advances `stage` itself, so
     a rerun after it just re-renders 'intake' with the profile section now
     visible. `document_id`'s presence is what gates that, so this never re-fires
-    for the same document."""
+    for the same document.
+
+    v0.3g Brief: a relevance gate runs after chunking, before embedding — no reason
+    to spend embedding time on a document the user may abandon at the warning. A
+    negative assessment stores itself in `st.session_state.relevance_warning` and
+    returns without setting `document_id`, same non-advancing shape as the
+    ingestion-error path above it; the caller (intake UI) renders the warning and a
+    "Proceed anyway" button, which re-calls this function with
+    `skip_relevance_check=True` — chunk_pdf is pure/cheap re-parsing, not an LLM
+    call, so redoing it rather than stashing raw text across reruns keeps this
+    function self-contained. `skip_relevance_check=True` is also correct for a
+    second "Process document" click, but that's not the path used today — see
+    the intake UI, which explicitly clears `relevance_warning` on every fresh
+    "Process document" click, so a re-upload always gets a fresh check."""
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -803,6 +829,13 @@ def _ingest_and_extract(uploaded_file) -> None:
     finally:
         if tmp_path is not None and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+    if not skip_relevance_check:
+        with st.spinner("Checking document relevance..."):
+            assessment = assess_document(texts, _new_relevance_provider())
+        if not assessment.is_defense_material:
+            st.session_state.relevance_warning = assessment
+            return
 
     embedding_model = _load_embedding_model()
     embeddings = embedding_model.encode(texts)
@@ -896,8 +929,23 @@ if st.session_state.stage == "intake":
             )
             st.caption("PDF · thesis, capstone, or paper")
             process_clicked = st.button("Process document", type="primary", disabled=uploaded_file is None)
+
+            # v0.3g Brief: soft relevance gate — a negative assessment from a prior
+            # "Process document" click stays visible (in session_state) until either a
+            # fresh "Process document" click re-checks it or "Proceed anyway" bypasses
+            # it, user-facing by design (no dev-view gating needed).
+            relevance_warning = st.session_state.get("relevance_warning")
+            proceed_anyway_clicked = False
+            if relevance_warning is not None:
+                st.warning(
+                    f"This looks like a {relevance_warning.document_kind}, not research "
+                    "material. A defense session against it won't be meaningful. — "
+                    f"{relevance_warning.reason}"
+                )
+                proceed_anyway_clicked = st.button("Proceed anyway")
         else:
             process_clicked = False
+            proceed_anyway_clicked = False
             # Loaded-document summary (replaces the empty dropzone prompt) — same
             # composition as the prototype's docLoaded branch: filename, ingestion
             # stats, a "read by panel" confirmation.
@@ -976,8 +1024,27 @@ if st.session_state.stage == "intake":
         # setting document_id — the dropzone/button must stay on screen so the
         # user can retry, and no rerun should fire (a rerun would immediately
         # wipe the just-shown error before anyone could read it).
+        #
+        # v0.3g Brief: a fresh "Process document" click always re-runs the relevance
+        # check (clearing any stale warning from a previous upload first) — only
+        # "Proceed anyway" below bypasses it. A rejection sets relevance_warning but
+        # not document_id — same transitional-window issue as the success path above:
+        # `intake_slot.container()` already rendered (using the pre-click, just-cleared
+        # None value) earlier in this same script pass, so without an explicit rerun
+        # here too, the warning would sit in session_state and never reach the browser.
+        st.session_state.relevance_warning = None
         with st.spinner("Processing document..."):
             _ingest_and_extract(uploaded_file)
+        if "document_id" in st.session_state or st.session_state.relevance_warning is not None:
+            st.rerun()
+
+    if proceed_anyway_clicked:
+        # v0.3g Brief: bypasses the relevance check for this already-assessed upload
+        # only — re-chunks the same file (cheap, pure-Python) rather than the gate,
+        # then continues to embedding/extraction exactly as the pass path would.
+        st.session_state.relevance_warning = None
+        with st.spinner("Processing document..."):
+            _ingest_and_extract(uploaded_file, skip_relevance_check=True)
         if "document_id" in st.session_state:
             st.rerun()
 
