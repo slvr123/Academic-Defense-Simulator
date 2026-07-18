@@ -17,7 +17,15 @@
 # round-robin hands a follow-up to a panelist other than the original asker (see
 # docs/v0.3d-followup-attribution-fix.md) — zero wording change elsewhere in this file. The
 # 0.3d UI session that follows makes zero further prompt changes and inherits this bump.
-PROMPT_VERSION = "0.3d"
+# 0.3g (post-0.3-deploy bugfix pass, no separate decisions doc yet): PANELIST_SYSTEM_PROMPT's
+# schema instructions ("opening acknowledgment included") become the conditional
+# {response_format_note}/{question_field_note} slots, gated the same way as
+# acknowledgment_instruction/previous_answer_line — fixes a live turn-1 bug where the
+# unconditional wording caused the model to invent a nonexistent prior answer to
+# acknowledge on the opening question. Zero wording change to FOLLOWUP_SYSTEM_PROMPT or
+# DEVILS_ADVOCATE_SYSTEM_PROMPT — both paths always have real prior content to react to,
+# so their unconditional acknowledgment wording was never the bug.
+PROMPT_VERSION = "0.3g"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -30,6 +38,29 @@ The candidate's previous answer (you are now moving on to a new topic):
 """
 
 ACKNOWLEDGMENT_INSTRUCTION = """Before asking your question, open with ONE short, natural spoken acknowledgment of their previous answer, reacting specifically to what they actually said — a genuine panelist reaction, not a stock phrase. Let the tone follow from the specific content (measured approval, a brief "fair enough," a pivot cue like "let's move to...") rather than a fixed formula."""
+
+# Response-format phrasing for PANELIST_SYSTEM_PROMPT's schema instructions (post-0.3
+# deploy bugfix pass) — must stay in lockstep with acknowledgment_instruction/
+# previous_answer_line's emptiness. The old wording ("opening acknowledgment included")
+# was unconditional, present even on turn 1 when the body above gives the model nothing
+# to acknowledge. That contradiction was the actual mechanism behind a live turn-1 bug:
+# the model, told its answer should include an "opening acknowledgment" but given no
+# prior answer to acknowledge, invented one (e.g. thanking the candidate for an "overview"
+# that was never given, on the literal first question of the session). Confirmed live
+# 3/3 across archetypes before this fix; reproduction and fix are documented together, no
+# separate decisions doc yet. Populated the same way as acknowledgment_instruction: only
+# when a real previous answer exists.
+RESPONSE_FORMAT_WITH_ACK = (
+    "the question field should read as one natural connected response, opening "
+    "acknowledgment included"
+)
+RESPONSE_FORMAT_NO_ACK = (
+    "this is the opening question of the session — there is no prior answer to "
+    "acknowledge, so the question field must contain only the question itself, with no "
+    "acknowledgment or reference to anything the candidate has said"
+)
+QUESTION_FIELD_WITH_ACK = "the question text, including any natural opening acknowledgment"
+QUESTION_FIELD_NO_ACK = "the question text only — no acknowledgment, this is the opening question"
 
 # Conditional slot (v0.3 hardening, Decision 3) — populated only when difficulty_level >= 4,
 # empty string otherwise. Addresses difficulty-4/5 content fabrication by telling the model
@@ -65,9 +96,9 @@ Document excerpt:
 {retrieved_chunk}
 \"\"\"
 
-Respond ONLY with JSON matching this schema, no other text — the question field should read as one natural connected response, opening acknowledgment included:
+Respond ONLY with JSON matching this schema, no other text — {response_format_note}:
 {{
-  "question": "the question text, including any natural opening acknowledgment",
+  "question": "{question_field_note}",
   "grounding_reference": "the specific phrase/claim/number from the excerpt this question targets",
   "difficulty_level": <int 1-5>
 }}

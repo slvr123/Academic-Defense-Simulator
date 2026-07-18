@@ -30,6 +30,10 @@ from academic_defense_simulator.prompts.panelist_prompts import (
     HIGH_DIFFICULTY_GROUNDING_GUARD,
     PANELIST_SYSTEM_PROMPT,
     PREVIOUS_ANSWER_LINE,
+    QUESTION_FIELD_NO_ACK,
+    QUESTION_FIELD_WITH_ACK,
+    RESPONSE_FORMAT_NO_ACK,
+    RESPONSE_FORMAT_WITH_ACK,
     SCORING_SYSTEM_PROMPT,
 )
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
@@ -331,9 +335,13 @@ def _generate_question(
         if previous_turn is not None and previous_turn.answer is not None:
             previous_answer_line = PREVIOUS_ANSWER_LINE.format(previous_answer=previous_turn.answer)
             acknowledgment_instruction = ACKNOWLEDGMENT_INSTRUCTION
+            response_format_note = RESPONSE_FORMAT_WITH_ACK
+            question_field_note = QUESTION_FIELD_WITH_ACK
         else:
             previous_answer_line = ""
             acknowledgment_instruction = ""
+            response_format_note = RESPONSE_FORMAT_NO_ACK
+            question_field_note = QUESTION_FIELD_NO_ACK
         prompt = PANELIST_SYSTEM_PROMPT.format(
             panelist_name=panelist.panelist_name,
             persona_framing=panelist.persona_framing,
@@ -350,6 +358,8 @@ def _generate_question(
             acknowledgment_instruction=acknowledgment_instruction,
             digest_block=digest_block,
             high_difficulty_guard=high_difficulty_guard,
+            response_format_note=response_format_note,
+            question_field_note=question_field_note,
         )
         print(f"[branch: new-topic — chunk {chunk_index}]")
     else:
