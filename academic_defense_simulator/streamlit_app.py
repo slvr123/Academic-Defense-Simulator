@@ -654,12 +654,25 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         if not answer.strip():
             st.warning("Answer cannot be blank — please respond.")
         else:
-            turn.answer = answer.strip()
-            with _turn_lock:
-                # Re-check after acquiring the lock: if a concurrent (overlapping) rerun
-                # already scored and consumed this pending_turn, there's nothing left to do.
-                if st.session_state.pending_turn is not None:
-                    with st.spinner("Scoring your answer..."):
+            # Perceived-latency fix (post-0.3 deploy bugfix pass): the spinner used to open
+            # only around the score LLM call itself, after turn.answer assignment and lock
+            # acquisition had already run — those are microseconds, not the 3-4s users saw,
+            # but no visible feedback existed until Streamlit's next paint reached that inner
+            # `with`. Opening the spinner here, before any of that, paints something within
+            # milliseconds of the click. This does not make the score/report calls faster —
+            # only when "loading" first becomes visible. The lock's critical section (recheck
+            # -> score -> append -> clear pending_turn) is left exactly as it was; only the
+            # spinner's boundary moved outward around it, so the concurrent-rerun guard is
+            # unaffected. One side effect: on the session-final turn, this spinner and the
+            # "Building end-of-session report..." spinner below are both active briefly (the
+            # inner one nested inside the outer), so two loading lines show at once for that
+            # one turn — a minor, disclosed cosmetic overlap, not a functional issue.
+            with st.spinner("Scoring your answer..."):
+                turn.answer = answer.strip()
+                with _turn_lock:
+                    # Re-check after acquiring the lock: if a concurrent (overlapping) rerun
+                    # already scored and consumed this pending_turn, there's nothing left to do.
+                    if st.session_state.pending_turn is not None:
                         try:
                             turn.score = _call_with_timeout(
                                 _score_answer,
@@ -673,32 +686,34 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                             _abort("answer scoring", exc)
                             st.rerun()
 
-                    session.turns.append(turn)
-                    session.difficulty_current = _clamp_difficulty(
-                        session.difficulty_current + turn.score.difficulty_delta
-                    )
-                    st.session_state.pending_turn = None
+                        session.turns.append(turn)
+                        session.difficulty_current = _clamp_difficulty(
+                            session.difficulty_current + turn.score.difficulty_delta
+                        )
+                        st.session_state.pending_turn = None
 
-                    if session_is_complete(session):
-                        # Driver-level wire-up (v0.3 hardening, Task 1d): same call CLI's
-                        # `main()` already makes at session-end. Zero changes to
-                        # `report.py` — orchestration only. v0.3f: the old fixed-turn-count
-                        # check is replaced by `engine.session_is_complete` (Decision 5),
-                        # engine.py's own termination condition — this driver call is the
-                        # minimal wiring needed for that condition to have any effect on
-                        # a real session, not a redesign of this file's scope.
-                        try:
-                            with st.spinner("Building end-of-session report..."):
-                                session.report = _call_with_timeout(
-                                    build_report, session, _new_provider(), label="report narrative"
-                                )
-                        except LLMProviderError as exc:
-                            _abort("report narrative", exc)
-                            st.rerun()
+                        if session_is_complete(session):
+                            # Driver-level wire-up (v0.3 hardening, Task 1d): same call CLI's
+                            # `main()` already makes at session-end. Zero changes to
+                            # `report.py` — orchestration only. v0.3f: the old fixed-turn-count
+                            # check is replaced by `engine.session_is_complete` (Decision 5),
+                            # engine.py's own termination condition — this driver call is the
+                            # minimal wiring needed for that condition to have any effect on
+                            # a real session, not a redesign of this file's scope.
+                            try:
+                                with st.spinner("Building end-of-session report..."):
+                                    session.report = _call_with_timeout(
+                                        build_report, session, _new_provider(), label="report narrative"
+                                    )
+                            except LLMProviderError as exc:
+                                _abort("report narrative", exc)
+                                st.rerun()
+                            else:
+                                st.session_state.stage = "done"
                         else:
-                            st.session_state.stage = "done"
-                    else:
-                        time.sleep(MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY))
+                            time.sleep(
+                                MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY)
+                            )
             st.rerun()
 
 
