@@ -404,11 +404,15 @@ def _new_provider() -> GeminiProvider:
     return GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def _load_embedding_model() -> EmbeddingModel:
     """Cached across reruns and sessions within a server process (v0.3 deployment
     Decision 3) — sentence-transformers model loading is the real cold-start cost on
-    Cloud, and without this every new visitor's session pays it again from scratch."""
+    Cloud, and without this every new visitor's session pays it again from scratch.
+    `show_spinner=False` (post-0.3 deploy bugfix pass): st.cache_resource's default
+    spinner reads "Running _load_embedding_model()." — a raw function name leaking
+    into the UI — and this call already runs nested inside the caller's own
+    "Processing document..." spinner, so a second, uglier one is redundant."""
     return EmbeddingModel()
 
 
