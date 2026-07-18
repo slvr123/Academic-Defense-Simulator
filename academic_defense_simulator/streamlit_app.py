@@ -331,9 +331,19 @@ def _inject_theme_css() -> None:
         [data-testid="stSidebar"] > div:first-child {
             box-shadow: 2px 0 16px rgba(0, 0, 0, 0.4);
         }
+        /* Bug fix (found live while testing v0.3g's intake flow): plain `auto` centers
+           against the FULL viewport, same as the fixed-position sidebar no longer
+           participating in layout — on any viewport under ~2100px wide (i.e. virtually
+           all real usage) that centered box's left edge lands underneath the sidebar's
+           300px width (measured live), not beside it. On the intake screen this wasn't
+           cosmetic: the "Process document" and "Proceed anyway" buttons were physically
+           unclickable without the sidebar collapsed first. `max(300px, ...)` clamps the
+           left offset to always clear the sidebar while leaving the wide-viewport
+           behavior (where natural centering already exceeds 300px) unchanged — still no
+           shift on toggle, since the sidebar stays out of flow either way. */
         .stMainBlockContainer {
             max-width: 900px;
-            margin-left: auto !important;
+            margin-left: max(300px, calc(50vw - 450px)) !important;
             margin-right: auto;
         }
         </style>
