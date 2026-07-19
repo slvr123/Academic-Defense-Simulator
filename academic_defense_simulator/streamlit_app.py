@@ -382,8 +382,8 @@ def _render_hero() -> None:
         '<p class="small-caps-label" style="text-align:center;">The panel is waiting</p>'
         '<h1 style="text-align:center;">Academic Defense Simulator</h1>'
         '<p style="text-align:center;color:#B5AEA2;max-width:600px;margin:0 auto 1.5rem;">'
-        "Upload your research. Face a panel that has actually read it —  "
-        "Defend your study from their questions that gets harder every turn.</p>",
+        "Upload your research. Face a panel that has actually read it — and defend "
+        "your study against questions that get harder every turn.</p>",
         unsafe_allow_html=True,
     )
 
