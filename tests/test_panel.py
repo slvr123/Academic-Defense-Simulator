@@ -24,9 +24,13 @@ from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
     FALLBACK_PANELISTS,
     PANEL_COMPOSITION,
+    PANELIST_ICON_CHOICES,
     apply_customizations,
+    archetype_default_icon,
     compose_panel,
     generate_panel,
+    image_icon_path,
+    list_icon_choices,
 )
 
 
@@ -288,3 +292,35 @@ def test_custom_name_survives_fallback_path():
     assert fallback_used is True
     assert (panel[0].panelist_name, panel[0].icon) == ("Reyes-Santos", "📊")
     assert panel[1].panelist_name == FALLBACK_PANELISTS["literature_theory_specialist"].panelist_name
+
+
+# --- curated icon registry (v0.3j amendment: bundled image icons) ---
+
+
+def test_icon_registry_empty_or_missing_dir_falls_back_to_emoji(tmp_path):
+    assert list_icon_choices(tmp_path) == PANELIST_ICON_CHOICES
+    assert list_icon_choices(tmp_path / "does_not_exist") == PANELIST_ICON_CHOICES
+    assert (
+        archetype_default_icon("methodology_expert", tmp_path)
+        == ARCHETYPE_DEFAULT_ICONS["methodology_expert"]
+    )
+    assert image_icon_path(ARCHETYPE_DEFAULT_ICONS["methodology_expert"], tmp_path) is None
+
+
+def test_icon_registry_images_listed_first_and_named_file_becomes_default(tmp_path):
+    (tmp_path / "methodology_expert.png").write_bytes(b"png-bytes")
+    (tmp_path / "owl.webp").write_bytes(b"webp-bytes")
+    (tmp_path / "notes.txt").write_text("not an icon")
+
+    choices = list_icon_choices(tmp_path)
+    assert choices[:2] == ["methodology_expert", "owl"]  # sorted stems before emoji
+    assert choices[2:] == PANELIST_ICON_CHOICES
+
+    assert archetype_default_icon("methodology_expert", tmp_path) == "methodology_expert"
+    # No devils_advocate image file -> emoji default stands.
+    assert (
+        archetype_default_icon("devils_advocate", tmp_path)
+        == ARCHETYPE_DEFAULT_ICONS["devils_advocate"]
+    )
+    assert image_icon_path("owl", tmp_path) == tmp_path / "owl.webp"
+    assert image_icon_path("gone", tmp_path) is None

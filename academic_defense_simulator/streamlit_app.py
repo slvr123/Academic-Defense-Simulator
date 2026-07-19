@@ -25,6 +25,7 @@ from pathlib import Path
 # below fail with ModuleNotFoundError unless the repo root is added explicitly here.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import base64
 import concurrent.futures
 import html
 import json
@@ -61,12 +62,13 @@ from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession
 from academic_defense_simulator.panel import (
-    ARCHETYPE_DEFAULT_ICONS,
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
-    PANELIST_ICON_CHOICES,
+    archetype_default_icon,
     compose_full_roster,
     generate_panel,
+    image_icon_path,
+    list_icon_choices,
 )
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
@@ -236,6 +238,14 @@ def _inject_theme_css() -> None:
         }
         .ads-avatar.da {
             background: #8C3A3F;
+        }
+        /* Uploaded icon images (v0.3j amendment): fill the avatar circle, crop to
+           cover — the striped/solid background only shows for emoji avatars. */
+        .ads-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
         .ads-card-name {
             font-family: Georgia, serif;
@@ -522,10 +532,38 @@ def _panelist_card_state(panelist: Panelist, session: DefenseSession, active_pan
     return "waiting", "Waiting"
 
 
+def _avatar_inner_html(icon: str) -> str:
+    """Avatar-slot content for an icon identifier (v0.3j amendment): a data-URI
+    <img> when the identifier is a curated image stem in assets/icons/, the emoji
+    glyph otherwise. Data URI rather than st.image because the avatar lives inside
+    the card's raw-HTML markdown block; the files are curated repo assets a few KB
+    each, so re-encoding per rerun is negligible."""
+    path = image_icon_path(icon)
+    if path is None:
+        return html.escape(icon)
+    suffix = path.suffix.lower().lstrip(".")
+    mime = {"jpg": "jpeg"}.get(suffix, suffix)
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f'<img src="data:image/{mime};base64,{encoded}" alt="{html.escape(icon)}">'
+
+
+def _icon_choice_label(icon: str) -> str:
+    """Picker label: emoji pass through as glyphs; image stems read as words."""
+    if image_icon_path(icon) is None:
+        return icon
+    return icon.replace("_", " ").replace("-", " ").title()
+
+
+def _icon_caption_prefix(icon: str) -> str:
+    """Sidebar caption prefix: emoji glyphs inline fine; image icons don't (captions
+    are plain text), so those slots get no prefix rather than a raw filename stem."""
+    return "" if image_icon_path(icon) is not None else f"{icon} "
+
+
 def _render_panelist_card(panelist: Panelist, state: str, status_line: str) -> str:
     # v0.3j Decision 3: the resolved icon replaces the letter initial in the avatar
     # slot — icons render here and in the sidebar mini roster, nowhere else.
-    initial = html.escape(panelist.icon)
+    initial = _avatar_inner_html(panelist.icon)
     name = html.escape(f"Dr. {panelist.panelist_name}")
     title = html.escape(_archetype_title(panelist.archetype_key))
     status = html.escape(status_line)
@@ -564,7 +602,7 @@ def _render_panel_preview_card(archetype_key: str, custom_name: str = "", icon: 
     "Assigned at convene" placeholder (persona generation hasn't run). The avatar
     slot shows the chosen icon where one is picked, the title initial otherwise."""
     title = html.escape(_archetype_title(archetype_key))
-    avatar = html.escape(icon) if icon else html.escape(title[:1].upper())
+    avatar = _avatar_inner_html(icon) if icon else html.escape(title[:1].upper())
     avatar_class = "ads-avatar da" if archetype_key == DEVILS_ADVOCATE_KEY else "ads-avatar"
     name_html = (
         f'<div class="ads-card-name">{html.escape(f"Dr. {custom_name}")}</div>'
@@ -947,12 +985,12 @@ def _render_case_file_sidebar() -> None:
             for panelist in session.panel:
                 turns_taken = sum(1 for t in session.turns if t.panelist_archetype_key == panelist.archetype_key)
                 noun = "question" if turns_taken == 1 else "questions"
-                st.caption(f"{panelist.icon} Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
+                st.caption(f"{_icon_caption_prefix(panelist.icon)}Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
         else:
             active_panelist = select_active_panelist(session)
             for panelist in session.panel:
                 _, status_line = _panelist_card_state(panelist, session, active_panelist)
-                st.caption(f"{panelist.icon} Dr. {panelist.panelist_name} — {status_line}")
+                st.caption(f"{_icon_caption_prefix(panelist.icon)}Dr. {panelist.panelist_name} — {status_line}")
 
         st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
         st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
@@ -1080,37 +1118,43 @@ if st.session_state.stage == "intake":
                 # selected archetype in speaking order, plus the always-seated DA row.
                 # Widget keys are archetype-scoped so a slot's entries survive unrelated
                 # reruns and vanish with the slot when it's deselected.
-                st.markdown(
-                    '<p class="small-caps-label">Customize your panel — optional</p>',
-                    unsafe_allow_html=True,
-                )
+                #
+                # v0.3j amendment (2026-07-20): the rows live in a default-collapsed
+                # expander (Sean: open-by-default cluttered the intake screen), and the
+                # icon picker is fed by the curated-image registry in panel.py — image
+                # stems first, emoji as the standing fallback. The preview row below the
+                # expander stays always-visible, so a collapsed expander still shows the
+                # customized result.
                 customization_inputs: dict[str, tuple[str, str]] = {}
                 preview_keys = [a for a in type_roster if a in selected_archetypes] + [DEVILS_ADVOCATE_KEY]
-                for archetype_key in preview_keys:
-                    default_icon = ARCHETYPE_DEFAULT_ICONS[archetype_key]
-                    title_col, name_col, icon_col = st.columns([2, 2, 1], vertical_alignment="center")
-                    with title_col:
-                        st.markdown(
-                            f'<p class="small-caps-label" style="margin:0;">'
-                            f"{html.escape(_archetype_title(archetype_key))}</p>",
-                            unsafe_allow_html=True,
-                        )
-                    with name_col:
-                        custom_name = st.text_input(
-                            "Panelist name",
-                            key=f"panelist_name_{archetype_key}",
-                            placeholder="Name (optional) — “Dr.” is added automatically",
-                            label_visibility="collapsed",
-                        )
-                    with icon_col:
-                        custom_icon = st.selectbox(
-                            "Icon",
-                            options=PANELIST_ICON_CHOICES,
-                            index=PANELIST_ICON_CHOICES.index(default_icon),
-                            key=f"panelist_icon_{archetype_key}",
-                            label_visibility="collapsed",
-                        )
-                    customization_inputs[archetype_key] = (custom_name, custom_icon)
+                icon_choices = list_icon_choices()
+                with st.expander("Customize your panel — optional", expanded=False):
+                    for archetype_key in preview_keys:
+                        default_icon = archetype_default_icon(archetype_key)
+                        title_col, name_col, icon_col = st.columns([2, 2, 1], vertical_alignment="center")
+                        with title_col:
+                            st.markdown(
+                                f'<p class="small-caps-label" style="margin:0;">'
+                                f"{html.escape(_archetype_title(archetype_key))}</p>",
+                                unsafe_allow_html=True,
+                            )
+                        with name_col:
+                            custom_name = st.text_input(
+                                "Panelist name",
+                                key=f"panelist_name_{archetype_key}",
+                                placeholder="Name (optional) — “Dr.” is added automatically",
+                                label_visibility="collapsed",
+                            )
+                        with icon_col:
+                            custom_icon = st.selectbox(
+                                "Icon",
+                                options=icon_choices,
+                                index=icon_choices.index(default_icon),
+                                format_func=_icon_choice_label,
+                                key=f"panelist_icon_{archetype_key}",
+                                label_visibility="collapsed",
+                            )
+                        customization_inputs[archetype_key] = (custom_name, custom_icon)
 
                 _render_panel_preview_row(
                     defense_type,
@@ -1190,7 +1234,7 @@ if st.session_state.stage == "intake":
             panel_customizations = []
             for archetype_key, (name_value, icon_value) in customization_inputs.items():
                 display_name = name_value.strip() or None
-                icon = icon_value if icon_value != ARCHETYPE_DEFAULT_ICONS[archetype_key] else None
+                icon = icon_value if icon_value != archetype_default_icon(archetype_key) else None
                 if display_name is not None or icon is not None:
                     panel_customizations.append(
                         PanelistCustomization(

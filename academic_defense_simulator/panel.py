@@ -15,6 +15,7 @@ from 5a's fail-clean rule (a generic persona degrades aesthetics only, not the t
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
@@ -37,6 +38,45 @@ ARCHETYPE_DEFAULT_ICONS: dict[str, str] = {
     "ethics_practicality_reviewer": "⚖️",
     "devils_advocate": "⚔️",
 }
+
+# v0.3j amendment (2026-07-20): curated image icons. Sean drops icon files into
+# assets/icons/ and each one becomes a picker choice; a file named exactly after an
+# archetype key (e.g. methodology_expert.png) becomes that archetype's default. The
+# emoji list above stays as the fallback while the directory is empty, and as the
+# export/sidebar-safe identifier space. An icon value is therefore either an emoji
+# glyph or an image file's stem — `image_icon_path` disambiguates.
+ICON_ASSETS_DIR = Path(__file__).parent / "assets" / "icons"
+_ICON_FILE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def _image_icon_files(assets_dir: Path = ICON_ASSETS_DIR) -> dict[str, Path]:
+    """{stem: path} for every icon image in the assets directory, sorted by stem.
+    Rescanned on call — the directory is tiny and this keeps newly dropped files
+    live without a restart."""
+    if not assets_dir.is_dir():
+        return {}
+    files = [p for p in sorted(assets_dir.iterdir()) if p.suffix.lower() in _ICON_FILE_SUFFIXES]
+    return {p.stem: p for p in files}
+
+
+def image_icon_path(icon: str, assets_dir: Path = ICON_ASSETS_DIR) -> Path | None:
+    """The image file behind an icon identifier, or None when the identifier is an
+    emoji glyph (or a stale stem whose file was removed — emoji fallback then)."""
+    return _image_icon_files(assets_dir).get(icon)
+
+
+def list_icon_choices(assets_dir: Path = ICON_ASSETS_DIR) -> list[str]:
+    """Picker options: curated image stems first, then the emoji set. Emoji stay
+    available even once images exist — harmless, and they keep old exports and
+    fallback paths meaningful."""
+    return list(_image_icon_files(assets_dir)) + PANELIST_ICON_CHOICES
+
+
+def archetype_default_icon(archetype_key: str, assets_dir: Path = ICON_ASSETS_DIR) -> str:
+    """An image named after the archetype key wins; otherwise the emoji default."""
+    if archetype_key in _image_icon_files(assets_dir):
+        return archetype_key
+    return ARCHETYPE_DEFAULT_ICONS[archetype_key]
 
 # Devil's Advocate is an orchestration feature, not a fifth composition-table entry
 # (docs/v0.3b-multi-panelist-orchestration-decisions.md Decision 2) — it is appended to
@@ -154,7 +194,7 @@ def apply_customizations(
     for panelist in panelists:
         customization = by_key.get(panelist.archetype_key)
         name = panelist.panelist_name
-        icon = ARCHETYPE_DEFAULT_ICONS[panelist.archetype_key]
+        icon = archetype_default_icon(panelist.archetype_key)
         if customization is not None:
             if customization.display_name is not None and customization.display_name.strip():
                 name = customization.display_name.strip()
