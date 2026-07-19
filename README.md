@@ -14,7 +14,7 @@ based on how well you're holding up.
 
 **[Try the live demo →](https://academic-defense-simulator.streamlit.app/)**
 
-[HERO SCREENSHOT — full-panel live session, 4 panelists, mid-exchange]
+![Full panel live session, mid-exchange](docs/img/hero-session.jpg)
 
 ---
 
@@ -56,6 +56,8 @@ PDF ──► chunk (PyMuPDF, paragraph-aware) ──► relevance gate ──�
   Scoring report — narrative, difficulty trajectory, per-panelist
   averages, pressure moments (did you recover, hold, or deteriorate?)
 ```
+
+![Defense profile setup — panel composed from type, domain, and selected archetypes](docs/img/intake-panel.jpg)
 
 Key implementation choices, and why:
 
