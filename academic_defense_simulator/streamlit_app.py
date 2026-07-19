@@ -247,6 +247,15 @@ def _inject_theme_css() -> None:
             border-radius: 50%;
             object-fit: cover;
         }
+        /* Icon-picker popover (v0.3j amendment 2): the grid needs real width —
+           Streamlit sizes popovers to content, which collapses a 4-across image
+           grid into a sliver without a floor. */
+        div[data-testid="stPopoverBody"] {
+            min-width: 440px;
+        }
+        div[data-testid="stPopoverBody"] img {
+            border-radius: 50%;
+        }
         .ads-card-name {
             font-family: Georgia, serif;
             font-weight: 600;
@@ -1146,15 +1155,64 @@ if st.session_state.stage == "intake":
                                 label_visibility="collapsed",
                             )
                         with icon_col:
-                            custom_icon = st.selectbox(
-                                "Icon",
-                                options=icon_choices,
-                                index=icon_choices.index(default_icon),
-                                format_func=_icon_choice_label,
-                                key=f"panelist_icon_{archetype_key}",
-                                label_visibility="collapsed",
-                            )
-                        customization_inputs[archetype_key] = (custom_name, custom_icon)
+                            # v0.3j amendment 2 — game-style icon select. The slot keeps
+                            # its current choice in plain session state (no widget owns
+                            # the key anymore); the popover frames the full curated grid,
+                            # one click selects. Stale stems (file renamed/removed since
+                            # the choice) fall back to the archetype default.
+                            state_key = f"panelist_icon_{archetype_key}"
+                            current_icon = st.session_state.get(state_key, default_icon)
+                            if current_icon not in icon_choices:
+                                current_icon = default_icon
+                            thumb_col, pick_col = st.columns([1, 2], vertical_alignment="center")
+                            with thumb_col:
+                                current_path = image_icon_path(current_icon)
+                                if current_path is not None:
+                                    st.image(str(current_path), width=40)
+                                else:
+                                    st.markdown(
+                                        f'<div style="font-size:1.6rem;text-align:center;">'
+                                        f"{html.escape(current_icon)}</div>",
+                                        unsafe_allow_html=True,
+                                    )
+                            with pick_col:
+                                with st.popover("Change", use_container_width=True):
+                                    st.markdown(
+                                        f'<p class="small-caps-label">Choose an icon — '
+                                        f"{html.escape(_archetype_title(archetype_key))}</p>",
+                                        unsafe_allow_html=True,
+                                    )
+                                    grid_width = 4
+                                    for row_start in range(0, len(icon_choices), grid_width):
+                                        grid_cols = st.columns(grid_width)
+                                        for cell, stem in zip(
+                                            grid_cols, icon_choices[row_start : row_start + grid_width]
+                                        ):
+                                            with cell:
+                                                stem_path = image_icon_path(stem)
+                                                if stem_path is not None:
+                                                    st.image(str(stem_path), use_container_width=True)
+                                                else:
+                                                    st.markdown(
+                                                        f'<div style="font-size:2rem;text-align:center;">'
+                                                        f"{html.escape(stem)}</div>",
+                                                        unsafe_allow_html=True,
+                                                    )
+                                                if stem == current_icon:
+                                                    st.button(
+                                                        "✓ Selected",
+                                                        key=f"pick_{archetype_key}_{stem}",
+                                                        disabled=True,
+                                                        use_container_width=True,
+                                                    )
+                                                elif st.button(
+                                                    _icon_choice_label(stem),
+                                                    key=f"pick_{archetype_key}_{stem}",
+                                                    use_container_width=True,
+                                                ):
+                                                    st.session_state[state_key] = stem
+                                                    st.rerun()
+                        customization_inputs[archetype_key] = (custom_name, current_icon)
 
                 _render_panel_preview_row(
                     defense_type,

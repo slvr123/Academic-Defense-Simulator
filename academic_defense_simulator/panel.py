@@ -66,16 +66,24 @@ def image_icon_path(icon: str, assets_dir: Path = ICON_ASSETS_DIR) -> Path | Non
 
 
 def list_icon_choices(assets_dir: Path = ICON_ASSETS_DIR) -> list[str]:
-    """Picker options: curated image stems first, then the emoji set. Emoji stay
-    available even once images exist — harmless, and they keep old exports and
-    fallback paths meaningful."""
-    return list(_image_icon_files(assets_dir)) + PANELIST_ICON_CHOICES
+    """Picker options: curated image stems only, once any exist (v0.3j amendment 2:
+    emoji retired from the picker at Sean's request). The emoji set remains solely
+    as the empty-directory fallback so a fresh clone without assets still works."""
+    stems = list(_image_icon_files(assets_dir))
+    return stems if stems else PANELIST_ICON_CHOICES
 
 
 def archetype_default_icon(archetype_key: str, assets_dir: Path = ICON_ASSETS_DIR) -> str:
-    """An image named after the archetype key wins; otherwise the emoji default."""
-    if archetype_key in _image_icon_files(assets_dir):
+    """Default resolution, in priority order: an image named exactly after the
+    archetype key; else a deterministic spread of the available images across the
+    archetypes (stable archetype order × sorted stems, so every archetype gets a
+    distinct default while enough images exist); else the emoji default."""
+    stems = list(_image_icon_files(assets_dir))
+    if archetype_key in stems:
         return archetype_key
+    if stems:
+        archetype_order = list(ARCHETYPE_DEFAULT_ICONS)
+        return stems[archetype_order.index(archetype_key) % len(stems)]
     return ARCHETYPE_DEFAULT_ICONS[archetype_key]
 
 # Devil's Advocate is an orchestration feature, not a fifth composition-table entry

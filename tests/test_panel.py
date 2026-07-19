@@ -129,9 +129,12 @@ def _panelist(key, name, framing="framing"):
 
 def _assert_is_seated_fallback(panel):
     """The seated (post-customization) roster produced from FALLBACK_PANELISTS with an
-    empty customization list: fallback names, archetype-default icons."""
+    empty customization list: fallback names, archetype-default icons. Expected icons
+    go through archetype_default_icon (not the emoji constants) so these tests assert
+    the wiring, not the repo's current assets/icons contents — the registry's own
+    resolution rules are covered separately with tmp_path isolation."""
     assert [(p.archetype_key, p.panelist_name, p.icon) for p in panel] == [
-        (k, FALLBACK_PANELISTS[k].panelist_name, ARCHETYPE_DEFAULT_ICONS[k]) for k in _ROSTER
+        (k, FALLBACK_PANELISTS[k].panelist_name, archetype_default_icon(k)) for k in _ROSTER
     ]
 
 
@@ -195,7 +198,7 @@ def test_valid_response_passes_through():
         ("methodology_expert", "Reyes", "method framing"),
         ("literature_theory_specialist", "Okafor", "lit framing"),
     ]
-    assert [p.icon for p in panel] == [ARCHETYPE_DEFAULT_ICONS[k] for k in _ROSTER]
+    assert [p.icon for p in panel] == [archetype_default_icon(k) for k in _ROSTER]
     assert provider.calls == 1
 
 
@@ -261,7 +264,7 @@ def test_icon_resolution_default_and_override():
     )
     panel = apply_customizations(generated, profile)
     assert panel[0].icon == "🧠"
-    assert panel[1].icon == ARCHETYPE_DEFAULT_ICONS["literature_theory_specialist"]
+    assert panel[1].icon == archetype_default_icon("literature_theory_specialist")
 
 
 def test_devils_advocate_customization_applies():
@@ -307,20 +310,30 @@ def test_icon_registry_empty_or_missing_dir_falls_back_to_emoji(tmp_path):
     assert image_icon_path(ARCHETYPE_DEFAULT_ICONS["methodology_expert"], tmp_path) is None
 
 
-def test_icon_registry_images_listed_first_and_named_file_becomes_default(tmp_path):
+def test_icon_registry_images_replace_emoji_and_named_file_becomes_default(tmp_path):
+    """v0.3j amendment 2: once images exist the picker offers stems only — emoji
+    are retired to the empty-directory fallback."""
     (tmp_path / "methodology_expert.png").write_bytes(b"png-bytes")
     (tmp_path / "owl.webp").write_bytes(b"webp-bytes")
     (tmp_path / "notes.txt").write_text("not an icon")
 
-    choices = list_icon_choices(tmp_path)
-    assert choices[:2] == ["methodology_expert", "owl"]  # sorted stems before emoji
-    assert choices[2:] == PANELIST_ICON_CHOICES
+    assert list_icon_choices(tmp_path) == ["methodology_expert", "owl"]
 
     assert archetype_default_icon("methodology_expert", tmp_path) == "methodology_expert"
-    # No devils_advocate image file -> emoji default stands.
-    assert (
-        archetype_default_icon("devils_advocate", tmp_path)
-        == ARCHETYPE_DEFAULT_ICONS["devils_advocate"]
-    )
     assert image_icon_path("owl", tmp_path) == tmp_path / "owl.webp"
     assert image_icon_path("gone", tmp_path) is None
+
+
+def test_icon_registry_distributes_defaults_when_files_not_archetype_named(tmp_path):
+    """No archetype-named files (Sean's real asset set): defaults spread the sorted
+    stems across the stable archetype order, distinct while enough images exist."""
+    for name in ("avatar.png", "boy.png", "gamer.png", "gorilla.png", "hacker.png"):
+        (tmp_path / name).write_bytes(b"png-bytes")
+
+    defaults = [archetype_default_icon(k, tmp_path) for k in ARCHETYPE_DEFAULT_ICONS]
+    assert defaults == ["avatar", "boy", "gamer", "gorilla", "hacker"]
+    assert len(set(defaults)) == len(defaults)
+
+    # An archetype-named file still wins over the distribution.
+    (tmp_path / "devils_advocate.png").write_bytes(b"png-bytes")
+    assert archetype_default_icon("devils_advocate", tmp_path) == "devils_advocate"
