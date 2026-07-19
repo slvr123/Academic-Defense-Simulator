@@ -6,13 +6,13 @@ answers. Continuous project, not a one-week deliverable — don't over-engineer 
 current version, don't make choices that box in later versions either.
 
 Full plan: `academic-defense-simulator-plan.md`
-Versioned roadmap: `ROADMAP.md` (repo root) — standing source of truth for version
+Versioned roadmap: `docs/ROADMAP.md` — standing source of truth for version
 sequencing and sub-version scope
 Current locked design decisions: `docs/v0.2-scoring-model-swap-decisions.md` (most
 recent; supersedes `docs/v0.1-foundations-decisions.md` and
 `docs/v0.2-agent-loop-decisions.md` on overlapping points — see that file's Context
 section for what's superseded)
-Current build scope: `docs/briefs/` (see `ROADMAP.md` for the active brief)
+Current build scope: `docs/briefs/` (see `docs/ROADMAP.md` for the active brief)
 
 ## Tech Stack
 - Python, Pydantic throughout for structured data

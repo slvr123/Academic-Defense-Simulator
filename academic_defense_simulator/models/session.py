@@ -45,7 +45,7 @@ class DefenseSession(BaseModel):
         opened the chunk. 0 right after a fresh new-topic turn, and also 0 the moment a
         different panelist lands on a chunk someone else already exhausted — v0.3f's
         retention cap is a per-panelist floor, not a per-chunk one (v0.3i fix: see
-        docs/v0.3i-da-retention-scope-fix.md; this was previously chunk-only, which
+        docs/v0.3h-i-da-retention-scope-fix.md; this was previously chunk-only, which
         let one panelist's exhausted chunk silently deny Devil's Advocate its own
         follow-up chain when DA's contested claim happened to reuse that chunk).
         Derived, not persisted — same approach as used_chunk_indices."""
