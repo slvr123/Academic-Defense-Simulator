@@ -7,7 +7,12 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.defense_profile import (
+    DefenseProfile,
+    DefenseType,
+    OtherSubtype,
+    PanelistCustomization,
+)
 
 
 def _profile(**overrides):
@@ -65,3 +70,46 @@ def test_more_than_three_rejected():
 def test_empty_selection_rejected():
     with pytest.raises(ValidationError):
         _profile(selected_archetypes=[])
+
+
+# --- panel_customizations validator (v0.3j Decision 2) ---
+
+
+def test_customization_key_not_on_panel_rejected():
+    # literature_theory_specialist is a real archetype key, just not among this
+    # profile's selected_archetypes — customizing an unseated slot is an error.
+    with pytest.raises(ValidationError, match="not on this panel"):
+        _profile(
+            selected_archetypes=["methodology_expert"],
+            panel_customizations=[
+                PanelistCustomization(archetype_key="literature_theory_specialist", display_name="Okafor")
+            ],
+        )
+
+
+def test_customization_da_key_accepted():
+    # DA is never in selected_archetypes (v0.3e Decision 5) but is always seated,
+    # so it is always customizable.
+    profile = _profile(
+        selected_archetypes=["methodology_expert"],
+        panel_customizations=[
+            PanelistCustomization(archetype_key="devils_advocate", display_name="Vance", icon="⚔️")
+        ],
+    )
+    assert profile.panel_customizations[0].display_name == "Vance"
+
+
+def test_customization_duplicate_keys_rejected():
+    with pytest.raises(ValidationError, match="duplicate archetype keys"):
+        _profile(
+            selected_archetypes=["methodology_expert"],
+            panel_customizations=[
+                PanelistCustomization(archetype_key="methodology_expert", display_name="Reyes"),
+                PanelistCustomization(archetype_key="methodology_expert", icon="🧠"),
+            ],
+        )
+
+
+def test_customization_empty_list_fine():
+    profile = _profile(panel_customizations=[])
+    assert profile.panel_customizations == []

@@ -23,8 +23,8 @@ from academic_defense_simulator.report import (
 )
 
 _PANEL = [
-    Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f"),
-    Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f"),
+    Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f", icon="🎓"),
+    Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f", icon="🎓"),
 ]
 
 

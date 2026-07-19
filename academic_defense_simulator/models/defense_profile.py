@@ -28,6 +28,15 @@ def _composition_key(defense_type: DefenseType, other_subtype: Optional[OtherSub
     return defense_type.value
 
 
+class PanelistCustomization(BaseModel):
+    """Optional per-slot intake customization (v0.3j Decision 2). Applied in Python
+    after persona generation returns — never part of any LLM call."""
+
+    archetype_key: str
+    display_name: Optional[str] = None  # None/blank → keep generated name
+    icon: Optional[str] = None  # None → archetype default
+
+
 class DefenseProfile(BaseModel):
     defense_type: DefenseType
     other_subtype: Optional[OtherSubtype] = None
@@ -36,6 +45,7 @@ class DefenseProfile(BaseModel):
     selected_archetypes: list[str] = Field(..., min_length=1, max_length=3)
     difficulty_start: int = Field(default=2, ge=1, le=5)
     document_id: str
+    panel_customizations: list[PanelistCustomization] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_other_subtype(self) -> DefenseProfile:
@@ -61,4 +71,20 @@ class DefenseProfile(BaseModel):
             )
         if len(chosen) != len(self.selected_archetypes):
             raise ValueError("selected_archetypes contains duplicates")
+        return self
+
+    @model_validator(mode="after")
+    def check_panel_customizations(self) -> DefenseProfile:
+        # Same deferred-import rationale as check_selected_archetypes above.
+        from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
+
+        allowed = set(self.selected_archetypes) | {DEVILS_ADVOCATE_KEY}
+        keys = [c.archetype_key for c in self.panel_customizations]
+        unknown = set(keys) - allowed
+        if unknown:
+            raise ValueError(
+                f"panel_customizations contains keys not on this panel: {unknown}"
+            )
+        if len(set(keys)) != len(keys):
+            raise ValueError("panel_customizations contains duplicate archetype keys")
         return self

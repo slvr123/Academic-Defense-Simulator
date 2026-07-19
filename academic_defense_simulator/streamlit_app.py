@@ -4,8 +4,9 @@ v0.3d defense-simulation UI). Reuses `engine.py`'s turn-loop helpers and
 report logic. Flow (0.3a Decision 4): upload -> ingest -> extract (one LLM call,
 cached per document_id) -> profile form (prefilled, editable) -> start session.
 Panel composition is a multiselect scoped to the selected defense type/subtype, capped
-at 3 domain archetypes (v0.3e Decision 6); `difficulty_start` stays hidden/hardcoded
-(Pydantic default on `DefenseProfile`).
+at 3 domain archetypes (v0.3e Decision 6). v0.3j adds per-slot name/icon customization
+rows and a visible `difficulty_start` select_slider (Decisions 1-4) — presentation and
+profile plumbing only, zero prompt-template changes.
 
 v0.3d (docs/v0.3d-defense-ui-decisions.md) adds the panelist cards, transcript-block
 exchange rendering (Decision 8), the case-file sidebar (Decision 9), the dev-view
@@ -50,13 +51,20 @@ from academic_defense_simulator.engine import (
 )
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
-from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.defense_profile import (
+    DefenseProfile,
+    DefenseType,
+    OtherSubtype,
+    PanelistCustomization,
+)
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession
 from academic_defense_simulator.panel import (
+    ARCHETYPE_DEFAULT_ICONS,
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
+    PANELIST_ICON_CHOICES,
     compose_full_roster,
     generate_panel,
 )
@@ -515,7 +523,9 @@ def _panelist_card_state(panelist: Panelist, session: DefenseSession, active_pan
 
 
 def _render_panelist_card(panelist: Panelist, state: str, status_line: str) -> str:
-    initial = html.escape(panelist.panelist_name[:1].upper())
+    # v0.3j Decision 3: the resolved icon replaces the letter initial in the avatar
+    # slot — icons render here and in the sidebar mini roster, nowhere else.
+    initial = html.escape(panelist.icon)
     name = html.escape(f"Dr. {panelist.panelist_name}")
     title = html.escape(_archetype_title(panelist.archetype_key))
     status = html.escape(status_line)
@@ -547,18 +557,24 @@ def _render_panel_row(session: DefenseSession, active_panelist: Panelist) -> Non
             st.markdown(_render_panelist_card(panelist, state, status_line), unsafe_allow_html=True)
 
 
-def _render_panel_preview_card(archetype_key: str) -> str:
+def _render_panel_preview_card(archetype_key: str, custom_name: str = "", icon: str = "") -> str:
     """Panel-composition preview for the intake screen (Task 1, presentation
-    only) — same `.ads-card` visual language as the live session's panel row, but
-    no name exists yet (persona generation hasn't run), so the name slot shows an
-    honest placeholder rather than a fabricated one."""
+    only) — same `.ads-card` visual language as the live session's panel row.
+    v0.3j: a slot with a custom name shows it; slots left blank keep the honest
+    "Assigned at convene" placeholder (persona generation hasn't run). The avatar
+    slot shows the chosen icon where one is picked, the title initial otherwise."""
     title = html.escape(_archetype_title(archetype_key))
-    initial = html.escape(title[:1].upper())
+    avatar = html.escape(icon) if icon else html.escape(title[:1].upper())
     avatar_class = "ads-avatar da" if archetype_key == DEVILS_ADVOCATE_KEY else "ads-avatar"
+    name_html = (
+        f'<div class="ads-card-name">{html.escape(f"Dr. {custom_name}")}</div>'
+        if custom_name
+        else '<div class="ads-card-name ads-placeholder">Assigned at convene</div>'
+    )
     return (
         f'<div class="ads-card">'
-        f'<div class="{avatar_class}">{initial}</div>'
-        f'<div class="ads-card-name ads-placeholder">Assigned at convene</div>'
+        f'<div class="{avatar_class}">{avatar}</div>'
+        f"{name_html}"
         f'<div class="ads-card-title small-caps-label">{title}</div>'
         f"</div>"
     )
@@ -569,6 +585,7 @@ def _render_panel_preview_row(
     other_subtype: OtherSubtype | None,
     selected_archetypes: list[str],
     document_id: str,
+    customization_inputs: dict[str, tuple[str, str]] | None = None,
 ) -> None:
     """Live panel-composition preview (Task 1; v0.3e Decision 6 updates the input
     from a count to the user's actual picks) — `compose_full_roster` is a pure,
@@ -593,7 +610,15 @@ def _render_panel_preview_row(
     # still — five columns there was narrow enough to force mid-word character
     # breaks ("Implementatio" / "n"). A flex-wrap row gives every card a real
     # min-width and wraps extra cards onto a second line instead of compressing.
-    cards_html = "".join(_render_panel_preview_card(key) for key in archetype_keys)
+    inputs = customization_inputs or {}
+    cards_html = "".join(
+        _render_panel_preview_card(
+            key,
+            custom_name=inputs.get(key, ("", ""))[0].strip(),
+            icon=inputs.get(key, ("", ""))[1],
+        )
+        for key in archetype_keys
+    )
     st.markdown(f'<div class="ads-preview-row">{cards_html}</div>', unsafe_allow_html=True)
 
 
@@ -922,12 +947,12 @@ def _render_case_file_sidebar() -> None:
             for panelist in session.panel:
                 turns_taken = sum(1 for t in session.turns if t.panelist_archetype_key == panelist.archetype_key)
                 noun = "question" if turns_taken == 1 else "questions"
-                st.caption(f"Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
+                st.caption(f"{panelist.icon} Dr. {panelist.panelist_name} — {turns_taken} {noun} asked")
         else:
             active_panelist = select_active_panelist(session)
             for panelist in session.panel:
                 _, status_line = _panelist_card_state(panelist, session, active_panelist)
-                st.caption(f"Dr. {panelist.panelist_name} — {status_line}")
+                st.caption(f"{panelist.icon} Dr. {panelist.panelist_name} — {status_line}")
 
         st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
         st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
@@ -1048,9 +1073,61 @@ if st.session_state.stage == "intake":
                     unsafe_allow_html=True,
                 )
 
-                _render_panel_preview_row(
-                    defense_type, other_subtype, selected_archetypes, st.session_state.document_id
+                # v0.3j Decision 1 — per-slot customization rows. The intake widgets are
+                # NOT inside an st.form (plain widgets + a regular button), so these rows
+                # can track the multiselect reactively — the smallest-diff path of the
+                # two the decision doc allowed; no restructuring needed. One row per
+                # selected archetype in speaking order, plus the always-seated DA row.
+                # Widget keys are archetype-scoped so a slot's entries survive unrelated
+                # reruns and vanish with the slot when it's deselected.
+                st.markdown(
+                    '<p class="small-caps-label">Customize your panel — optional</p>',
+                    unsafe_allow_html=True,
                 )
+                customization_inputs: dict[str, tuple[str, str]] = {}
+                preview_keys = [a for a in type_roster if a in selected_archetypes] + [DEVILS_ADVOCATE_KEY]
+                for archetype_key in preview_keys:
+                    default_icon = ARCHETYPE_DEFAULT_ICONS[archetype_key]
+                    title_col, name_col, icon_col = st.columns([2, 2, 1], vertical_alignment="center")
+                    with title_col:
+                        st.markdown(
+                            f'<p class="small-caps-label" style="margin:0;">'
+                            f"{html.escape(_archetype_title(archetype_key))}</p>",
+                            unsafe_allow_html=True,
+                        )
+                    with name_col:
+                        custom_name = st.text_input(
+                            "Panelist name",
+                            key=f"panelist_name_{archetype_key}",
+                            placeholder="Name (optional) — “Dr.” is added automatically",
+                            label_visibility="collapsed",
+                        )
+                    with icon_col:
+                        custom_icon = st.selectbox(
+                            "Icon",
+                            options=PANELIST_ICON_CHOICES,
+                            index=PANELIST_ICON_CHOICES.index(default_icon),
+                            key=f"panelist_icon_{archetype_key}",
+                            label_visibility="collapsed",
+                        )
+                    customization_inputs[archetype_key] = (custom_name, custom_icon)
+
+                _render_panel_preview_row(
+                    defense_type,
+                    other_subtype,
+                    selected_archetypes,
+                    st.session_state.document_id,
+                    customization_inputs,
+                )
+
+                # v0.3j Decision 4 — difficulty_start was schema-validated (1-5,
+                # default 2) since v0.3e but never had a form control. The caption
+                # names that adaptation exists; the live meter stays dev-view only
+                # (never-surfaced-mid-session rule untouched).
+                difficulty_start = st.select_slider(
+                    "Starting difficulty", options=[1, 2, 3, 4, 5], value=2
+                )
+                st.caption("How hard the panel opens. It adapts from there based on your answers.")
 
             _, cta_col, _ = st.columns([1, 1, 1])
             with cta_col:
@@ -1106,13 +1183,29 @@ if st.session_state.stage == "intake":
             st.error("Select at least one panelist.")
         else:
             intake_slot.empty()
+            # v0.3j: a slot only becomes a PanelistCustomization if the user actually
+            # customized it (non-blank name or non-default icon) — untouched slots
+            # stay off the profile entirely, keeping the export honest about what
+            # was user-chosen vs. generated/default.
+            panel_customizations = []
+            for archetype_key, (name_value, icon_value) in customization_inputs.items():
+                display_name = name_value.strip() or None
+                icon = icon_value if icon_value != ARCHETYPE_DEFAULT_ICONS[archetype_key] else None
+                if display_name is not None or icon is not None:
+                    panel_customizations.append(
+                        PanelistCustomization(
+                            archetype_key=archetype_key, display_name=display_name, icon=icon
+                        )
+                    )
             profile = DefenseProfile(
                 defense_type=defense_type,
                 other_subtype=other_subtype,
                 domain=domain.strip(),
                 topic=topic.strip(),
                 selected_archetypes=selected_archetypes,
+                difficulty_start=difficulty_start,
                 document_id=st.session_state.document_id,
+                panel_customizations=panel_customizations,
             )
             with st.spinner("Assembling the panel..."):
                 archetype_roster = compose_full_roster(profile)

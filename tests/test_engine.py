@@ -28,10 +28,10 @@ from academic_defense_simulator.prompts.panelist_prompts import HIGH_DIFFICULTY_
 from academic_defense_simulator.rag.retrieval import Chunk
 
 _PANEL = [
-    Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f"),
-    Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f"),
-    Panelist(archetype_key="ethics_practicality_reviewer", panelist_name="Alvarez", persona_framing="f"),
-    Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f"),
+    Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f", icon="🎓"),
+    Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f", icon="🎓"),
+    Panelist(archetype_key="ethics_practicality_reviewer", panelist_name="Alvarez", persona_framing="f", icon="🎓"),
+    Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f", icon="🎓"),
 ]
 
 
@@ -251,7 +251,7 @@ class _StubProvider:
         return self._response
 
 
-_DA_PANELIST = Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f")
+_DA_PANELIST = Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f", icon="🎓")
 
 
 @pytest.fixture(autouse=True)
@@ -393,7 +393,7 @@ def test_da_at_difficulty_5_double_failure_serves_anyway_and_flags(caplog):
     assert "retry also failed" in caplog.text.lower()
 
 
-_METHODOLOGY_PANELIST = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f")
+_METHODOLOGY_PANELIST = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f", icon="🎓")
 
 
 def _patch_retrieve(monkeypatch, chunk_index, chunk_text):

@@ -67,6 +67,7 @@ _DEFENSE_TYPE = DefenseType.CAPSTONE
 _PROBE_PERSONA = Panelist(
     archetype_key=_ARCHETYPE_KEY,
     panelist_name="Okonkwo",
+    icon="🔬",
     persona_framing=(
         "You are a quantitative systems analyst known for your rigorous skepticism "
         "regarding data integrity and software validation metrics. You will press the "
@@ -261,6 +262,7 @@ _RESULTS_PATH_HARDENING = Path(__file__).resolve().parent / "probe_question_gen_
 _DA_PERSONA = Panelist(
     archetype_key=DEVILS_ADVOCATE_KEY,
     panelist_name="Villanueva",
+    icon="⚔️",
     persona_framing=(
         "You are a skeptical senior reviewer known for pressure-testing the single "
         "strongest claim a candidate has made, never letting a confident number pass "
@@ -498,6 +500,7 @@ _RESULTS_PATH_FOLLOWUP_ATTRIBUTION = Path(__file__).resolve().parent / "probe_fo
 _COLLEAGUE_PERSONA = Panelist(
     archetype_key="literature_theory_specialist",
     panelist_name="Delacroix",
+    icon="📚",
     persona_framing=(
         "You are known for tracing every claim back to its theoretical grounding and "
         "pressing candidates on citations or framing that don't hold up under scrutiny."

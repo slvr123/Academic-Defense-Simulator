@@ -18,10 +18,25 @@ import logging
 
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
-from academic_defense_simulator.models.panelist import Panelist, PanelGeneration
+from academic_defense_simulator.models.panelist import GeneratedPanelist, Panelist, PanelGeneration
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PERSONA_GENERATION_PROMPT
 
 logger = logging.getLogger(__name__)
+
+# v0.3j Decision 3 — curated icon set + per-archetype defaults. Lives here rather than
+# in prompts/panelist_prompts.py (where ARCHETYPE_CONFIG sits) because icons are roster
+# material, not prompt text — nothing in this block ever reaches an LLM call.
+PANELIST_ICON_CHOICES = [
+    "🎓", "🔬", "📚", "🛠️", "⚖️", "⚔️", "🧠", "📊", "🔍", "🧪", "🏛️", "✒️",
+]
+
+ARCHETYPE_DEFAULT_ICONS: dict[str, str] = {
+    "methodology_expert": "🔬",
+    "literature_theory_specialist": "📚",
+    "technical_implementation_reviewer": "🛠️",
+    "ethics_practicality_reviewer": "⚖️",
+    "devils_advocate": "⚔️",
+}
 
 # Devil's Advocate is an orchestration feature, not a fifth composition-table entry
 # (docs/v0.3b-multi-panelist-orchestration-decisions.md Decision 2) — it is appended to
@@ -29,28 +44,28 @@ logger = logging.getLogger(__name__)
 # never listed in PANEL_COMPOSITION (docs/v0.3e-panel-composition-decisions.md Decision 5).
 DEVILS_ADVOCATE_KEY = "devils_advocate"
 
-FALLBACK_PANELISTS: dict[str, Panelist] = {
-    "methodology_expert": Panelist(
+FALLBACK_PANELISTS: dict[str, GeneratedPanelist] = {
+    "methodology_expert": GeneratedPanelist(
         archetype_key="methodology_expert",
         panelist_name="Reyes",
         persona_framing="You are a rigorous methodologist known for pressing candidates on whether their chosen approach actually answers their stated research question.",
     ),
-    "literature_theory_specialist": Panelist(
+    "literature_theory_specialist": GeneratedPanelist(
         archetype_key="literature_theory_specialist",
         panelist_name="Okafor",
         persona_framing="You are a widely read theorist known for pressing candidates on gaps between their claims and the literature they cite.",
     ),
-    "technical_implementation_reviewer": Panelist(
+    "technical_implementation_reviewer": GeneratedPanelist(
         archetype_key="technical_implementation_reviewer",
         panelist_name="Tanaka",
         persona_framing="You are a hands-on builder known for pressing candidates on whether the implementation matches what was claimed and why each tool was chosen.",
     ),
-    "ethics_practicality_reviewer": Panelist(
+    "ethics_practicality_reviewer": GeneratedPanelist(
         archetype_key="ethics_practicality_reviewer",
         panelist_name="Alvarez",
         persona_framing="You are a pragmatic reviewer known for pressing candidates on real-world applicability, limitations, and the implications of deploying their work.",
     ),
-    "devils_advocate": Panelist(
+    "devils_advocate": GeneratedPanelist(
         archetype_key="devils_advocate",
         panelist_name="Marlowe",
         persona_framing="You are the panel's devil's advocate, known for singling out the strongest claim made so far and contesting it hardest — you attack the argument, never the candidate personally.",
@@ -126,7 +141,39 @@ def _render_archetype_roster(archetype_keys: list[str]) -> str:
     )
 
 
-def _validate_and_reorder(panelists: list[Panelist], archetype_keys: list[str]) -> list[Panelist] | None:
+def apply_customizations(
+    panelists: list[GeneratedPanelist], profile: DefenseProfile
+) -> list[Panelist]:
+    """Seat the roster (v0.3j Decision 2): pure Python, runs after persona generation
+    (or fallback) returns. Name override where a non-blank `display_name` exists for the
+    archetype; icon resolution (customization → archetype default) for every panelist
+    unconditionally. Every downstream consumer reads from the returned `Panelist`
+    objects, so the custom name propagates everywhere with no further changes."""
+    by_key = {c.archetype_key: c for c in profile.panel_customizations}
+    roster: list[Panelist] = []
+    for panelist in panelists:
+        customization = by_key.get(panelist.archetype_key)
+        name = panelist.panelist_name
+        icon = ARCHETYPE_DEFAULT_ICONS[panelist.archetype_key]
+        if customization is not None:
+            if customization.display_name is not None and customization.display_name.strip():
+                name = customization.display_name.strip()
+            if customization.icon is not None:
+                icon = customization.icon
+        roster.append(
+            Panelist(
+                archetype_key=panelist.archetype_key,
+                panelist_name=name,
+                persona_framing=panelist.persona_framing,
+                icon=icon,
+            )
+        )
+    return roster
+
+
+def _validate_and_reorder(
+    panelists: list[GeneratedPanelist], archetype_keys: list[str]
+) -> list[GeneratedPanelist] | None:
     """Python-side roster validation (Decision 2) — never trust the model's own keys.
 
     Same keys, same count as `archetype_keys`, no unknowns, no duplicate surnames. An
@@ -136,7 +183,7 @@ def _validate_and_reorder(panelists: list[Panelist], archetype_keys: list[str]) 
     if len(panelists) != len(archetype_keys):
         return None
 
-    by_key: dict[str, Panelist] = {}
+    by_key: dict[str, GeneratedPanelist] = {}
     for panelist in panelists:
         if panelist.archetype_key not in archetype_keys or panelist.archetype_key in by_key:
             return None
@@ -155,7 +202,9 @@ def generate_panel(
     """One structured-output call generating the whole panel's personas. Returns
     (panel, fallback_used). Retries once on any failure (provider error or Python-side
     roster validation failure), then falls back to FALLBACK_PANELISTS sliced to the
-    requested roster — never fails the session on persona failure."""
+    requested roster — never fails the session on persona failure. Both exits pass
+    through `apply_customizations` (v0.3j) — a user's custom name/icon survives even
+    the fallback path."""
     other_subtype_line = f" / {profile.other_subtype.value}" if profile.other_subtype is not None else ""
     prompt = PERSONA_GENERATION_PROMPT.format(
         defense_type=profile.defense_type.value,
@@ -174,7 +223,7 @@ def generate_panel(
 
         panel = _validate_and_reorder(generation.panelists, archetype_keys)
         if panel is not None:
-            return panel, False
+            return apply_customizations(panel, profile), False
         logger.warning(
             "Persona generation returned a malformed roster on attempt %d: %r",
             attempt,
@@ -186,4 +235,4 @@ def generate_panel(
         archetype_keys,
     )
     fallback_panel = [FALLBACK_PANELISTS[key] for key in archetype_keys]
-    return fallback_panel, True
+    return apply_customizations(fallback_panel, profile), True

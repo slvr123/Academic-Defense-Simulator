@@ -39,7 +39,7 @@ def _turn(archetype_key, name):
 
 def test_same_asker_framing_is_the_original_wording():
     previous_turn = _turn("methodology_expert", "Reyes")
-    active = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f")
+    active = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f", icon="🎓")
 
     framing = _render_prior_exchange_framing(previous_turn, active)
 
@@ -49,7 +49,7 @@ def test_same_asker_framing_is_the_original_wording():
 
 def test_colleague_framing_names_the_correct_prior_panelist_and_avoids_false_first_person():
     previous_turn = _turn("methodology_expert", "Reyes")
-    active = Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f")
+    active = Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f", icon="🎓")
 
     framing = _render_prior_exchange_framing(previous_turn, active)
 
@@ -60,7 +60,7 @@ def test_colleague_framing_names_the_correct_prior_panelist_and_avoids_false_fir
 
 def test_rendered_full_prompt_has_no_unfilled_placeholders_same_asker():
     previous_turn = _turn("methodology_expert", "Reyes")
-    active = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f")
+    active = Panelist(archetype_key="methodology_expert", panelist_name="Reyes", persona_framing="f", icon="🎓")
 
     prompt = FOLLOWUP_SYSTEM_PROMPT.format(
         panelist_name=active.panelist_name,
@@ -86,7 +86,7 @@ def test_rendered_full_prompt_has_no_unfilled_placeholders_same_asker():
 
 def test_rendered_full_prompt_has_no_unfilled_placeholders_colleague():
     previous_turn = _turn("methodology_expert", "Reyes")
-    active = Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f")
+    active = Panelist(archetype_key="literature_theory_specialist", panelist_name="Okafor", persona_framing="f", icon="🎓")
 
     prompt = FOLLOWUP_SYSTEM_PROMPT.format(
         panelist_name=active.panelist_name,

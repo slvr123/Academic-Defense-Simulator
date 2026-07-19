@@ -12,12 +12,25 @@ import logging
 import pytest
 
 from academic_defense_simulator.llm.provider import LLMProviderError
-from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
-from academic_defense_simulator.models.panelist import Panelist, PanelGeneration
-from academic_defense_simulator.panel import FALLBACK_PANELISTS, PANEL_COMPOSITION, compose_panel, generate_panel
+from academic_defense_simulator.models.defense_profile import (
+    DefenseProfile,
+    DefenseType,
+    OtherSubtype,
+    PanelistCustomization,
+)
+from academic_defense_simulator.models.panelist import GeneratedPanelist, PanelGeneration
+from academic_defense_simulator.panel import (
+    ARCHETYPE_DEFAULT_ICONS,
+    DEVILS_ADVOCATE_KEY,
+    FALLBACK_PANELISTS,
+    PANEL_COMPOSITION,
+    apply_customizations,
+    compose_panel,
+    generate_panel,
+)
 
 
-def _profile(defense_type, other_subtype=None, selected_archetypes=None):
+def _profile(defense_type, other_subtype=None, selected_archetypes=None, panel_customizations=None):
     key = defense_type.value if other_subtype is None else f"other/{other_subtype.value}"
     if selected_archetypes is None:
         selected_archetypes = PANEL_COMPOSITION[key][:3]
@@ -28,6 +41,7 @@ def _profile(defense_type, other_subtype=None, selected_archetypes=None):
         topic="t",
         selected_archetypes=selected_archetypes,
         document_id="doc",
+        panel_customizations=panel_customizations or [],
     )
 
 
@@ -106,7 +120,15 @@ def _gen(panelists):
 
 
 def _panelist(key, name, framing="framing"):
-    return Panelist(archetype_key=key, panelist_name=name, persona_framing=framing)
+    return GeneratedPanelist(archetype_key=key, panelist_name=name, persona_framing=framing)
+
+
+def _assert_is_seated_fallback(panel):
+    """The seated (post-customization) roster produced from FALLBACK_PANELISTS with an
+    empty customization list: fallback names, archetype-default icons."""
+    assert [(p.archetype_key, p.panelist_name, p.icon) for p in panel] == [
+        (k, FALLBACK_PANELISTS[k].panelist_name, ARCHETYPE_DEFAULT_ICONS[k]) for k in _ROSTER
+    ]
 
 
 def test_unknown_key_falls_back_after_retry(caplog):
@@ -115,7 +137,7 @@ def test_unknown_key_falls_back_after_retry(caplog):
     with caplog.at_level(logging.WARNING):
         panel, fallback_used = generate_panel(_generation_profile(), _ROSTER, provider)
     assert fallback_used is True
-    assert panel == [FALLBACK_PANELISTS[k] for k in _ROSTER]
+    _assert_is_seated_fallback(panel)
     assert provider.calls == 2
     assert "malformed roster" in caplog.text or "falling back" in caplog.text
 
@@ -125,7 +147,7 @@ def test_missing_key_falls_back_after_retry():
     provider = _StubProvider([malformed, malformed])
     panel, fallback_used = generate_panel(_generation_profile(), _ROSTER, provider)
     assert fallback_used is True
-    assert panel == [FALLBACK_PANELISTS[k] for k in _ROSTER]
+    _assert_is_seated_fallback(panel)
 
 
 def test_duplicate_surname_falls_back_after_retry():
@@ -138,7 +160,7 @@ def test_duplicate_surname_falls_back_after_retry():
     provider = _StubProvider([malformed, malformed])
     panel, fallback_used = generate_panel(_generation_profile(), _ROSTER, provider)
     assert fallback_used is True
-    assert panel == [FALLBACK_PANELISTS[k] for k in _ROSTER]
+    _assert_is_seated_fallback(panel)
 
 
 def test_order_mismatch_is_reordered_not_a_failure():
@@ -165,7 +187,11 @@ def test_valid_response_passes_through():
     provider = _StubProvider([valid])
     panel, fallback_used = generate_panel(_generation_profile(), _ROSTER, provider)
     assert fallback_used is False
-    assert panel == valid.panelists
+    assert [(p.archetype_key, p.panelist_name, p.persona_framing) for p in panel] == [
+        ("methodology_expert", "Reyes", "method framing"),
+        ("literature_theory_specialist", "Okafor", "lit framing"),
+    ]
+    assert [p.icon for p in panel] == [ARCHETYPE_DEFAULT_ICONS[k] for k in _ROSTER]
     assert provider.calls == 1
 
 
@@ -179,4 +205,86 @@ def test_provider_error_then_success_recovers_without_fallback():
     provider = _StubProvider([LLMProviderError("transient"), valid])
     panel, fallback_used = generate_panel(_generation_profile(), _ROSTER, provider)
     assert fallback_used is False
-    assert panel == valid.panelists
+    assert [(p.archetype_key, p.panelist_name) for p in panel] == [
+        ("methodology_expert", "Reyes"),
+        ("literature_theory_specialist", "Okafor"),
+    ]
+
+
+# --- apply_customizations (v0.3j Task 5) ---
+
+
+def test_blank_or_missing_display_name_keeps_generated_name():
+    """None, absent, and whitespace-only display_name all mean 'keep the generated
+    name' (Decision 2: None/blank → keep)."""
+    generated = [_panelist("methodology_expert", "Cruz"), _panelist("literature_theory_specialist", "Diaz")]
+    profile = _profile(
+        DefenseType.THESIS,
+        selected_archetypes=_ROSTER,
+        panel_customizations=[
+            PanelistCustomization(archetype_key="methodology_expert", display_name="   "),
+            # literature_theory_specialist has no customization entry at all
+        ],
+    )
+    panel = apply_customizations(generated, profile)
+    assert [p.panelist_name for p in panel] == ["Cruz", "Diaz"]
+
+
+def test_display_name_override_replaces_generated_name():
+    generated = [_panelist("methodology_expert", "Cruz"), _panelist("literature_theory_specialist", "Diaz")]
+    profile = _profile(
+        DefenseType.THESIS,
+        selected_archetypes=_ROSTER,
+        panel_customizations=[
+            PanelistCustomization(archetype_key="methodology_expert", display_name="  Reyes  "),
+        ],
+    )
+    panel = apply_customizations(generated, profile)
+    assert [p.panelist_name for p in panel] == ["Reyes", "Diaz"]
+    assert panel[0].persona_framing == generated[0].persona_framing  # framing untouched
+
+
+def test_icon_resolution_default_and_override():
+    """Icon is resolved for every panelist unconditionally: customization icon where
+    set, archetype default everywhere else — no Panelist ever lacks an icon."""
+    generated = [_panelist("methodology_expert", "Cruz"), _panelist("literature_theory_specialist", "Diaz")]
+    profile = _profile(
+        DefenseType.THESIS,
+        selected_archetypes=_ROSTER,
+        panel_customizations=[
+            PanelistCustomization(archetype_key="methodology_expert", icon="🧠"),
+        ],
+    )
+    panel = apply_customizations(generated, profile)
+    assert panel[0].icon == "🧠"
+    assert panel[1].icon == ARCHETYPE_DEFAULT_ICONS["literature_theory_specialist"]
+
+
+def test_devils_advocate_customization_applies():
+    generated = [_panelist(DEVILS_ADVOCATE_KEY, "Marlowe")]
+    profile = _profile(
+        DefenseType.THESIS,
+        selected_archetypes=_ROSTER,
+        panel_customizations=[
+            PanelistCustomization(archetype_key=DEVILS_ADVOCATE_KEY, display_name="Vance", icon="🏛️"),
+        ],
+    )
+    panel = apply_customizations(generated, profile)
+    assert (panel[0].panelist_name, panel[0].icon) == ("Vance", "🏛️")
+
+
+def test_custom_name_survives_fallback_path():
+    """A user's custom name/icon must survive persona-generation failure — both
+    generate_panel exits pass through apply_customizations."""
+    provider = _StubProvider([LLMProviderError("down"), LLMProviderError("still down")])
+    profile = _profile(
+        DefenseType.THESIS,
+        selected_archetypes=_ROSTER,
+        panel_customizations=[
+            PanelistCustomization(archetype_key="methodology_expert", display_name="Reyes-Santos", icon="📊"),
+        ],
+    )
+    panel, fallback_used = generate_panel(profile, _ROSTER, provider)
+    assert fallback_used is True
+    assert (panel[0].panelist_name, panel[0].icon) == ("Reyes-Santos", "📊")
+    assert panel[1].panelist_name == FALLBACK_PANELISTS["literature_theory_specialist"].panelist_name
