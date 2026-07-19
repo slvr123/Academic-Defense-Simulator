@@ -84,16 +84,19 @@ The decision record in [`docs/`](docs/) keeps retired decisions alongside
 current ones — the reversals are documented, not erased.
 
 - **Measured, not assumed:** per-session LLM call count was predicted from
-  design docs (16 calls for a standard session), then verified with a counter
-  at the provider boundary. The first instrumented run measured a session
-  that terminated two turns early — the counter exposed an orchestration bug
-  where one panelist's spent follow-ups silently blocked another's, which was
-  characterized with line-level evidence before any fix was written.
+  the design docs as a formula — 3 setup calls, 2 per turn, 1 report
+  narrative — then verified live by a counter at the provider boundary.
+  The first instrumented run measured a session terminating two turns
+  early: the counter exposed an orchestration bug where one panelist's
+  spent follow-ups silently blocked another's, characterized with
+  line-level evidence before any fix was written.
 - **Model fitness tested per task:** the cheaper dev-default model
-  (gemini-3.1-flash-lite) was diagnosed unfit for judgment tasks — it inverted
-  difficulty adjustments on weak answers and inflated clarity scores — so
-  scoring-critical calls run on [VERIFY-model-name] regardless of dev
-  defaults. Probe results are committed as permanent artifacts.
+  (`gemini-3.1-flash-lite`) was diagnosed unfit for judgment tasks — it
+  inverted difficulty adjustments on weak answers and inflated clarity
+  scores — with probe results committed as permanent artifacts. The
+  document relevance gate is pinned to `gemini-2.5-flash` as a result;
+  migrating the remaining scoring path off the dev default is a queued
+  roadmap item.
 - **Prompts are versioned.** Every exported transcript is stamped with the
   PROMPT_VERSION that produced it, because a prompt wording change silently
   invalidates earlier verification — learned empirically, then enforced

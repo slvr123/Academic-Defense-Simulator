@@ -312,6 +312,12 @@ overridden).
   retention + gated new-topic rotation) — no longer parked.
 - **Retriever interface / vector-DB swap** — unchanged from Day 1: revisit at v1.0
   or when a second real implementation exists, whichever comes first.
+- Production scoring runs on gemini-3.1-flash-lite despite the documented
+  judgment-fitness finding — a deliberate tradeoff: gemini-2.5-flash's
+  free-tier RPD (~20/day) cannot cover even one full session on a shared key,
+  and a dead demo is worse than soft scoring. Revisit at v1.0, on the BYO-key
+  design, or if a better model with generous RPD ships — whichever comes
+  first.
 
 ---
 
