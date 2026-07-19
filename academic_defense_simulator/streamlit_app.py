@@ -49,7 +49,7 @@ from academic_defense_simulator.engine import (
     session_is_complete,
 )
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
-from academic_defense_simulator.llm.provider import LLMProviderError
+from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.report import DefenseReport
@@ -104,15 +104,29 @@ def _call_with_timeout(fn, *args, label: str, **kwargs):
     return result
 
 
+# v0.3h Brief: one label vocabulary for every LLM-touching stage, shared by
+# ABORT_MESSAGES below, `_call_with_timeout`'s `label=`, and CallCounter's
+# `by_stage` breakdown — a single set of strings rather than three that have to be
+# kept in sync by hand. The gate/extraction/persona stages had no label anywhere
+# before this brief (they don't go through `_call_with_timeout`); adding one for
+# each was in scope per the brief's "if the gate/extraction/persona calls lack
+# labels, add them" instruction.
+LLM_STAGE_RELEVANCE_GATE = "relevance gate"
+LLM_STAGE_EXTRACTION = "domain/topic extraction"
+LLM_STAGE_PERSONA_GENERATION = "persona generation"
+LLM_STAGE_QUESTION_GENERATION = "question generation"
+LLM_STAGE_ANSWER_SCORING = "answer scoring"
+LLM_STAGE_REPORT_NARRATIVE = "report narrative"
+
 # Stage-keyed abort copy (v0.3d Decision 5) — the user never sees raw exception text;
 # it goes to logs (via `_abort` below) and the dev-view sidebar only. Keys are the exact
 # `label` values already passed to `_call_with_timeout` at each of the three call sites
 # — they were already mutually distinguishing, so no separate stage-key mechanism was
 # needed (brief's "reuse the existing label if it's already distinguishing" note).
 ABORT_MESSAGES = {
-    "question generation": "The panel's next question took longer than expected.",
-    "answer scoring": "Scoring your answer took longer than expected.",
-    "report narrative": "Building your report took longer than expected.",
+    LLM_STAGE_QUESTION_GENERATION: "The panel's next question took longer than expected.",
+    LLM_STAGE_ANSWER_SCORING: "Scoring your answer took longer than expected.",
+    LLM_STAGE_REPORT_NARRATIVE: "Building your report took longer than expected.",
 }
 
 
@@ -406,13 +420,22 @@ def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | No
     return defense_type.value
 
 
-def _new_provider() -> GeminiProvider:
+def _new_provider(label: str) -> GeminiProvider:
     """A fresh GeminiProvider (and its underlying HTTP client) per call, rather than one
     reused across reruns via st.session_state. Streamlit's script-runner executes each
     rerun on a new thread, and reusing a single genai.Client's connection pool across
-    threads was observed to hang indefinitely on a later call in the same session."""
+    threads was observed to hang indefinitely on a later call in the same session.
+
+    v0.3h Brief: `label` and the session's `CallCounter` (if one exists yet) are
+    threaded into every construction — this is the one place that decides which
+    stage a given provider instance's calls get attributed to."""
     settings = load_settings()
-    return GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
+    return GeminiProvider(
+        api_key=settings.gemini_api_key,
+        model=settings.gemini_model,
+        call_counter=st.session_state.get("llm_call_counter"),
+        label=label,
+    )
 
 
 # v0.3g Brief: the relevance gate is a judgment task, pinned to gemini-2.5-flash
@@ -424,7 +447,12 @@ _RELEVANCE_ASSESSMENT_MODEL = "gemini-2.5-flash"
 
 def _new_relevance_provider() -> GeminiProvider:
     settings = load_settings()
-    return GeminiProvider(api_key=settings.gemini_api_key, model=_RELEVANCE_ASSESSMENT_MODEL)
+    return GeminiProvider(
+        api_key=settings.gemini_api_key,
+        model=_RELEVANCE_ASSESSMENT_MODEL,
+        call_counter=st.session_state.get("llm_call_counter"),
+        label=LLM_STAGE_RELEVANCE_GATE,
+    )
 
 
 @st.cache_resource(show_spinner=False)
@@ -452,7 +480,6 @@ def _render_dev_view() -> None:
         dev_view = st.toggle("Developer view", key="dev_view_toggle")
         if not dev_view:
             return
-        st.caption(f"PROMPT_VERSION: {PROMPT_VERSION}")
         session: DefenseSession | None = st.session_state.get("session")
         if session is not None:
             st.caption(f"difficulty_current: {session.difficulty_current}/5")
@@ -633,17 +660,17 @@ def _render_current_exchange(session: DefenseSession, active_panelist: Panelist,
                     try:
                         st.session_state.pending_turn = _call_with_timeout(
                             _generate_question,
-                            _new_provider(),
+                            _new_provider(LLM_STAGE_QUESTION_GENERATION),
                             session,
                             st.session_state.chunks,
                             st.session_state.embedding_model,
                             active_panelist,
                             st.session_state.other_subtype_line,
                             st.session_state.gemini_model,
-                            label="question generation",
+                            label=LLM_STAGE_QUESTION_GENERATION,
                         )
                     except LLMProviderError as exc:
-                        _abort("question generation", exc)
+                        _abort(LLM_STAGE_QUESTION_GENERATION, exc)
                         st.rerun()
 
     turn = st.session_state.pending_turn
@@ -703,14 +730,14 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                         try:
                             turn.score = _call_with_timeout(
                                 _score_answer,
-                                _new_provider(),
+                                _new_provider(LLM_STAGE_ANSWER_SCORING),
                                 turn,
                                 active_panelist,
                                 session.profile.defense_type.value,
-                                label="answer scoring",
+                                label=LLM_STAGE_ANSWER_SCORING,
                             )
                         except LLMProviderError as exc:
-                            _abort("answer scoring", exc)
+                            _abort(LLM_STAGE_ANSWER_SCORING, exc)
                             st.rerun()
 
                         session.turns.append(turn)
@@ -730,10 +757,13 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                             try:
                                 with st.spinner("Building end-of-session report..."):
                                     session.report = _call_with_timeout(
-                                        build_report, session, _new_provider(), label="report narrative"
+                                        build_report,
+                                        session,
+                                        _new_provider(LLM_STAGE_REPORT_NARRATIVE),
+                                        label=LLM_STAGE_REPORT_NARRATIVE,
                                     )
                             except LLMProviderError as exc:
-                                _abort("report narrative", exc)
+                                _abort(LLM_STAGE_REPORT_NARRATIVE, exc)
                                 st.rerun()
                             else:
                                 st.session_state.stage = "done"
@@ -854,7 +884,7 @@ def _ingest_and_extract(uploaded_file, *, skip_relevance_check: bool = False) ->
     settings = load_settings()
 
     with st.spinner("Extracting domain/topic from the document..."):
-        extraction = extract_document_profile(texts, _new_provider())
+        extraction = extract_document_profile(texts, _new_provider(LLM_STAGE_EXTRACTION))
 
     st.session_state.document_id = str(uuid4())
     st.session_state.uploaded_filename = uploaded_file.name
@@ -1043,6 +1073,17 @@ if st.session_state.stage == "intake":
         # None value) earlier in this same script pass, so without an explicit rerun
         # here too, the warning would sit in session_state and never reach the browser.
         st.session_state.relevance_warning = None
+        # v0.3h Brief: the gate call (inside _ingest_and_extract, below) is the first
+        # LLM call of the whole document->session->report journey, so the counter is
+        # created here, at the earliest point any call can happen, and the SAME object
+        # keeps accumulating through extraction, persona generation, and every later
+        # turn/report call — that's what makes the gate call show up joined into the
+        # session tally at export time rather than as a separate figure (Decision 1).
+        # A fresh "Process document" click always starts a new tally, discarding any
+        # prior click's partial (e.g. gate-only, rejected-and-abandoned) count for a
+        # different document — each click is accounting for one candidate document's
+        # journey, not a running total across abandoned attempts.
+        st.session_state.llm_call_counter = CallCounter()
         with st.spinner("Processing document..."):
             _ingest_and_extract(uploaded_file)
         if "document_id" in st.session_state or st.session_state.relevance_warning is not None:
@@ -1075,7 +1116,9 @@ if st.session_state.stage == "intake":
             )
             with st.spinner("Assembling the panel..."):
                 archetype_roster = compose_full_roster(profile)
-                panel, fallback_used = generate_panel(profile, archetype_roster, _new_provider())
+                panel, fallback_used = generate_panel(
+                    profile, archetype_roster, _new_provider(LLM_STAGE_PERSONA_GENERATION)
+                )
 
             st.session_state.session = DefenseSession(
                 profile=profile, panel=panel, difficulty_current=profile.difficulty_start
@@ -1115,13 +1158,21 @@ elif st.session_state.stage == "done":
     if session.report is not None:
         _render_report(session.report)
 
-    # PROMPT_VERSION and personas_fallback_used are stamped only here, at export time —
-    # DefenseSession stays free of any coupling to the prompts module or generation
-    # provenance. This JSON is the seed of v1.0 analytics and the artifact format for
-    # future eval runs.
+    # PROMPT_VERSION, personas_fallback_used, and llm_call_count are stamped only here,
+    # at export time — DefenseSession stays free of any coupling to the prompts module,
+    # generation provenance, or call accounting. This JSON is the seed of v1.0 analytics
+    # and the artifact format for future eval runs.
+    #
+    # v0.3h Brief, Task 2: llm_call_count.total/by_stage come from the session's
+    # CallCounter (accumulated since intake, see _new_provider) — the gate call is
+    # folded into this total (Decision 1: joined at convene time, not reported
+    # separately) rather than broken out, so this one number is the full per-session
+    # call cost. Export-only — not surfaced anywhere in the UI.
+    call_counter: CallCounter = st.session_state.llm_call_counter
     export_payload = {
         "prompt_version": PROMPT_VERSION,
         "personas_fallback_used": st.session_state.personas_fallback_used,
+        "llm_call_count": {"total": call_counter.total, "by_stage": call_counter.by_stage},
         "session": json.loads(session.model_dump_json()),
     }
     st.download_button(

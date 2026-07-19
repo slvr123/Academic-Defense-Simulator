@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Type, TypeVar
 
 from pydantic import BaseModel
@@ -15,6 +16,27 @@ class LLMProviderError(Exception):
     or exhausted quota) after any retry this boundary allows. Callers should stop
     the session, not skip the turn — a session with a silently dropped turn isn't
     a valid transcript."""
+
+
+@dataclass
+class CallCounter:
+    """Per-session LLM call tally (v0.3h Brief). Provider-agnostic, no streamlit
+    import — a fresh instance is created per user session (in the Streamlit layer)
+    and threaded into each provider construction alongside a stage label.
+
+    Deliberately NOT incremented at business-logic call sites: a call site that
+    retries internally (GeminiProvider's own retry-once on transient errors, or a
+    business-logic retry loop like `extract_document_profile`'s) would otherwise
+    only ever register once, silently undercounting what actually went over the
+    wire. `record()` is called from inside the provider implementation itself, once
+    per real network attempt, so every retry is counted."""
+
+    total: int = 0
+    by_stage: dict[str, int] = field(default_factory=dict)
+
+    def record(self, label: str) -> None:
+        self.total += 1
+        self.by_stage[label] = self.by_stage.get(label, 0) + 1
 
 
 class LLMProvider(ABC):

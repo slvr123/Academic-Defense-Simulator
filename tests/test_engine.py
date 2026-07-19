@@ -10,8 +10,10 @@ import pytest
 
 import academic_defense_simulator.engine as engine_module
 from academic_defense_simulator.engine import (
+    MAX_FOLLOW_UPS_PER_TOPIC,
     _generate_da_question,
     _generate_question,
+    _should_follow_up,
     select_active_panelist,
     session_is_complete,
     t_max,
@@ -163,6 +165,76 @@ def test_t_max_backstop_does_not_fire_before_reaching_it():
     turns = [_turn("methodology_expert", "Reyes", i, f"c{i}", _score(5, 5, 5)) for i in range(11)]
     session = _session(*turns)
     assert session_is_complete(session) is False
+
+
+# --- v0.3i: DA retention scope fix (docs/v0.3i-da-retention-scope-fix.md) ---
+#
+# follow_ups_on_current_topic used to count trailing turns sharing chunk_index alone,
+# regardless of asker. _generate_da_question deliberately reuses the contested turn's
+# chunk (engine.py:288), so when DA's target happened to be the chunk a prior panelist
+# had just exhausted MAX_FOLLOW_UPS_PER_TOPIC on, DA inherited that exhausted count and
+# got no follow-up chain of its own — ending the session for a reason unrelated to
+# either documented end condition (v0.3f Decision 5). The fix rescopes the count to
+# require BOTH chunk_index and panelist_archetype_key to match the current turn.
+#
+# Call-site audit (v0.3i): grep for `follow_ups_on_current_topic` across the repo found
+# exactly one production consumer — `_should_follow_up` at engine.py:156 — and one test
+# consumer, test_branching.py's `test_followups_counted_per_chunk_not_globally`. No
+# other call site needs the old chunk-only meaning: `used_chunk_indices` is a separate,
+# unaffected property (chunk variety for rotation/retrieval exclusion, not the
+# retention cap) and was not touched. The one existing test consumer uses a single
+# panelist throughout, so its assertions hold unchanged under the new scoping — see the
+# updated comment at test_branching.py's `_CASES` block.
+
+
+def test_da_not_blocked_by_another_panelists_exhausted_chunk_regression_shape():
+    """Exact reported repro shape: panelist M exhausts the cap on chunk 51 (initial + 2
+    follow-ups), DA's very next turn contests that claim and reuses chunk 51. Under the
+    old chunk-only scoping this inherited M's spent count and silently denied DA any
+    follow-up chain. Rescoped by asker, DA's chain starts fresh."""
+    m1 = _turn("methodology_expert", "Reyes", 51, "c51", _score(1, 1, 1))
+    m2 = _turn("methodology_expert", "Reyes", 51, "c51", _score(1, 1, 1))
+    m3 = _turn("methodology_expert", "Reyes", 51, "c51", _score(1, 1, 1))
+    da1 = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 51, "c51", _score(1, 1, 1))
+    session = _session(m1, m2, m3, da1)
+
+    assert session.follow_ups_on_current_topic == 0  # DA's own chain, fresh
+    assert _should_follow_up(session) is True  # not blocked by M's spent follow-ups
+    assert session_is_complete(session) is False  # neither documented end condition met
+
+
+def test_da_own_chain_reaching_cap_ends_session():
+    m = _turn("methodology_expert", "Reyes", 51, "c51", _score(1, 1, 1))
+    da1 = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 51, "c51", _score(1, 1, 1))
+    da2 = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 51, "c51", _score(1, 1, 1))
+    da3 = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 51, "c51", _score(1, 1, 1))
+    session = _session(m, da1, da2, da3)
+
+    assert session.follow_ups_on_current_topic == MAX_FOLLOW_UPS_PER_TOPIC
+    assert _should_follow_up(session) is False  # DA's own chain hit the cap
+    assert session_is_complete(session) is True
+
+
+def test_da_answering_strongly_ends_session():
+    m = _turn("methodology_expert", "Reyes", 51, "c51", _score(1, 1, 1))
+    da_strong = _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 51, "c51", _score(5, 5, 5))
+    session = _session(m, da_strong)
+
+    assert _should_follow_up(session) is False  # strong answer, no follow-up earned
+    assert session_is_complete(session) is True
+
+
+def test_non_da_retention_still_caps_per_panelist_on_one_chunk():
+    """Same-panelist chain on one chunk is unaffected by the rescoping — the new
+    panelist-match condition is trivially satisfied when it's the same asker throughout,
+    so this collapses to the pre-v0.3i chunk-only behavior."""
+    m1 = _turn("methodology_expert", "Reyes", 7, "c7", _score(2, 2, 2))
+    m2 = _turn("methodology_expert", "Reyes", 7, "c7", _score(2, 2, 2))
+    m3 = _turn("methodology_expert", "Reyes", 7, "c7", _score(1, 1, 1))
+    session = _session(m1, m2, m3)
+
+    assert session.follow_ups_on_current_topic == MAX_FOLLOW_UPS_PER_TOPIC
+    assert _should_follow_up(session) is False  # cap reached, forced to a new topic
 
 
 # --- Devil's Advocate target selection (Task 3) ---

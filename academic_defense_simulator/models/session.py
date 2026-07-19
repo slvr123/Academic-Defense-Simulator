@@ -39,16 +39,24 @@ class DefenseSession(BaseModel):
 
     @property
     def follow_ups_on_current_topic(self) -> int:
-        """Consecutive follow-up turns already spent on the most recent chunk. Counts
-        trailing turns sharing the latest turn's chunk_index, minus 1 for the new-topic
-        turn that opened the chunk. 0 right after a fresh new-topic turn. Derived, not
-        persisted — same approach as used_chunk_indices."""
+        """Consecutive follow-up turns already spent on the current panelist's current
+        chunk. Counts trailing turns sharing the latest turn's chunk_index AND its
+        asking panelist (panelist_archetype_key), minus 1 for the new-topic turn that
+        opened the chunk. 0 right after a fresh new-topic turn, and also 0 the moment a
+        different panelist lands on a chunk someone else already exhausted — v0.3f's
+        retention cap is a per-panelist floor, not a per-chunk one (v0.3i fix: see
+        docs/v0.3i-da-retention-scope-fix.md; this was previously chunk-only, which
+        let one panelist's exhausted chunk silently deny Devil's Advocate its own
+        follow-up chain when DA's contested claim happened to reuse that chunk).
+        Derived, not persisted — same approach as used_chunk_indices."""
         if not self.turns:
             return 0
-        current_chunk = self.turns[-1].chunk_index
+        last_turn = self.turns[-1]
+        current_chunk = last_turn.chunk_index
+        current_panelist = last_turn.panelist_archetype_key
         trailing = 0
         for turn in reversed(self.turns):
-            if turn.chunk_index != current_chunk:
+            if turn.chunk_index != current_chunk or turn.panelist_archetype_key != current_panelist:
                 break
             trailing += 1
         return trailing - 1

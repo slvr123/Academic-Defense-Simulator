@@ -53,8 +53,9 @@ def _session(*turns):
 
 
 # Each case: (id, session, expected _should_follow_up result). Follow-up counts are driven
-# by how many trailing turns share the last turn's chunk_index (see
-# DefenseSession.follow_ups_on_current_topic).
+# by how many trailing turns share the last turn's chunk_index AND asking panelist (see
+# DefenseSession.follow_ups_on_current_topic) — every turn below is the same panelist
+# (methodology_expert), so these cases don't exercise the panelist half of that match.
 _CASES = [
     ("no-turns-yet", _session(), False),
     ("last-turn-unscored", _session(_turn(5, None)), False),
