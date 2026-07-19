@@ -55,11 +55,29 @@ pre-publish rename pass; interim `dayN`-style names until then).
   the same follow-up treatment as everyone else. Session ends the moment DA's own
   follow-up chain concludes, backstopped by a computed `T_max = 3 × panel size`
   (12, given v0.3e's uniform cap) circuit breaker.
-- **Every pre-deploy gate is now satisfied.** Hardening, v0.3e, and v0.3f were the
-  three items both decisions docs named as blocking Decision 0's deployment step —
-  all three are closed. **Deployment-gate confirmation is the only thing left
-  before v0.3 can be called fully closed** — see the Deployment Gate section
-  below; this roadmap's default remains deploy at end of v0.3.
+- **Deployed.** I confirmed the deployment gate on 2026-07-17 (deploy at end of
+  v0.3, this roadmap's default) and shipped to Streamlit Community Cloud the same
+  day - `docs/v0.3-deployment-decisions.md`.
+  The link stays quiet until v0.4's key gating ships; my own key sits behind it
+  with nothing but the 500 RPD ceiling, so no wide sharing yet.
+- **v0.3g complete** (`docs/v0.3g-document-relevance-gate-decisions.md`).
+  Document relevance gate at ingestion - one LLM call that rejects uploads the
+  panel can't meaningfully examine, before a session ever starts.
+- **v0.3h and v0.3i complete** (`docs/v0.3h-i-da-retention-scope-fix.md` - one
+  doc covers both, since the fix grew out of the measurement run).
+  v0.3h: call-count instrumentation at the provider boundary, total plus
+  per-stage tally stamped into the export payload; a real 4-turn session
+  measured 12 calls, matching the stated budget arithmetic (standing
+  constraint 2, now verified by instrument rather than by hand).
+  That run surfaced the v0.3i bug: the follow-up retention counter was scoped
+  to chunk instead of panelist, so Devil's Advocate arriving at another
+  panelist's exhausted chunk got no follow-up chain of its own and the session
+  ended early - worst against uniformly weak answers, exactly the users the
+  app exists to serve.
+  Fixed by scoping the counter to chunk plus asking panelist; reproduced and
+  verified live.
+- **v0.3 is fully closed.** README with hero and intake screenshots is in the
+  repo. Next milestone: v0.4 - Depth & Persistence.
 
 ## Standing constraints (apply to every session below)
 
@@ -219,19 +237,24 @@ sitting for its design day.**
 
 ---
 
-## Deployment Gate — **open decision, flagged for Sean's confirmation**
+## Deployment Gate — **resolved 2026-07-17: deployed at end of v0.3**
 
-Two positions on record:
-- **Sean:** postpone deployment to v1.0 — current UI would make a weak public demo.
+Two positions were on record:
+- **My initial position:** postpone deployment to v1.0 — current UI would make a
+  weak public demo.
 - **Claude's recommendation:** deploy at end of v0.3 — first version where demo
   matches pitch; a live link beats two more versions of polish for a 90-second
   reviewer; deployment surfaces real problems (model-weight cold start,
   `st.cache_resource`, the public-API-key question) better found mid-project than
   at the finish line.
 
-**Default in this roadmap: deploy at end of v0.3.** Overriding it is one line — but
-make it a decision, not a drift. Either way, the deployment API-key design (below)
-happens in v0.4 regardless, because it's needed at whichever gate is chosen.
+I took the roadmap default and confirmed deploy-at-end-of-v0.3 on 2026-07-17.
+Execution and evidence: `docs/v0.3-deployment-decisions.md`.
+The post-deploy fixes it surfaced (v0.3g through v0.3i - see Current position)
+are exactly the kind of mid-project problem the recommendation predicted, so
+I'm counting the call as vindicated.
+The API-key design still lands in v0.4 as planned; until it does, the link is
+for direct, low-volume use only.
 
 ---
 
@@ -333,6 +356,8 @@ overridden).
 | Pre-deploy hardening | 1 Code session | Hang-closure carryover + difficulty-4/5 fabrication fix closed |
 | v0.3e Panel composition | 1 design day + 1 Code | Schema validator + `compose_panel` tests green; uniform 4-total cap |
 | v0.3f Adaptive turn retention | 1 design day + 1 Code | Termination logic tested at shortest/longest case; live session verified |
-| **Deployment gate** | ~1 session if taken | Sean's call — default: deploy here |
+| **Deployment gate** | 1 Code session (taken 2026-07-17) | Deployed to Streamlit Cloud, verified live |
+| v0.3g Relevance gate | 1 Code session | Off-topic upload rejected at ingestion, verified live |
+| v0.3h/i Instrumentation + DA fix | 1 Code session | Call count matches budget; DA retention rescoped, reproduced then verified |
 | v0.4 Depth | 2–3 Code sessions | Second-doc eval + persistence + key design done |
 | v1.0 Polish | 2–3 sessions + writing | Live URL + README + analytics |
