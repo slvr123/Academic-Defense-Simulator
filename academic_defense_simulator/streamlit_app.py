@@ -248,13 +248,25 @@ def _inject_theme_css() -> None:
             object-fit: cover;
         }
         /* Icon-picker popover (v0.3j amendment 2): the grid needs real width —
-           Streamlit sizes popovers to content, which collapses a 4-across image
-           grid into a sliver without a floor. */
+           Streamlit sizes popovers to content, which collapses the image grid
+           into a sliver without a floor. Kept compact (Sean: first cut was too
+           big): ~64px cells, small select-button type. */
         div[data-testid="stPopoverBody"] {
-            min-width: 440px;
+            min-width: 330px;
+            max-width: 330px;
         }
         div[data-testid="stPopoverBody"] img {
             border-radius: 50%;
+        }
+        div[data-testid="stPopoverBody"] button p {
+            font-size: 0.68rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        div[data-testid="stPopoverBody"] button {
+            min-height: 1.6rem;
+            padding: 0 0.25rem;
         }
         .ads-card-name {
             font-family: Georgia, serif;
@@ -1184,7 +1196,7 @@ if st.session_state.stage == "intake":
                                     )
                                     grid_width = 4
                                     for row_start in range(0, len(icon_choices), grid_width):
-                                        grid_cols = st.columns(grid_width)
+                                        grid_cols = st.columns(grid_width, gap="small")
                                         for cell, stem in zip(
                                             grid_cols, icon_choices[row_start : row_start + grid_width]
                                         ):
@@ -1200,15 +1212,17 @@ if st.session_state.stage == "intake":
                                                     )
                                                 if stem == current_icon:
                                                     st.button(
-                                                        "✓ Selected",
+                                                        "✓",
                                                         key=f"pick_{archetype_key}_{stem}",
                                                         disabled=True,
                                                         use_container_width=True,
+                                                        help=f"{_icon_choice_label(stem)} — selected",
                                                     )
                                                 elif st.button(
                                                     _icon_choice_label(stem),
                                                     key=f"pick_{archetype_key}_{stem}",
                                                     use_container_width=True,
+                                                    help=_icon_choice_label(stem),
                                                 ):
                                                     st.session_state[state_key] = stem
                                                     st.rerun()
