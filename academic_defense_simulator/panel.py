@@ -95,27 +95,27 @@ DEVILS_ADVOCATE_KEY = "devils_advocate"
 FALLBACK_PANELISTS: dict[str, GeneratedPanelist] = {
     "methodology_expert": GeneratedPanelist(
         archetype_key="methodology_expert",
-        panelist_name="Reyes",
+        panelist_name="Dela Cruz",
         persona_framing="You are a rigorous methodologist known for pressing candidates on whether their chosen approach actually answers their stated research question.",
     ),
     "literature_theory_specialist": GeneratedPanelist(
         archetype_key="literature_theory_specialist",
-        panelist_name="Okafor",
+        panelist_name="Garcia",
         persona_framing="You are a widely read theorist known for pressing candidates on gaps between their claims and the literature they cite.",
     ),
     "technical_implementation_reviewer": GeneratedPanelist(
         archetype_key="technical_implementation_reviewer",
-        panelist_name="Tanaka",
+        panelist_name="Gregorio",
         persona_framing="You are a hands-on builder known for pressing candidates on whether the implementation matches what was claimed and why each tool was chosen.",
     ),
     "ethics_practicality_reviewer": GeneratedPanelist(
         archetype_key="ethics_practicality_reviewer",
-        panelist_name="Alvarez",
+        panelist_name="Bautista",
         persona_framing="You are a pragmatic reviewer known for pressing candidates on real-world applicability, limitations, and the implications of deploying their work.",
     ),
     "devils_advocate": GeneratedPanelist(
         archetype_key="devils_advocate",
-        panelist_name="Marlowe",
+        panelist_name="Santos",
         persona_framing="You are the panel's devil's advocate, known for singling out the strongest claim made so far and contesting it hardest — you attack the argument, never the candidate personally.",
     ),
 }
