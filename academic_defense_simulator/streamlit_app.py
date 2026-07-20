@@ -566,7 +566,7 @@ def _render_key_gate() -> bool:
 
         mode = st.radio(
             "Mode",
-            options=["own_key", "demo"],
+            options=["demo", "own_key"],
             format_func=lambda m: (
                 "Use my own Gemini API key (recommended)"
                 if m == "own_key"
