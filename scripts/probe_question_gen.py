@@ -60,6 +60,8 @@ _ARCHETYPE_KEY = "methodology_expert"  # same archetype as all prior evidence �
 _PDF_PATH = Path(__file__).resolve().parent.parent / "Group2_Library Management System for DAZSMA Documentation (1).pdf"
 _RESULTS_PATH_V03 = Path(__file__).resolve().parent / "probe_question_gen_v0.3_results.jsonl"
 _DEFENSE_TYPE = DefenseType.CAPSTONE
+_DOMAIN_DAZSMA = "library and information science"
+_TOPIC_DAZSMA = "Library Management System for DAZSMA"
 
 # Real generated persona from this session's live Task 3 verify call (thesis, panel_size 3)
 # — reused here rather than regenerated, per the Task 7 brief, so the probe exercises real
@@ -77,6 +79,21 @@ _PROBE_PERSONA = Panelist(
     ),
 )
 
+# v0.4c Stage B persona (Decision 2): technical_implementation_reviewer, hand-crafted in
+# the same style as _PROBE_PERSONA/_COLLEAGUE_PERSONA rather than spending a real
+# persona-generation call — this probe's budget (Decision 5) doesn't include one.
+_TIR_PROBE_PERSONA = Panelist(
+    archetype_key="technical_implementation_reviewer",
+    panelist_name="Reyes",
+    icon="🛠️",
+    persona_framing=(
+        "You are a hands-on embedded-systems reviewer known for pressing candidates on "
+        "whether their hardware and signal-processing choices actually deliver the "
+        "accuracy and performance they claim, not just whether the design sounds sound "
+        "on paper."
+    ),
+)
+
 # Vague, numberless, non-committal — the Day 5 weak-answer pattern. Generic enough to
 # apply to whatever methodology question is asked, and it should fail the "strong" gate.
 _WEAK_ANSWER = (
@@ -89,17 +106,32 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _profile() -> DefenseProfile:
+def _profile(
+    defense_type: DefenseType = _DEFENSE_TYPE,
+    domain: str = _DOMAIN_DAZSMA,
+    topic: str = _TOPIC_DAZSMA,
+    archetype_key: str = _ARCHETYPE_KEY,
+) -> DefenseProfile:
+    # v0.4c harness fix (flagged per the brief): `selected_archetypes` became required
+    # when v0.3e retired `panel_size` — this constructor predates that change and was
+    # never updated, so calling it as-is raises a Pydantic ValidationError before any
+    # LLM call happens. Every existing caller (main_probe, main_probe_hardening,
+    # main_probe_followup_attribution) still gets identical DAZSMA/methodology_expert
+    # behavior via the defaults below; only main_probe's new document/archetype
+    # parameters (v0.4c) exercise the non-default path.
     return DefenseProfile(
-        defense_type=_DEFENSE_TYPE,
-        domain="library and information science",
-        topic="Library Management System for DAZSMA",
-        document_id="dazsma-probe",
+        defense_type=defense_type,
+        domain=domain,
+        topic=topic,
+        selected_archetypes=[archetype_key],
+        document_id="probe",
     )
 
 
-def _session(difficulty_current: int, persona: Panelist) -> DefenseSession:
-    return DefenseSession(profile=_profile(), panel=[persona], difficulty_current=difficulty_current)
+def _session(difficulty_current: int, persona: Panelist, profile: Optional[DefenseProfile] = None) -> DefenseSession:
+    if profile is None:
+        profile = _profile(archetype_key=persona.archetype_key)
+    return DefenseSession(profile=profile, panel=[persona], difficulty_current=difficulty_current)
 
 
 def _record_for(turn: ConversationTurn, path: str, requested_difficulty: int, **extra) -> dict:
@@ -125,13 +157,24 @@ def _record_for(turn: ConversationTurn, path: str, requested_difficulty: int, **
     return record
 
 
-def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS_PATH_V03) -> None:
+def main_probe(
+    persona: Panelist = _PROBE_PERSONA,
+    results_path: Path = _RESULTS_PATH_V03,
+    pdf_path: Path = _PDF_PATH,
+    defense_type: DefenseType = _DEFENSE_TYPE,
+    domain: str = _DOMAIN_DAZSMA,
+    topic: str = _TOPIC_DAZSMA,
+) -> None:
+    """v0.4c (flagged harness change): `pdf_path`/`defense_type`/`domain`/`topic` are new
+    parameters, defaulting to the original DAZSMA values so every pre-v0.4c call site is
+    unaffected — added so this script can target a second document with a different
+    archetype (Decision 2 Stage B) without a copy-pasted sibling script."""
     settings = load_settings()
     model = settings.gemini_model
     print(f"[model: {model}] [prompt_version: {PROMPT_VERSION}] [persona: {persona.panelist_name}]")
-    print(f"[pdf: {_PDF_PATH.name}]")
+    print(f"[pdf: {pdf_path.name}]")
 
-    texts = chunk_pdf(str(_PDF_PATH))
+    texts = chunk_pdf(str(pdf_path))
     embedding_model = EmbeddingModel()
     embeddings = embedding_model.encode(texts)
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
@@ -140,6 +183,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
     provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
     pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
+    profile = _profile(defense_type=defense_type, domain=domain, topic=topic, archetype_key=persona.archetype_key)
     records: list[dict] = []
 
     # --- New-topic path: 4 questions, forced across distinct chunks, difficulties 2/3 only
@@ -148,7 +192,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
     # the new-topic branch; appending each turn adds its chunk to used_chunk_indices, so the
     # next retrieve() excludes it — the real loop's variety mechanism.
     print("\n=== New-topic path ===")
-    nt_session = _session(2, persona)
+    nt_session = _session(2, persona, profile)
     for requested in (2, 3, 2, 3):
         nt_session.difficulty_current = requested
         turn = engine._generate_question(
@@ -164,7 +208,7 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
     print("\n=== Follow-up path ===")
     excluded_parent_chunks: list[int] = []
     for round_num in range(1, 3):
-        fu_session = _session(3, persona)
+        fu_session = _session(3, persona, profile)
         # Seed scoreless turns on already-used parent chunks so this round's new-topic picks
         # a different chunk (nicer variety; not strictly required by the brief).
         for idx in excluded_parent_chunks:
@@ -206,10 +250,12 @@ def main_probe(persona: Panelist = _PROBE_PERSONA, results_path: Path = _RESULTS
         print(f"  round {round_num}: follow-up on chunk {follow_up.chunk_index}: "
               f"grounded={rec['grounded']} ratio={rec['grounding_ratio']} — {follow_up.question[:70]}...")
 
-    _write_results(records, model, persona, results_path)
+    _write_results(records, model, persona, results_path, pdf_path)
 
 
-def _write_results(records: list[dict], model: str, persona: Panelist, results_path: Path) -> None:
+def _write_results(
+    records: list[dict], model: str, persona: Panelist, results_path: Path, pdf_path: Path = _PDF_PATH
+) -> None:
     meta = {
         "record_type": "meta",
         "generated_at": _now_iso(),
@@ -219,7 +265,7 @@ def _write_results(records: list[dict], model: str, persona: Panelist, results_p
         "persona_name": persona.panelist_name,
         "persona_framing": persona.persona_framing,
         "grounding_threshold": 0.85,
-        "document": _PDF_PATH.name,
+        "document": pdf_path.name,
         "difficulty_levels_probed": "2, 3 only — difficulty 4 stays parked for 0.3b per the standing flag",
         # Task 1 citation: the archetype-lane fix re-verification is already recorded in
         # docs/v0.2-eval-results.md Check 2 (methodology lane held across both eval runs;

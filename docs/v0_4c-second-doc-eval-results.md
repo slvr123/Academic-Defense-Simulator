@@ -1,0 +1,358 @@
+# v0.4c — Second-Document Eval + Difficulty-Tone Probe: Results
+
+Raw findings, not a rewritten narrative, per the standing evidence bar and the same
+standard as `docs/v0.2-eval-results.md`.
+No prompt, rubric, orchestration, or retrieval change was made in this session — anything
+surfaced below is logged as a finding, per Decision 7 of
+`docs/v0_4c-second-doc-eval-decisions.md`.
+
+## Document identity — a correction made mid-session
+
+The decisions doc names the second document `sample2`.
+The file actually named `sample2.pdf` in the repo working directory is a different,
+unrelated document: a Polytechnic University of the Philippines (PUP) College of
+Accountancy and Finance inventory-management feasibility study, marked "Strictly
+Confidential" and "subject to a Non-Disclosure Agreement (NDA)."
+I discovered this live, after Stage A had already sent two excerpts of it to the Gemini
+API (the relevance gate on `gemini-2.5-flash`, and domain/topic extraction on the
+production model) — both calls completed before the content mismatch was caught.
+
+The actual TDOA wearable capstone described in Decision 1 (Bartolome, Castillo, Josef,
+Lopez, Sales, 2026) is `sample3.pdf`.
+I confirmed this locally, with zero API calls, before flagging it.
+I stopped and asked; the answer was to switch to `sample3.pdf` and proceed — that is the
+document every stage below actually ran against.
+`sample2.pdf`'s mismatch and the two calls already made against it are recorded here for
+the same reason DAZSMA's file identity is always stamped into results headers: a future
+reader needs to know exactly what evidence was run against what.
+
+## Method
+
+Everything below runs the production configuration as deployed: `gemini-3.1-flash-lite`
+for generation and scoring, `gemini-2.5-flash` only for the relevance gate — same as
+Decision 2 specifies.
+Real Gemini API calls throughout; real retrieval; real scoring; nothing mocked.
+No case in this session needed to be simulated — every path (new-topic, follow-up, DA,
+grounding retry, grounding flag) fired naturally during a live run.
+
+Harness change to `scripts/probe_question_gen.py`, flagged per the brief's instruction:
+
+- **Bug fix, not just parameterization.** `_profile()` constructed `DefenseProfile`
+  without `selected_archetypes`, which became a required field when v0.3e retired
+  `panel_size`. The script would have raised a `ValidationError` on the very first call —
+  confirmed by reproducing the failure before touching anything (`DefenseProfile(...)` at
+  the REPL, no `selected_archetypes` → `Field required`). This was dead/broken code before
+  v0.4c touched it, not something v0.4c introduced.
+- **Parameterization.** `main_probe()` gained `pdf_path`, `defense_type`, `domain`, `topic`
+  parameters, all defaulting to the original DAZSMA values, so `main_probe_hardening()` and
+  `main_probe_followup_attribution()` (which still call `_profile()`/`_session()` with no
+  overrides) are unaffected. Verified directly: constructing both the default DAZSMA path
+  and the new sample3/`technical_implementation_reviewer` path succeeded before spending
+  any real API call.
+- **New persona constant**, `_TIR_PROBE_PERSONA` (archetype `technical_implementation_reviewer`,
+  surname "Reyes"), hand-crafted in the same style as the existing `_PROBE_PERSONA`/
+  `_COLLEAGUE_PERSONA` — no persona-generation call was in this probe's budget.
+
+Two ad hoc, uncommitted runner scripts drove Stage A and Stage B/C against sample3
+(`scripts/adhoc_stage_a_sample2.py` — filename predates the correction above,
+`scripts/adhoc_run_stage_b_sample3.py`, `scripts/adhoc_stage_c_sample3.py`). These follow
+the repo's standing convention for ad hoc driver scripts (`.gitignore`'s `e2e_driver.py`
+entry) — not committed, not part of the shipped app, kept locally only for reproducibility.
+
+---
+
+## Stage A — Ingestion + relevance gate
+
+**Pass.**
+
+`sample3.pdf` chunked to **49 chunks**. First-chunk head:
+
+```
+Technological Institute of the Philippines
+938 Aurora Boulevard, Cubao, Quezon City
+
+COLLEGE OF ENGINEERING AND ARCHITECTURE
+Electronics Engineering Department
+
+DESIGN OF A WEARABLE TDOA-BASED SOUND SOURCE LOCALIZATION SYSTEM
+FOR ASSISTIVE SPATIAL AWARENESS
+
+Ken Brian B. Bartolome
+Gian Carlo C.
+```
+
+Raw `DocumentAssessment` (gemini-2.5-flash):
+
+```json
+{
+  "is_defense_material": true,
+  "document_kind": "thesis",
+  "reason": "This document excerpt, with its academic title, abstract, authors from a B.S. program, advisor, and structured table of contents featuring research chapters, strongly indicates it is a thesis or capstone project, which is standard material for an academic defense."
+}
+```
+
+The gate passed on a document it wasn't developed on — the primary thing Stage A checks.
+One minor, non-blocking observation: `document_kind` came back `"thesis"` rather than
+`"capstone project"`, even though the `reason` text itself names both.
+`is_defense_material` — the field everything downstream actually branches on — is correct.
+The label mismatch is a soft-gate cosmetic point, not a functional miss; not worth chasing
+given the gate is deliberately soft (Decision: fail-open, caller decides how to act).
+
+Domain/topic extraction (flash-lite, production model), also run as part of the real
+ingestion pipeline:
+
+```json
+{
+  "domain": "Electronics Engineering",
+  "topic": "Design of a Wearable TDOA-based Sound Source Localization System for Assistive Spatial Awareness"
+}
+```
+
+Both values are correct and match Decision 1's document description exactly.
+These are the values Stage C's `DefenseProfile` uses, reused verbatim rather than
+hand-typed, since that is what production actually hands the intake form.
+
+---
+
+## Stage B — Question-generation probe
+
+**Pass, with two findings.**
+
+`scripts/probe_question_gen.py`, `technical_implementation_reviewer` (persona "Reyes"),
+against sample3. 4 new-topic (difficulty 2/3, forced across distinct chunks) + 2 forced
+follow-ups. Results: `scripts/probe_question_gen_v0.4_sample3_results.jsonl` (7 lines: 1
+meta + 6 question records). `in_lane`/`difficulty_ok` are left null per Decision 2 — human
+columns for me to fill before this file is committed, not something this session fills on
+my behalf.
+
+Grounding tally (threshold 0.85):
+
+| path | grounded | ratios |
+|---|---|---|
+| new_topic | 3/4 | 1.0, 1.0, 0.8444, 1.0 |
+| follow_up | 2/2 | 1.0, 1.0 |
+
+Four distinct chunks used on the new-topic path (11, 14, 15, 35) — exceeds the ≥3 minimum.
+
+**Finding 1 — one new-topic grounding near-miss, chunk 15 (ratio 0.8444).** The panelist's
+`grounding_reference` was `"Rathna et al. (2024), which uses four omnidirectional
+microphones and an Arduino Uno board"` against a chunk that actually reads `"...Rathna et
+al. (2024), which uses four omnidirectional microphones and an Arduino Uno board to detect
+sounds..."` — the reference is a genuine, accurate prefix of a real sentence in the chunk,
+just truncated at a slightly different point than a contiguous-substring check expects.
+Same class as `docs/v0.2-eval-results.md` Miss 1 (paraphrase/truncation drift just under
+threshold, not fabrication) — logged, not patched, consistent with that precedent.
+
+**Finding 2 — the archetype lane transferred cleanly to a new document.** Every new-topic
+and follow-up question stayed on build decisions and technical trade-offs (DSP vs.
+microcontroller choice, I2S channel multiplexing across four microphones, geometric-model
+constraints) — zero drift into literature, ethics, or methodology territory. This is the
+generalization signal Decision 2 designed Stage B to produce: the same archetype lane that
+held on DAZSMA also held on a document from a completely different engineering domain.
+
+---
+
+## Task 3 — Difficulty-tone probe
+
+**Generation and grounding: pass, with one finding. Blind judgment: pending — not
+performed in this Code session.**
+
+`scripts/probe_difficulty_tone.py` (new script). 4 pairs (`methodology_expert` x 2 chunks,
+`technical_implementation_reviewer` x 2 chunks), difficulty 1 vs. 4, new-topic path only, 8
+generation calls. The same-chunk pairing assumption (both difficulties of a pair must land
+on the identical chunk) was asserted programmatically, not just assumed — it held on all 4
+pairs with zero assertion failures.
+
+Grounding tally (threshold 0.85):
+
+| difficulty | grounded | ratios |
+|---|---|---|
+| 1 | 3/4 | 0.416, 1.0, 1.0, 1.0 |
+| 4 | 3/4 | 0.465, 1.0, 1.0, 1.0 |
+
+**Finding 3 — both difficulty levels failed grounding on the same pair
+(`methodology_expert_chunk1`, chunk 2), and it isn't a difficulty-4 fabrication.** Chunk 2
+is a table-of-contents fragment (`"3.3.2 Testing Procedure...54\n3.4 Evaluation
+Procedure..."`) — both the difficulty-1 and difficulty-4 questions cited specific
+subsection numbers and titles (e.g. `"3.6.3.5 Adaptive Noise Floor Thresholding"`) that are
+real section headers elsewhere in the document but not verbatim in *this* chunk's raw text
+the way the model quoted them. The difficulty-4 side also triggered a grounding retry that
+still failed and was served flagged (`grounding_flagged: true`) — the retry mechanism fired
+exactly as designed, it just couldn't rescue a genuinely thin/structural chunk. Both
+difficulties failing symmetrically (rather than only difficulty-4) points at a chunk-content
+problem — a TOC-like chunk with real section titles nearby but not verbatim inline — not a
+difficulty-linked fabrication pattern like the DAZSMA chunk-70 case Decision 3 was
+specifically watching for. Logged as a new grounding-checker edge case (structural/TOC
+chunks), not a repeat of the prior finding.
+
+**What did not happen in this Code session:** the actual blind read. Decision 3 requires
+*me* to read `scripts/probe_difficulty_tone_judging.jsonl` — pair_id + question A/B only,
+difficulty labels stripped — and judge each pair "A, B, or indistinguishable" before ever
+opening `scripts/probe_difficulty_tone_key.jsonl`. That is a human-judgment step by design
+(eval hygiene: foreknowledge of which side was requested at difficulty 4 contaminates the
+read), and Task 3's own verify bar only asks for the raw JSONL, the judging file, and the
+key file — not the verdict. The judging file exists, blind, at
+`scripts/probe_difficulty_tone_judging.jsonl`; the key is at
+`scripts/probe_difficulty_tone_key.jsonl`, both with the fixed shuffle seed (`20260720`)
+recorded so unblinding is a lookup, not a reconstruction.
+**The ≥3/4 pass/fail verdict from Decision 3 is not yet determined.**
+
+---
+
+## Task 4 / Stage C — Full live session
+
+**Session mechanics: pass. Scoring-trajectory findings: significant, consistent with and
+extending the Day-4 flash-lite caveat.**
+
+Full panel on sample3: `technical_implementation_reviewer` ("Nguyen"), `methodology_expert`
+("Al-Farsi"), `ethics_practicality_reviewer` ("O'Sullivan") + Devil's Advocate ("Müller") —
+persona generation succeeded on the first attempt, no fallback used.
+`literature_theory_specialist` was the one capstone archetype left out (`selected_archetypes`
+caps at 3); technical depth and the assistive-tech ethics angle (DHH accessibility,
+Philippine traffic-safety context, both of which the panel actually surfaced) made the
+other three the stronger fit for this specific document.
+
+Driven with the Decision 2 scripted answer sequence — turn 1 strong, turn 2 fluent hedge,
+turn 3 genuine non-answer, turn 4+ strong — fed programmatically rather than typed, since
+this Code session has no interactive human at the keyboard. Every answer is literal
+scripted text, not improvised per-question; forcing mechanism for the record.
+
+Session ran **12 turns** (the `t_max` circuit breaker, `3 x panel size = 12`, coincided
+exactly with DA's own natural follow-up-cap termination — confirmed by inspecting
+`follow_ups_on_current_topic` at the final turn, not a circuit-breaker misfire cutting off a
+session that wanted to continue).
+
+Difficulty trajectory (per turn, `difficulty_level` at ask time):
+
+```
+[2, 3, 2, 1, 2, 1, 2, 1, 2, 3, 4, 5]
+```
+
+Per-turn `difficulty_delta`:
+
+```
+[1, -1, -1, 1, -1, 1, -1, 1, 1, 1, 1, 1]
+```
+
+Call count: **26 total** (persona generation 1, question generation 12, answer scoring 12,
+report narrative 1) — via the real `CallCounter`, not a manual tally. This exceeds Decision
+5's ~14–22 estimate for this stage, because the session ran the full 12-turn `t_max`
+ceiling rather than the 6–10 turns the estimate assumed; still comfortably inside the
+flash-lite RPD (26 of 500), so no budget concern, just a stated deviation from the estimate.
+
+Committed artifacts: `scripts/v0_4c_stage_c_sample3_session.json` (a real `PersistedSession`,
+schema_version 1). The v0.4b mechanism itself was exercised, not bypassed —
+`persistence.save_session()` wrote the same session to `sessions/` (gitignored, this
+environment's `ADS_PERSISTENCE_ENABLED` is on) before the committed copy was written.
+The two are **not** byte-identical: the committed copy has `document_chunks` stripped to
+an empty list (49 chunks of sample3's full extracted text redacted, noted inline in the
+file itself) before it was written to a tracked path — that field is the whole document's
+text, not an excerpt, and Decision 6's "the second document itself is never committed"
+rule has no carve-out for it just because it arrived inside a transcript export rather than
+a raw PDF. Per-turn `ConversationTurn.chunk_text` is left intact (6 distinct chunks of 49
+reused across the 12 turns) — bounded, evidence-scoped excerpts, the same precedent as the
+chunk quotes already committed in `docs/v0.2-eval-results.md`. The local, gitignored
+`sessions/` copy keeps the full `document_chunks`, matching real resume behavior — the
+redaction is a commit-time step, not a change to what the app itself persists.
+
+### Finding 4 — the two unambiguous `difficulty_delta` cases split: non-answer held, hedge inverted.
+
+Decision 2's whole point was checking whether flash-lite's Day-4 concession-detector
+semantics (hedge → escalates +1, genuine non-answer → eases -1) survive in production, on a
+new document.
+
+- **Turn 3, genuine non-answer** ("I'm not sure — I'd have to come back to you on that... ")
+  scored `difficulty_delta = -1`. **Matches** the Day-4 semantics exactly.
+- **Turn 2, fluent hedge** ("...a lot of engineering decisions like that end up being about
+  finding a reasonable balance...") scored `difficulty_delta = -1`. **Does not match** —
+  Day 4 found this category escalates (+1); here it eased, the same direction as the
+  genuine non-answer.
+
+This is exactly the outcome Decision 2 pre-flagged as acceptable evidence either way ("If
+it inverts again, that's confirmation logged as a finding, not a surprise").
+It inverted on the hedge case specifically, while holding on the non-answer case — a more
+precise result than a flat "it inverted," and one DAZSMA's Day-4 run didn't itself split
+this way.
+
+### Finding 5 — sub-scores collapsed to near-floor almost uniformly, regardless of answer type.
+
+Across all 12 turns: `depth` was **1 on every single turn**, `grounding` was **1 on every
+single turn**, `clarity` was 1 or 2.
+This held across a genuinely fluent, specific-sounding "strong" answer, a hedge, and an
+outright "I don't know" — three answer styles that a functioning rubric should separate at
+least somewhat, especially on `depth`.
+Overall averages: clarity 1.17, depth 1.00, grounding 1.00.
+
+Two candidate explanations, both worth stating rather than picking one:
+
+1. **Scripted-answer mismatch.** This document's panel asked unusually specific technical
+   follow-ups (CPU instruction-cycle counts, interrupt latency, duty-cycle modulation
+   figures) that the fixed-text "strong" answers never actually supplied — the panel's own
+   `primary_gap` text on nearly every turn explicitly calls this out ("conflating output
+   accuracy with system performance," "vague promise of numerical re-verification instead
+   of a technical justification"). Under that reading, a chunk-constant, rubric-following
+   scorer correctly rated these as under-specified relative to what was asked, and the
+   near-floor scores are partially an artifact of the answer bank, not scorer breakage.
+2. **Scorer collapse.** Even granting (1), a well-functioning per-axis rubric should still
+   separate a fluent, committed-sounding claim from a flat "I don't know" on `clarity` at
+   minimum — and it largely didn't (`clarity` 1–2 throughout, no wider spread).
+
+This is a more severe presentation than Day 4's original finding (inflated clarity,
+inverted delta on some cases) — here the failure mode is compression toward the floor
+almost everywhere, on a document flash-lite has never scored before. Consistent with, and
+an escalation of, the standing Day-4 caveat that flash-lite is unfit for judgment tasks;
+this session was designed to observe that behavior in production, not re-litigate the
+model-split decision (Decision 4), and that is exactly what happened. No rubric or model
+change made here, per Decision 7.
+
+### Report narrative and pushback events
+
+The narrative correctly cited each panelist by name and each panelist's actual
+`primary_gap` language, with no fabricated claims not present in the numbers it was
+handed — consistent with `docs/v0.3c-scoring-report-decisions.md`'s numbers-then-narrative
+design holding on a new document. Full narrative text is in
+`scripts/v0_4c_stage_c_sample3_session.json`.
+
+7 pushback events fired (turn-by-turn escalation classifications); 6 `held`, 1
+`recovered` (turn 9, quality_sum 3→4 on an escalation from difficulty 2→3), 0
+`deteriorated` — consistent with quality sums pinned in a narrow 3–4 band throughout
+(Finding 5's scoring collapse directly explains why almost every pushback event lands in
+the same `held` bucket: there's little room for the classifier to see a real swing when
+every score is near-floor).
+
+---
+
+## Divergences from DAZSMA behavior — explicit, per Decision 2
+
+- **Deterministic same-chunk pairing held** on a document with completely different
+  structure and content — same retrieval mechanism, same result, on a new domain. Not a
+  divergence; a generalization confirmation.
+- **Grounding near-misses look different here.** DAZSMA's most notable grounding failures
+  were difficulty-4 fabrication (chunk 70) and follow-up-echoes-the-answer (Finding C, Miss
+  2). Sample3's failures were a truncation near-miss (Stage B, chunk 15) and a symmetric
+  TOC-chunk miss at *both* difficulty 1 and 4 (Task 3, chunk 2) — no difficulty-linked
+  fabrication observed on this document at all, on either probe.
+- **The concession-detector split** (Finding 4) is new: DAZSMA's Day-4 run didn't separate
+  the hedge and non-answer cases this way; sample3's did.
+- **Scoring collapse (Finding 5) is more severe than anything logged against DAZSMA** — Day
+  4 found inflated/inverted scores, not near-uniform floor compression across an entire
+  12-turn session regardless of answer content.
+
+---
+
+## Verdict
+
+| Stage | Result |
+|---|---|
+| Stage A (ingest + gate) | **Pass** |
+| Stage B (question-gen probe) | **Pass** — 2 findings, 0 blocking; `in_lane`/`difficulty_ok` pending my fill-in before commit |
+| Task 3 (tone probe, generation + grounding) | **Pass** — 1 finding, 0 blocking |
+| Task 3 (tone probe, blind identification verdict) | **Not yet performed** — requires my own blind read of the judging file |
+| Task 4 / Stage C (live session) | **Pass** (mechanically) — 2 significant scoring-behavior findings, both anticipated as acceptable outcomes by Decision 2 |
+
+Nothing here blocks anything downstream — Decision 7 scoped this session to evidence
+only, and every finding above is logged, not patched, per that scope.
+The one open item is squarely mine to close: reading
+`scripts/probe_difficulty_tone_judging.jsonl` blind and recording the ≥3/4 verdict against
+`scripts/probe_difficulty_tone_key.jsonl`, plus filling `in_lane`/`difficulty_ok` on Stage
+B's JSONL before either file is committed as final.

@@ -1,0 +1,434 @@
+{
+  "schema_version": 1,
+  "session_id": "4ba812ab-34b4-4685-b923-a729b27a1bd5",
+  "created_at": "2026-07-20T14:57:03.033611Z",
+  "updated_at": "2026-07-20T14:57:03.033611Z",
+  "stage": "completed",
+  "session": {
+    "profile": {
+      "defense_type": "capstone",
+      "other_subtype": null,
+      "domain": "Electronics Engineering",
+      "topic": "Design of a Wearable TDOA-based Sound Source Localization System for Assistive Spatial Awareness",
+      "selected_archetypes": [
+        "technical_implementation_reviewer",
+        "methodology_expert",
+        "ethics_practicality_reviewer"
+      ],
+      "difficulty_start": 2,
+      "document_id": "4d5cc2d4-b7af-462d-8592-65a5020994e4",
+      "panel_customizations": []
+    },
+    "panel": [
+      {
+        "archetype_key": "technical_implementation_reviewer",
+        "panelist_name": "Nguyen",
+        "persona_framing": "You are a specialist in embedded systems and signal processing architecture. You are known for drilling down into the specifics of TDOA (Time Difference of Arrival) algorithms, specifically questioning the computational overhead on microcontrollers and the synchronization stability of the microphone array hardware.",
+        "icon": "engineer"
+      },
+      {
+        "archetype_key": "methodology_expert",
+        "panelist_name": "Al-Farsi",
+        "persona_framing": "You are an expert in experimental physics and sensor validation. You are known for challenging the rigor of environmental noise testing and ensuring the student's control groups accurately represent real-world acoustic conditions rather than idealistic lab-bench results.",
+        "icon": "advisor"
+      },
+      {
+        "archetype_key": "ethics_practicality_reviewer",
+        "panelist_name": "O'Sullivan",
+        "persona_framing": "You focus on human-centric design and the ethical implications of assistive technology. You are known for questioning the device's battery longevity, ergonomic comfort for disabled users, and the privacy implications of deploying a constantly listening localization sensor in public spaces.",
+        "icon": "gorilla"
+      },
+      {
+        "archetype_key": "devils_advocate",
+        "panelist_name": "Müller",
+        "persona_framing": "You are a critical theorist in electrical engineering who refuses to take performance claims at face value. You are known for aggressively questioning the reliability of TDOA under reverberant conditions, consistently pushing the candidate to justify why they believe this wearable device is a viable product rather than merely an academic proof-of-concept.",
+        "icon": "hacker"
+      }
+    ],
+    "difficulty_current": 5,
+    "turns": [
+      {
+        "panelist_archetype_key": "technical_implementation_reviewer",
+        "panelist_name": "Nguyen",
+        "question": "The cited study by Pamungkas and Rais achieved low latency by offloading GCC-PHAT to a dedicated TMS320C6713 DSP. Given that your project is a wearable system, what specific architectural constraints or micro-controller performance metrics have you analyzed to determine if your chosen processor can handle the computational overhead of the TDOA algorithm without requiring a secondary DSP board?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "Yes — I validated that directly during testing. I ran controlled trials with the sound source at known fixed angles around the array, logged the raw TDOA and GCC-PHAT outputs for each trial, and compared the estimated bearing against the actual angle to get a real angular error figure, not just a qualitative sense that it worked. I can walk through the exact test setup, the number of trials, and the resulting error margin if that's useful.",
+        "score": {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate failed to address the architectural and performance metrics required to justify the exclusion of a dedicated DSP, instead pivoting to a description of their empirical accuracy testing.",
+          "answer_summary": "The candidate claimed they validated the performance of their system through controlled trials that measured the angular error of sound source localization."
+        }
+      },
+      {
+        "panelist_archetype_key": "technical_implementation_reviewer",
+        "panelist_name": "Nguyen",
+        "question": "While verifying angular error is a valid empirical metric, it doesn't quantify the deterministic timing jitter or the CPU utilization headroom your microcontroller experiences while executing those GCC-PHAT calculations, which is exactly why the referenced TMS320C6713 DSP was necessary in the Pamungkas and Rais study. If you didn't profile the instruction cycle count or interrupt latency for your specific TDOA implementation, how can you guarantee the system maintains real-time sampling integrity during high-load processing without dropping frames or introducing significant synchronization drift?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 3,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "That's a fair question, and honestly a lot of engineering decisions like that end up being about finding a reasonable balance — you weigh accuracy against practical constraints like cost, power, and the timeline you're working with, and you try to land somewhere that's defensible for the scope of the project. I think the general direction we took reflects that kind of thinking.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate provided a vague, hand-waving deflection regarding 'engineering trade-offs' without addressing any of the technical concerns regarding timing jitter, CPU headroom, or real-time integrity raised by the question.",
+          "answer_summary": "The candidate claimed that their project decisions represent a reasonable balance between practical constraints like cost and timeline, asserting that this reflects the project's design direction."
+        }
+      },
+      {
+        "panelist_archetype_key": "technical_implementation_reviewer",
+        "panelist_name": "Nguyen",
+        "question": "I appreciate the transparency about the project constraints, but that answer doesn't actually clarify the technical feasibility of your implementation, given that Pamungkas and Rais (2022) found a dedicated DSP necessary to manage the heavy computation of GCC-PHAT. Since you decided to forgo that dedicated hardware to meet your timeline, can you walk me through the specific modifications you made to the algorithm or the sampling rate to ensure your microcontroller doesn't choke during real-time processing?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "I'm not sure — I'd have to come back to you on that. I don't have the specific numbers or details in front of me right now to answer that properly.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate was unable to provide any technical justification for their architectural decision or address the discrepancy between their implementation and the referenced high-performance industry standard.",
+          "answer_summary": "The candidate admitted they did not have the necessary technical details to explain how their system maintains performance without the dedicated hardware used in the reference implementation."
+        }
+      },
+      {
+        "panelist_archetype_key": "methodology_expert",
+        "panelist_name": "Al-Farsi",
+        "question": "I understand that technical specifics can be difficult to pull up on the fly, but let's shift our focus to the methodology behind your validation. I notice in section 3.4.1 that you performed a 'Baseline Noisefloor Calibration.' Given that you are using INMP441 microphones in an wearable acoustic housing, could you explain how you ensured your baseline noisefloor calibration effectively isolated the sensor self-noise from the ambient environmental interference that your system would actually encounter in real-world conditions?",
+        "grounding_reference": "3.4.1 Baseline Noisefloor Calibration",
+        "chunk_index": 2,
+        "chunk_text": "3.3.2 Testing Procedure................................................................................................... 54 \n3.4 Evaluation Procedure........................................................................................................56 \n3.4.1 Baseline Noisefloor Calibration............................................................................... 56 \n3.4.2 Directional Accuracy and TDOA Validation............................................................. 56 \n3.4.3 System Latency and Response Logging.................................................................59 \n3.4.4 Ergonomic and Usability Assessment.....................................................................59 \n3.5 Evaluation Criteria.............................................................................................................60 \n3.5.1 Directional Accuracy................................................................................................60 \n3.5.2 System Latency.......................................................................................................60 \n3.5.3 Frequency Filtering Effectiveness........................................................................... 60 \n3.5.4 Physical Comfort and Wearability............................................................................61 \n3.6 Instruments and Techniques Used....................................................................................61 \n3.6.1 Hardware and Measurement Instruments...............................................................61 \n3.6.1.1 Microcontroller Unit (ESP32-S3)....................................................................61 \n3.6.1.2 Digital MEMS Microphones (INMP441).........................................................62 \n3.6.1.3 Wearable Belt and Acoustic Housings...........................................................64 \n3.6.1.4 PCA9633PW I2C driver.................................................................................64 \n3.6.1.5 Haptic Motors (Seeed Studio Grove Vibration Motor Module).......................65 \n3.6.1.6 Battery Management System (MCP73831)...................................................66 \n3.6.1.7 Voltage regulation AP2112 Regulator............................................................67 \n3.6.1.8 LiPo Battery 3.7V LP803860..........................................................................69 \n3.6.1.9 Digital Sound Level Meter (SLM)...................................................................70 \n3.6.1.10 Calibrated Reference Speaker.....................................................................71 \n3.6.2 Software and Development Tools............................................................................73 \n3.6.2.1 ESP-IDF (Espressif IoT Development Framework) / C++............................. 73 \n3.6.2.2 KiCAD EDA....................................................................................................73 \n3.6.2.3 MATLAB / Python (SciPy)..............................................................................73 \n3.6.3 Analytical and Signal Processing Techniques.........................................................74 \n3.6.3.1 Generalized Cross-Correlation Phase Transform (GCC-PHAT)....................74 \n3.6.3.2 Angle of Arrival (AoA) Geometric Mapping....................................................74 \n3.6.3.3 Direct Memory Access (DMA) Circular Buffering...........................................74 \n3.6.3.4 Digital IIR/FIR Bandpass Filtering..................................................................75 \n3.6.3.5 Adaptive Noise Floor Thresholding................................................................75 \nREFERENCES.................................................................................................................76",
+        "difficulty_level": 1,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "Yes — I validated that directly during testing. I ran controlled trials with the sound source at known fixed angles around the array, logged the raw TDOA and GCC-PHAT outputs for each trial, and compared the estimated bearing against the actual angle to get a real angular error figure, not just a qualitative sense that it worked. I can walk through the exact test setup, the number of trials, and the resulting error margin if that's useful.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the noisefloor calibration methodology (section 3.4.1), instead describing a directional accuracy validation procedure (section 3.4.2) that does not answer the question about isolating sensor self-noise from ambient interference.",
+          "answer_summary": "The candidate claimed they validated their system through controlled angular trials and by comparing raw TDOA/GCC-PHAT output to actual angles to determine angular error."
+        }
+      },
+      {
+        "panelist_archetype_key": "methodology_expert",
+        "panelist_name": "Al-Farsi",
+        "question": "That sounds like a perfectly reasonable way to validate your directional accuracy, but it completely sidesteps my question about your baseline noisefloor calibration process. Since you have dedicated section 3.4.1 to 'Baseline Noisefloor Calibration,' can you tell me exactly how you conducted that specific procedure, and more importantly, how you isolated the sensor self-noise from the ambient environment to ensure your thresholding logic isn't just baking in environmental noise as part of your system's baseline?",
+        "grounding_reference": "3.4.1 Baseline Noisefloor Calibration............................................................................... 56",
+        "chunk_index": 2,
+        "chunk_text": "3.3.2 Testing Procedure................................................................................................... 54 \n3.4 Evaluation Procedure........................................................................................................56 \n3.4.1 Baseline Noisefloor Calibration............................................................................... 56 \n3.4.2 Directional Accuracy and TDOA Validation............................................................. 56 \n3.4.3 System Latency and Response Logging.................................................................59 \n3.4.4 Ergonomic and Usability Assessment.....................................................................59 \n3.5 Evaluation Criteria.............................................................................................................60 \n3.5.1 Directional Accuracy................................................................................................60 \n3.5.2 System Latency.......................................................................................................60 \n3.5.3 Frequency Filtering Effectiveness........................................................................... 60 \n3.5.4 Physical Comfort and Wearability............................................................................61 \n3.6 Instruments and Techniques Used....................................................................................61 \n3.6.1 Hardware and Measurement Instruments...............................................................61 \n3.6.1.1 Microcontroller Unit (ESP32-S3)....................................................................61 \n3.6.1.2 Digital MEMS Microphones (INMP441).........................................................62 \n3.6.1.3 Wearable Belt and Acoustic Housings...........................................................64 \n3.6.1.4 PCA9633PW I2C driver.................................................................................64 \n3.6.1.5 Haptic Motors (Seeed Studio Grove Vibration Motor Module).......................65 \n3.6.1.6 Battery Management System (MCP73831)...................................................66 \n3.6.1.7 Voltage regulation AP2112 Regulator............................................................67 \n3.6.1.8 LiPo Battery 3.7V LP803860..........................................................................69 \n3.6.1.9 Digital Sound Level Meter (SLM)...................................................................70 \n3.6.1.10 Calibrated Reference Speaker.....................................................................71 \n3.6.2 Software and Development Tools............................................................................73 \n3.6.2.1 ESP-IDF (Espressif IoT Development Framework) / C++............................. 73 \n3.6.2.2 KiCAD EDA....................................................................................................73 \n3.6.2.3 MATLAB / Python (SciPy)..............................................................................73 \n3.6.3 Analytical and Signal Processing Techniques.........................................................74 \n3.6.3.1 Generalized Cross-Correlation Phase Transform (GCC-PHAT)....................74 \n3.6.3.2 Angle of Arrival (AoA) Geometric Mapping....................................................74 \n3.6.3.3 Direct Memory Access (DMA) Circular Buffering...........................................74 \n3.6.3.4 Digital IIR/FIR Bandpass Filtering..................................................................75 \n3.6.3.5 Adaptive Noise Floor Thresholding................................................................75 \nREFERENCES.................................................................................................................76",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "That's measured directly in the evaluation chapter — I ran repeated trials at multiple distances and angles, logged the raw sensor timestamps, and computed the actual localization error in degrees along with the processing latency per estimate, so the numbers I'm citing come from real bench tests, not an assumption.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate failed to address the noisefloor calibration methodology entirely, providing an irrelevant response focused on directional accuracy trials rather than sensor self-noise isolation.",
+          "answer_summary": "The candidate claims their localization accuracy and latency figures were validated through repeated real-world bench tests at varying distances and angles."
+        }
+      },
+      {
+        "panelist_archetype_key": "methodology_expert",
+        "panelist_name": "Al-Farsi",
+        "question": "I have to stop you there because that response completely misses the point; you are describing your end-to-end evaluation metrics rather than the specific, controlled calibration step listed in section 3.4.1. If you cannot explain the methodology used to isolate the sensor self-noise from the background environment, how can you definitively claim that the thresholding logic described in section 3.6.3.5 is not erroneously incorporating ambient noise into your baseline?",
+        "grounding_reference": "3.4.1 Baseline Noisefloor Calibration",
+        "chunk_index": 2,
+        "chunk_text": "3.3.2 Testing Procedure................................................................................................... 54 \n3.4 Evaluation Procedure........................................................................................................56 \n3.4.1 Baseline Noisefloor Calibration............................................................................... 56 \n3.4.2 Directional Accuracy and TDOA Validation............................................................. 56 \n3.4.3 System Latency and Response Logging.................................................................59 \n3.4.4 Ergonomic and Usability Assessment.....................................................................59 \n3.5 Evaluation Criteria.............................................................................................................60 \n3.5.1 Directional Accuracy................................................................................................60 \n3.5.2 System Latency.......................................................................................................60 \n3.5.3 Frequency Filtering Effectiveness........................................................................... 60 \n3.5.4 Physical Comfort and Wearability............................................................................61 \n3.6 Instruments and Techniques Used....................................................................................61 \n3.6.1 Hardware and Measurement Instruments...............................................................61 \n3.6.1.1 Microcontroller Unit (ESP32-S3)....................................................................61 \n3.6.1.2 Digital MEMS Microphones (INMP441).........................................................62 \n3.6.1.3 Wearable Belt and Acoustic Housings...........................................................64 \n3.6.1.4 PCA9633PW I2C driver.................................................................................64 \n3.6.1.5 Haptic Motors (Seeed Studio Grove Vibration Motor Module).......................65 \n3.6.1.6 Battery Management System (MCP73831)...................................................66 \n3.6.1.7 Voltage regulation AP2112 Regulator............................................................67 \n3.6.1.8 LiPo Battery 3.7V LP803860..........................................................................69 \n3.6.1.9 Digital Sound Level Meter (SLM)...................................................................70 \n3.6.1.10 Calibrated Reference Speaker.....................................................................71 \n3.6.2 Software and Development Tools............................................................................73 \n3.6.2.1 ESP-IDF (Espressif IoT Development Framework) / C++............................. 73 \n3.6.2.2 KiCAD EDA....................................................................................................73 \n3.6.2.3 MATLAB / Python (SciPy)..............................................................................73 \n3.6.3 Analytical and Signal Processing Techniques.........................................................74 \n3.6.3.1 Generalized Cross-Correlation Phase Transform (GCC-PHAT)....................74 \n3.6.3.2 Angle of Arrival (AoA) Geometric Mapping....................................................74 \n3.6.3.3 Direct Memory Access (DMA) Circular Buffering...........................................74 \n3.6.3.4 Digital IIR/FIR Bandpass Filtering..................................................................75 \n3.6.3.5 Adaptive Noise Floor Thresholding................................................................75 \nREFERENCES.................................................................................................................76",
+        "difficulty_level": 1,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "I addressed that specifically in the design. The choice came out of a documented trade-off analysis: I compared the available options against my power, latency, and accuracy targets, picked the one that met all three, and then verified the result empirically rather than assuming it from the datasheet alone.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate failed to describe the technical methodology for isolating sensor self-noise, instead citing a general design trade-off analysis that is irrelevant to the specific calibration procedure queried.",
+          "answer_summary": "The candidate claimed that their choice of noise thresholding was the result of a documented trade-off analysis between power, latency, and accuracy, which was empirically verified."
+        }
+      },
+      {
+        "panelist_archetype_key": "ethics_practicality_reviewer",
+        "panelist_name": "O'Sullivan",
+        "question": "Fair enough; looking at your literature review regarding the RESAAW project by Rathna et al., which utilizes four DC vibrator motors for haptic feedback, I am concerned about the long-term wearability of such a system. How did you account for the potential for haptic sensory adaptation or physical irritation when designing your own feedback mechanism, given that users would be expected to wear this for daily, extended periods?",
+        "grounding_reference": "Rathna et al. (2024), which uses four omnidirectional microphones and an Arduino Uno board to detect sounds in the environment and provides directional haptic feedback using four DC vibrator motors",
+        "chunk_index": 15,
+        "chunk_text": "Figure 2.13: Geometric model for estimating the direction of a sound source using a \ntwo-microphone array. \n(Source: Matsuo, A., Itami, T., & Yoneyama, J. (2024, January 8). 360° sound localization support \nsystem for deaf and hard-of-hearing people using smartglasses equipped with two microphones. \n2024 IEEE/SICE International Symposium on System Integration (SII).)\n\nOther works have focused on bulkier head-worn devices that are specifically suited to \nparticular outdoor/work scenarios. For example, in the study of Sun & Luo (2024), a smart helmet \nwas developed using an embedded system to facilitate the safe journey of deaf pedestrians and \ncyclists by detecting sounds that could be potential hazards. However, as illustrated by the \nsystem's hardware footprint in Figure 2.14, integrating multiple modules into a helmet \nnecessitates a bulky internal processing board. In a very specialized work environment, Elelu et \nal. (2024) have developed a multi-channel audio processing wearable device utilizing an ECU to \nidentify and localize struck-by hazards, such as moving heavy equipment, to protect construction \nworkers. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nFigure 2.14: Physical circuitry footprint of the embedded smart helmet system. \n(Source: Sun, P., & Luo, J. (2024). An improved smart helmet for safe travel of deaf people based \non embedded system. 2024 IEEE 4th International Conference on Electronic Technology, \nCommunication and Information (ICETCI).)\n\nAlthough these devices are quite effective in recording the surrounding environmental \nsounds, the physical form factor and feedback system have some drawbacks for day-to-day \nusage. For instance, head-mounted devices in the form of helmets are quite clunky and \ninconvenient for indoor usage. In addition to that, assistive smart glasses that make use of visual \nfeedback in the form of LEDs have some drawbacks in that they always require the user's \nattention. This has the unintended side effect of increasing the cognitive load and distracting the \nuser from the physical environment.\n\nKeeping in view the downsides of visual dependency, recent research has also focused \nmore on tactile and local alerting devices. In this regard, Rathna et al. (2024) have designed a \nReal-time Smart Auditory Assistive Wearable (RESAAW), which uses four omnidirectional \nmicrophones and an Arduino Uno board to detect sounds in the environment and provides \ndirectional haptic feedback using four DC vibrator motors, as shown in the prototype setup in \nFigure 2.15. Similarly, Buhat et al. (2024) have also shown the potential of using sound \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "That's a fair challenge, and I have a concrete answer for it — I re-ran that part of the evaluation specifically to isolate the variable you're asking about, kept everything else fixed, and the result held up within the margin I reported. I can give you the specific numbers from that run.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate provided a deflective non-answer, claiming to have performed follow-up testing to resolve sensory adaptation and irritation issues without actually explaining how those physiological concerns were addressed in their design.",
+          "answer_summary": "The candidate claimed they reran an evaluation specifically to isolate the variables of sensory adaptation and physical irritation, asserting that the performance results remained within their previously reported margins."
+        }
+      },
+      {
+        "panelist_archetype_key": "ethics_practicality_reviewer",
+        "panelist_name": "O'Sullivan",
+        "question": "I have to stop you there; reciting a summary of your performance metrics doesn't actually explain the engineering choices made to mitigate physical irritation or sensory fatigue. Since your literature review acknowledges that devices like the RESAAW system have clear drawbacks for day-to-day usage, can you walk me through the specific design modifications you implemented—such as motor duty-cycle modulation or haptic pulse patterns—to move beyond the limitations you yourself cited in those existing prototypes?",
+        "grounding_reference": "Although these devices are quite effective in recording the surrounding environmental sounds, the physical form factor and feedback system have some drawbacks for day-to-day usage.",
+        "chunk_index": 15,
+        "chunk_text": "Figure 2.13: Geometric model for estimating the direction of a sound source using a \ntwo-microphone array. \n(Source: Matsuo, A., Itami, T., & Yoneyama, J. (2024, January 8). 360° sound localization support \nsystem for deaf and hard-of-hearing people using smartglasses equipped with two microphones. \n2024 IEEE/SICE International Symposium on System Integration (SII).)\n\nOther works have focused on bulkier head-worn devices that are specifically suited to \nparticular outdoor/work scenarios. For example, in the study of Sun & Luo (2024), a smart helmet \nwas developed using an embedded system to facilitate the safe journey of deaf pedestrians and \ncyclists by detecting sounds that could be potential hazards. However, as illustrated by the \nsystem's hardware footprint in Figure 2.14, integrating multiple modules into a helmet \nnecessitates a bulky internal processing board. In a very specialized work environment, Elelu et \nal. (2024) have developed a multi-channel audio processing wearable device utilizing an ECU to \nidentify and localize struck-by hazards, such as moving heavy equipment, to protect construction \nworkers. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nFigure 2.14: Physical circuitry footprint of the embedded smart helmet system. \n(Source: Sun, P., & Luo, J. (2024). An improved smart helmet for safe travel of deaf people based \non embedded system. 2024 IEEE 4th International Conference on Electronic Technology, \nCommunication and Information (ICETCI).)\n\nAlthough these devices are quite effective in recording the surrounding environmental \nsounds, the physical form factor and feedback system have some drawbacks for day-to-day \nusage. For instance, head-mounted devices in the form of helmets are quite clunky and \ninconvenient for indoor usage. In addition to that, assistive smart glasses that make use of visual \nfeedback in the form of LEDs have some drawbacks in that they always require the user's \nattention. This has the unintended side effect of increasing the cognitive load and distracting the \nuser from the physical environment.\n\nKeeping in view the downsides of visual dependency, recent research has also focused \nmore on tactile and local alerting devices. In this regard, Rathna et al. (2024) have designed a \nReal-time Smart Auditory Assistive Wearable (RESAAW), which uses four omnidirectional \nmicrophones and an Arduino Uno board to detect sounds in the environment and provides \ndirectional haptic feedback using four DC vibrator motors, as shown in the prototype setup in \nFigure 2.15. Similarly, Buhat et al. (2024) have also shown the potential of using sound \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​",
+        "difficulty_level": 1,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "Yes — I validated that directly during testing. I ran controlled trials with the sound source at known fixed angles around the array, logged the raw TDOA and GCC-PHAT outputs for each trial, and compared the estimated bearing against the actual angle to get a real angular error figure, not just a qualitative sense that it worked. I can walk through the exact test setup, the number of trials, and the resulting error margin if that's useful.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the question regarding engineering modifications for sensory fatigue and haptic pulse patterns, instead offering a generic defense of their sound localization accuracy testing.",
+          "answer_summary": "The candidate claimed they validated their system by running controlled trials to compare estimated bearing against actual sound source angles and offered to share these performance metrics."
+        }
+      },
+      {
+        "panelist_archetype_key": "ethics_practicality_reviewer",
+        "panelist_name": "O'Sullivan",
+        "question": "I am struggling to see why you keep steering our conversation toward your localization accuracy tests when my concern is specifically about the user experience and the physical impact of your device. Since you explicitly noted in your literature review that current systems using DC vibrator motors like the RESAAW project have clear drawbacks for day-to-day usage due to their design, how exactly did you modify your own haptic pulse patterns or duty-cycles to avoid replicating those same issues of sensory fatigue and physical irritation that you've already acknowledged exist?",
+        "grounding_reference": "Although these devices are quite effective in recording the surrounding environmental sounds, the physical form factor and feedback system have some drawbacks for day-to-day usage.",
+        "chunk_index": 15,
+        "chunk_text": "Figure 2.13: Geometric model for estimating the direction of a sound source using a \ntwo-microphone array. \n(Source: Matsuo, A., Itami, T., & Yoneyama, J. (2024, January 8). 360° sound localization support \nsystem for deaf and hard-of-hearing people using smartglasses equipped with two microphones. \n2024 IEEE/SICE International Symposium on System Integration (SII).)\n\nOther works have focused on bulkier head-worn devices that are specifically suited to \nparticular outdoor/work scenarios. For example, in the study of Sun & Luo (2024), a smart helmet \nwas developed using an embedded system to facilitate the safe journey of deaf pedestrians and \ncyclists by detecting sounds that could be potential hazards. However, as illustrated by the \nsystem's hardware footprint in Figure 2.14, integrating multiple modules into a helmet \nnecessitates a bulky internal processing board. In a very specialized work environment, Elelu et \nal. (2024) have developed a multi-channel audio processing wearable device utilizing an ECU to \nidentify and localize struck-by hazards, such as moving heavy equipment, to protect construction \nworkers. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nFigure 2.14: Physical circuitry footprint of the embedded smart helmet system. \n(Source: Sun, P., & Luo, J. (2024). An improved smart helmet for safe travel of deaf people based \non embedded system. 2024 IEEE 4th International Conference on Electronic Technology, \nCommunication and Information (ICETCI).)\n\nAlthough these devices are quite effective in recording the surrounding environmental \nsounds, the physical form factor and feedback system have some drawbacks for day-to-day \nusage. For instance, head-mounted devices in the form of helmets are quite clunky and \ninconvenient for indoor usage. In addition to that, assistive smart glasses that make use of visual \nfeedback in the form of LEDs have some drawbacks in that they always require the user's \nattention. This has the unintended side effect of increasing the cognitive load and distracting the \nuser from the physical environment.\n\nKeeping in view the downsides of visual dependency, recent research has also focused \nmore on tactile and local alerting devices. In this regard, Rathna et al. (2024) have designed a \nReal-time Smart Auditory Assistive Wearable (RESAAW), which uses four omnidirectional \nmicrophones and an Arduino Uno board to detect sounds in the environment and provides \ndirectional haptic feedback using four DC vibrator motors, as shown in the prototype setup in \nFigure 2.15. Similarly, Buhat et al. (2024) have also shown the potential of using sound \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "That's measured directly in the evaluation chapter — I ran repeated trials at multiple distances and angles, logged the raw sensor timestamps, and computed the actual localization error in degrees along with the processing latency per estimate, so the numbers I'm citing come from real bench tests, not an assumption.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the question regarding physical haptic design and sensory fatigue, instead defensively pivoting to technical localization accuracy data which was irrelevant to the query.",
+          "answer_summary": "The candidate claimed their localization accuracy, processing latency, and sensor data were validated through bench tests and repeated trials."
+        }
+      },
+      {
+        "panelist_archetype_key": "devils_advocate",
+        "panelist_name": "Müller",
+        "question": "You keep pointing to your own angular accuracy trials, but that does absolutely nothing to address the architectural gap I'm questioning. If Pamungkas and Rais found that they required a dedicated TMS320C6713 DSP board simply to handle the GCC-PHAT computational overhead in real-time, how can you possibly justify your claim of system viability when you've provided no analysis of your microcontroller's ability to replicate that performance without similar dedicated hardware?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 3,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "I addressed that specifically in the design. The choice came out of a documented trade-off analysis: I compared the available options against my power, latency, and accuracy targets, picked the one that met all three, and then verified the result empirically rather than assuming it from the datasheet alone.",
+        "score": {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate invoked an undocumented 'trade-off analysis' to dismiss a specific hardware performance concern without actually explaining how their microcontroller overcomes the computational constraints identified in the referenced literature.",
+          "answer_summary": "The candidate claims that their choice of hardware was determined by a prior trade-off analysis evaluating power, latency, and accuracy, which they subsequently validated through empirical testing rather than datasheet analysis."
+        }
+      },
+      {
+        "panelist_archetype_key": "devils_advocate",
+        "panelist_name": "Müller",
+        "question": "You keep conflating your final angular error results with the fundamental architectural feasibility of your design, but those tests provide zero proof that your hardware is actually capable of processing those signals. Since Pamungkas and Rais (2022) explicitly concluded that a dedicated TMS320C6713 DSP board was necessary to handle the heavy computational load of GCC-PHAT to achieve real-time performance, how are you justifying the computational capacity of your own microcontroller to replicate that functionality without the specialized DSP hardware that they identified as critical for avoiding system lag?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 4,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "That's a fair challenge, and I have a concrete answer for it — I re-ran that part of the evaluation specifically to isolate the variable you're asking about, kept everything else fixed, and the result held up within the margin I reported. I can give you the specific numbers from that run.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate failed to address the architectural distinction between their microcontroller and the DSP hardware identified in the literature, offering a vague promise of numerical re-verification instead of a technical justification of processing capacity.",
+          "answer_summary": "The candidate claimed that re-running their evaluation while isolating the relevant variable confirms their design's performance and offered to provide the specific numerical results from that test."
+        }
+      },
+      {
+        "panelist_archetype_key": "devils_advocate",
+        "panelist_name": "Müller",
+        "question": "You are hiding behind your angular error results, but those trials describe the output, not the engine. If Pamungkas and Rais (2022) explicitly required a dedicated TMS320C6713 DSP board to mitigate the computational load of GCC-PHAT and maintain real-time performance, how do you mathematically justify the viability of your wearable design when you have discarded that specialized hardware for a standard microcontroller without providing any analysis of your processor's capacity to handle that same computational overhead?",
+        "grounding_reference": "To handle the heavy computation of GCC-PHAT without lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing (DSP) board, TMS320C6713, instead of the usual microcontroller setup.",
+        "chunk_index": 11,
+        "chunk_text": "Figure 2.1: Sound source localization using DOA and 3D modeling. \n(Source: Liaquat, M. U., et al. (2021). “Localization of Sound Sources: A Systematic Review\")\n\nRecent technologies by Y. Pamungkas and Y. Rais (2022) implemented a real-time \nsound source localization system using the Interaural Time Difference Method, where two \nmicrophones spaced apart like human ears. To handle the heavy computation of GCC-PHAT \nwithout lagging, the researchers used a dedicated Texas Instruments Digital Signal Processing \n(DSP) board, TMS320C6713, instead of the usual microcontroller setup. The researchers wanted \nto prove that a minimal two-microphone setup could accurately localize sound in real-time. \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\nBecause of the dedicated DSP hardware, they achieved an impressive detection delay ranging \nfrom 3.05 ms to 27.08 ms with a 100% accuracy for angle measurements between -80° and 80° \nand an error of around 3.6% to 4.7% beyond that angle.\n\nFigure 2.2: Sound source localization system design. \n(Source: Y. Pamungkas and Y. Rais (2022). “Implementation of Real-Time Sound Source \nLocalization using TMS320C6713 Board with Interaural Time Difference Method\")\n\n​\nAnother technology by Villladangos et al. (2011) developed an indoor Local Positioning \nSystem (LPS) using ultrasonic beacons. To track the position of a mobile receiver, the system \ncalculates the Time Difference of Arrival (TDOA) of the acoustic signals emitted by different \nbeacons. It then uses hyperbolic trilateration to pinpoint the receiver's exact spatial coordinates.\n\nFigure 2.3: Local Positioning System design. \n(Source: Villladangos et al. (2011). “Measuring Time-of-Flight in an Ultrasonic LPS System Using \nGeneralized Cross-Correlation. Sensors\") \n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n​\n\n2.1.4 Time Difference of Arrival (TDOA) \nTime Difference of Arrival (TDOA) is defined as the difference in the arrival times of a \npropagating signal (such as an acoustic signal) measured across a specific pair of spatially \nseparated sensors (such as microphones). In passive acoustic localization, this measured time \ndifference is used to calculate the range difference between the sound source and the receiving \nnodes. This generates a set of hyperbolic equations, and the solution to these equations reveals \nthe physical coordinates of the target (L. Dong et al. 2020).\n\nOne method of TDOA from (F. Yang and R. Song 2023) uses a Ternary Microphone \nArray Positioning Method, where three microphones are arranged in a straight line. Then, it uses \nthe geometric relationship of the sound source  and the three microphones \n, \n, and \n to \n𝑃\n𝑆1 𝑆2\n𝑆3\ncalculate the azimuth angle  shown in Equation 2.1 and distance  shown in Equation 2.2 of the \nθ\n𝑟\nsound source.",
+        "difficulty_level": 5,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "Yes — I validated that directly during testing. I ran controlled trials with the sound source at known fixed angles around the array, logged the raw TDOA and GCC-PHAT outputs for each trial, and compared the estimated bearing against the actual angle to get a real angular error figure, not just a qualitative sense that it worked. I can walk through the exact test setup, the number of trials, and the resulting error margin if that's useful.",
+        "score": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the computational feasibility concern raised, instead conflating output accuracy (angular error) with system performance (computational overhead/processor capacity).",
+          "answer_summary": "The candidate asserts that their design's viability is validated by testing that compared estimated bearing to actual angle, and offers to provide further details on the test setup and resulting error margins."
+        }
+      }
+    ],
+    "report": {
+      "difficulty_trajectory": [
+        2,
+        3,
+        2,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "overall_avg_clarity": 1.1666666666666667,
+      "overall_avg_depth": 1.0,
+      "overall_avg_grounding": 1.0,
+      "panelist_sections": [
+        {
+          "archetype_key": "technical_implementation_reviewer",
+          "panelist_name": "Nguyen",
+          "turns_taken": 3,
+          "avg_clarity": 1.3333333333333333,
+          "avg_depth": 1.0,
+          "avg_grounding": 1.0,
+          "primary_gaps": [
+            "The candidate failed to address the architectural and performance metrics required to justify the exclusion of a dedicated DSP, instead pivoting to a description of their empirical accuracy testing.",
+            "The candidate provided a vague, hand-waving deflection regarding 'engineering trade-offs' without addressing any of the technical concerns regarding timing jitter, CPU headroom, or real-time integrity raised by the question.",
+            "The candidate was unable to provide any technical justification for their architectural decision or address the discrepancy between their implementation and the referenced high-performance industry standard."
+          ]
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "panelist_name": "Al-Farsi",
+          "turns_taken": 3,
+          "avg_clarity": 1.0,
+          "avg_depth": 1.0,
+          "avg_grounding": 1.0,
+          "primary_gaps": [
+            "The candidate completely failed to address the noisefloor calibration methodology (section 3.4.1), instead describing a directional accuracy validation procedure (section 3.4.2) that does not answer the question about isolating sensor self-noise from ambient interference.",
+            "The candidate failed to address the noisefloor calibration methodology entirely, providing an irrelevant response focused on directional accuracy trials rather than sensor self-noise isolation.",
+            "The candidate failed to describe the technical methodology for isolating sensor self-noise, instead citing a general design trade-off analysis that is irrelevant to the specific calibration procedure queried."
+          ]
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "panelist_name": "O'Sullivan",
+          "turns_taken": 3,
+          "avg_clarity": 1.0,
+          "avg_depth": 1.0,
+          "avg_grounding": 1.0,
+          "primary_gaps": [
+            "The candidate provided a deflective non-answer, claiming to have performed follow-up testing to resolve sensory adaptation and irritation issues without actually explaining how those physiological concerns were addressed in their design.",
+            "The candidate completely failed to address the question regarding engineering modifications for sensory fatigue and haptic pulse patterns, instead offering a generic defense of their sound localization accuracy testing.",
+            "The candidate completely failed to address the question regarding physical haptic design and sensory fatigue, instead defensively pivoting to technical localization accuracy data which was irrelevant to the query."
+          ]
+        },
+        {
+          "archetype_key": "devils_advocate",
+          "panelist_name": "Müller",
+          "turns_taken": 3,
+          "avg_clarity": 1.3333333333333333,
+          "avg_depth": 1.0,
+          "avg_grounding": 1.0,
+          "primary_gaps": [
+            "The candidate invoked an undocumented 'trade-off analysis' to dismiss a specific hardware performance concern without actually explaining how their microcontroller overcomes the computational constraints identified in the referenced literature.",
+            "The candidate failed to address the architectural distinction between their microcontroller and the DSP hardware identified in the literature, offering a vague promise of numerical re-verification instead of a technical justification of processing capacity.",
+            "The candidate completely failed to address the computational feasibility concern raised, instead conflating output accuracy (angular error) with system performance (computational overhead/processor capacity)."
+          ]
+        }
+      ],
+      "pushback_events": [
+        {
+          "turn_index": 1,
+          "prior_turn_index": 0,
+          "difficulty_from": 2,
+          "difficulty_to": 3,
+          "quality_sum_prior": 4,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        },
+        {
+          "turn_index": 4,
+          "prior_turn_index": 3,
+          "difficulty_from": 1,
+          "difficulty_to": 2,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        },
+        {
+          "turn_index": 6,
+          "prior_turn_index": 5,
+          "difficulty_from": 1,
+          "difficulty_to": 2,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        },
+        {
+          "turn_index": 8,
+          "prior_turn_index": 7,
+          "difficulty_from": 1,
+          "difficulty_to": 2,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        },
+        {
+          "turn_index": 9,
+          "prior_turn_index": 8,
+          "difficulty_from": 2,
+          "difficulty_to": 3,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 4,
+          "outcome": "recovered"
+        },
+        {
+          "turn_index": 10,
+          "prior_turn_index": 9,
+          "difficulty_from": 3,
+          "difficulty_to": 4,
+          "quality_sum_prior": 4,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        },
+        {
+          "turn_index": 11,
+          "prior_turn_index": 10,
+          "difficulty_from": 4,
+          "difficulty_to": 5,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 3,
+          "outcome": "held"
+        }
+      ],
+      "narrative": "As you conclude this defense session, it is necessary to review your performance across the twelve turns provided. While you demonstrated a capacity to recover your response quality during the ninth turn when the difficulty spiked from 2 to 3, your performance trajectory showed significant volatility, culminating in a period of sustained difficulty at levels 4 and 5 where your response quality held but did not improve.\n\nThroughout the session, the panelists identified a consistent pattern of deflection when challenged. Nguyen noted that you failed to provide technical justifications for your architectural decisions regarding DSP exclusion, instead relying on vague references to trade-offs. Similarly, Al-Farsi observed a persistent failure to address your noisefloor calibration methodology, as you repeatedly pivoted to irrelevant discussions of directional accuracy. O'Sullivan noted that you avoided addressing physiological concerns regarding sensory fatigue, and Muller identified your inability to defend the computational feasibility of your microcontroller, often conflating output accuracy with system performance.\n\nAcross all sessions, while your clarity, depth, and grounding scores remained consistent, the feedback suggests that you frequently substituted specific technical or methodological justifications with generic defensive pivots. Despite maintaining a stable response quality during the majority of the pushback events, you were unable to address the core technical and ethical gaps surfaced by the panel. This summary reflects the disconnect between the specific queries posed by the panel and the substantive responses required for a successful defense.",
+      "narrative_fallback_used": false
+    }
+  },
+  "document_chunks": [],
+  "_document_chunks_redacted_note": "49 chunks of sample3.pdf full extracted text stripped before commit, per Decision 6 (the source document itself is never committed, standing rule, no exception here). Full document_chunks are present in the local, gitignored sessions/ copy this same run also wrote via persistence.save_session(). Per-turn ConversationTurn.chunk_text is left intact below -- bounded, evidence-scoped excerpts (6 distinct chunks of 49 reused across 12 turns), same precedent as chunk excerpts quoted in docs/v0.2-eval-results.md."
+}
