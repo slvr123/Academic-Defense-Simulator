@@ -34,10 +34,12 @@ import os
 import tempfile
 import threading
 import time
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import streamlit as st
 
+from academic_defense_simulator import persistence
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.demo_counter import (
     DEMO_DAILY_SESSION_CAP,
@@ -67,7 +69,7 @@ from academic_defense_simulator.models.defense_profile import (
 )
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.report import DefenseReport
-from academic_defense_simulator.models.session import DefenseSession
+from academic_defense_simulator.models.session import DefenseSession, PersistedSession, SessionStage
 from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
@@ -157,11 +159,53 @@ ABORT_MESSAGES = {
 }
 
 
+def _persistence_enabled() -> bool:
+    """v0.4b Decision 1 — the standing gate every persistence call site checks
+    first. Off means this module never touches `academic_defense_simulator.persistence`
+    at all: no directory, no save calls, no resume UI (Decision 1's "off-mode is
+    behavioral parity with today" property)."""
+    return load_settings().persistence_enabled
+
+
+def _build_persisted_session(stage: SessionStage) -> PersistedSession:
+    """Assembles the save unit from current `st.session_state` (v0.4b Decision 2).
+    `document_chunks` is re-derived from `st.session_state.chunks` on every save
+    rather than cached separately — one source of truth, no drift risk."""
+    return PersistedSession(
+        session_id=st.session_state.session_id,
+        created_at=st.session_state.session_created_at,
+        updated_at=datetime.now(timezone.utc),
+        stage=stage,
+        session=st.session_state.session,
+        document_chunks=[c.text for c in st.session_state.chunks],
+    )
+
+
+def _persist(stage: SessionStage) -> None:
+    """Save-call wiring (v0.4b Decision 3): called at turn completion, session
+    completion, and abort — never mid-turn. A no-op when persistence is off, or
+    when this browser session never minted a `session_id` (persistence turned on
+    but no session has started yet — e.g. still on the intake screen). Disk failure
+    is logged and surfaced as a non-blocking caption (`save_failed`); the live
+    session is never interrupted by it, and a later successful save clears the
+    caption again."""
+    if not _persistence_enabled() or "session_id" not in st.session_state:
+        return
+    try:
+        persistence.save_session(_build_persisted_session(stage))
+    except OSError as exc:
+        logger.warning("session save failed (session_id=%s): %s", st.session_state.session_id, exc)
+        st.session_state.save_failed = True
+    else:
+        st.session_state.save_failed = False
+
+
 def _abort(label: str, exc: LLMProviderError) -> None:
     logger.error("session aborted at stage %r: %s", label, exc)
     st.session_state.stage = "aborted"
     st.session_state.abort_stage = label
     st.session_state.abort_message = str(exc)
+    _persist(SessionStage.ABORTED)
 
 
 def _abort_demo_limit() -> None:
@@ -173,6 +217,7 @@ def _abort_demo_limit() -> None:
     logger.info("demo session ended: turn cap reached")
     st.session_state.stage = "aborted"
     st.session_state.abort_stage = DEMO_TURN_CAP_ABORT_STAGE
+    _persist(SessionStage.ABORTED)
 
 
 st.set_page_config(page_title="Academic Defense Simulator", initial_sidebar_state="expanded")
@@ -993,7 +1038,12 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                                 st.rerun()
                             else:
                                 st.session_state.stage = "done"
+                                _persist(SessionStage.COMPLETED)
                         else:
+                            # v0.4b Decision 3: save fires after every completed turn,
+                            # not just at session end — a crash loses at most the
+                            # in-flight turn.
+                            _persist(SessionStage.IN_PROGRESS)
                             time.sleep(
                                 MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY)
                             )
@@ -1159,6 +1209,79 @@ def _render_case_file_sidebar() -> None:
         st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
 
 
+def _resume_session(persisted: PersistedSession) -> None:
+    """v0.4b Decision 5: load -> rebuild transcript UI (free — `session.turns` is
+    already the full transcript, rendered by the same `_render_exchange_history`
+    every running session uses) -> restore live state (free — difficulty/speaker/
+    retention counters are all derived from `session.turns`+`session.panel`, not
+    separately stored) -> re-embed chunks locally -> next turn proceeds. This
+    function does the state restoration only; the caller reruns afterward."""
+    embedding_model = _load_embedding_model()
+    with st.spinner("Re-embedding document..."):
+        embeddings = embedding_model.encode(persisted.document_chunks)
+    chunks = [Chunk(text=t, embedding=e) for t, e in zip(persisted.document_chunks, embeddings)]
+
+    session = persisted.session
+    settings = load_settings()
+    st.session_state.session = session
+    st.session_state.session_id = persisted.session_id
+    st.session_state.session_created_at = persisted.created_at
+    st.session_state.chunks = chunks
+    st.session_state.embedding_model = embedding_model
+    st.session_state.gemini_model = settings.gemini_model
+    st.session_state.other_subtype_line = (
+        f"\n- Defense subtype: {session.profile.other_subtype.value}"
+        if session.profile.other_subtype is not None
+        else ""
+    )
+    # personas_fallback_used is not part of PersistedSession's contents (v0.4b
+    # Decision 2) — it's an export-only cosmetic flag (panel.py: a fallback persona
+    # "degrades aesthetics only, not the transcript"), never regenerated on resume
+    # (the roster itself is restored verbatim). Defaulted rather than expanding the
+    # locked schema for a field with no functional effect.
+    st.session_state.personas_fallback_used = False
+    st.session_state.pending_turn = None
+    st.session_state.stage = "running"
+
+
+def _render_resume_section() -> None:
+    """Intake-screen resume list (v0.4b Decision 4): in-progress sessions only,
+    document name / last-updated / progress per row, Resume and Delete (confirm via
+    popover). Renders nothing when there's nothing to show — an empty sessions
+    directory (or the directory not existing yet) means this whole section is
+    absent, not an empty placeholder."""
+    sessions, skips = persistence.list_sessions()
+    if not sessions and not skips:
+        return
+
+    st.markdown('<p class="small-caps-label">Resume a saved session</p>', unsafe_allow_html=True)
+    for persisted in sessions:
+        session = persisted.session
+        turn_num = len(session.turns) + 1
+        with st.container(border=True):
+            st.markdown(f"**{html.escape(session.profile.topic)}**")
+            st.caption(
+                f"Updated {persisted.updated_at.strftime('%Y-%m-%d %H:%M UTC')} · "
+                f"turn {turn_num} · {_turn_progress_label(session)}"
+            )
+            resume_col, delete_col = st.columns([1, 1])
+            with resume_col:
+                if st.button(
+                    "Resume", key=f"resume_{persisted.session_id}", type="primary", use_container_width=True
+                ):
+                    _resume_session(persisted)
+                    st.rerun()
+            with delete_col:
+                with st.popover("Delete", use_container_width=True):
+                    st.write("Delete this saved session permanently? This can't be undone.")
+                    if st.button("Confirm delete", key=f"confirm_delete_{persisted.session_id}"):
+                        persistence.delete_session(persisted.session_id)
+                        st.rerun()
+    for skip in skips:
+        st.caption(f"Skipped {skip.path.name} — {skip.reason}")
+    st.divider()
+
+
 _render_dev_view()
 _render_case_file_sidebar()
 
@@ -1187,6 +1310,13 @@ if st.session_state.stage == "intake":
     # block inside an `if key_ready:`.
     if not _render_key_gate():
         st.stop()
+
+    # v0.4b Decision 4: the resume list sits above the fresh-upload flow, and is
+    # itself gated on the persistence flag — off means `_render_resume_section`
+    # is never even called, so `persistence.list_sessions()` never runs and no
+    # `sessions/` directory is ever touched (Decision 1 parity).
+    if _persistence_enabled():
+        _render_resume_section()
 
     document_ready = "document_id" in st.session_state
     intake_slot = st.empty()
@@ -1488,12 +1618,22 @@ if st.session_state.stage == "intake":
             )
             st.session_state.pending_turn = None
             st.session_state.stage = "running"
+            # v0.4b Decision 2: session_id is minted here, at session start — before
+            # any save has fired (the first save is turn 1's completion, per
+            # Decision 3). Only minted when the flag is on; `_persist` no-ops
+            # without it, which is also how flag-off stays a true no-op end to end.
+            if _persistence_enabled():
+                st.session_state.session_id = str(uuid4())
+                st.session_state.session_created_at = datetime.now(timezone.utc)
             st.rerun()
 
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
     turn_num = len(session.turns) + 1
     active_panelist = select_active_panelist(session)
+
+    if st.session_state.get("save_failed"):
+        st.caption("Couldn't save progress — session continues, resume may be unavailable.")
 
     # Difficulty is deliberately absent here (v0.3d Decision 4, item 3) — it never
     # renders in the main flow mid-session, only in the report's trajectory after the

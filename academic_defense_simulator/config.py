@@ -14,6 +14,7 @@ DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite"
 class Settings:
     gemini_api_key: str
     gemini_model: str
+    persistence_enabled: bool
 
 
 def load_settings() -> Settings:
@@ -29,4 +30,13 @@ def load_settings() -> Settings:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
     model = os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL
-    return Settings(gemini_api_key=api_key, gemini_model=model)
+    # v0.4b Decision 1: local-disk session persistence, default off. Deployed
+    # Streamlit Cloud never sets this, so it stays st.session_state-only exactly
+    # as before this slice.
+    persistence_enabled = os.getenv("ADS_PERSISTENCE_ENABLED", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    return Settings(gemini_api_key=api_key, gemini_model=model, persistence_enabled=persistence_enabled)

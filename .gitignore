@@ -38,5 +38,9 @@ chunks.json
 # Demo-mode daily counter (v0.4a) — runtime state, resets on container restart
 academic_defense_simulator/data/demo_counter.json
 
+# Local session persistence (v0.4b) — only ever created when ADS_PERSISTENCE_ENABLED
+# is set; never exists on the deployed instance (Decision 1)
+sessions/
+
 # Ad-hoc test/driver scripts written during a Code session — not part of the shipped app
 e2e_driver.py

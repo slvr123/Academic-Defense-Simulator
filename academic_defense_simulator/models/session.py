@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from datetime import datetime
+from enum import Enum
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -60,3 +62,42 @@ class DefenseSession(BaseModel):
                 break
             trailing += 1
         return trailing - 1
+
+
+class SessionStage(str, Enum):
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    ABORTED = "aborted"
+
+
+# v0.4b Decision 7 — stamped into every persisted file; the loader accepts this exact
+# value and rejects anything else (schema versioning: stamp now, migrate never yet).
+CURRENT_SCHEMA_VERSION = 1
+
+
+class PersistedSession(BaseModel):
+    """One JSON file's full contents (v0.4b Decision 2) — the persistence module's
+    save/load unit. Extends the v0.2.5 export shape rather than forking a rival one:
+    `session` carries the exact `DefenseSession` (profile, seated panel, transcript,
+    difficulty, report) the export already serializes; `document_chunks` is the one
+    genuinely new piece of state, since chunk embeddings are deliberately not
+    persisted (Decision 2) — resume re-embeds this text locally instead.
+
+    Live state (difficulty, current speaker/turn position, follow-up retention
+    counters) is deliberately NOT duplicated here as separate fields — it's already
+    fully derivable from `session.turns` + `session.panel` (see
+    `select_active_panelist`, `DefenseSession.follow_ups_on_current_topic`), which is
+    exactly the Day 3 stateless-rendering property Decision 5 relies on."""
+
+    # Literal, not plain int (Decision 7): a file stamped with any other version
+    # must fail Pydantic validation outright, so `persistence.list_sessions` can
+    # distinguish "incompatible version" from generic corruption and name it in
+    # the skip reason, rather than silently accepting a structurally-valid file
+    # from a schema that hasn't been written yet.
+    schema_version: Literal[CURRENT_SCHEMA_VERSION] = CURRENT_SCHEMA_VERSION
+    session_id: str
+    created_at: datetime
+    updated_at: datetime
+    stage: SessionStage
+    session: DefenseSession
+    document_chunks: list[str]
