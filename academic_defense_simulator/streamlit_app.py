@@ -39,6 +39,13 @@ from uuid import uuid4
 import streamlit as st
 
 from academic_defense_simulator.config import load_settings
+from academic_defense_simulator.demo_counter import (
+    DEMO_DAILY_SESSION_CAP,
+    DEMO_MAX_TURNS,
+    consume_demo_session,
+    demo_available,
+    demo_sessions_used_today,
+)
 from academic_defense_simulator.document_profile import extract_document_profile
 from academic_defense_simulator.document_relevance import assess_document
 from academic_defense_simulator.engine import (
@@ -50,7 +57,7 @@ from academic_defense_simulator.engine import (
     select_active_panelist,
     session_is_complete,
 )
-from academic_defense_simulator.llm.gemini_provider import GeminiProvider
+from academic_defense_simulator.llm.gemini_provider import GeminiProvider, validate_gemini_key
 from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
 from academic_defense_simulator.models.defense_profile import (
     DefenseProfile,
@@ -128,6 +135,12 @@ LLM_STAGE_QUESTION_GENERATION = "question generation"
 LLM_STAGE_ANSWER_SCORING = "answer scoring"
 LLM_STAGE_REPORT_NARRATIVE = "report narrative"
 
+# v0.4a Decision 6 — the demo turn cap routes through this same stage-keyed abort
+# copy dict, not a new state-machine state; it's simply a fourth key alongside the
+# three LLM-stage ones below, exactly like adding a fourth label was already the
+# extension point (see the comment above ABORT_MESSAGES).
+DEMO_TURN_CAP_ABORT_STAGE = "demo_turn_cap"
+
 # Stage-keyed abort copy (v0.3d Decision 5) — the user never sees raw exception text;
 # it goes to logs (via `_abort` below) and the dev-view sidebar only. Keys are the exact
 # `label` values already passed to `_call_with_timeout` at each of the three call sites
@@ -137,6 +150,10 @@ ABORT_MESSAGES = {
     LLM_STAGE_QUESTION_GENERATION: "The panel's next question took longer than expected.",
     LLM_STAGE_ANSWER_SCORING: "Scoring your answer took longer than expected.",
     LLM_STAGE_REPORT_NARRATIVE: "Building your report took longer than expected.",
+    DEMO_TURN_CAP_ABORT_STAGE: (
+        "Demo limit reached — the panel adjourns early. Bring a free Gemini key "
+        "(60 seconds, same screen as before you started) to sit a full defense."
+    ),
 }
 
 
@@ -145,6 +162,17 @@ def _abort(label: str, exc: LLMProviderError) -> None:
     st.session_state.stage = "aborted"
     st.session_state.abort_stage = label
     st.session_state.abort_message = str(exc)
+
+
+def _abort_demo_limit() -> None:
+    """v0.4a Decision 6, path 1: demo turn cap reached mid-session. Reuses the same
+    'aborted' stage as a real provider failure — no new state — but this isn't a
+    failure, so it logs at INFO (not ERROR via `_abort`) and sets no
+    `abort_message`: there's no exception here, so dev-view's raw-exception
+    caption correctly has nothing to show."""
+    logger.info("demo session ended: turn cap reached")
+    st.session_state.stage = "aborted"
+    st.session_state.abort_stage = DEMO_TURN_CAP_ABORT_STAGE
 
 
 st.set_page_config(page_title="Academic Defense Simulator", initial_sidebar_state="expanded")
@@ -447,9 +475,16 @@ if "_turn_lock" not in globals():
 
 
 def _reset() -> None:
+    # v0.4a Decision 5: "one demo session per browser session" has to survive this
+    # reset — the aborted/done screens both offer "Start a new session", and that
+    # button is one click away from the demo-turn-cap abort screen specifically.
+    # Without preserving the flag here, that click would silently hand out a fresh
+    # demo, defeating the cap it just enforced.
+    demo_session_used = st.session_state.get("demo_session_used", False)
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.session_state.stage = "intake"
+    st.session_state.demo_session_used = demo_session_used
 
 
 def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | None) -> str:
@@ -457,6 +492,16 @@ def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | No
         assert other_subtype is not None
         return f"other/{other_subtype.value}"
     return defense_type.value
+
+
+def _active_gemini_key() -> str:
+    """v0.4a Decision 4: this session's Gemini key — the user's own validated key
+    in own-key mode, the project key (secrets/env, exactly as pre-v0.4a) in demo
+    mode. Resolved once at the intake gate (`_render_key_gate`) and read from here
+    by every provider construction, so a Streamlit rerun on a fresh thread never
+    re-derives, caches, or shares a client across different users' keys — the
+    cross-user leak `st.cache_resource` would have risked (Decision 4)."""
+    return st.session_state.active_api_key
 
 
 def _new_provider(label: str) -> GeminiProvider:
@@ -467,10 +512,13 @@ def _new_provider(label: str) -> GeminiProvider:
 
     v0.3h Brief: `label` and the session's `CallCounter` (if one exists yet) are
     threaded into every construction — this is the one place that decides which
-    stage a given provider instance's calls get attributed to."""
+    stage a given provider instance's calls get attributed to. v0.4a: the API key
+    itself is now session-resolved (`_active_gemini_key`), not always the project
+    key — only `gemini_model` still comes from `load_settings()` unconditionally,
+    since model selection is out of this slice's scope either way."""
     settings = load_settings()
     return GeminiProvider(
-        api_key=settings.gemini_api_key,
+        api_key=_active_gemini_key(),
         model=settings.gemini_model,
         call_counter=st.session_state.get("llm_call_counter"),
         label=label,
@@ -485,13 +533,100 @@ _RELEVANCE_ASSESSMENT_MODEL = "gemini-2.5-flash"
 
 
 def _new_relevance_provider() -> GeminiProvider:
-    settings = load_settings()
     return GeminiProvider(
-        api_key=settings.gemini_api_key,
+        api_key=_active_gemini_key(),
         model=_RELEVANCE_ASSESSMENT_MODEL,
         call_counter=st.session_state.get("llm_call_counter"),
         label=LLM_STAGE_RELEVANCE_GATE,
     )
+
+
+def _render_key_gate() -> bool:
+    """v0.4a Decision 1 — mode radio above the upload step. Returns True once
+    `st.session_state.active_api_key` is resolved (own key validated, or a demo
+    session granted); the caller renders nothing else and stops the script for
+    this run while this returns False, so the dropzone/profile form below is
+    unreachable until a key is ready — the pre-session half of Decision 6's two
+    exhaustion paths (daily-cap-reached, demo-already-used) is enforced entirely
+    here, before any upload or LLM call can happen."""
+    if "active_api_key" in st.session_state:
+        return True
+
+    with st.container(border=True):
+        st.markdown('<p class="small-caps-label">Choose how to run this session</p>', unsafe_allow_html=True)
+
+        demo_used = st.session_state.get("demo_session_used", False)
+        daily_cap_hit = not demo_available()
+        demo_disabled_reason = None
+        if demo_used:
+            demo_disabled_reason = "Already used this browser session — refresh to try again later."
+        elif daily_cap_hit:
+            used = demo_sessions_used_today()
+            demo_disabled_reason = f"Today's {used}/{DEMO_DAILY_SESSION_CAP} demo sessions are used — come back tomorrow, or use your own key."
+
+        mode = st.radio(
+            "Mode",
+            options=["own_key", "demo"],
+            format_func=lambda m: (
+                "Use my own Gemini API key (recommended)"
+                if m == "own_key"
+                else "Demo mode — limited session" + (f" ({demo_disabled_reason})" if demo_disabled_reason else "")
+            ),
+            index=0,
+            label_visibility="collapsed",
+            key="api_key_mode_radio",
+        )
+
+        if mode == "own_key":
+            with st.expander("Don't have a key? It's free — 60 seconds"):
+                st.markdown(
+                    "1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)\n"
+                    "2. Sign in with any Google account\n"
+                    "3. Click **Create API key**\n"
+                    "4. Paste it below\n\n"
+                    "Free tier — no billing setup, no card required."
+                )
+            key_input = st.text_input(
+                "Gemini API key", type="password", key="own_key_input", label_visibility="collapsed",
+                placeholder="Paste your Gemini API key",
+            )
+            validate_clicked = st.button("Use this key", type="primary")
+            if validate_clicked:
+                if not key_input.strip():
+                    st.error("Paste a key first.")
+                else:
+                    with st.spinner("Checking your key..."):
+                        ok = validate_gemini_key(key_input.strip())
+                    if ok:
+                        st.session_state.active_api_key = key_input.strip()
+                        st.session_state.api_key_mode = "own"
+                        st.rerun()
+                    else:
+                        st.error(
+                            "This key was rejected by Google — check for missing characters "
+                            "or create a fresh key."
+                        )
+            return False
+
+        # demo mode
+        st.caption(
+            f"Demo sessions are capped at {DEMO_MAX_TURNS} turns, one per browser session, "
+            f"{DEMO_DAILY_SESSION_CAP} total worldwide per day."
+        )
+        if demo_disabled_reason:
+            st.error(demo_disabled_reason)
+            return False
+        if st.button("Start demo session", type="primary"):
+            # v0.4a Decision 5: the daily slot is spent here, at commit, not at
+            # Convene — simpler than tracking whether an in-progress demo pick
+            # ever turns into a real session, and Decision 5 already accepts
+            # coarser gaming/concurrency tradeoffs at this scale.
+            consume_demo_session()
+            st.session_state.demo_session_used = True
+            st.session_state.active_api_key = load_settings().gemini_api_key
+            st.session_state.api_key_mode = "demo"
+            st.rerun()
+        return False
 
 
 @st.cache_resource(show_spinner=False)
@@ -734,6 +869,13 @@ def _render_current_exchange(session: DefenseSession, active_panelist: Panelist,
     stage's elements un-cleared (observed live: an aborted-state screen with the old
     profile-stage form still rendered underneath it). Only the strictly-interactive,
     no-abort-on-first-render portion below (`_render_answer_fragment`) is fragment-scoped."""
+    # v0.4a Decision 6, path 1 — checked first, before any question-generation call:
+    # demo mode allows DEMO_MAX_TURNS turns; the attempt to start turn N+1 is where
+    # the cap fires, same shape as the LLMProviderError abort paths below it.
+    if st.session_state.get("api_key_mode") == "demo" and turn_num > DEMO_MAX_TURNS:
+        _abort_demo_limit()
+        st.rerun()
+
     if st.session_state.pending_turn is None:
         with _turn_lock:
             # Re-check after acquiring the lock: if a concurrent (overlapping) rerun got
@@ -1038,6 +1180,14 @@ if st.session_state.stage == "intake":
     # `intake_slot` (a single st.empty()) lets both blocking-call sites clear
     # the whole intake UI immediately, before the call starts, instead of
     # leaving stale content sitting above the spinner.
+    #
+    # v0.4a Decision 1: the key/mode gate renders above all of the above and
+    # everything below is unreachable until it resolves — st.stop() here is the
+    # smallest-diff way to enforce that without re-nesting this whole 200-line
+    # block inside an `if key_ready:`.
+    if not _render_key_gate():
+        st.stop()
+
     document_ready = "document_id" in st.session_state
     intake_slot = st.empty()
 
@@ -1356,6 +1506,19 @@ elif st.session_state.stage == "running":
 
 elif st.session_state.stage == "aborted":
     st.error(ABORT_MESSAGES[st.session_state.abort_stage])
+    # v0.4a Decision 6, path 2: own-key mid-session provider failures get copy
+    # naming the likely cause (their key's own rate limit or revocation) instead
+    # of reading as an app problem — every LLM-stage abort is a candidate (the
+    # demo-cap key is mode=="demo" by construction, so this can't double up with
+    # the demo copy above it).
+    if (
+        st.session_state.get("api_key_mode") == "own"
+        and st.session_state.abort_stage != DEMO_TURN_CAP_ABORT_STAGE
+    ):
+        st.caption(
+            "This is more likely to be your own key's rate limit or an expired/revoked "
+            "key than an app problem — check it at aistudio.google.com/apikey."
+        )
     if st.button("Start a new session", key="reset_from_aborted"):
         _reset()
         st.rerun()

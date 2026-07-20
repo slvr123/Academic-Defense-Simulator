@@ -133,3 +133,27 @@ class GeminiProvider(LLMProvider):
             raise LLMProviderError(
                 f"{label} — retried once and failed again. (first: {first_exc!r}, retry: {retry_exc!r})"
             ) from retry_exc
+
+
+def validate_gemini_key(api_key: str) -> bool:
+    """v0.4a Decision 2: validates a user-supplied key via `client.models.list()` —
+    the cheapest possible 'is this a real key' probe, no generate-call quota spent
+    (unlike a minimal generate call, which would burn the user's own daily
+    allowance on every paste). Auth failure, malformed key, and network errors all
+    collapse to False — Decision 2's UI shows one plain rejection message either
+    way, so this boundary doesn't need to distinguish them. No call_counter/label:
+    this call is never part of a session's LLM-call tally (it costs no generate
+    quota) and isn't attributable to a turn/stage."""
+    import httpx
+    from google import genai
+    from google.genai import errors as genai_errors
+    from google.genai import types
+
+    try:
+        client = genai.Client(
+            api_key=api_key, http_options=types.HttpOptions(timeout=_REQUEST_TIMEOUT_MS)
+        )
+        next(iter(client.models.list()), None)
+        return True
+    except (genai_errors.APIError, httpx.HTTPError):
+        return False
