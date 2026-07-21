@@ -116,14 +116,15 @@ hand-typed, since that is what production actually hands the intake form.
 
 ## Stage B — Question-generation probe
 
-**Pass, with two findings.**
+**Pass, with four findings.**
 
 `scripts/probe_question_gen.py`, `technical_implementation_reviewer` (persona "Reyes"),
 against sample3. 4 new-topic (difficulty 2/3, forced across distinct chunks) + 2 forced
 follow-ups. Results: `scripts/probe_question_gen_v0.4_sample3_results.jsonl` (7 lines: 1
-meta + 6 question records). `in_lane`/`difficulty_ok` are left null per Decision 2 — human
-columns for me to fill before this file is committed, not something this session fills on
-my behalf.
+meta + 6 question records). `in_lane`/`difficulty_ok` are human columns per Decision 2,
+now fully filled: rows 1, 2, and 5 are `in_lane: true, difficulty_ok: true` — no findings
+worth calling out — and rows 3, 4, and 6 are covered by Findings 6/7 and the row 4
+resolution below.
 
 Grounding tally (threshold 0.85):
 
@@ -150,12 +151,36 @@ constraints) — zero drift into literature, ethics, or methodology territory. T
 generalization signal Decision 2 designed Stage B to produce: the same archetype lane that
 held on DAZSMA also held on a document from a completely different engineering domain.
 
+**Finding 6 — one question drifted out of TIR's lane (chunk 15, row 3).**
+in_lane: false. The question presses on the RESAAW system's authors'
+hardware trade-offs (a cited related work) rather than the candidate's own
+design choices — Literature & Theory Specialist territory, not Technical
+Implementation Reviewer's stated focus on pressing candidates on their own
+choices. Notably, this is the same row that already failed grounding at
+0.8444 (Finding 1) — two independent signals against the same generated
+question.
+
+**Finding 7 — one question reached for a category-mismatched metric (chunk
+14 follow-up, row 6).** difficulty_ok: false. The question asks for a
+measured common-mode rejection ratio (CMRR), which characterizes analog
+differential signal paths — not applicable to the INMP441, a fully digital
+PDM/I2S microphone with no analog differential stage. This isn't simple
+over-difficulty; it's the generator producing a plausible-sounding but
+structurally mismatched electronics term for this signal chain.
+
+**Row 4 resolution (chunk 35, ESP32-S3 I2S multiplexing question):**
+difficulty_ok resolved to true on review — the document's own architecture
+(Section 3.2.2/Figure 3.6) describes two independent I2S buses rather than
+true four-into-two multiplexing, so the question is answerable directly from
+the candidate's documented design rather than requiring novel synthesis;
+difficulty 3 holds.
+
 ---
 
 ## Task 3 — Difficulty-tone probe
 
-**Generation and grounding: pass, with one finding. Blind judgment: pending — not
-performed in this Code session.**
+**Generation and grounding: pass, with one finding. Blind judgment: pass — 3/4,
+hypothesis (b) rejected.**
 
 `scripts/probe_difficulty_tone.py` (new script). 4 pairs (`methodology_expert` x 2 chunks,
 `technical_implementation_reviewer` x 2 chunks), difficulty 1 vs. 4, new-topic path only, 8
@@ -185,17 +210,21 @@ difficulty-linked fabrication pattern like the DAZSMA chunk-70 case Decision 3 w
 specifically watching for. Logged as a new grounding-checker edge case (structural/TOC
 chunks), not a repeat of the prior finding.
 
-**What did not happen in this Code session:** the actual blind read. Decision 3 requires
-*me* to read `scripts/probe_difficulty_tone_judging.jsonl` — pair_id + question A/B only,
-difficulty labels stripped — and judge each pair "A, B, or indistinguishable" before ever
-opening `scripts/probe_difficulty_tone_key.jsonl`. That is a human-judgment step by design
-(eval hygiene: foreknowledge of which side was requested at difficulty 4 contaminates the
-read), and Task 3's own verify bar only asks for the raw JSONL, the judging file, and the
-key file — not the verdict. The judging file exists, blind, at
-`scripts/probe_difficulty_tone_judging.jsonl`; the key is at
-`scripts/probe_difficulty_tone_key.jsonl`, both with the fixed shuffle seed (`20260720`)
-recorded so unblinding is a lookup, not a reconstruction.
-**The ≥3/4 pass/fail verdict from Decision 3 is not yet determined.**
+The blind read is a human-judgment step by design (eval hygiene: foreknowledge of which
+side was requested at difficulty 4 contaminates the read) — Decision 3 requires *me* to
+read `scripts/probe_difficulty_tone_judging.jsonl` (pair_id + question A/B only,
+difficulty labels stripped) and judge each pair "A, B, or indistinguishable" before ever
+opening `scripts/probe_difficulty_tone_key.jsonl`. Both files exist, seeded (`20260720`)
+so unblinding was a lookup, not a reconstruction.
+
+**Blind identification: 3/4** (methodology_expert_chunk1 ✓,
+methodology_expert_chunk2 ✓, technical_implementation_reviewer_chunk1 ✓,
+technical_implementation_reviewer_chunk2 ✗ — misidentified the difficulty-4
+side as B when it was A). **Meets the ≥3/4 bar. Hypothesis (b) rejected** —
+tone differentiates between difficulty 1 and 4 on this document; the "sharp
+even early" pattern from 0.3d live-testing traces to escalation speed /
+difficulty_start, not the template's tonal wording. No prompt work
+motivated by this result.
 
 ---
 
@@ -345,14 +374,12 @@ every score is near-floor).
 | Stage | Result |
 |---|---|
 | Stage A (ingest + gate) | **Pass** |
-| Stage B (question-gen probe) | **Pass** — 2 findings, 0 blocking; `in_lane`/`difficulty_ok` pending my fill-in before commit |
+| Stage B (question-gen probe) | **Pass** — 4 findings, 0 blocking; both human columns now filled |
 | Task 3 (tone probe, generation + grounding) | **Pass** — 1 finding, 0 blocking |
-| Task 3 (tone probe, blind identification verdict) | **Not yet performed** — requires my own blind read of the judging file |
+| Task 3 (tone probe, blind identification verdict) | **Pass — 3/4, hypothesis (b) rejected.** |
 | Task 4 / Stage C (live session) | **Pass** (mechanically) — 2 significant scoring-behavior findings, both anticipated as acceptable outcomes by Decision 2 |
 
 Nothing here blocks anything downstream — Decision 7 scoped this session to evidence
-only, and every finding above is logged, not patched, per that scope.
-The one open item is squarely mine to close: reading
-`scripts/probe_difficulty_tone_judging.jsonl` blind and recording the ≥3/4 verdict against
-`scripts/probe_difficulty_tone_key.jsonl`, plus filling `in_lane`/`difficulty_ok` on Stage
-B's JSONL before either file is committed as final.
+only, and every finding above is logged, not patched, per that scope. Both open items
+from the prior close-out attempt are resolved: the tone-probe verdict is in, and both
+JSONLs' human columns are fully filled.
