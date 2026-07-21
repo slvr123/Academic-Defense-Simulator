@@ -17,8 +17,7 @@ the evidence motivates is its own future decision with its own re-verification.
 
 ---
 
-## Decision 0 — Sequencing and gates (LOCKED — Claude's recommendation,
-confirmed under Sean's delegation 2026-07-20)
+## Decision 0 — Sequencing and gates 
 
 - Runs **after v0.4b (session persistence) lands and closes review**, per the
   standing v0.4 ordering. Noting for the record: v0.4c has *no technical
@@ -33,9 +32,9 @@ confirmed under Sean's delegation 2026-07-20)
 
 ---
 
-## Decision 1 — Second document selection (RESOLVED — `sample2`)
+## Decision 1 — Second document selection (RESOLVED — `sample3`)
 
-**Resolved: the second document is `sample2`** — *Design of a Wearable
+**Resolved: the second document is `sample3`** — *Design of a Wearable
 TDOA-Based Sound Source Localization System for Assistive Spatial
 Awareness*, a TIP Electronics Engineering capstone (Bartolome, Castillo,
 Josef, Lopez, Sales, 2026), already in the repo. This section is kept below
