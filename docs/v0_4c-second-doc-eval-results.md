@@ -53,11 +53,32 @@ Harness change to `scripts/probe_question_gen.py`, flagged per the brief's instr
   surname "Reyes"), hand-crafted in the same style as the existing `_PROBE_PERSONA`/
   `_COLLEAGUE_PERSONA` — no persona-generation call was in this probe's budget.
 
-Two ad hoc, uncommitted runner scripts drove Stage A and Stage B/C against sample3
-(`scripts/adhoc_stage_a_sample2.py` — filename predates the correction above,
-`scripts/adhoc_run_stage_b_sample3.py`, `scripts/adhoc_stage_c_sample3.py`). These follow
-the repo's standing convention for ad hoc driver scripts (`.gitignore`'s `e2e_driver.py`
-entry) — not committed, not part of the shipped app, kept locally only for reproducibility.
+**Reproduction commands.** Three ad hoc runner scripts drove Stage A, Stage B, and Stage C
+against sample3 — never committed, per the repo's standing convention for driver scripts
+(`.gitignore`'s `e2e_driver.py` entry), and deleted after this session once their
+invocations were captured here. Each ran as `python scripts/<name>.py` with zero CLI
+arguments — every parameter below was a hardcoded module constant, not a flag:
+
+- **Stage A** (`adhoc_stage_a_sample2.py` — filename predates the sample2/sample3
+  correction above): `chunk_pdf(sample3.pdf)` → `assess_document(texts,
+  GeminiProvider(model="gemini-2.5-flash"))` → `extract_document_profile(texts,
+  GeminiProvider(model=<production default, gemini-3.1-flash-lite>))`.
+- **Stage B** (`adhoc_run_stage_b_sample3.py`): `probe_question_gen.main_probe(
+  persona=_TIR_PROBE_PERSONA, pdf_path=sample3.pdf, defense_type=DefenseType.CAPSTONE,
+  domain="Electronics Engineering", topic="Design of a Wearable TDOA-based Sound Source
+  Localization System for Assistive Spatial Awareness",
+  results_path=scripts/probe_question_gen_v0.4_sample3_results.jsonl)`.
+- **Stage C** (`adhoc_stage_c_sample3.py`): `DefenseProfile(defense_type=DefenseType.
+  CAPSTONE, domain="Electronics Engineering", topic="Design of a Wearable TDOA-based
+  Sound Source Localization System for Assistive Spatial Awareness",
+  selected_archetypes=["technical_implementation_reviewer", "methodology_expert",
+  "ethics_practicality_reviewer"])`, then a turn loop calling
+  `engine.select_active_panelist` / `engine._generate_question` /
+  `engine._score_answer` directly (the same functions `main.py`'s interactive driver
+  calls), with answers supplied in fixed turn order instead of typed at a prompt: turn 1
+  `STRONG_ANSWERS[0]`, turn 2 `HEDGE_ANSWER`, turn 3 `NON_ANSWER`, turn 4+ cycling
+  `STRONG_ANSWERS[0..3]`. Ends with `report.build_report(session, provider)` and
+  `persistence.save_session(persisted)`.
 
 ---
 

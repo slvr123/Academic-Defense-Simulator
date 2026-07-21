@@ -1,0 +1,5 @@
+{"record_type": "meta", "shuffle_seed": 20260720, "note": "a_is_high=True means side A was the difficulty-4 question for that pair. Pass bar (Decision 3): correctly naming the difficulty-4 side in >= 3 of 4 pairs; 'indistinguishable' counts against, not as a pass."}
+{"record_type": "key", "pair_id": "methodology_expert_chunk1", "archetype_key": "methodology_expert", "chunk_index": 2, "a_is_high": true, "a_difficulty": 4, "b_difficulty": 1}
+{"record_type": "key", "pair_id": "methodology_expert_chunk2", "archetype_key": "methodology_expert", "chunk_index": 9, "a_is_high": false, "a_difficulty": 1, "b_difficulty": 4}
+{"record_type": "key", "pair_id": "technical_implementation_reviewer_chunk1", "archetype_key": "technical_implementation_reviewer", "chunk_index": 11, "a_is_high": true, "a_difficulty": 4, "b_difficulty": 1}
+{"record_type": "key", "pair_id": "technical_implementation_reviewer_chunk2", "archetype_key": "technical_implementation_reviewer", "chunk_index": 14, "a_is_high": true, "a_difficulty": 4, "b_difficulty": 1}
