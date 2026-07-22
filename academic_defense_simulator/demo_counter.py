@@ -7,19 +7,44 @@ by one in the worst case — not worth locking machinery at this scale.
 
 Enforcement-honesty note (Decision 5, accepted): this file lives on the deploy
 container's local disk, so it resets on a Streamlit Cloud container restart. The
-threat model is accidental quota drain from casual visitors, not adversaries."""
+threat model is accidental quota drain from casual visitors, not adversaries.
+
+v0.4a amendment (demo caps env-configurable): the three cap values are read from
+env vars on every call, not baked in at import time — same os.getenv-with-default
+sourcing `config.load_settings()` uses for GEMINI_MODEL, just call-time here too
+so a monkeypatched env var takes effect without a module reload."""
 
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-DEMO_MAX_TURNS = 4
-DEMO_DAILY_SESSION_CAP = 8
-
 DEFAULT_COUNTER_PATH = Path(__file__).parent / "data" / "demo_counter.json"
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def demo_max_turns() -> int:
+    return _env_int("ADS_DEMO_MAX_TURNS", 4)
+
+
+def demo_sessions_per_browser() -> int:
+    return _env_int("ADS_DEMO_SESSIONS_PER_BROWSER", 1)
+
+
+def demo_daily_session_cap() -> int:
+    return _env_int("ADS_DEMO_DAILY_CAP", 8)
 
 
 @dataclass(frozen=True)
@@ -55,7 +80,9 @@ def demo_sessions_used_today(path: Path = DEFAULT_COUNTER_PATH) -> int:
     return state.count if state.day == _today() else 0
 
 
-def demo_available(path: Path = DEFAULT_COUNTER_PATH, cap: int = DEMO_DAILY_SESSION_CAP) -> bool:
+def demo_available(path: Path = DEFAULT_COUNTER_PATH, cap: int | None = None) -> bool:
+    if cap is None:
+        cap = demo_daily_session_cap()
     return demo_sessions_used_today(path) < cap
 
 

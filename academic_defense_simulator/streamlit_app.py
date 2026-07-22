@@ -42,10 +42,11 @@ import streamlit as st
 from academic_defense_simulator import persistence
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.demo_counter import (
-    DEMO_DAILY_SESSION_CAP,
-    DEMO_MAX_TURNS,
     consume_demo_session,
     demo_available,
+    demo_daily_session_cap,
+    demo_max_turns,
+    demo_sessions_per_browser,
     demo_sessions_used_today,
 )
 from academic_defense_simulator.document_profile import extract_document_profile
@@ -520,16 +521,16 @@ if "_turn_lock" not in globals():
 
 
 def _reset() -> None:
-    # v0.4a Decision 5: "one demo session per browser session" has to survive this
+    # v0.4a Decision 5: "N demo sessions per browser session" has to survive this
     # reset — the aborted/done screens both offer "Start a new session", and that
     # button is one click away from the demo-turn-cap abort screen specifically.
-    # Without preserving the flag here, that click would silently hand out a fresh
+    # Without preserving the count here, that click would silently hand out a fresh
     # demo, defeating the cap it just enforced.
-    demo_session_used = st.session_state.get("demo_session_used", False)
+    demo_sessions_started = st.session_state.get("demo_sessions_started", 0)
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.session_state.stage = "intake"
-    st.session_state.demo_session_used = demo_session_used
+    st.session_state.demo_sessions_started = demo_sessions_started
 
 
 def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | None) -> str:
@@ -600,14 +601,15 @@ def _render_key_gate() -> bool:
     with st.container(border=True):
         st.markdown('<p class="small-caps-label">Choose how to run this session</p>', unsafe_allow_html=True)
 
-        demo_used = st.session_state.get("demo_session_used", False)
+        demo_sessions_started = st.session_state.get("demo_sessions_started", 0)
+        browser_limit_hit = demo_sessions_started >= demo_sessions_per_browser()
         daily_cap_hit = not demo_available()
         demo_disabled_reason = None
-        if demo_used:
+        if browser_limit_hit:
             demo_disabled_reason = "Already used this browser session — refresh to try again later."
         elif daily_cap_hit:
             used = demo_sessions_used_today()
-            demo_disabled_reason = f"Today's {used}/{DEMO_DAILY_SESSION_CAP} demo sessions are used — come back tomorrow, or use your own key."
+            demo_disabled_reason = f"Today's {used}/{demo_daily_session_cap()} demo sessions are used — come back tomorrow, or use your own key."
 
         mode = st.radio(
             "Mode",
@@ -655,8 +657,9 @@ def _render_key_gate() -> bool:
 
         # demo mode
         st.caption(
-            f"Demo sessions are capped at {DEMO_MAX_TURNS} turns, one per browser session, "
-            f"{DEMO_DAILY_SESSION_CAP} total worldwide per day."
+            f"Demo sessions are capped at {demo_max_turns()} turns, "
+            f"{demo_sessions_per_browser()} per browser session, "
+            f"{demo_daily_session_cap()} total worldwide per day."
         )
         if demo_disabled_reason:
             st.error(demo_disabled_reason)
@@ -667,7 +670,7 @@ def _render_key_gate() -> bool:
             # ever turns into a real session, and Decision 5 already accepts
             # coarser gaming/concurrency tradeoffs at this scale.
             consume_demo_session()
-            st.session_state.demo_session_used = True
+            st.session_state.demo_sessions_started = demo_sessions_started + 1
             st.session_state.active_api_key = load_settings().gemini_api_key
             st.session_state.api_key_mode = "demo"
             st.rerun()
@@ -915,9 +918,9 @@ def _render_current_exchange(session: DefenseSession, active_panelist: Panelist,
     profile-stage form still rendered underneath it). Only the strictly-interactive,
     no-abort-on-first-render portion below (`_render_answer_fragment`) is fragment-scoped."""
     # v0.4a Decision 6, path 1 — checked first, before any question-generation call:
-    # demo mode allows DEMO_MAX_TURNS turns; the attempt to start turn N+1 is where
+    # demo mode allows demo_max_turns() turns; the attempt to start turn N+1 is where
     # the cap fires, same shape as the LLMProviderError abort paths below it.
-    if st.session_state.get("api_key_mode") == "demo" and turn_num > DEMO_MAX_TURNS:
+    if st.session_state.get("api_key_mode") == "demo" and turn_num > demo_max_turns():
         _abort_demo_limit()
         st.rerun()
 
