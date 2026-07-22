@@ -344,6 +344,35 @@ overridden).
 
 ---
 
+## Known issues *(logged, not scheduled — pull into a session's scope when it blocks something)*
+
+### Known issue — env-var test isolation defeated by real `.env` values (logged 2026-07-22)
+
+`load_settings()` calls `load_dotenv()` at call-time (by design, so env changes
+take effect without a process restart — the same pattern the demo-cap env
+override now uses). `load_dotenv()` fills in any variable *absent* from the
+process environment from the real `.env` file on disk; it does not override
+one already set.
+
+Consequence: `monkeypatch.delenv(VAR)` only removes VAR from the in-memory
+process environment for that test. If my real local `.env` file also defines
+VAR, the very next `load_settings()` call re-populates it from disk — the
+monkeypatch deletion is silently undone by the function under test. Confirmed
+on `test_persistence_defaults_off_when_unset`, reproduced identically on clean
+`main` via `git stash` (not introduced by the 2026-07-22 demo-cap amendment).
+
+Risk scope: any test using `delenv` to verify a default, on a variable that
+also has a real value in my local `.env`, is exposed to this — pass/fail
+becomes dependent on my machine's `.env` contents, not just the code. Not yet
+audited across the full suite for other instances.
+
+Not fixed here — logged for its own scoped session. Candidate fixes to weigh
+then: monkeypatch `load_dotenv` itself in these tests rather than the
+individual env var; point affected tests at an isolated/empty `.env` path;
+or have `load_settings()` accept a flag to skip dotenv loading under test.
+
+---
+
 ## Sequencing summary
 
 | Milestone | Sessions | Gate to next |
