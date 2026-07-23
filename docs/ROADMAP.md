@@ -30,7 +30,7 @@ pre-publish rename pass; interim `dayN`-style names until then).
   root-cause patch. **Gate converted:** "root-caused and fixed" → "bounded and
   observable" — a timeout guard plus thin permanent call-lifecycle logging stand in for a
   root-cause fix as the hard gate before 0.3d and the deployment decision. Full finding:
-  `docs/v0.3-hang-investigation-closure.md`.
+  `docs/v0.3-hang-investigation-decisions.md`.
 - **Pre-deploy hardening session complete** (`docs/v0.3-hardening-decisions.md`).
   Closed the hang-closure carryover (timeout guard, call-lifecycle logging,
   `sleep(13)`→5s trim verified, `build_report` driver wire-up) plus the
@@ -63,7 +63,7 @@ pre-publish rename pass; interim `dayN`-style names until then).
 - **v0.3g complete** (`docs/v0.3g-document-relevance-gate-decisions.md`).
   Document relevance gate at ingestion - one LLM call that rejects uploads the
   panel can't meaningfully examine, before a session ever starts.
-- **v0.3h and v0.3i complete** (`docs/v0.3h-i-da-retention-scope-fix.md` - one
+- **v0.3h and v0.3i complete** (`docs/v0.3h-i-da-retention-scope-decisions.md` - one
   doc covers both, since the fix grew out of the measurement run).
   v0.3h: call-count instrumentation at the provider boundary, total plus
   per-stage tally stamped into the export payload; a real 4-turn session

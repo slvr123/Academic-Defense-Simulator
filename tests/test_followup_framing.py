@@ -1,4 +1,4 @@
-"""Follow-up attribution fix tests (v0.3d — docs/v0.3d-followup-attribution-fix.md).
+"""Follow-up attribution fix tests (v0.3d — docs/v0.3d-followup-attribution-decisions.md).
 
 `_render_prior_exchange_framing` is a pure string-in/string-out function: zero LLM calls,
 zero fixtures beyond a ConversationTurn/Panelist pair. Covers the same-asker and colleague

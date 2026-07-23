@@ -531,7 +531,7 @@ def _write_hardening_results(records: list[dict], model: str, persona: Panelist,
 
 
 # ============================================================================
-# v0.3d follow-up attribution probe (docs/v0.3d-followup-attribution-fix.md, Decision 4):
+# v0.3d follow-up attribution probe (docs/v0.3d-followup-attribution-decisions.md, Decision 4):
 # re-verifies the follow-up path only, now split by {prior_exchange_framing} case
 # (same_asker / colleague). Harness extension, fixture-level only: `_generate_question`'s
 # follow-up branch already takes the presser as an explicit `panelist` argument rather than
@@ -669,7 +669,7 @@ def _write_followup_attribution_results(
         "grounding_threshold": 0.85,
         "document": _PDF_PATH.name,
         "note": (
-            "Re-verification for docs/v0.3d-followup-attribution-fix.md Decision 4 -- follow-up "
+            "Re-verification for docs/v0.3d-followup-attribution-decisions.md Decision 4 -- follow-up "
             "path only. framing_case is same_asker or colleague, forced fixture-level by passing "
             "a different `panelist` argument to the follow-up call than the parent call, not by "
             "changing engine.py's round-robin."

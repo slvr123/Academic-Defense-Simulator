@@ -101,7 +101,7 @@ def _is_strong_answer(score: AnswerScore) -> bool:
 
 def _render_prior_exchange_framing(previous_turn: ConversationTurn, active_panelist: Panelist) -> str:
     """Fills FOLLOWUP_SYSTEM_PROMPT's {prior_exchange_framing} slot (v0.3d, Decision 1/2 —
-    see docs/v0.3d-followup-attribution-fix.md). `select_active_panelist` round-robins by
+    see docs/v0.3d-followup-attribution-decisions.md). `select_active_panelist` round-robins by
     turn number and `_should_follow_up` presses a weakness regardless of who asked it, so
     the two fire independently — most follow-ups land on a colleague of the original asker,
     not the asker themselves. The old unconditional "You previously asked..." wording put a

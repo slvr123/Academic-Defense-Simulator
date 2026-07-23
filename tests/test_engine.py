@@ -167,7 +167,7 @@ def test_t_max_backstop_does_not_fire_before_reaching_it():
     assert session_is_complete(session) is False
 
 
-# --- v0.3i: DA retention scope fix (docs/v0.3h-i-da-retention-scope-fix.md) ---
+# --- v0.3i: DA retention scope fix (docs/v0.3h-i-da-retention-scope-decisions.md) ---
 #
 # follow_ups_on_current_topic used to count trailing turns sharing chunk_index alone,
 # regardless of asker. _generate_da_question deliberately reuses the contested turn's

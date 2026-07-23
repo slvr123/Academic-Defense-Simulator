@@ -15,7 +15,7 @@
 # FOLLOWUP_SYSTEM_PROMPT's "You previously asked..." passage becomes a
 # {prior_exchange_framing} slot (rendered in engine.py) so the wording is truthful when
 # round-robin hands a follow-up to a panelist other than the original asker (see
-# docs/v0.3d-followup-attribution-fix.md) — zero wording change elsewhere in this file. The
+# docs/v0.3d-followup-attribution-decisions.md) — zero wording change elsewhere in this file. The
 # 0.3d UI session that follows makes zero further prompt changes and inherits this bump.
 # 0.3g (post-0.3-deploy bugfix pass, no separate decisions doc yet): PANELIST_SYSTEM_PROMPT's
 # schema instructions ("opening acknowledgment included") become the conditional

@@ -1,5 +1,5 @@
 """Difficulty-tone probe (v0.4c Task 3). See
-docs/v0_4c-second-doc-eval-decisions.md Decision 3.
+docs/v0.4c-second-doc-eval-decisions.md Decision 3.
 
 Closes 0.3d live-testing finding #2(b): does `PANELIST_SYSTEM_PROMPT` tonally
 differentiate difficulty 1 from difficulty 4, or does it only escalate content while
