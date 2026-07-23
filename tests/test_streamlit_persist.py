@@ -32,6 +32,9 @@ import importlib
 import logging
 from datetime import datetime, timezone
 
+import pytest
+from pydantic import ValidationError
+
 import academic_defense_simulator.models.session as real_session_module
 import academic_defense_simulator.streamlit_app as app
 from academic_defense_simulator import persistence
@@ -147,6 +150,68 @@ def test_persist_stale_class_validation_error_logs_and_sets_distinct_reason(monk
         # Leaves the shared module in a fresh, internally-consistent state
         # regardless of outcome -- see the reload-isolation note at module top.
         importlib.reload(real_session_module)
+
+
+# --- Narrowing: only the exact stale-class shape is swallowed (review amendment) ---
+
+
+def test_is_stale_class_error_true_for_exact_shape():
+    session_instance = _real_session_instance()
+    try:
+        reloaded = _reloaded_session_module()
+        with pytest.raises(ValidationError) as exc_info:
+            reloaded.PersistedSession(
+                session_id="s1",
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+                stage=reloaded.SessionStage.IN_PROGRESS,
+                session=session_instance,
+                document_chunks=["c"],
+            )
+        assert app._is_stale_class_error(exc_info.value) is True
+    finally:
+        importlib.reload(real_session_module)
+
+
+def test_is_stale_class_error_false_for_unrelated_field():
+    """A ValidationError on a completely different field (e.g. a malformed
+    `stage`) must NOT be recognized as the stale-class case -- this is the
+    actual regression the narrowing exists to prevent."""
+    session_instance = _real_session_instance()
+    with pytest.raises(ValidationError) as exc_info:
+        real_session_module.PersistedSession(
+            session_id="s1",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            stage="not-a-real-stage",
+            session=session_instance,
+            document_chunks=["c"],
+        )
+    assert exc_info.value.errors()[0]["loc"] == ("stage",)
+    assert app._is_stale_class_error(exc_info.value) is False
+
+
+def test_persist_reraises_unrelated_validation_error_instead_of_mislabeling(monkeypatch):
+    """The regression case, driven through the real `_persist` call path: a
+    ValidationError unrelated to the session-identity mismatch must propagate,
+    not be absorbed under the 'stale_class' label."""
+    session_instance = _real_session_instance()
+    _set_up_session_state(monkeypatch, session_instance)
+    app.st.session_state.save_failed = False
+    app.st.session_state.save_failed_reason = None
+
+    with pytest.raises(ValidationError) as exc_info:
+        # A malformed stage argument reaches PersistedSession(stage=..., ...)
+        # inside _build_persisted_session -- a genuinely different field/error
+        # type than the session-identity mismatch, structurally unrelated to
+        # any dev-hot-reload scenario.
+        app._persist("not-a-real-stage")
+
+    assert exc_info.value.errors()[0]["loc"] == ("stage",)
+    # Never mislabeled as the stale-class case -- state is untouched, exactly
+    # as it would be for any other unhandled exception raised inside _persist.
+    assert app.st.session_state.save_failed is False
+    assert app.st.session_state.save_failed_reason is None
 
 
 def test_persist_success_clears_reason(monkeypatch):

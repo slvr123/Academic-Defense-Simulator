@@ -191,6 +191,17 @@ def _build_persisted_session(stage: SessionStage) -> PersistedSession:
     )
 
 
+def _is_stale_class_error(exc: ValidationError) -> bool:
+    """True only for the exact confirmed shape of the dev-hot-reload
+    identity-mismatch fault: every error in the exception is a `model_type`
+    failure on the `session` field, nothing else. Deliberately narrow — a
+    `ValidationError` with any other error mixed in (a different field, a
+    different error type) is a real, unexpected data problem and must not be
+    swallowed under this label."""
+    errors = exc.errors()
+    return bool(errors) and all(e.get("type") == "model_type" and e.get("loc") == ("session",) for e in errors)
+
+
 def _persist(stage: SessionStage) -> None:
     """Save-call wiring (v0.4b Decision 3): called at turn completion, session
     completion, and abort — never mid-turn. A no-op when persistence is off, or
@@ -210,7 +221,17 @@ def _persist(stage: SessionStage) -> None:
     Streamlit Cloud restarts the whole process on every deploy rather than
     reloading modules in a live one, which wipes `st.session_state` instead of
     leaving it holding a stale class reference. Local-dev-only, same as the
-    circumstance that produces it."""
+    circumstance that produces it.
+
+    Narrowed per review: only a `ValidationError` whose *every* error entry is
+    the specific `model_type` failure on the `session` field is treated as the
+    stale-class case — that's the exact, confirmed shape the dev-hot-reload
+    fault produces (see `_is_stale_class_error` below). Any other
+    `ValidationError` (a genuinely malformed payload reaching this constructor)
+    re-raises instead of being silently absorbed here — `_build_persisted_session`
+    only feeds this call already-validated internal state today, so that path
+    isn't expected to fire, but a future change that feeds it less-trusted data
+    must not have a real data bug mislabeled as harmless reload noise."""
     if not _persistence_enabled() or "session_id" not in st.session_state:
         return
     try:
@@ -220,6 +241,8 @@ def _persist(stage: SessionStage) -> None:
         st.session_state.save_failed = True
         st.session_state.save_failed_reason = "disk"
     except ValidationError as exc:
+        if not _is_stale_class_error(exc):
+            raise
         logger.warning(
             "Save skipped: stale class reference detected (likely mid-session code reload). %s", exc
         )
