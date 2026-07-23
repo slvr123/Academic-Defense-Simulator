@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Callable, Type, TypeVar
 
@@ -14,6 +15,23 @@ T = TypeVar("T", bound=BaseModel)
 _RETRY_BACKOFF_SECONDS = 2
 _REQUEST_TIMEOUT_MS = 30_000  # a stalled request must fail into the existing retry path,
 # not hang the caller indefinitely.
+
+
+def _request_timeout_ms() -> int:
+    """v1.0a item 6: `ADS_LLM_TIMEOUT_SECONDS`, read at call time (same
+    read-on-every-call convention `demo_counter._env_int` uses, not baked in at
+    import) so a live-forced value takes effect without a process restart.
+    Default is `_REQUEST_TIMEOUT_MS` unchanged when unset or unparseable —
+    existing behavior is preserved exactly. Lives here, not `config.py`: this
+    knob only means anything to the Gemini transport, same reasoning that keeps
+    all `google.genai` specifics isolated to this module."""
+    raw = os.getenv("ADS_LLM_TIMEOUT_SECONDS", "").strip()
+    if not raw:
+        return _REQUEST_TIMEOUT_MS
+    try:
+        return int(float(raw) * 1000)
+    except ValueError:
+        return _REQUEST_TIMEOUT_MS
 
 
 class GeminiProvider(LLMProvider):
@@ -29,7 +47,7 @@ class GeminiProvider(LLMProvider):
         from google.genai import types
 
         self._client = genai.Client(
-            api_key=api_key, http_options=types.HttpOptions(timeout=_REQUEST_TIMEOUT_MS)
+            api_key=api_key, http_options=types.HttpOptions(timeout=_request_timeout_ms())
         )
         self._model = model
         # v0.3h Brief: optional so every existing construction site (scripts, CLI,
@@ -151,7 +169,7 @@ def validate_gemini_key(api_key: str) -> bool:
 
     try:
         client = genai.Client(
-            api_key=api_key, http_options=types.HttpOptions(timeout=_REQUEST_TIMEOUT_MS)
+            api_key=api_key, http_options=types.HttpOptions(timeout=_request_timeout_ms())
         )
         next(iter(client.models.list()), None)
         return True
