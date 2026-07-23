@@ -38,6 +38,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import pandas as pd
+import psutil
 import streamlit as st
 from pydantic import ValidationError
 
@@ -95,6 +96,18 @@ from academic_defense_simulator.report import build_report
 if not logging.getLogger().handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def _log_rss(point: str) -> None:
+    """v1.0a item 3: RSS at a named point, read out of Cloud logs — the free tier
+    exposes no per-process memory dashboard, so this is the only way to see actual
+    headroom under `torch`/sentence-transformers. Kept in this module (not a
+    business-logic one) per the standing streamlit-import boundary."""
+    rss = psutil.Process().memory_info().rss
+    logger.info("RSS at %s: %d bytes (%.1f MB)", point, rss, rss / 1_000_000)
+
+
+_log_rss("post-import, before any model load")
 
 # Tripwire against infinite silence (v0.3 hardening, Task 1a) — order-of-magnitude, not a
 # latency SLO. A stuck LLM call surfaces a clean "aborted" state instead of a silent
@@ -816,7 +829,10 @@ def _load_embedding_model() -> EmbeddingModel:
     spinner reads "Running _load_embedding_model()." — a raw function name leaking
     into the UI — and this call already runs nested inside the caller's own
     "Processing document..." spinner, so a second, uglier one is redundant."""
-    return EmbeddingModel()
+    logger.info("embedding model load — cache miss, constructing a new instance")
+    model = EmbeddingModel()
+    _log_rss("immediately after the embedding-model load resolves")
+    return model
 
 
 def _archetype_title(archetype_key: str) -> str:
@@ -1145,6 +1161,8 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                             st.rerun()
 
                         session.turns.append(turn)
+                        if len(session.turns) == 1:
+                            _log_rss("after the first fully scored turn of the session")
                         session.difficulty_current = _clamp_difficulty(
                             session.difficulty_current + turn.score.difficulty_delta
                         )
