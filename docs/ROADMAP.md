@@ -379,6 +379,29 @@ then: monkeypatch `load_dotenv` itself in these tests rather than the
 individual env var; point affected tests at an isolated/empty `.env` path;
 or have `load_settings()` accept a flag to skip dotenv loading under test.
 
+### Known issue — dev-hot-reload can invalidate a live session's persisted save (logged 2026-07-23)
+
+Editing a file in `DefenseSession`'s import chain (`models/session.py` or
+anything it imports) while a session already lives in `st.session_state`
+triggers Streamlit's local dev-server file watcher to reload the changed
+module mid-process. That produces a second `DefenseSession`/`PersistedSession`
+class pair with the same `__module__`/`__qualname__` as before but a different
+`id()`. Pydantic validates nested `BaseModel` fields by class identity, so the
+next save attempt raises a `ValidationError` on `PersistedSession`'s `session`
+field — confirmed with a real reproduction via `importlib.reload()`.
+
+Confirmed dev-only: Streamlit Community Cloud restarts the whole process on
+deploy rather than reloading a module inside a live one, so `st.session_state`
+never survives across a real redeploy in a way that could hit this.
+
+Not root-cause-fixable — it's inherent to Python module reload plus Pydantic's
+identity-based validation, not something this app's code can prevent. Mitigated
+this session (not eliminated): `_persist` now catches this `ValidationError` in
+its own branch, distinct from the existing `OSError` handling, and degrades to
+the same non-fatal "save skipped, session continues" behavior with a caption
+naming the actual cause. See `v0.4b-session-persistence-decisions.md`'s
+amendment for the full diagnosis and reproduction.
+
 ---
 
 ## Sequencing summary

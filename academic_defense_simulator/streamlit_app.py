@@ -39,6 +39,7 @@ from uuid import uuid4
 
 import pandas as pd
 import streamlit as st
+from pydantic import ValidationError
 
 from academic_defense_simulator import analytics, persistence
 from academic_defense_simulator.config import load_settings
@@ -197,7 +198,19 @@ def _persist(stage: SessionStage) -> None:
     but no session has started yet — e.g. still on the intake screen). Disk failure
     is logged and surfaced as a non-blocking caption (`save_failed`); the live
     session is never interrupted by it, and a later successful save clears the
-    caption again."""
+    caption again.
+
+    v0.4b amendment (dev-hot-reload session-identity mismatch): a second,
+    distinct except branch for `pydantic.ValidationError` — deliberately not
+    merged into the OSError branch above. Disk trouble and a stale class
+    reference from Streamlit's dev-mode module reload are different failure
+    classes with different causes and different remedies (retry vs. restart the
+    app); keeping their log lines and captions distinct is what makes either one
+    traceable from the logs alone. Confirmed unreachable in a real deploy —
+    Streamlit Cloud restarts the whole process on every deploy rather than
+    reloading modules in a live one, which wipes `st.session_state` instead of
+    leaving it holding a stale class reference. Local-dev-only, same as the
+    circumstance that produces it."""
     if not _persistence_enabled() or "session_id" not in st.session_state:
         return
     try:
@@ -205,8 +218,16 @@ def _persist(stage: SessionStage) -> None:
     except OSError as exc:
         logger.warning("session save failed (session_id=%s): %s", st.session_state.session_id, exc)
         st.session_state.save_failed = True
+        st.session_state.save_failed_reason = "disk"
+    except ValidationError as exc:
+        logger.warning(
+            "Save skipped: stale class reference detected (likely mid-session code reload). %s", exc
+        )
+        st.session_state.save_failed = True
+        st.session_state.save_failed_reason = "stale_class"
     else:
         st.session_state.save_failed = False
+        st.session_state.save_failed_reason = None
 
 
 def _abort(label: str, exc: LLMProviderError) -> None:
@@ -1793,7 +1814,12 @@ elif st.session_state.stage == "running":
     active_panelist = select_active_panelist(session)
 
     if st.session_state.get("save_failed"):
-        st.caption("Couldn't save progress — session continues, resume may be unavailable.")
+        if st.session_state.get("save_failed_reason") == "stale_class":
+            st.caption(
+                "Couldn't save progress — code changed during this session. Restart the app for saving to resume."
+            )
+        else:
+            st.caption("Couldn't save progress — session continues, resume may be unavailable.")
 
     # Difficulty is deliberately absent here (v0.3d Decision 4, item 3) — it never
     # renders in the main flow mid-session, only in the report's trajectory after the
