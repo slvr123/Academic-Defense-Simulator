@@ -1264,12 +1264,15 @@ def _render_analytics_nav_sidebar() -> None:
     """v1.0b: a small, always-visible sidebar link — not folded into the dev-view
     toggle (analytics is a real end-user feature, not a diagnostics tool) and not
     an inline button on the intake page (Sean's ask: keep the main flow uncluttered).
-    Renders nothing when persistence is off or there's nothing to show yet, same
-    empty-means-absent convention as `_render_resume_section`."""
+    Renders nothing when persistence is off (nothing to link to at all) or the
+    analytics view is already showing; otherwise always renders, even with zero
+    completed sessions — deliberate departure from `_render_resume_section`'s
+    empty-means-absent convention (v1.0a amendment, 2026-07-24): on a Cloud
+    deploy where `sessions/` may be permanently empty, hiding the entry point
+    would make the whole v1.0b feature look like it doesn't exist. Clicking
+    through with zero sessions lands on `_render_analytics_view`'s own empty
+    state, which explains itself."""
     if not _persistence_enabled() or st.session_state.stage == "analytics":
-        return
-    completed_sessions, _ = analytics.load_completed_sessions()
-    if not completed_sessions:
         return
     with st.sidebar:
         if st.button("View practice analytics", key="goto_analytics", use_container_width=True):
