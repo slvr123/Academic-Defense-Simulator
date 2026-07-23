@@ -1188,23 +1188,16 @@ def _render_analytics_view() -> None:
     — independent of the resume list above, which reads in-progress sessions only."""
     st.subheader("Practice analytics")
 
-    # Rendered before anything else, including the potentially-slow gap-clustering
-    # call below — Streamlit streams elements as the script runs, so without this
-    # the Back button (and every skip caption) would stay invisible for the whole
-    # duration of that live call instead of being available immediately.
-    if st.button("Back", key="analytics_back_top"):
-        st.session_state.stage = "intake"
-        st.rerun()
-
     sessions, skips = analytics.load_completed_sessions()
 
     if not sessions:
         st.write("No completed sessions yet — analytics will appear once you finish a defense.")
+        if st.button("Back", key="analytics_back"):
+            st.session_state.stage = "intake"
+            st.rerun()
         return
 
     st.caption(f"{len(sessions)} completed session(s)" + (f" · {len(skips)} skipped" if skips else ""))
-    for skip in skips:
-        st.caption(f"Skipped {skip.path.name} — {skip.reason}")
 
     st.markdown('<p class="small-caps-label">Session list</p>', unsafe_allow_html=True)
     list_rows = analytics.session_list_view(sessions)
@@ -1253,6 +1246,14 @@ def _render_analytics_view() -> None:
                 st.markdown(f"**{theme.theme_label}** ({theme.occurrence_count})")
                 for gap in theme.supporting_gaps:
                     st.caption(f"- {gap}")
+
+    if skips:
+        for skip in skips:
+            st.caption(f"Skipped {skip.path.name} — {skip.reason}")
+
+    if st.button("Back", key="analytics_back"):
+        st.session_state.stage = "intake"
+        st.rerun()
 
 
 def _count_pdf_pages(path: str) -> int:
