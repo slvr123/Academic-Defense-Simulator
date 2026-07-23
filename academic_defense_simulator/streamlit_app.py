@@ -502,6 +502,40 @@ def _inject_theme_css() -> None:
             margin-left: max(300px, calc(50vw - 450px)) !important;
             margin-right: auto;
         }
+
+        /* Resume-session list (v0.4b-surface): compact single row per session —
+           the old st.container(border=True) card rendered at full card height
+           with two 50/50 buttons, giving Delete equal visual weight to Resume.
+           Padding is trimmed to ~half that height and Delete is demoted to a
+           ghost button below. */
+        div[class*="st-key-session_row_"] {
+            padding: 0.6rem 0.9rem !important;
+        }
+        .ads-session-title {
+            margin: 0;
+            font-size: 0.94rem;
+            font-weight: 400;
+            color: #ECE7DD;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ads-session-meta {
+            margin: 0.1rem 0 0 0;
+            font-size: 0.75rem;
+            color: #8A8378;
+        }
+        /* Delete stays a ghost button (transparent, thin muted border) so it
+           doesn't compete with Resume's oxblood fill for attention. */
+        div[class*="st-key-session_delete_"] button {
+            background-color: transparent !important;
+            border: 1px solid #4A443C !important;
+            color: #B5AEA2 !important;
+        }
+        div[class*="st-key-session_delete_"] button:hover {
+            border-color: #8C3A3F !important;
+            color: #ECE7DD !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1438,21 +1472,22 @@ def _render_resume_section() -> None:
     for persisted in sessions:
         session = persisted.session
         turn_num = len(session.turns) + 1
-        with st.container(border=True):
-            st.markdown(f"**{html.escape(session.profile.topic)}**")
-            st.caption(
-                f"Updated {persisted.updated_at.strftime('%Y-%m-%d %H:%M UTC')} · "
-                f"turn {turn_num} · {_turn_progress_label(session)}"
-            )
-            resume_col, delete_col = st.columns([1, 1])
+        with st.container(border=True, key=f"session_row_{persisted.session_id}"):
+            title_col, resume_col, delete_col = st.columns([6, 1.4, 1], vertical_alignment="center")
+            with title_col:
+                st.markdown(
+                    f'<p class="ads-session-title">{html.escape(session.profile.topic)}</p>'
+                    f'<p class="ads-session-meta">'
+                    f"Updated {persisted.updated_at.strftime('%Y-%m-%d %H:%M UTC')} · "
+                    f"turn {turn_num} · {_turn_progress_label(session)}</p>",
+                    unsafe_allow_html=True,
+                )
             with resume_col:
-                if st.button(
-                    "Resume", key=f"resume_{persisted.session_id}", type="primary", use_container_width=True
-                ):
+                if st.button("Resume", key=f"resume_{persisted.session_id}", type="primary"):
                     _resume_session(persisted)
                     st.rerun()
             with delete_col:
-                with st.popover("Delete", use_container_width=True):
+                with st.popover("Delete", key=f"session_delete_{persisted.session_id}"):
                     st.write("Delete this saved session permanently? This can't be undone.")
                     if st.button("Confirm delete", key=f"confirm_delete_{persisted.session_id}"):
                         persistence.delete_session(persisted.session_id)
