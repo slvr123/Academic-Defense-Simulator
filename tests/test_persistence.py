@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -288,3 +289,37 @@ def test_delete_session_removes_file(tmp_path):
 
 def test_delete_nonexistent_session_does_not_raise(tmp_path):
     persistence.delete_session("never-existed", directory=tmp_path)  # must not raise
+
+
+# --- v1.0b-2 Decision 1: old-shaped persisted files load with new fields defaulted ---
+
+
+def test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults():
+    """One of Sean's three real completed sessions, generated before v1.0b-2 existed
+    — `session.report` in this file on disk has no `answer_suggestions` or
+    `suggestions_fallback_used` key at all (confirmed: only the eight v0.3c fields
+    are present). Must still load, with the new fields correctly defaulted, no
+    migration, no schema_version bump."""
+    real_file = Path(__file__).resolve().parent.parent / "sessions" / "b4bfb649-e3fc-4aab-b930-645c309bb3c4.json"
+    raw = real_file.read_text(encoding="utf-8")
+    raw_dict = json.loads(raw)
+    assert "answer_suggestions" not in raw_dict["session"]["report"]
+    assert "suggestions_fallback_used" not in raw_dict["session"]["report"]
+
+    persisted = PersistedSession.model_validate_json(raw)
+
+    assert persisted.session.report.answer_suggestions == []
+    assert persisted.session.report.suggestions_fallback_used is False
+    assert persisted.schema_version == CURRENT_SCHEMA_VERSION  # no migration, no version bump
+
+
+def test_old_shaped_report_dict_defaults_new_fields():
+    """Constructs a report dict shaped exactly like every report on disk before
+    v1.0b-2 (no answer_suggestions/suggestions_fallback_used keys) directly, not via
+    a real file, to pin the defaulting behavior independent of any one fixture."""
+    old_shaped = _report().model_dump(mode="json", exclude={"answer_suggestions", "suggestions_fallback_used"})
+    assert "answer_suggestions" not in old_shaped
+
+    restored = DefenseReport.model_validate(old_shaped)
+    assert restored.answer_suggestions == []
+    assert restored.suggestions_fallback_used is False

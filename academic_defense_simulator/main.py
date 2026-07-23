@@ -153,7 +153,12 @@ def main() -> None:
 
     print("\nSession ended.")
 
-    session.report = build_report(session, provider)
+    # v1.0b-2: suggestions is pinned to gemini-2.5-flash regardless of GEMINI_MODEL
+    # (Decision 2 — a judgment task, same rule as the relevance gate). This CLI driver
+    # has no separate key/mode gate to resolve a provider from, so it reuses the same
+    # API key as the narrative/session provider, just a different model.
+    suggestions_provider = GeminiProvider(api_key=settings.gemini_api_key, model="gemini-2.5-flash")
+    session.report = build_report(session, provider, suggestions_provider)
     _print_report(session.report)
 
 
@@ -193,6 +198,15 @@ def _print_report(report: DefenseReport) -> None:
         print("  (narrative generation failed — numbers-only report)")
     else:
         print(f"  {report.narrative}")
+
+    print("\nSuggestions:")
+    if report.suggestions_fallback_used:
+        print("  (suggestions unavailable this session)")
+    elif not report.answer_suggestions:
+        print("  (none)")
+    else:
+        for suggestion in report.answer_suggestions:
+            print(f"  turn {suggestion.turn_index}: {suggestion.suggestion}")
 
 
 if __name__ == "__main__":

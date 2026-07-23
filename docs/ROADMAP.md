@@ -309,6 +309,14 @@ overridden).
    `v{version}-{slug}-{type}.md` per the standing naming plan. One pass, one commit.
 5. **LinkedIn/visibility writeup** — after everything above, never before.
 
+## v1.0 scope addition — answer suggestions (2026-07-22)
+
+v1.0 originally scoped analytics only (session 1.0b). Added during design: v1.0b-2,
+grounded per-answer suggestions at session end (new gemini-2.5-flash call, reopens
+v0.3c's numbers-only-narrative principle for this one new call site only — narrative
+itself is untouched). Both ship in one combined Code session per Sean's call.
+Docs: v1.0b-analytics-decisions.md, v1.0b-2-answer-suggestions-decisions.md.
+
 ### Definition of done (v1.0)
 - Live public URL completing a full session for a first-time visitor with no setup
   beyond (optionally) pasting their own key

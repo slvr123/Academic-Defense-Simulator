@@ -11,7 +11,7 @@ from academic_defense_simulator.llm.provider import LLMProviderError
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.panelist import Panelist
-from academic_defense_simulator.models.report import PushbackOutcome
+from academic_defense_simulator.models.report import AnswerSuggestion, AnswerSuggestionList, PushbackOutcome
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.report import (
     HELD_BAND,
@@ -19,6 +19,7 @@ from academic_defense_simulator.report import (
     _difficulty_trajectory,
     _overall_averages,
     _panelist_sections,
+    _transcript_payload,
     build_report,
 )
 
@@ -222,11 +223,31 @@ class _StubTextProvider:
         return self._response
 
 
+class _StubSuggestionsProvider:
+    """Mocked LLMProvider.generate_structured for the v1.0b-2 answer-suggestions call
+    — same retry-embedded-upstream assumption as _StubTextProvider above. Defaults to
+    an empty suggestions list so narrative-focused tests can pass this without caring
+    about the suggestions path."""
+
+    def __init__(self, response=None):
+        self._response = response if response is not None else AnswerSuggestionList(suggestions=[])
+        self.calls = 0
+
+    def generate_structured(self, prompt, response_model):
+        self.calls += 1
+        if isinstance(self._response, Exception):
+            raise self._response
+        return self._response
+
+    def generate_text(self, prompt):
+        raise NotImplementedError
+
+
 def test_narrative_fallback_when_provider_fails():
     provider = _StubTextProvider(LLMProviderError("Gemini API request timed out — retried once and failed again."))
     session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
 
-    report = build_report(session, provider)
+    report = build_report(session, provider, _StubSuggestionsProvider())
 
     assert provider.calls == 1  # report.py makes exactly one call; the retry is embedded upstream
     assert report.narrative is None
@@ -237,7 +258,7 @@ def test_narrative_fallback_logs_warning(caplog):
     provider = _StubTextProvider(LLMProviderError("forced failure"))
     session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
     with caplog.at_level(logging.WARNING):
-        build_report(session, provider)
+        build_report(session, provider, _StubSuggestionsProvider())
     assert "numbers-only report" in caplog.text
 
 
@@ -245,11 +266,82 @@ def test_narrative_populated_when_provider_succeeds():
     provider = _StubTextProvider("You defended your methodology clearly under pressure.")
     session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
 
-    report = build_report(session, provider)
+    report = build_report(session, provider, _StubSuggestionsProvider())
 
     assert provider.calls == 1
     assert report.narrative == "You defended your methodology clearly under pressure."
     assert report.narrative_fallback_used is False
+
+
+# --- 7. Answer suggestions (v1.0b-2): independent call, independent failure path ---
+
+
+def test_suggestions_fallback_when_provider_fails_narrative_unaffected():
+    """The core v1.0b-2 requirement: a forced suggestions failure must not touch the
+    narrative call or its output at all."""
+    narrative_provider = _StubTextProvider("Solid defense overall.")
+    suggestions_provider = _StubSuggestionsProvider(LLMProviderError("forced suggestions failure"))
+    session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
+
+    report = build_report(session, narrative_provider, suggestions_provider)
+
+    assert suggestions_provider.calls == 1
+    assert report.answer_suggestions == []
+    assert report.suggestions_fallback_used is True
+    # Narrative path completely unaffected by the forced suggestions failure.
+    assert narrative_provider.calls == 1
+    assert report.narrative == "Solid defense overall."
+    assert report.narrative_fallback_used is False
+
+
+def test_suggestions_fallback_logs_warning(caplog):
+    suggestions_provider = _StubSuggestionsProvider(LLMProviderError("forced failure"))
+    session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
+    with caplog.at_level(logging.WARNING):
+        build_report(session, _StubTextProvider("n"), suggestions_provider)
+    assert "without suggestions" in caplog.text
+
+
+def test_suggestions_populated_when_provider_succeeds():
+    suggestion = AnswerSuggestion(
+        turn_index=0,
+        suggestion="Cite the specific sampling ratio from section 3.2 instead of a general claim.",
+        grounding_reference="a 70/30 split between IT and non-IT participants",
+    )
+    suggestions_provider = _StubSuggestionsProvider(AnswerSuggestionList(suggestions=[suggestion]))
+    session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
+
+    report = build_report(session, _StubTextProvider("n"), suggestions_provider)
+
+    assert suggestions_provider.calls == 1
+    assert report.answer_suggestions == [suggestion]
+    assert report.suggestions_fallback_used is False
+
+
+def test_narrative_failure_does_not_affect_suggestions():
+    """The mirror of the above: narrative failing must not touch suggestions."""
+    narrative_provider = _StubTextProvider(LLMProviderError("forced narrative failure"))
+    suggestion = AnswerSuggestion(turn_index=0, suggestion="s", grounding_reference="g")
+    suggestions_provider = _StubSuggestionsProvider(AnswerSuggestionList(suggestions=[suggestion]))
+    session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))
+
+    report = build_report(session, narrative_provider, suggestions_provider)
+
+    assert report.narrative is None
+    assert report.narrative_fallback_used is True
+    assert report.answer_suggestions == [suggestion]
+    assert report.suggestions_fallback_used is False
+
+
+def test_transcript_payload_includes_every_turn_in_order():
+    turns = [
+        _turn("methodology_expert", "Reyes", 2, 3, 3, 3),
+        _turn("methodology_expert", "Reyes", 3, 4, 4, 4),
+    ]
+    session = _session(*turns)
+    payload = _transcript_payload(session)
+    assert [p["turn_index"] for p in payload] == [0, 1]
+    assert all({"question", "answer", "grounding_reference", "chunk_text"} <= p.keys() for p in payload)
 
 
 # --- 6. Strong-threshold reuse (pins the "no second threshold" decision) ---

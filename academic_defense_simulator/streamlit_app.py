@@ -37,9 +37,10 @@ import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
+import pandas as pd
 import streamlit as st
 
-from academic_defense_simulator import persistence
+from academic_defense_simulator import analytics, persistence
 from academic_defense_simulator.config import load_settings
 from academic_defense_simulator.demo_counter import (
     consume_demo_session,
@@ -137,6 +138,13 @@ LLM_STAGE_PERSONA_GENERATION = "persona generation"
 LLM_STAGE_QUESTION_GENERATION = "question generation"
 LLM_STAGE_ANSWER_SCORING = "answer scoring"
 LLM_STAGE_REPORT_NARRATIVE = "report narrative"
+LLM_STAGE_ANSWER_SUGGESTIONS = "answer suggestions"  # v1.0b-2 — independent of the narrative call
+LLM_STAGE_GAP_CLUSTERING = "gap theme clustering"  # v1.0b analytics — cross-session, not per-session
+# v1.0b-2: build_report now makes two independent calls (narrative + suggestions).
+# LLM_STAGE_REPORT_BUILD labels the single outer _call_with_timeout wrapping both —
+# LLM_STAGE_REPORT_NARRATIVE/LLM_STAGE_ANSWER_SUGGESTIONS remain the two providers'
+# own labels, so CallCounter.by_stage still attributes each network attempt correctly.
+LLM_STAGE_REPORT_BUILD = "end-of-session report"
 
 # v0.4a Decision 6 — the demo turn cap routes through this same stage-keyed abort
 # copy dict, not a new state-machine state; it's simply a fourth key alongside the
@@ -152,7 +160,7 @@ DEMO_TURN_CAP_ABORT_STAGE = "demo_turn_cap"
 ABORT_MESSAGES = {
     LLM_STAGE_QUESTION_GENERATION: "The panel's next question took longer than expected.",
     LLM_STAGE_ANSWER_SCORING: "Scoring your answer took longer than expected.",
-    LLM_STAGE_REPORT_NARRATIVE: "Building your report took longer than expected.",
+    LLM_STAGE_REPORT_BUILD: "Building your report took longer than expected.",
     DEMO_TURN_CAP_ABORT_STAGE: (
         "Demo limit reached — the panel adjourns early. Bring a free Gemini key "
         "(60 seconds, same screen as before you started) to sit a full defense."
@@ -585,6 +593,50 @@ def _new_relevance_provider() -> GeminiProvider:
         call_counter=st.session_state.get("llm_call_counter"),
         label=LLM_STAGE_RELEVANCE_GATE,
     )
+
+
+# v1.0b-2 Decision 2: answer suggestions is a judgment task (what a stronger answer
+# would specifically have included), pinned to gemini-2.5-flash regardless of
+# GEMINI_MODEL — same rationale, same pattern as `_new_relevance_provider`.
+_ANSWER_SUGGESTIONS_MODEL = "gemini-2.5-flash"
+
+
+def _new_suggestions_provider() -> GeminiProvider:
+    return GeminiProvider(
+        api_key=_active_gemini_key(),
+        model=_ANSWER_SUGGESTIONS_MODEL,
+        call_counter=st.session_state.get("llm_call_counter"),
+        label=LLM_STAGE_ANSWER_SUGGESTIONS,
+    )
+
+
+# v1.0b Decision 2: gap-theme clustering is a judgment task (grouping free text by
+# meaning), pinned to gemini-2.5-flash regardless of GEMINI_MODEL — same rationale,
+# same pattern as `_new_relevance_provider` above.
+_ANALYTICS_MODEL = "gemini-2.5-flash"
+
+
+def _new_analytics_provider() -> GeminiProvider:
+    return GeminiProvider(
+        api_key=_active_gemini_key(),
+        model=_ANALYTICS_MODEL,
+        call_counter=st.session_state.get("llm_call_counter"),
+        label=LLM_STAGE_GAP_CLUSTERING,
+    )
+
+
+@st.cache_data(show_spinner=False)
+def _cached_cluster_gap_themes(cache_key: tuple, _provider: GeminiProvider):
+    """v1.0b Decision 3: cached on `(sorted primary_gap strings,
+    ANALYTICS_PROMPT_VERSION)` — new completed session or a prompt-version bump both
+    produce a new key, everything else is a cache hit. `_provider` is prefixed with
+    an underscore so Streamlit excludes it from hashing (a GeminiProvider/genai.Client
+    isn't a meaningful or stable cache key component); `cache_key` alone determines
+    hits/misses, exactly per Decision 3. Thin pass-through to
+    `analytics.cluster_gap_themes` — the actual clustering logic and fail-open
+    behavior live there, not here."""
+    primary_gaps = list(cache_key[0])
+    return analytics.cluster_gap_themes(primary_gaps, _provider)
 
 
 def _render_key_gate() -> bool:
@@ -1034,10 +1086,11 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                                         build_report,
                                         session,
                                         _new_provider(LLM_STAGE_REPORT_NARRATIVE),
-                                        label=LLM_STAGE_REPORT_NARRATIVE,
+                                        _new_suggestions_provider(),
+                                        label=LLM_STAGE_REPORT_BUILD,
                                     )
                             except LLMProviderError as exc:
-                                _abort(LLM_STAGE_REPORT_NARRATIVE, exc)
+                                _abort(LLM_STAGE_REPORT_BUILD, exc)
                                 st.rerun()
                             else:
                                 st.session_state.stage = "done"
@@ -1098,6 +1151,91 @@ def _render_report(report: DefenseReport) -> None:
                 for event in report.pushback_events
             ]
         )
+
+    # v1.0b-2 Decision 3: one compact section, turn number + suggestion text only —
+    # no repeated question/answer/subscores per turn (that was the rejected Option A).
+    st.markdown('<p class="small-caps-label">Answer suggestions</p>', unsafe_allow_html=True)
+    if report.suggestions_fallback_used:
+        st.write("Suggestions unavailable this session")
+    elif not report.answer_suggestions:
+        st.write("No suggestions for this session")
+    else:
+        for suggestion in report.answer_suggestions:
+            st.markdown(f"**Turn {suggestion.turn_index + 1}:** {suggestion.suggestion}")
+
+
+def _render_analytics_view() -> None:
+    """v1.0b: cross-session analytics screen — four zero-cost pure-aggregation
+    views (Decision 1) plus one cached, on-demand gap-theme clustering call
+    (Decision 2). Reads `sessions/*.json` directly via `analytics.load_completed_sessions`
+    — independent of the resume list above, which reads in-progress sessions only."""
+    st.subheader("Practice analytics")
+
+    sessions, skips = analytics.load_completed_sessions()
+
+    if not sessions:
+        st.write("No completed sessions yet — analytics will appear once you finish a defense.")
+        if st.button("Back", key="analytics_back_empty"):
+            st.session_state.stage = "intake"
+            st.rerun()
+        return
+
+    st.caption(f"{len(sessions)} completed session(s)" + (f" · {len(skips)} skipped" if skips else ""))
+
+    st.markdown('<p class="small-caps-label">Session list</p>', unsafe_allow_html=True)
+    list_rows = analytics.session_list_view(sessions)
+    st.table(
+        [
+            {
+                "Date": row["date"].strftime("%Y-%m-%d %H:%M UTC"),
+                "Type": row["defense_type"],
+                "Topic": row["topic"],
+                "Clarity": f"{row['overall_avg_clarity']:.2f}",
+                "Depth": f"{row['overall_avg_depth']:.2f}",
+                "Grounding": f"{row['overall_avg_grounding']:.2f}",
+                "Turns": row["turn_count"],
+            }
+            for row in list_rows
+        ]
+    )
+
+    st.markdown('<p class="small-caps-label">Quality trend</p>', unsafe_allow_html=True)
+    trend_rows = analytics.quality_trend_view(sessions)
+    trend_df = pd.DataFrame(trend_rows).set_index("session_sequence")
+    st.line_chart(trend_df[["clarity", "depth", "grounding"]])
+
+    st.markdown('<p class="small-caps-label">Difficulty trajectory</p>', unsafe_allow_html=True)
+    for row in analytics.difficulty_trajectory_view(sessions):
+        st.caption(f"Session {row['session_sequence']} — {row['topic']}")
+        st.line_chart(pd.DataFrame({"difficulty": row["trajectory"]}))
+
+    st.markdown('<p class="small-caps-label">Pushback outcomes</p>', unsafe_allow_html=True)
+    pushback_rows = analytics.pushback_outcome_trend_view(sessions)
+    pushback_df = pd.DataFrame(pushback_rows).set_index("session_sequence")
+    st.bar_chart(pushback_df[["recovered", "held", "deteriorated"]])
+
+    st.markdown('<p class="small-caps-label">Recurring gap themes</p>', unsafe_allow_html=True)
+    primary_gaps = analytics.all_primary_gaps(sessions)
+    if not primary_gaps:
+        st.write("No gaps recorded yet.")
+    else:
+        cache_key = analytics.gap_theme_cache_key(primary_gaps)
+        theme_analysis = _cached_cluster_gap_themes(cache_key, _new_analytics_provider())
+        if theme_analysis is None:
+            st.write("Theme analysis unavailable this session")
+        else:
+            for theme in theme_analysis.themes:
+                st.markdown(f"**{theme.theme_label}** ({theme.occurrence_count})")
+                for gap in theme.supporting_gaps:
+                    st.caption(f"- {gap}")
+
+    if skips:
+        for skip in skips:
+            st.caption(f"Skipped {skip.path.name} — {skip.reason}")
+
+    if st.button("Back", key="analytics_back"):
+        st.session_state.stage = "intake"
+        st.rerun()
 
 
 def _count_pdf_pages(path: str) -> int:
@@ -1320,6 +1458,12 @@ if st.session_state.stage == "intake":
     # `sessions/` directory is ever touched (Decision 1 parity).
     if _persistence_enabled():
         _render_resume_section()
+        completed_sessions, _ = analytics.load_completed_sessions()
+        if completed_sessions:
+            if st.button("View practice analytics", key="goto_analytics"):
+                st.session_state.stage = "analytics"
+                st.rerun()
+            st.divider()
 
     document_ready = "document_id" in st.session_state
     intake_slot = st.empty()
@@ -1700,3 +1844,6 @@ elif st.session_state.stage == "done":
     if st.button("Start a new session", key="reset_from_done"):
         _reset()
         st.rerun()
+
+elif st.session_state.stage == "analytics":
+    _render_analytics_view()

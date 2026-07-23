@@ -1,13 +1,23 @@
 """End-of-session scoring report — aggregation plus the narrative call. See
 `docs/v0.3c-scoring-report-decisions.md` for full rationale. Pure Python aggregate
-functions (zero LLM calls) plus one narrative call orchestrated at the end of
-`build_report`. No streamlit import; the narrative call goes through the existing
-`LLMProvider` abstraction, same as every other LLM call in the engine.
+functions (zero LLM calls) plus two independent LLM calls orchestrated at the end of
+`build_report`: the narrative (v0.3c, flash-lite, numbers-only input, untouched by
+this module's v1.0b-2 addition) and answer suggestions (v1.0b-2, gemini-2.5-flash,
+fed the real transcript). No streamlit import; both calls go through the existing
+`LLMProvider` abstraction, same as every other LLM call in the engine. The two calls
+are independent — one failing has no effect on the other (v1.0b-2 Task 4).
 
-Turn indexing note: `PushbackEvent.turn_index`/`prior_turn_index` are 0-indexed
-positions into `session.turns` (and `DefenseReport.difficulty_trajectory`), matching
-the decisions doc's `difficulty_trajectory[t] > difficulty_trajectory[t-1]` formula
-literally. Turn 1 as printed by the CLI is index 0.
+Architecturally separate from `analytics.py` (v1.0b): different data flow (one
+session's transcript, not many sessions' primary_gap strings), different prompt
+module (`answer_suggestions_prompts.py`, not `analytics_prompts.py`), different
+version constant (`ANSWER_SUGGESTIONS_PROMPT_VERSION`, never `ANALYTICS_PROMPT_VERSION`
+or `PROMPT_VERSION`).
+
+Turn indexing note: `PushbackEvent.turn_index`/`prior_turn_index` and
+`AnswerSuggestion.turn_index` are all 0-indexed positions into `session.turns` (and
+`DefenseReport.difficulty_trajectory`), matching the decisions doc's
+`difficulty_trajectory[t] > difficulty_trajectory[t-1]` formula literally. Turn 1 as
+printed by the CLI is index 0.
 """
 
 from __future__ import annotations
@@ -20,12 +30,15 @@ from academic_defense_simulator.digest import turn_total_score
 from academic_defense_simulator.engine import STRONG_ANSWER_SUM_THRESHOLD
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.report import (
+    AnswerSuggestion,
+    AnswerSuggestionList,
     DefenseReport,
     PanelistReportSection,
     PushbackEvent,
     PushbackOutcome,
 )
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
+from academic_defense_simulator.prompts.answer_suggestions_prompts import ANSWER_SUGGESTIONS_SYSTEM_PROMPT
 from academic_defense_simulator.prompts.panelist_prompts import REPORT_NARRATIVE_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -150,9 +163,49 @@ def _generate_narrative(report: DefenseReport, provider: LLMProvider) -> tuple[O
     return narrative, False
 
 
-def build_report(session: DefenseSession, provider: LLMProvider) -> DefenseReport:
-    """Composes the pure aggregates, then the narrative step. Called once by the engine
-    after the final turn (Decision 5)."""
+def _transcript_payload(session: DefenseSession) -> list[dict]:
+    """Every turn's question/answer/grounding_reference/chunk_text, in turn order
+    (v1.0b-2 Decision 2's input) — the full transcript, one call, not per-turn."""
+    return [
+        {
+            "turn_index": i,
+            "question": turn.question,
+            "answer": turn.answer,
+            "grounding_reference": turn.grounding_reference,
+            "chunk_text": turn.chunk_text,
+        }
+        for i, turn in enumerate(session.turns)
+    ]
+
+
+def _generate_answer_suggestions(
+    session: DefenseSession, provider: LLMProvider
+) -> tuple[list[AnswerSuggestion], bool]:
+    """One LLM call, the full transcript in, one suggestion per turn out (v1.0b-2
+    Decision 2). Fail-open on any API error (same pattern as the narrative call and
+    the relevance gate): empty list, fallback flag set, never raises — a suggestions
+    failure must never affect the narrative or any other part of the report."""
+    prompt = ANSWER_SUGGESTIONS_SYSTEM_PROMPT.format(
+        transcript_json=json.dumps(_transcript_payload(session), indent=2)
+    )
+    try:
+        result = provider.generate_structured(prompt, AnswerSuggestionList)
+    except LLMProviderError as exc:
+        logger.warning("Answer suggestions call failed — shipping without suggestions: %s", exc)
+        return [], True
+    return result.suggestions, False
+
+
+def build_report(
+    session: DefenseSession, narrative_provider: LLMProvider, suggestions_provider: LLMProvider
+) -> DefenseReport:
+    """Composes the pure aggregates, then two independent LLM calls: the narrative
+    (Decision 5, v0.3c) and the answer suggestions (v1.0b-2 Decision 2). Two separate
+    provider parameters because the two calls are pinned to different models (narrative
+    stays on whatever GEMINI_MODEL resolves to, per v0.3c; suggestions is pinned to
+    gemini-2.5-flash regardless, per v1.0b-2 Decision 2) — same two-provider shape
+    `document_relevance.assess_document`'s caller already uses for the gate. Called
+    once by the engine after the final turn."""
     overall_avg_clarity, overall_avg_depth, overall_avg_grounding = _overall_averages(session)
     report = DefenseReport(
         difficulty_trajectory=_difficulty_trajectory(session),
@@ -162,5 +215,8 @@ def build_report(session: DefenseSession, provider: LLMProvider) -> DefenseRepor
         panelist_sections=_panelist_sections(session),
         pushback_events=_classify_pushback_events(session),
     )
-    report.narrative, report.narrative_fallback_used = _generate_narrative(report, provider)
+    report.narrative, report.narrative_fallback_used = _generate_narrative(report, narrative_provider)
+    report.answer_suggestions, report.suggestions_fallback_used = _generate_answer_suggestions(
+        session, suggestions_provider
+    )
     return report
