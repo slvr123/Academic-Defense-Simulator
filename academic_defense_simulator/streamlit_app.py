@@ -1164,6 +1164,23 @@ def _render_report(report: DefenseReport) -> None:
             st.markdown(f"**Turn {suggestion.turn_index + 1}:** {suggestion.suggestion}")
 
 
+def _render_analytics_nav_sidebar() -> None:
+    """v1.0b: a small, always-visible sidebar link — not folded into the dev-view
+    toggle (analytics is a real end-user feature, not a diagnostics tool) and not
+    an inline button on the intake page (Sean's ask: keep the main flow uncluttered).
+    Renders nothing when persistence is off or there's nothing to show yet, same
+    empty-means-absent convention as `_render_resume_section`."""
+    if not _persistence_enabled() or st.session_state.stage == "analytics":
+        return
+    completed_sessions, _ = analytics.load_completed_sessions()
+    if not completed_sessions:
+        return
+    with st.sidebar:
+        if st.button("View practice analytics", key="goto_analytics", use_container_width=True):
+            st.session_state.stage = "analytics"
+            st.rerun()
+
+
 def _render_analytics_view() -> None:
     """v1.0b: cross-session analytics screen — four zero-cost pure-aggregation
     views (Decision 1) plus one cached, on-demand gap-theme clustering call
@@ -1171,16 +1188,23 @@ def _render_analytics_view() -> None:
     — independent of the resume list above, which reads in-progress sessions only."""
     st.subheader("Practice analytics")
 
+    # Rendered before anything else, including the potentially-slow gap-clustering
+    # call below — Streamlit streams elements as the script runs, so without this
+    # the Back button (and every skip caption) would stay invisible for the whole
+    # duration of that live call instead of being available immediately.
+    if st.button("Back", key="analytics_back_top"):
+        st.session_state.stage = "intake"
+        st.rerun()
+
     sessions, skips = analytics.load_completed_sessions()
 
     if not sessions:
         st.write("No completed sessions yet — analytics will appear once you finish a defense.")
-        if st.button("Back", key="analytics_back_empty"):
-            st.session_state.stage = "intake"
-            st.rerun()
         return
 
     st.caption(f"{len(sessions)} completed session(s)" + (f" · {len(skips)} skipped" if skips else ""))
+    for skip in skips:
+        st.caption(f"Skipped {skip.path.name} — {skip.reason}")
 
     st.markdown('<p class="small-caps-label">Session list</p>', unsafe_allow_html=True)
     list_rows = analytics.session_list_view(sessions)
@@ -1220,7 +1244,8 @@ def _render_analytics_view() -> None:
         st.write("No gaps recorded yet.")
     else:
         cache_key = analytics.gap_theme_cache_key(primary_gaps)
-        theme_analysis = _cached_cluster_gap_themes(cache_key, _new_analytics_provider())
+        with st.spinner("Looking for recurring themes..."):
+            theme_analysis = _cached_cluster_gap_themes(cache_key, _new_analytics_provider())
         if theme_analysis is None:
             st.write("Theme analysis unavailable this session")
         else:
@@ -1228,14 +1253,6 @@ def _render_analytics_view() -> None:
                 st.markdown(f"**{theme.theme_label}** ({theme.occurrence_count})")
                 for gap in theme.supporting_gaps:
                     st.caption(f"- {gap}")
-
-    if skips:
-        for skip in skips:
-            st.caption(f"Skipped {skip.path.name} — {skip.reason}")
-
-    if st.button("Back", key="analytics_back"):
-        st.session_state.stage = "intake"
-        st.rerun()
 
 
 def _count_pdf_pages(path: str) -> int:
@@ -1425,6 +1442,7 @@ def _render_resume_section() -> None:
 
 _render_dev_view()
 _render_case_file_sidebar()
+_render_analytics_nav_sidebar()
 
 if st.session_state.stage == "intake":
     # One combined page (Sean's ask): the dropzone and the defense-profile form
@@ -1458,12 +1476,6 @@ if st.session_state.stage == "intake":
     # `sessions/` directory is ever touched (Decision 1 parity).
     if _persistence_enabled():
         _render_resume_section()
-        completed_sessions, _ = analytics.load_completed_sessions()
-        if completed_sessions:
-            if st.button("View practice analytics", key="goto_analytics"):
-                st.session_state.stage = "analytics"
-                st.rerun()
-            st.divider()
 
     document_ready = "document_id" in st.session_state
     intake_slot = st.empty()
