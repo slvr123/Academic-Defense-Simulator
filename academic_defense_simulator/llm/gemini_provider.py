@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from typing import Callable, Type, TypeVar
@@ -11,6 +12,8 @@ from pydantic import BaseModel, ValidationError
 from academic_defense_simulator.llm.provider import CallCounter, LLMProvider, LLMProviderError
 
 T = TypeVar("T", bound=BaseModel)
+
+logger = logging.getLogger(__name__)
 
 _RETRY_BACKOFF_SECONDS = 2
 _REQUEST_TIMEOUT_MS = 30_000  # a stalled request must fail into the existing retry path,
@@ -46,8 +49,14 @@ class GeminiProvider(LLMProvider):
         from google import genai
         from google.genai import types
 
+        timeout_ms = _request_timeout_ms()
+        # v1.0a item 6 (B1): ADS_LLM_TIMEOUT_SECONDS falls back to the hardcoded
+        # default silently on garbage/unparseable input — logging the RESOLVED
+        # value here means a typo'd Cloud secret shows up as "still 30000" in
+        # logs, not as a mysteriously-not-firing timeout guard.
+        logger.info("Gemini provider timeout resolved to %d ms", timeout_ms)
         self._client = genai.Client(
-            api_key=api_key, http_options=types.HttpOptions(timeout=_request_timeout_ms())
+            api_key=api_key, http_options=types.HttpOptions(timeout=timeout_ms)
         )
         self._model = model
         # v0.3h Brief: optional so every existing construction site (scripts, CLI,
