@@ -90,11 +90,30 @@ from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 
 # Thin permanent call-lifecycle logging (v0.3 hardening, Task 1b) — light enough to ship,
-# enough that a future hang recurrence has something to look at. Guarded the same way as
-# `_turn_lock` below: Streamlit re-executes this module's top-level code on every rerun
-# against the same module namespace, so `basicConfig` must only run once.
-if not logging.getLogger().handlers:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+# enough that a future hang recurrence has something to look at.
+
+
+@st.cache_resource(show_spinner=False)
+def _configure_logging_once() -> None:
+    """v1.0a live-pass fix: replaces the original `if not logging.getLogger().handlers:
+    logging.basicConfig(...)` guard. That guard silently no-ops whenever *anything* has
+    already attached a handler to root by the time this module runs, regardless of what
+    level or destination that handler uses — the leading suspect for why the cache-miss/RSS
+    INFO lines never showed up in Cloud logs despite the code paths demonstrably running.
+    Confirmed locally (via the real `streamlit run` CLI entrypoint, not a bare `import`):
+    root has zero handlers before this module runs, so the original guard fires correctly
+    here — meaning this is specifically a Cloud-environment difference, not reproducible
+    locally, and this fix is defense against that difference rather than a confirmed
+    root-cause patch. `force=True` tears down whatever's already on root and applies ours
+    unconditionally, so every module's logger (this one, gemini_provider, engine, ...) gets
+    a working INFO-level handler regardless of what ran first. Wrapped in `st.cache_resource`
+    — the same run-once-per-process primitive `_load_embedding_model` already relies on — so
+    the teardown-and-rebuild happens once per process, not on every rerun of this module's
+    top-level code."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", force=True)
+
+
+_configure_logging_once()
 logger = logging.getLogger(__name__)
 
 
@@ -107,7 +126,20 @@ def _log_rss(point: str) -> None:
     logger.info("RSS at %s: %d bytes (%.1f MB)", point, rss, rss / 1_000_000)
 
 
-_log_rss("post-import, before any model load")
+@st.cache_resource(show_spinner=False)
+def _log_post_import_rss_once() -> None:
+    """v1.0a live-pass fix: the direct `_log_rss(...)` call this replaces sat at
+    module level, which Streamlit re-executes on every rerun (every widget
+    interaction), not once per process — confirmed live, 5 identical
+    "post-import" lines for a single session. `st.cache_resource` is the same
+    process-wide, run-once-across-reruns primitive `_load_embedding_model`
+    already relies on (real evidence: object identity held across 3 reruns),
+    reused here to give this checkpoint the once-per-process semantics item 3
+    actually wants."""
+    _log_rss("post-import, before any model load")
+
+
+_log_post_import_rss_once()
 
 # Tripwire against infinite silence (v0.3 hardening, Task 1a) — order-of-magnitude, not a
 # latency SLO. A stuck LLM call surfaces a clean "aborted" state instead of a silent
@@ -1275,7 +1307,7 @@ def _render_analytics_nav_sidebar() -> None:
     if not _persistence_enabled() or st.session_state.stage == "analytics":
         return
     with st.sidebar:
-        if st.button("View practice analytics", key="goto_analytics", use_container_width=True):
+        if st.button("View practice analytics", key="goto_analytics", width="stretch"):
             st.session_state.stage = "analytics"
             st.rerun()
 
@@ -1728,7 +1760,7 @@ if st.session_state.stage == "intake":
                                         unsafe_allow_html=True,
                                     )
                             with pick_col:
-                                with st.popover("Change", use_container_width=True):
+                                with st.popover("Change", width="stretch"):
                                     st.markdown(
                                         f'<p class="small-caps-label">Choose an icon — '
                                         f"{html.escape(_archetype_title(archetype_key))}</p>",
@@ -1743,7 +1775,7 @@ if st.session_state.stage == "intake":
                                             with cell:
                                                 stem_path = image_icon_path(stem)
                                                 if stem_path is not None:
-                                                    st.image(str(stem_path), use_container_width=True)
+                                                    st.image(str(stem_path), width="stretch")
                                                 else:
                                                     st.markdown(
                                                         f'<div style="font-size:2rem;text-align:center;">'
@@ -1755,13 +1787,13 @@ if st.session_state.stage == "intake":
                                                         "✓",
                                                         key=f"pick_{archetype_key}_{stem}",
                                                         disabled=True,
-                                                        use_container_width=True,
+                                                        width="stretch",
                                                         help=f"{_icon_choice_label(stem)} — selected",
                                                     )
                                                 elif st.button(
                                                     _icon_choice_label(stem),
                                                     key=f"pick_{archetype_key}_{stem}",
-                                                    use_container_width=True,
+                                                    width="stretch",
                                                     help=_icon_choice_label(stem),
                                                 ):
                                                     st.session_state[state_key] = stem
@@ -1787,7 +1819,7 @@ if st.session_state.stage == "intake":
 
             _, cta_col, _ = st.columns([1, 1, 1])
             with cta_col:
-                start_clicked = st.button("Convene the Panel", type="primary", use_container_width=True)
+                start_clicked = st.button("Convene the Panel", type="primary", width="stretch")
         else:
             start_clicked = False
 
