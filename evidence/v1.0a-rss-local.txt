@@ -1,0 +1,80 @@
+v1.0a live-pass local evidence -- RSS checkpoints, cache-miss logging, resolved-timeout logging
+Regenerated 2026-07-24 (UTC times below are as logged) against commit 24ee19d, per Sean's pre-push verification request.
+Re-captured a second time within this same request after the first pass mangled the cache-miss line's
+em dash into U+FFFD via the subprocess's default console encoding; PYTHONIOENCODING=utf-8 forced on every
+capture below fixes it -- confirmed with `file` reporting UTF-8 text, not extended-ASCII.
+
+======================================================================
+SOURCE 1: real local browser session (demo mode -> Resume a saved
+in-progress session, synthetic copy of a real completed session with
+stage flipped to in_progress, deleted after this run). Full server
+stdout+stderr, port 8507, ADS_PERSISTENCE_ENABLED=true, PYTHONIOENCODING=utf-8.
+======================================================================
+2026-07-24 22:31:47.210 Uvicorn server started on 0.0.0.0:8507
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8507
+  Network URL: http://192.168.1.13:8507
+  External URL: http://112.207.184.41:8507
+
+2026-07-24 22:32:08,480 RSS at post-import, before any model load: 125825024 bytes (125.8 MB)
+2026-07-24 22:32:12,030 embedding model load — cache miss, constructing a new instance
+2026-07-24 22:32:31,104 No device provided, using cpu
+2026-07-24 22:32:31,489 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:31,508 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/modules.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:31,772 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:31,787 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:31,790 Loading SentenceTransformer model from sentence-transformers/all-MiniLM-L6-v2.
+2026-07-24 22:32:32,057 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:32,079 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:32,349 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:32,363 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/README.md "HTTP/1.1 200 OK"
+2026-07-24 22:32:32,636 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-24 22:32:32,636 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-24 22:32:32,652 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/modules.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:32,938 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:32,954 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:33,215 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:33,483 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:33,499 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 2140.56it/s]
+2026-07-24 22:32:34,123 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:34,391 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:34,663 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:34,933 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:35,202 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:35,214 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:35,484 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:35,497 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:35,761 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:35,774 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/config.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:36,039 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:36,046 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:36,316 HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-24 22:32:36,579 HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-24 22:32:36,936 HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-24 22:32:36,947 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-24 22:32:37,218 HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+2026-07-24 22:32:37,219 RSS at immediately after the embedding-model load resolves: 492068864 bytes (492.1 MB)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches:  50%|█████     | 1/2 [00:01<00:01,  1.44s/it]Batches: 100%|██████████| 2/2 [00:02<00:00,  1.07it/s]Batches: 100%|██████████| 2/2 [00:02<00:00,  1.01s/it]
+2026-07-24 22:32:39,495 demo session ended: turn cap reached
+
+======================================================================
+SOURCE 2: resolved-timeout lines (GeminiProvider construction, three
+ADS_LLM_TIMEOUT_SECONDS states) and the third RSS checkpoint (direct
+call to the real academic_defense_simulator.streamlit_app._log_rss
+through the real module/logger -- not reached via a live scored turn
+in this pass, since that needs a real or faked LLM call; this proves
+the label and logging path, not a full live turn).
+======================================================================
+=== resolved-timeout line: ADS_LLM_TIMEOUT_SECONDS unset ===
+2026-07-24 22:32:15,009 Gemini provider timeout resolved to 30000 ms
+=== resolved-timeout line: ADS_LLM_TIMEOUT_SECONDS=1 ===
+2026-07-24 22:32:19,057 Gemini provider timeout resolved to 1000 ms
+=== resolved-timeout line: ADS_LLM_TIMEOUT_SECONDS=garbage ===
+2026-07-24 22:32:22,179 Gemini provider timeout resolved to 30000 ms
+=== third RSS checkpoint: direct call through the real module ===
+2026-07-24 22:32:24,808 RSS at post-import, before any model load: 107982848 bytes (108.0 MB)
+2026-07-24 22:32:25,043 RSS at after the first fully scored turn of the session: 112451584 bytes (112.5 MB)
