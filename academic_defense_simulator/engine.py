@@ -12,7 +12,6 @@ Advocate path when appropriate), scoring (`_score_answer`), and difficulty clamp
 from __future__ import annotations
 
 import logging
-import time
 
 from academic_defense_simulator.digest import render_digest_block, turn_total_score
 from academic_defense_simulator.grounding import is_grounded
@@ -205,9 +204,7 @@ def _generate_with_grounding_enforcement(
     """
 
     def _call() -> PanelistQuestion:
-        result = provider.generate_structured(prompt, PanelistQuestion)
-        time.sleep(MODEL_CALL_DELAY_SECONDS.get(model, DEFAULT_CALL_DELAY))
-        return result
+        return provider.generate_structured(prompt, PanelistQuestion)
 
     question = _call()
     if is_grounded(question.grounding_reference, chunk_text):

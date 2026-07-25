@@ -1,0 +1,59 @@
+v1.0a closeout — question-generation 5s delay: before/after timing evidence
+Model: gemini-3.1-flash-lite. Measurement: real Gemini API call via GeminiProvider,
+timed from provider.generate_structured() returning (proxy for "HTTP 200 received",
+same measurement as the live Cloud-log finding) to the wrapping engine call
+returning (proxy for "call returned to caller"). No mocking of the network call
+itself in either run -- only the timestamp capture is instrumented, via a
+monkeypatch on the GeminiProvider instance's generate_structured method, done in
+a standalone script, not in source.
+
+======================================================================
+BEFORE FIX (engine.py:209, time.sleep(MODEL_CALL_DELAY_SECONDS...) still present
+inside _generate_with_grounding_enforcement's _call() closure). Captured live
+during Step 1 investigation, this session, prior to any edit.
+======================================================================
+model in use: gemini-3.1-flash-lite
+sample 1: network_to_return_gap=5.000s total_call=5.984s
+sample 2: network_to_return_gap=5.000s total_call=5.907s
+sample 3: network_to_return_gap=5.016s total_call=5.906s
+sample 4: network_to_return_gap=5.016s total_call=6.078s
+sample 5: network_to_return_gap=5.015s total_call=6.578s
+
+samples: ['5.000', '5.000', '5.016', '5.016', '5.015']
+mean gap: 5.009s
+
+(matches the live Cloud-log finding this session was opened to fix: 5.003 /
+5.008 / 5.002 / 5.009 / 5.009s.)
+
+======================================================================
+AFTER FIX (time.sleep(...) removed from _call(); _call() is now a direct
+passthrough to provider.generate_structured()). Answer-scoring path included
+as a regression guard -- it never had the sleep and must show the same ~0s gap
+before and after.
+======================================================================
+model in use: gemini-3.1-flash-lite
+
+=== QUESTION GENERATION (after fix) ===
+sample 1: network_to_return_gap=0.0000s total_call=1.250s
+sample 2: network_to_return_gap=0.0000s total_call=0.859s
+sample 3: network_to_return_gap=0.0000s total_call=0.750s
+sample 4: network_to_return_gap=0.0000s total_call=0.766s
+sample 5: network_to_return_gap=0.0000s total_call=0.765s
+
+question-gen gap samples: ['0.0000', '0.0000', '0.0000', '0.0000', '0.0000']
+question-gen mean gap: 0.0000s
+
+=== ANSWER SCORING (regression guard, unchanged) ===
+sample 1: network_to_return_gap=0.0000s total_call=0.953s
+sample 2: network_to_return_gap=0.0000s total_call=1.047s
+sample 3: network_to_return_gap=0.0000s total_call=0.953s
+sample 4: network_to_return_gap=0.0000s total_call=0.953s
+sample 5: network_to_return_gap=0.0000s total_call=0.938s
+
+scoring gap samples: ['0.0000', '0.0000', '0.0000', '0.0000', '0.0000']
+scoring mean gap: 0.0000s
+
+======================================================================
+Repro scripts (not committed, session scratchpad):
+repro_question_gen_delay.py (before), repro_question_gen_delay_after.py (after)
+======================================================================

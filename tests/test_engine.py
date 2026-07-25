@@ -254,13 +254,6 @@ class _StubProvider:
 _DA_PANELIST = Panelist(archetype_key=DEVILS_ADVOCATE_KEY, panelist_name="Marlowe", persona_framing="f", icon="🎓")
 
 
-@pytest.fixture(autouse=True)
-def _no_real_sleep(monkeypatch):
-    """`_generate_da_question` paces real API calls with time.sleep(); these tests use a
-    stub provider (no network), so the pacing delay is pure overhead — patch it out."""
-    monkeypatch.setattr(engine_module.time, "sleep", lambda _seconds: None)
-
-
 def test_da_selects_highest_scored_prior_claim_and_reuses_its_chunk():
     weak = _turn("methodology_expert", "Reyes", 1, "chunk one text", _score(2, 2, 2), question="q1")
     strongest = _turn("literature_theory_specialist", "Okafor", 2, "chunk two text", _score(5, 4, 4), question="q2")

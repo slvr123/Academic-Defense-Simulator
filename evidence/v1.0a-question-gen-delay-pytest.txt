@@ -1,0 +1,20 @@
+...........................................F............................ [ 32%]
+........................................................................ [ 64%]
+........................................................................ [ 96%]
+........                                                                 [100%]
+================================== FAILURES ===================================
+__________________ test_persistence_defaults_off_when_unset ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001852961DDD0>
+
+    def test_persistence_defaults_off_when_unset(monkeypatch):
+        monkeypatch.delenv("ADS_PERSISTENCE_ENABLED", raising=False)
+>       assert load_settings().persistence_enabled is False
+E       AssertionError: assert True is False
+E        +  where True = Settings(gemini_api_key='test-key-not-a-real-credential', gemini_model='gemini-3.1-flash-lite', persistence_enabled=True).persistence_enabled
+E        +    where Settings(gemini_api_key='test-key-not-a-real-credential', gemini_model='gemini-3.1-flash-lite', persistence_enabled=True) = load_settings()
+
+tests\test_config.py:21: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_config.py::test_persistence_defaults_off_when_unset - Asser...
+1 failed, 223 passed in 4.39s
