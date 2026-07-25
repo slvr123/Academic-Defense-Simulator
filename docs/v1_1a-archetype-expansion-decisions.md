@@ -1,0 +1,346 @@
+# v1.1a — Archetype Expansion: Design Decisions
+
+**Status:** AWAITING FINAL LOCK — drafted 2026-07-26, revised same day after I
+answered the three gating questions.
+**Scope:** Add four selectable panelist archetypes. Config and composition only.
+No prompt-template wording changes, no schema changes, no UI logic changes beyond
+the multiselect rendering a larger pool.
+**Builds on:** `day1_decisions.md` (`ARCHETYPE_CONFIG`, shared template + config
+injection), `v0.3a-persona-generation-decisions.md` (`PANEL_COMPOSITION`,
+`compose_panel`), `v0.3e-panel-composition-decisions.md` (`selected_archetypes`,
+3-slot cap, per-defense-type scoping), `v0.3j-panel-customization-decisions.md`
+(`Panelist.icon`).
+**Deliberately excluded:** document-content gating of the picker → **v1.1b**.
+Sentiment, score-driven turn-taking, retrieval eval → parked.
+**Sequencing:** ships after v1.0d. The README documents the system; changing the
+system before writing it means writing it twice.
+
+---
+
+## Decision 1 — Which archetypes (LOCKED)
+
+I proposed six candidates. Claude mapped them against the existing five and I'm
+taking that mapping:
+
+| My candidate | Disposition |
+|---|---|
+| Research problem and objectives | **New** |
+| Literature review | Already covered — Literature & Theory Specialist |
+| Research design and methods | Already covered — Methodology Expert |
+| Statistics / data analysis expert | **New** |
+| Results and conclusions | **New** |
+| Industry / professional practice | **New, weakest of the four** — see Decision 4 |
+
+Four new keys: `problem_objectives_reviewer`, `statistical_analysis_reviewer`,
+`results_conclusions_reviewer`, `industry_practice_reviewer`.
+
+Existing five all retained, including Technical Implementation Reviewer (absent
+from my list, but it carries the most eval evidence in the project and is the
+backbone of capstone panels).
+
+**What this buys.** Not richer sessions — the 3-slot cap holds, so a panel is
+still 3 domain archetypes plus DA. It buys *choice across sessions* and better
+coverage of defense shapes. The largest gain is in the `other/` subtypes, whose
+pools are currently exactly 3 against a cap of 3 — the picker there can only drop
+panelists, never choose between them. After this it can.
+
+---
+
+## Decision 2 — Config entries, full wording (LOCKED)
+
+Appended to `ARCHETYPE_CONFIG` in `panelist_prompts.py`. Lane wording follows the
+established negative-constraint pattern and each lane names its nearest neighbour
+explicitly, because that neighbour is the drift risk.
+
+```python
+    "problem_objectives_reviewer": {
+        "archetype_title": "Research Problem & Objectives Reviewer",
+        "archetype_focus": "whether the research problem is clearly defined, adequately justified, and appropriately scoped, and whether the stated objectives are specific, measurable, and aligned with that problem.",
+        "archetype_lane": "do not ask how the study was designed, sampled, or executed — that belongs to the Methodology Expert; stay on the framing of the problem and the objectives themselves, never the approach chosen to address them. You judge whether the question is worth asking and well-posed; the Methodology Expert judges whether the method answers it",
+    },
+    "statistical_analysis_reviewer": {
+        "archetype_title": "Statistical & Data Analysis Reviewer",
+        "archetype_focus": "the analysis performed on collected data — choice of tests or metrics, assumptions checked, treatment of missing or anomalous data, and whether the reported numbers actually support the claims made about them.",
+        "archetype_lane": "do not ask about study design, sampling plans, or data-collection decisions — those belong to the Methodology Expert; stay on what was done with the data after it was collected. Do not interpret what the findings mean for the field — that belongs to the Results & Conclusions Reviewer",
+    },
+    "results_conclusions_reviewer": {
+        "archetype_title": "Results & Conclusions Reviewer",
+        "archetype_focus": "whether the stated conclusions actually follow from the reported findings, whether limitations are acknowledged, and whether claims of generalization or contribution are proportionate to the evidence presented.",
+        "archetype_lane": "do not question statistical procedures, metrics, or how the numbers were produced — those belong to the Statistical & Data Analysis Reviewer; stay on the inferential leap from findings to conclusions",
+    },
+    "industry_practice_reviewer": {
+        "archetype_title": "Industry & Professional Practice Reviewer",
+        "archetype_focus": "how the work compares to current professional standards and established practice, and what would be required for practitioners to actually adopt, deploy, or maintain it.",
+        "archetype_lane": "do not ask about ethical implications or general real-world limitations — those belong to the Ethics & Practicality Reviewer; stay on concrete professional standards, existing industry practice, and adoption or maintenance requirements",
+    },
+```
+
+The final sentence of `problem_objectives_reviewer`'s lane was added in revision —
+see Decision 4 for why the object-split needed stating positively rather than only
+as an exclusion.
+
+---
+
+## Decision 3 — `PANEL_COMPOSITION` assignments (LOCKED)
+
+Lists stay priority-ordered — order still drives preview and default display even
+though v0.3e made selection direct. New entries placed by relevance to each
+defense type, not appended blindly.
+
+```python
+    "thesis": [
+        "methodology_expert",
+        "literature_theory_specialist",
+        "problem_objectives_reviewer",
+        "results_conclusions_reviewer",
+        "statistical_analysis_reviewer",
+        "ethics_practicality_reviewer",
+        "technical_implementation_reviewer",
+    ],
+    "capstone": [
+        "technical_implementation_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "industry_practice_reviewer",
+        "problem_objectives_reviewer",
+        "ethics_practicality_reviewer",
+        "statistical_analysis_reviewer",
+        "literature_theory_specialist",
+    ],
+    "other/oral_comps": [
+        "literature_theory_specialist",
+        "methodology_expert",
+        "problem_objectives_reviewer",
+        "statistical_analysis_reviewer",
+        "ethics_practicality_reviewer",
+    ],
+    "other/scholarship_panel": [
+        "problem_objectives_reviewer",
+        "ethics_practicality_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "literature_theory_specialist",
+    ],
+    "other/grant_defense": [
+        "problem_objectives_reviewer",
+        "ethics_practicality_reviewer",
+        "methodology_expert",
+        "industry_practice_reviewer",
+        "literature_theory_specialist",
+    ],
+    "other/certification_interview": [
+        "technical_implementation_reviewer",
+        "industry_practice_reviewer",
+        "methodology_expert",
+        "ethics_practicality_reviewer",
+    ],
+```
+
+Reasoning on the non-obvious placements: `problem_objectives_reviewer` leads
+scholarship and grant defenses because those panels are overwhelmingly about
+whether the problem is worth funding. `industry_practice_reviewer` is deliberately
+absent from `thesis` and `oral_comps` — academic contexts where it would collide
+with Ethics & Practicality for no gain. `statistical_analysis_reviewer` is absent
+from grant defense and certification interviews, which rarely present analyses.
+
+No validator change needed — `check_selected_archetypes` reads `PANEL_COMPOSITION`
+dynamically. The 3-slot cap is unchanged: v0.3f locked it against turn budget, not
+against pool size, so a larger pool doesn't touch its rationale.
+
+---
+
+## Decision 4 — Do not modify existing archetypes (LOCKED — rationale revised)
+
+**Revised rationale, and the revision matters.** Claude's first draft framed this
+as a trade: accept a known overlap in Methodology Expert to avoid invalidating its
+probe evidence. I asked which was actually better, and on re-reading the clause
+that framing was wrong.
+
+Methodology's focus reads *"whether the chosen approach actually answers the stated
+research question."* The object of that clause is **the approach**. The research
+question is the yardstick, not the target. Methodology asks whether the method fits
+the question; Problem & Objectives asks whether the question is any good to begin
+with. Different objects, not overlapping territory.
+
+So tightening Methodology would not remove a flaw — it would delete one of the most
+important critiques a methodologist makes and leave the archetype **worse**. The
+clause stays because it is correct, not because re-probing is expensive. Evidence
+preservation is a side benefit, not the reason.
+
+**Residual risk, stated honestly:** Methodology can still drift into "your research
+question is too vague for any method to answer." That is a narrow path and arguably
+legitimate methodology. The mitigation is not surgery on Methodology — it is Problem
+& Objectives ceding crisply, which is why its lane now states the object-split
+positively ("you judge whether the question is worth asking; the Methodology Expert
+judges whether the method answers it") rather than relying on exclusion alone.
+
+**Ethics & Practicality ↔ Industry Practice.** A genuine overlap, roughly 70%
+subsumed. Industry's distinct content is narrow: standards comparison, adoption
+barriers, maintainability. Scoped to capstone / grant defense / certification
+interview only.
+
+**Pre-committed rule, with the branch B′ taught me to include:**
+
+- Collision probes show **distinct questions** → keep as designed.
+- Collision probes show **duplicate or near-duplicate questions** → **drop
+  `industry_practice_reviewer`** rather than tighten Ethics & Practicality.
+  Protecting an evidenced archetype beats adding a marginal one.
+- Probes show **something neither of these describes** (e.g. both drift into a
+  third lane, or the duplication is document-specific) → **stop and bring it back
+  to design**. Do not default to either branch above.
+
+That third branch exists because v1.0a's rule had a precondition its own override
+swallowed, and the bucket that actually occurred wasn't in my enumeration.
+
+---
+
+## Decision 5 — `PROMPT_VERSION` does not move (LOCKED)
+
+Template wording is untouched. Existing archetypes' config strings are byte-identical
+per Decision 4. So every prior verification run remains valid and standing constraint
+3 is not triggered.
+
+The new archetypes carry **zero evidence** until their probe rows land — that's
+tracked by the probe results file, not by a version bump. `PROMPT_VERSION` signals
+"prior verification may be invalid," and nothing here invalidates prior verification.
+
+---
+
+## Decision 6 — Applicability note only; gating parked (LOCKED)
+
+Two new archetypes depend on document content that may not exist. Results &
+Conclusions needs a results section; Statistical & Data Analysis needs quantitative
+work. My own v0.4c gate defines a usable draft as intro + methodology +
+implementation — a document at exactly that stage has neither. Retrieval returns the
+nearest chunk regardless, so the panelist asks about findings that aren't there.
+
+**v1.1a ships a static note in the multiselect** — one line, roughly: *"Select only
+if your document contains these sections."* User responsibility, no logic.
+
+**v1.1b does the real gating**: add `has_results: bool` and
+`has_quantitative_analysis: bool` to `DocumentAssessment`, extend `RELEVANCE_PROMPT`
+to populate them, and soft-gate the picker on them — disabled by default with an
+explicit accept-anyway, mirroring v0.3g's established soft-gate idiom, failing open
+on API error or uncertainty. Zero additional calls; the gate call already exists.
+
+Split because the cheap certain thing shouldn't wait on the uncertain one, and
+because verifying new archetypes and new assessment fields in one evidence pass
+makes failures unattributable. Note also that v1.1b is not a patch for these two
+archetypes — it's a general document-shape → applicability feature that improves the
+whole picker, including the five that already exist.
+
+---
+
+## Decision 7 — Default icons for the four new archetypes (LOCKED)
+
+v0.3j shipped, so `Panelist.icon: str` is non-optional and resolved from an
+archetype default at roster-build time. Four archetypes without defaults would fail
+there. Proposed defaults:
+
+| Archetype | Icon |
+|---|---|
+| `problem_objectives_reviewer` | 🎯 |
+| `statistical_analysis_reviewer` | 📊 |
+| `results_conclusions_reviewer` | 📈 |
+| `industry_practice_reviewer` | 💼 |
+
+**Code must locate the existing default-icon mapping first** — it is not in
+`ARCHETYPE_CONFIG` per the snapshot, so it lives elsewhere (`panel.py` or the UI
+layer). Report where it is and what the existing five use **before** adding. If the
+existing five use a different visual register (faces, letters, anything non-object),
+these four get swapped to match rather than clashing. Consistency beats my specific
+picks — these are placeholders, the register is the decision.
+
+---
+
+## Resolved gating questions
+
+1. **Does the v1.1b gate-prompt change move `PROMPT_VERSION`?** Still open —
+   deliberately deferred to v1.1b, where it actually bites. Standing constraint 3
+   was written for rubric wording; whether the relevance-gate prompt sits inside
+   that boundary determines whether v1.0a's gate evidence survives. **Settle it
+   explicitly in v1.1b, not by default.**
+2. **Did v0.3j ship?** Yes → Decision 7.
+3. **Probe document:** DAZSMA. **Pre-check required** — see brief step 0.
+
+---
+
+## Code-session brief
+
+**In:** four `ARCHETYPE_CONFIG` entries (Decision 2, verbatim), six
+`PANEL_COMPOSITION` list replacements (Decision 3, verbatim), four default icons
+(Decision 7), one static note in the multiselect (Decision 6).
+
+**Out:** any edit to the five existing archetype config entries. Any
+`DocumentAssessment` or `RELEVANCE_PROMPT` change. Any `PROMPT_VERSION` bump. Any
+cap or validator change.
+
+0. **Pre-check, before anything else.** Confirm DAZSMA contains a real results
+   section and quantitative analysis. If it does not, **stop and report** — the
+   Statistical and Results archetypes cannot be probed against a document lacking
+   their material, and probing anyway produces exactly the failure v1.1b exists to
+   prevent. Do not silently substitute another document; `sample2` is a weak
+   fallback since v0.4c describes it as carrying *target* metrics, which are
+   planned, not achieved.
+1. Locate the default-icon mapping; report its location and the existing five
+   values before adding anything (Decision 7).
+2. Apply Decisions 2, 3, and 7 exactly as written. No paraphrase of lane strings —
+   the wording *is* the decision.
+3. Confirm by grep that the five existing entries are byte-identical to the
+   snapshot in `docs/scratch/archetype-config-snapshot.md`.
+4. Probe rows via `scripts/probe_question_gen.py`, per-archetype: 4 questions
+   each across ≥3 distinct chunks (`exclude_indices` forcing variety), difficulty
+   2 and 3. 16 rows. Existing fields plus `is_grounded()` boolean + ratio, with
+   `in_lane` / `difficulty_ok` left null for me to fill. No LLM grading LLM.
+5. **Collision probes** — 3 pairs, same document, **same chunk index**, both
+   archetypes, so duplication is directly visible: problem↔methodology,
+   statistics↔results, industry↔ethics. 6 rows, flagged distinctly in the results
+   file.
+6. Results to `scripts/probe_question_gen_v1.1a_results.jsonl`. Never overwrite
+   prior probe files.
+7. `pytest` green, output pasted.
+
+**Commit only. Push requires my explicit authorization.**
+
+---
+
+## Definition of done
+
+- DAZSMA pre-check passed, or the session stopped and reported.
+- Four config entries, six composition lists, four icons applied verbatim.
+- Five existing entries verified byte-identical.
+- 22 probe rows generated; human columns filled by me.
+- Every new archetype: grounded, in-lane, difficulty-appropriate.
+- Collision pairs produce distinct questions — or Decision 4's rule fires.
+- `pytest` green; existing flow unchanged.
+- `docs/scratch/archetype-config-snapshot.md` deleted.
+
+---
+
+## Amendments (recorded 2026-07-26, after the code session closed)
+
+**Amendment to Decision 4 — in-lane judging for `statistical_analysis_reviewer`.**
+The DAZSMA pre-check (brief step 0) confirmed real quantitative evidence, but I want to be precise about what kind.
+It's descriptive statistics only: weighted means over five-point Likert responses, an n=20 sample split 10 technical / 10 non-technical, no hypothesis tests, no significance testing, no confidence intervals.
+Decision 2's focus wording for this archetype says "choice of tests or metrics," which reads as implying inferential statistics.
+That's a methodological gap in my brief, not in the archetype design.
+If Statistical & Data Analysis generates a question about p-values or t-tests against this document, that's fabrication and should be marked out-of-lane, not scored as a hard question.
+What should score in-lane is exactly the material that's actually there: treating ordinal Likert data as interval for a weighted mean, the 10/10 split at n=20, and whether the interpretation bands are justified.
+
+**Amendment to Decision 7 — `PANELIST_ICON_CHOICES` also needs the four new icons.**
+Claude proposed adding the four icons only to `ARCHETYPE_DEFAULT_ICONS`, since that's the dict Decision 7 named.
+I asked it to verify how the picker behaves when a default icon isn't among the picker's own choices before assuming, rather than guess between silent reset and exception.
+Claude verified live: calling `archetype_default_icon()` for any of the four new archetypes before their keys exist in `ARCHETYPE_DEFAULT_ICONS` raises a `ValueError`, so that dict addition was already load-bearing, not optional.
+It also found that `assets/icons/` isn't empty — it holds nine real curated PNGs — so `list_icon_choices()` currently returns those image stems, not `PANELIST_ICON_CHOICES`, and the four new archetypes' real default icons today resolve to one of those nine images via the existing distribution formula, not to the emoji I picked in Decision 7's table.
+The emoji only matter as the standing fallback for an empty-assets-dir clone.
+I confirmed adding all four emoji to `PANELIST_ICON_CHOICES` anyway, for that fallback case — Decision 7's scope now covers that list too, not just `ARCHETYPE_DEFAULT_ICONS`.
+
+**Amendment to the Code-session brief, step 5 — collision probes need fresh session state and held difficulty.**
+My original brief didn't specify this, and it's a real gap I caught only after Claude confirmed its chunk-pinning mechanism as sound.
+If both archetypes in a collision pair ran against the same `DefenseSession` object, the second call would see the first call's mutated `used_chunk_indices` and turn history, and any difference between their two questions would be unattributable to the archetype rather than to session-state contamination — exactly the confound the collision probes exist to eliminate.
+Fixed by giving each of the two calls in a pair its own fresh session, and holding `difficulty_current` constant across both.
+
+**Interpretation note, recorded before the collision-probe data existed.**
+Pinning both archetypes in a pair to the identical chunk is a worst-case test: in a real session they'd retrieve different chunks and naturally diverge, so pinning asks the harder question of whether two archetypes given identical material still ask different things.
+That's the correct test — `archetype_lane` exists precisely so archetypes ask different things about the same material, and natural divergence masking a real lane collision would be luck, not design.
+Duplication in the pinned-chunk rows should be judged as a real collision on that basis, and Decision 4's rule fires on it as written, not reinterpreted after seeing what the six collision rows actually say.

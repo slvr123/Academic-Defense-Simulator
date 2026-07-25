@@ -247,6 +247,26 @@ ARCHETYPE_CONFIG = {
         "archetype_focus": "real-world applicability, limitations, deployment implications, and ethical considerations of the work.",
         "archetype_lane": "do not ask about methodology rigor or citation gaps unless they directly create a practical or ethical risk",
     },
+    "problem_objectives_reviewer": {
+        "archetype_title": "Research Problem & Objectives Reviewer",
+        "archetype_focus": "whether the research problem is clearly defined, adequately justified, and appropriately scoped, and whether the stated objectives are specific, measurable, and aligned with that problem.",
+        "archetype_lane": "do not ask how the study was designed, sampled, or executed — that belongs to the Methodology Expert; stay on the framing of the problem and the objectives themselves, never the approach chosen to address them. You judge whether the question is worth asking and well-posed; the Methodology Expert judges whether the method answers it",
+    },
+    "statistical_analysis_reviewer": {
+        "archetype_title": "Statistical & Data Analysis Reviewer",
+        "archetype_focus": "the analysis performed on collected data — choice of tests or metrics, assumptions checked, treatment of missing or anomalous data, and whether the reported numbers actually support the claims made about them.",
+        "archetype_lane": "do not ask about study design, sampling plans, or data-collection decisions — those belong to the Methodology Expert; stay on what was done with the data after it was collected. Do not interpret what the findings mean for the field — that belongs to the Results & Conclusions Reviewer",
+    },
+    "results_conclusions_reviewer": {
+        "archetype_title": "Results & Conclusions Reviewer",
+        "archetype_focus": "whether the stated conclusions actually follow from the reported findings, whether limitations are acknowledged, and whether claims of generalization or contribution are proportionate to the evidence presented.",
+        "archetype_lane": "do not question statistical procedures, metrics, or how the numbers were produced — those belong to the Statistical & Data Analysis Reviewer; stay on the inferential leap from findings to conclusions",
+    },
+    "industry_practice_reviewer": {
+        "archetype_title": "Industry & Professional Practice Reviewer",
+        "archetype_focus": "how the work compares to current professional standards and established practice, and what would be required for practitioners to actually adopt, deploy, or maintain it.",
+        "archetype_lane": "do not ask about ethical implications or general real-world limitations — those belong to the Ethics & Practicality Reviewer; stay on concrete professional standards, existing industry practice, and adoption or maintenance requirements",
+    },
     "devils_advocate": {
         "archetype_title": "Devil's Advocate",
         "archetype_focus": "contesting the strongest claim made so far by another panelist, pressure-testing it against the source document.",

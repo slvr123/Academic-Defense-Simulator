@@ -86,6 +86,9 @@ def test_compose_panel_returns_natural_order_not_click_order():
     assert roster == [
         "methodology_expert",
         "literature_theory_specialist",
+        "problem_objectives_reviewer",
+        "results_conclusions_reviewer",
+        "statistical_analysis_reviewer",
         "ethics_practicality_reviewer",
         "technical_implementation_reviewer",
     ]
@@ -326,12 +329,18 @@ def test_icon_registry_images_replace_emoji_and_named_file_becomes_default(tmp_p
 
 def test_icon_registry_distributes_defaults_when_files_not_archetype_named(tmp_path):
     """No archetype-named files (Sean's real asset set): defaults spread the sorted
-    stems across the stable archetype order, distinct while enough images exist."""
-    for name in ("avatar.png", "boy.png", "gamer.png", "gorilla.png", "hacker.png"):
+    stems across the stable archetype order, distinct while enough images exist.
+    v1.1a grew ARCHETYPE_DEFAULT_ICONS to 9 keys, so this now needs 9 distinct stems."""
+    for name in (
+        "avatar.png", "boy.png", "cat.png", "dog.png", "elf.png",
+        "fox.png", "gamer.png", "gorilla.png", "hacker.png",
+    ):
         (tmp_path / name).write_bytes(b"png-bytes")
 
     defaults = [archetype_default_icon(k, tmp_path) for k in ARCHETYPE_DEFAULT_ICONS]
-    assert defaults == ["avatar", "boy", "gamer", "gorilla", "hacker"]
+    assert defaults == [
+        "avatar", "boy", "cat", "dog", "elf", "fox", "gamer", "gorilla", "hacker",
+    ]
     assert len(set(defaults)) == len(defaults)
 
     # An archetype-named file still wins over the distribution.

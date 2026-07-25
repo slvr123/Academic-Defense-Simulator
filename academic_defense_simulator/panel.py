@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # material, not prompt text — nothing in this block ever reaches an LLM call.
 PANELIST_ICON_CHOICES = [
     "🎓", "🔬", "📚", "🛠️", "⚖️", "⚔️", "🧠", "📊", "🔍", "🧪", "🏛️", "✒️",
+    "🎯", "📈", "💼",
 ]
 
 ARCHETYPE_DEFAULT_ICONS: dict[str, str] = {
@@ -37,6 +38,13 @@ ARCHETYPE_DEFAULT_ICONS: dict[str, str] = {
     "technical_implementation_reviewer": "🛠️",
     "ethics_practicality_reviewer": "⚖️",
     "devils_advocate": "⚔️",
+    # v1.1a Decision 7 — appended, not inserted, so the existing five keys' index
+    # positions (and therefore their modulo-distributed default image stems in
+    # archetype_default_icon) are unchanged.
+    "problem_objectives_reviewer": "🎯",
+    "statistical_analysis_reviewer": "📊",
+    "results_conclusions_reviewer": "📈",
+    "industry_practice_reviewer": "💼",
 }
 
 # v0.3j amendment (2026-07-20): curated image icons. Sean drops icon files into
@@ -124,32 +132,46 @@ PANEL_COMPOSITION: dict[str, list[str]] = {
     "thesis": [
         "methodology_expert",
         "literature_theory_specialist",
+        "problem_objectives_reviewer",
+        "results_conclusions_reviewer",
+        "statistical_analysis_reviewer",
         "ethics_practicality_reviewer",
         "technical_implementation_reviewer",
     ],
     "capstone": [
         "technical_implementation_reviewer",
         "methodology_expert",
+        "results_conclusions_reviewer",
+        "industry_practice_reviewer",
+        "problem_objectives_reviewer",
         "ethics_practicality_reviewer",
+        "statistical_analysis_reviewer",
         "literature_theory_specialist",
     ],
     "other/oral_comps": [
         "literature_theory_specialist",
         "methodology_expert",
+        "problem_objectives_reviewer",
+        "statistical_analysis_reviewer",
         "ethics_practicality_reviewer",
     ],
     "other/scholarship_panel": [
+        "problem_objectives_reviewer",
         "ethics_practicality_reviewer",
         "methodology_expert",
+        "results_conclusions_reviewer",
         "literature_theory_specialist",
     ],
     "other/grant_defense": [
+        "problem_objectives_reviewer",
         "ethics_practicality_reviewer",
         "methodology_expert",
+        "industry_practice_reviewer",
         "literature_theory_specialist",
     ],
     "other/certification_interview": [
         "technical_implementation_reviewer",
+        "industry_practice_reviewer",
         "methodology_expert",
         "ethics_practicality_reviewer",
     ],

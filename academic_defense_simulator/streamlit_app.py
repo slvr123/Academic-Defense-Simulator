@@ -1703,6 +1703,14 @@ if st.session_state.stage == "intake":
                     f"Devil's Advocate = {len(selected_archetypes) + 1} total</p>",
                     unsafe_allow_html=True,
                 )
+                # v1.1a Decision 6 — static applicability note only, no content-based gating
+                # (that's v1.1b). Statistical & Data Analysis and Results & Conclusions both
+                # depend on document content that may not exist yet at intro+methodology+
+                # implementation stage.
+                st.caption(
+                    "Select Statistical & Data Analysis or Results & Conclusions only if your "
+                    "document contains those sections."
+                )
 
                 # v0.3j Decision 1 — per-slot customization rows. The intake widgets are
                 # NOT inside an st.form (plain widgets + a regular button), so these rows

@@ -41,6 +41,7 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from typing import Optional
+from unittest.mock import patch
 
 import academic_defense_simulator.engine as engine
 from academic_defense_simulator.config import load_settings
@@ -50,7 +51,7 @@ from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
-from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
+from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, FALLBACK_PANELISTS
 from academic_defense_simulator.prompts.panelist_prompts import PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
@@ -686,6 +687,261 @@ def _write_followup_attribution_results(
         rows = [r for r in records if r["framing_case"] == case]
         passed = sum(1 for r in rows if r["grounded"])
         print(f"  {case}: {passed}/{len(rows)} grounded; ratios={[r['grounding_ratio'] for r in rows]}")
+    print(f"\nWrote {len(records)} question records (+1 meta) to {results_path}")
+
+
+# ============================================================================
+# v1.1a archetype expansion probe (docs/v1_1a-archetype-expansion-decisions.md,
+# Code-session brief steps 4-5): per-archetype grounding/variety probes for the four
+# new archetypes, plus collision probes testing Decision 4's lane-drift branches.
+# ============================================================================
+
+_RESULTS_PATH_V1_1A = Path(__file__).resolve().parent / "probe_question_gen_v1.1a_results.jsonl"
+
+_PROBLEM_OBJECTIVES_PERSONA = Panelist(
+    archetype_key="problem_objectives_reviewer",
+    panelist_name="Fernandez",
+    icon="🎯",
+    persona_framing=(
+        "You are known for interrogating whether a stated problem is real and "
+        "well-scoped before any proposed solution is discussed, pressing candidates on "
+        "vague objectives and justifications that don't match the problem as framed."
+    ),
+)
+
+_STATISTICAL_ANALYSIS_PERSONA = Panelist(
+    archetype_key="statistical_analysis_reviewer",
+    panelist_name="Whitfield",
+    icon="📊",
+    persona_framing=(
+        "You are a data-analysis specialist known for scrutinizing how evaluation data "
+        "was aggregated and whether reported averages are computed and interpreted "
+        "correctly, given the scale and composition of the sample behind them."
+    ),
+)
+
+_RESULTS_CONCLUSIONS_PERSONA = Panelist(
+    archetype_key="results_conclusions_reviewer",
+    panelist_name="Nakamura",
+    icon="📈",
+    persona_framing=(
+        "You are known for testing whether a candidate's conclusions are actually "
+        "licensed by their reported findings, and for calling out claims of "
+        "generalization or contribution that outrun the evidence presented."
+    ),
+)
+
+_INDUSTRY_PRACTICE_PERSONA = Panelist(
+    archetype_key="industry_practice_reviewer",
+    panelist_name="Osei",
+    icon="💼",
+    persona_framing=(
+        "You are a practitioner-reviewer known for comparing a system against real "
+        "deployed industry practice and pressing candidates on what it would actually "
+        "take to adopt, deploy, and maintain it."
+    ),
+)
+
+# Needed only as the collision partner for industry_practice_reviewer (Decision 4's
+# ethics <-> industry pair) — reuses the archetype's own established fallback framing
+# (panel.py FALLBACK_PANELISTS) rather than inventing new persona text for an archetype
+# this brief doesn't otherwise touch.
+_ETHICS_PRACTICALITY_PERSONA = Panelist(
+    archetype_key="ethics_practicality_reviewer",
+    panelist_name=FALLBACK_PANELISTS["ethics_practicality_reviewer"].panelist_name,
+    icon="⚖️",
+    persona_framing=FALLBACK_PANELISTS["ethics_practicality_reviewer"].persona_framing,
+)
+
+_NEW_ARCHETYPE_PERSONAS = [
+    _PROBLEM_OBJECTIVES_PERSONA,
+    _STATISTICAL_ANALYSIS_PERSONA,
+    _RESULTS_CONCLUSIONS_PERSONA,
+    _INDUSTRY_PRACTICE_PERSONA,
+]
+
+
+def _generate_question_pinned(
+    provider,
+    session: DefenseSession,
+    chunks: list[Chunk],
+    embedding_model: EmbeddingModel,
+    panelist: Panelist,
+    other_subtype_line: str,
+    model: str,
+    chunk_index: int,
+) -> ConversationTurn:
+    """Collision probes (Decision 4) need both archetypes in a pair to land on the
+    identical chunk so duplication is directly visible. `retrieve()` has no pinning
+    parameter, only `exclude_indices`, so this patches `engine.retrieve` (bound at
+    module level via `from ...rag.retrieval import retrieve`) for the duration of one
+    call only, forcing it to return the target chunk regardless of similarity ranking.
+    Zero change to engine.py or retrieval.py."""
+    target = (chunk_index, chunks[chunk_index])
+    with patch("academic_defense_simulator.engine.retrieve", return_value=[target]):
+        return engine._generate_question(
+            provider, session, chunks, embedding_model, panelist, other_subtype_line, model
+        )
+
+
+def _record_v1_1a(turn: ConversationTurn, persona: Panelist, requested_difficulty: int, **extra) -> dict:
+    grounded = is_grounded(turn.grounding_reference, turn.chunk_text)
+    ratio = grounding_ratio(turn.grounding_reference, turn.chunk_text)
+    record = {
+        "record_type": "question",
+        "timestamp": _now_iso(),
+        "archetype": persona.archetype_key,
+        "panelist_name": persona.panelist_name,
+        "chunk_index": turn.chunk_index,
+        "requested_difficulty": requested_difficulty,
+        "returned_difficulty_level": turn.difficulty_level,
+        "question": turn.question,
+        "grounding_reference": turn.grounding_reference,
+        "grounded": grounded,
+        "grounding_ratio": round(ratio, 4),
+        "in_lane": None,  # human-judged (b)
+        "difficulty_ok": None,  # human-judged (c)
+    }
+    record.update(extra)
+    return record
+
+
+def main_probe_v1_1a(results_path: Path = _RESULTS_PATH_V1_1A) -> None:
+    """Step 4: per-archetype probe -- 4 new archetypes x 4 questions each, forced across
+    >=3 distinct chunks via the same used_chunk_indices/exclude_indices variety mechanism
+    main_probe() uses, difficulty 2/3 only. 16 rows.
+
+    Step 5: collision probes -- 3 pairs (problem<->methodology, statistics<->results,
+    industry<->ethics), same document, same pinned chunk index per pair so duplication is
+    directly visible. Each of the two calls in a pair gets its own fresh DefenseSession
+    (Sean's amendment: no shared/mutated session state between the two archetypes, so any
+    difference in output is attributable to the archetype alone) and the same held
+    difficulty. 6 rows, flagged with collision_pair/pinned_chunk_index.
+    """
+    settings = load_settings()
+    model = settings.gemini_model
+    print(f"[model: {model}] [prompt_version: {PROMPT_VERSION}]")
+    print(f"[pdf: {_PDF_PATH.name}]")
+
+    texts = chunk_pdf(str(_PDF_PATH))
+    embedding_model = EmbeddingModel()
+    embeddings = embedding_model.encode(texts)
+    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    print(f"[chunks: {len(chunks)}]")
+
+    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
+
+    records: list[dict] = []
+
+    # --- Step 4: per-archetype probes ---
+    print("\n=== Per-archetype probes (4 new archetypes x 4 questions, difficulty 2/3) ===")
+    for persona in _NEW_ARCHETYPE_PERSONAS:
+        profile = _profile(defense_type=_DEFENSE_TYPE, archetype_key=persona.archetype_key)
+        session = _session(2, persona, profile)
+        print(f"-- {persona.archetype_key} ({persona.panelist_name}) --")
+        for requested in (2, 3, 2, 3):
+            session.difficulty_current = requested
+            turn = engine._generate_question(
+                provider, session, chunks, embedding_model, persona, "", model
+            )
+            rec = _record_v1_1a(turn, persona, requested)
+            records.append(rec)
+            print(f"  chunk {turn.chunk_index} @diff{requested}: grounded={rec['grounded']} "
+                  f"ratio={rec['grounding_ratio']} — {turn.question[:70]}...")
+            session.turns.append(turn)  # score stays None -> stays new-topic, excludes this chunk
+            time.sleep(pacing)
+        distinct = {r["chunk_index"] for r in records if r["archetype"] == persona.archetype_key}
+        print(f"  distinct chunks used: {sorted(distinct)} ({len(distinct)} total)")
+
+    # --- Step 5: collision probes ---
+    # Chunk indices hand-picked from DAZSMA's actual chunked text (not guessed from page
+    # numbers) so each pinned chunk carries material relevant to BOTH archetypes in its
+    # pair, per Sean's interpretation note: pinning is deliberately the worst case (both
+    # archetypes given identical material) -- natural divergence from different retrieval
+    # would be luck, not evidence the lanes hold.
+    #   40 -> "Objectives of the Study" + named technical stack/rationale (problem framing
+    #         and a methodology-relevant design choice, same paragraph).
+    #   76 -> weighted-mean evaluation results interpreted into the study's Conclusion
+    #         (statistical result and the conclusion drawn from it, same paragraph).
+    #   68 -> comparison to commercial/open-source systems (Koha, OpenBiblio) alongside
+    #         real-world reliability limitations (industry-standard and practical-limits
+    #         material, same paragraph).
+    print("\n=== Collision probes (3 pairs, same chunk, same difficulty, fresh session each call) ===")
+    collision_pairs = [
+        ("problem_methodology", _PROBLEM_OBJECTIVES_PERSONA, _PROBE_PERSONA, 40),
+        ("statistics_results", _STATISTICAL_ANALYSIS_PERSONA, _RESULTS_CONCLUSIONS_PERSONA, 76),
+        ("industry_ethics", _INDUSTRY_PRACTICE_PERSONA, _ETHICS_PRACTICALITY_PERSONA, 68),
+    ]
+    collision_difficulty = 3
+    for pair_label, persona_a, persona_b, chunk_index in collision_pairs:
+        print(f"-- pair: {pair_label} @ chunk {chunk_index}, difficulty {collision_difficulty} --")
+        for persona in (persona_a, persona_b):
+            profile = _profile(defense_type=_DEFENSE_TYPE, archetype_key=persona.archetype_key)
+            session = _session(collision_difficulty, persona, profile)  # fresh session, no shared state
+            turn = _generate_question_pinned(
+                provider, session, chunks, embedding_model, persona, "", model, chunk_index
+            )
+            rec = _record_v1_1a(
+                turn, persona, collision_difficulty,
+                collision_pair=pair_label,
+                pinned_chunk_index=chunk_index,
+            )
+            records.append(rec)
+            print(f"  {persona.archetype_key} ({persona.panelist_name}): "
+                  f"grounded={rec['grounded']} ratio={rec['grounding_ratio']} — {turn.question[:70]}...")
+            time.sleep(pacing)
+
+    _write_v1_1a_results(records, model, results_path)
+
+
+def _write_v1_1a_results(records: list[dict], model: str, results_path: Path) -> None:
+    meta = {
+        "record_type": "meta",
+        "generated_at": _now_iso(),
+        "model": model,
+        "prompt_version": PROMPT_VERSION,
+        "document": _PDF_PATH.name,
+        "grounding_threshold": 0.85,
+        "difficulty_levels_probed": "2, 3 for per-archetype rows; held at 3 for collision rows",
+        "archetypes_probed": [p.archetype_key for p in _NEW_ARCHETYPE_PERSONAS],
+        "collision_note": (
+            "Pinning is the worst-case test (Sean's interpretation note, recorded before "
+            "results existed): both archetypes in a pair see the IDENTICAL chunk, so "
+            "duplicate/near-duplicate output is a real lane collision, not an artifact of "
+            "natural retrieval divergence. Decision 4's rule fires on this basis: distinct "
+            "questions -> keep as designed; duplicate/near-duplicate -> drop "
+            "industry_practice_reviewer; something neither branch describes -> stop and "
+            "bring it back to design."
+        ),
+        "session_state_note": (
+            "Each of the two calls in a collision pair uses its own fresh DefenseSession "
+            "(Sean's amendment) -- no shared used_chunk_indices or turn history between "
+            "them, so a difference in output is attributable to the archetype, not to "
+            "session-state contamination from the first call in the pair."
+        ),
+        "human_judged_columns": "in_lane, difficulty_ok (all rows)",
+    }
+    with results_path.open("w", encoding="utf-8") as f:
+        f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+        for rec in records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    print(f"\n=== Grounding tally by archetype (threshold 0.85) ===")
+    for persona in _NEW_ARCHETYPE_PERSONAS:
+        rows = [r for r in records if r["archetype"] == persona.archetype_key and "collision_pair" not in r]
+        passed = sum(1 for r in rows if r["grounded"])
+        print(f"  {persona.archetype_key}: {passed}/{len(rows)} grounded; "
+              f"ratios={[r['grounding_ratio'] for r in rows]}")
+    print(f"\n=== Collision pairs ===")
+    for pair_label, persona_a, persona_b, chunk_index in [
+        ("problem_methodology", _PROBLEM_OBJECTIVES_PERSONA, _PROBE_PERSONA, 40),
+        ("statistics_results", _STATISTICAL_ANALYSIS_PERSONA, _RESULTS_CONCLUSIONS_PERSONA, 76),
+        ("industry_ethics", _INDUSTRY_PRACTICE_PERSONA, _ETHICS_PRACTICALITY_PERSONA, 68),
+    ]:
+        rows = [r for r in records if r.get("collision_pair") == pair_label]
+        for r in rows:
+            print(f"  [{pair_label}] {r['archetype']}: {r['question']}")
     print(f"\nWrote {len(records)} question records (+1 meta) to {results_path}")
 
 
