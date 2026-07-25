@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import logging
 import os
 import time
@@ -18,6 +19,55 @@ logger = logging.getLogger(__name__)
 _RETRY_BACKOFF_SECONDS = 2
 _REQUEST_TIMEOUT_MS = 30_000  # a stalled request must fail into the existing retry path,
 # not hang the caller indefinitely.
+
+# v1.0a B'': sliding-window RPM limiter, scoped to every real network attempt (not just
+# the grounding-retry loop). Live evidence against PathClear (evidence/
+# v1.0a-pathclear-rpm-verification.txt) showed the ORDINARY one-question-gen-plus-one-
+# score turn cadence alone already breaches the real 15 RPM free-tier ceiling once the
+# embedded per-call sleep engine.py used to have is gone (confirmed by a genuine 429
+# from Google, not just a computed estimate) -- grounding retries make it worse but are
+# not the sole cause, so a limiter scoped only to retries would not have closed the gap.
+#
+# Module-level state, not per-instance: every real call site constructs a fresh
+# GeminiProvider (streamlit_app.py's _new_provider is called anew on every Streamlit
+# rerun), so instance-level state would reset before it ever accumulated anything --
+# and the real Google quota is per-project-per-model, not per-object, so module-level
+# state is the correct semantic match regardless.
+_RPM_WINDOW_SECONDS = 60.0
+_RPM_CEILING = {
+    "gemini-3.1-flash-lite": 13,  # real ceiling is 15 (confirmed live). A ceiling of 14
+    # first pass still let the externally-observed peak touch exactly 15 -- the same
+    # number that produced a real 429 pre-fix -- because the admission-time window
+    # (this limiter's own bookkeeping) and completion-time measurement (the external
+    # verification script) don't share an anchor; real per-call network latency shifts
+    # a call across the 60s boundary between the two. -2 gives genuine headroom instead
+    # of grazing the exact limit that already failed once.
+}
+_DEFAULT_RPM_CEILING = 13  # unrecognized model: stay conservative, not permissive (same
+# convention as engine.DEFAULT_CALL_DELAY).
+
+_call_timestamps: dict[str, "collections.deque[float]"] = collections.defaultdict(collections.deque)
+
+
+def _throttle_for_rpm(model: str) -> None:
+    """Sleeps zero whenever the rolling 60s window still has room for this model;
+    once it's genuinely full, sleeps only the exact deficit until the oldest call in
+    the window ages out, then proceeds -- never a flat unconditional delay."""
+    now = time.monotonic()
+    window = _call_timestamps[model]
+    while window and now - window[0] >= _RPM_WINDOW_SECONDS:
+        window.popleft()
+
+    ceiling = _RPM_CEILING.get(model, _DEFAULT_RPM_CEILING)
+    if len(window) >= ceiling:
+        sleep_for = _RPM_WINDOW_SECONDS - (now - window[0])
+        if sleep_for > 0:
+            time.sleep(sleep_for)
+        now = time.monotonic()
+        while window and now - window[0] >= _RPM_WINDOW_SECONDS:
+            window.popleft()
+
+    window.append(now)
 
 
 def _request_timeout_ms() -> int:
@@ -99,6 +149,7 @@ class GeminiProvider(LLMProvider):
     def _call_once(self, prompt: str, response_model: Type[T]) -> T:
         from google.genai import types
 
+        _throttle_for_rpm(self._model)
         self._record_call()
         response = self._client.models.generate_content(
             model=self._model,
@@ -145,6 +196,7 @@ class GeminiProvider(LLMProvider):
             return self._retry_text_or_fail(call, "Gemini returned an empty narrative response", exc)
 
     def _call_once_text(self, prompt: str) -> str:
+        _throttle_for_rpm(self._model)
         self._record_call()
         response = self._client.models.generate_content(model=self._model, contents=prompt)
         text = (response.text or "").strip()

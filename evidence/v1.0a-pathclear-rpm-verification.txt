@@ -1,0 +1,162 @@
+v1.0a closeout — B'' RPM verification against PathClear
+Real session, real Gemini API (gemini-3.1-flash-lite), real quota. No mocking.
+Timestamps captured via a monkeypatch on the GeminiProvider instances' own
+generate_structured/generate_text methods, done in a standalone script, not
+in source. Peak RPM = max calls falling within any 60-second sliding window
+across the recorded timestamps.
+
+Panel: methodology_expert, ethics_practicality_reviewer,
+technical_implementation_reviewer, devils_advocate (thesis composition,
+3 domain archetypes selected + DA auto-appended, matching the uniform
+4-total cap).
+
+======================================================================
+ATTEMPT 1 (aborted by a real 429 at turn 8) — first evidence, on its own
+already sufficient to answer B'''s question
+======================================================================
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. quotaId:
+GenerateRequestsPerMinutePerProjectPerModel-FreeTier, quotaValue: '15',
+model: gemini-3.1-flash-lite. retryDelay: 21s.
+academic_defense_simulator.llm.provider.LLMProviderError: Gemini API returned
+429 despite confirmed request pacing -- this is real quota exhaustion, not a
+pacing bug. Check quota or wait for reset. Session aborted, no retry.
+
+(This is GeminiProvider's own 429 branch, gemini_provider.py:84-90 -- it does
+not retry on 429, by design. The session driver has no 429 recovery either
+(mirrors production), so this run ended exactly as a real Cloud visitor's
+session would if it hit this.)
+
+======================================================================
+ATTEMPT 2 (completed, ~90s after attempt 1 to let the per-minute quota
+window clear) — clean per-call timestamp evidence
+======================================================================
+model in use: gemini-3.1-flash-lite
+18 chunks extracted from PathClear
+panel: ['methodology_expert', 'ethics_practicality_reviewer', 'technical_implementation_reviewer', 'devils_advocate'] fallback_used=False
+
+PER-CALL LOG (label, seconds since session start):
+   0.000s  session:structured:PanelGeneration
+   0.953s  session:structured:PanelistQuestion   (turn 1)
+   2.187s  session:structured:AnswerScore        (turn 1)
+   8.640s  session:structured:PanelistQuestion   (turn 2)
+   9.594s  session:structured:AnswerScore        (turn 2)
+  16.047s  session:structured:PanelistQuestion   (turn 3, initial)
+  17.484s  session:structured:PanelistQuestion   (turn 3, grounding retry)
+  18.515s  session:structured:AnswerScore        (turn 3)
+  25.484s  session:structured:PanelistQuestion   (turn 4, initial)
+  27.015s  session:structured:PanelistQuestion   (turn 4, grounding retry)
+  28.250s  session:structured:AnswerScore        (turn 4)
+  39.281s  session:structured:PanelistQuestion   (turn 5)
+  40.328s  session:structured:AnswerScore        (turn 5)
+  46.797s  session:structured:PanelistQuestion   (turn 6)
+  47.937s  session:structured:AnswerScore        (turn 6)
+  54.890s  session:structured:PanelistQuestion   (turn 7)
+  55.922s  session:structured:AnswerScore        (turn 7)
+  62.390s  session:structured:PanelistQuestion   (turn 8)
+  63.344s  session:structured:AnswerScore        (turn 8)
+  69.906s  session:structured:PanelistQuestion   (turn 9)
+  71.047s  session:structured:AnswerScore        (turn 9)
+  77.328s  session:structured:PanelistQuestion   (turn 10, DA)
+  78.297s  session:structured:AnswerScore        (turn 10)
+  84.578s  session:structured:PanelistQuestion   (turn 11, DA)
+  85.640s  session:structured:AnswerScore        (turn 11)
+  91.812s  session:structured:PanelistQuestion   (turn 12, DA)
+  92.765s  session:structured:AnswerScore        (turn 12)
+
+SUMMARY
+total real network calls: 27
+session wall time: 147.2s
+turns completed: 12 (full t_max for a 4-panelist session, 3*4)
+grounding retries: 2/12 turns (turns 3 and 4)
+peak RPM (max calls in any 60s sliding window): 17
+peak window: t=0.000s to t=60.0s (17 calls: the 15 calls of a fully
+retry-free first 7 turns' cadence, plus the 2 extra PanelistQuestion calls
+from the two grounding retries at turns 3 and 4)
+15 RPM ceiling: AT OR OVER (needs limiter) -- confirmed twice: this
+timestamp-derived peak of 17, and attempt 1's real 429 from Google's own
+quota enforcement.
+
+DOWNSTREAM EFFECT, same run: the end-of-session report also hit real quota
+pressure -- "Report narrative call failed after retry -- shipping
+numbers-only report: ... 429 ... real quota exhaustion" and a separate 504
+DEADLINE_EXCEEDED on the suggestions call. Both degraded gracefully per
+report.py's existing fallback paths (no crash) -- but it is further live
+confirmation that steady-state call volume in this session shape is running
+at or past the free-tier ceiling, not just in the two-retry burst.
+
+======================================================================
+IMPORTANT: peak RPM is NOT attributable to the grounding-retry burst alone.
+======================================================================
+Isolating the retry-free window (turns 5-7, no retries): PanelistQuestion at
+39.281s -> 46.797s -> 54.890s = ~7.5s between successive turns' question-gen
+calls, each turn contributing 2 calls (question-gen + scoring) within
+~1.0-1.1s of each other. That is a steady-state cadence of 2 calls per
+~7.5s = ~16 calls/minute -- already at/over the 15 RPM ceiling with ZERO
+grounding retries in play. Removing them from the peak-60s window (17 - 2 =
+15) still lands exactly at the ceiling, not comfortably under it.
+
+Root cause of the steady-state number: the old dual-sleep design (Day 4,
+6570294) put one sleep right after question-gen and a second, separate one
+at end-of-turn. That meant question-gen and scoring were never adjacent in
+time -- question-gen's own 5s sleep separated them, producing two ~5s-apart
+clusters per turn and an effective ~12 calls/minute. Removing the embedded
+sleep collapsed that gap: question-gen and scoring now fire back-to-back
+(only real API latency apart, ~1-1.1s), leaving only the turn-end 5s sleep
+to pace the *whole* 2-call cluster -- which is why steady-state cadence rose
+from ~12 to ~16 calls/minute even before any retry adds more.
+
+======================================================================
+LIMITER ADDED: sliding-window admission control in gemini_provider.py
+(_throttle_for_rpm), scoped to every real network call (question-gen,
+scoring, panel generation, report narrative, suggestions) -- not just the
+grounding-retry loop, per the finding above. Module-level state keyed by
+model name: sleeps zero while the rolling 60s window has room, sleeps only
+the exact deficit once it's full. See gemini_provider.py for the full
+docstring and tests/test_gemini_provider.py for unit coverage.
+
+======================================================================
+ATTEMPT 3 (limiter active, ceiling=14) -- confirms the limiter throttles,
+but the externally-measured peak still touched exactly 15
+======================================================================
+grounding retries: 0/12 turns
+peak RPM (max calls in any 60s sliding window): 15
+No 429 this run. The visible throttle: PanelistQuestion at 45.625s ->
+AnswerScore at 59.219s, a ~13.6s gap where every prior turn showed ~1s --
+the limiter genuinely fired. The peak of exactly 15 (not 17) shows it's
+working, but touching the same number that produced attempt 1's real 429
+is grazing the boundary, not clearing it -- ceiling=14 lets the window grow
+to 14 admitted calls before throttling, and admission-time bookkeeping vs.
+completion-time external measurement (this script timestamps *after* each
+real network round-trip returns, the limiter gates *before* it starts) can
+shift a call across the external 60s window boundary by roughly one call's
+worth of network latency. Tightened ceiling to 13 rather than accept a
+result that lands on the exact number already responsible for one real
+failure.
+
+======================================================================
+ATTEMPT 4 (limiter active, ceiling=13) -- final confirmation
+======================================================================
+grounding retries: 0/12 turns
+total real network calls: 27
+session wall time: 201.2s
+peak RPM (max calls in any 60s sliding window): 14
+peak window starts at t=0.000s
+15 RPM ceiling: UNDER (verified)
+No 429, no error of any kind this run -- report AND suggestions both
+completed cleanly (unlike attempts 1-3, where report/suggestions calls hit
+real 429/504 pressure from the session's own prior call volume). The
+limiter's real effect is visible in the trace: a ~20s gap (39.672s ->
+59.547s) and a ~33s gap (92.750s -> 126.250s) where the previous three
+attempts showed ~1-8s -- genuine throttling, not a no-op.
+
+======================================================================
+CONCLUSION (B'')
+======================================================================
+Peak RPM verified under 15 (14, with real margin, not a graze) on a real
+12-turn PathClear session, panel-generation through end-of-session report
+and suggestions, zero mocking of the network layer. Per B'''s own rule
+("Peak >= 15 RPM -> add a conditional minimum-interval limiter... sleeps
+zero in the common case, throttles only the burst"), the limiter ships --
+scoped to every provider call rather than only the retry loop, since the
+evidence in ATTEMPT 2 showed the retry-free steady-state case was itself
+already over the ceiling, which a retry-only scope would not have fixed.
