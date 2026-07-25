@@ -34,14 +34,19 @@ _REQUEST_TIMEOUT_MS = 30_000  # a stalled request must fail into the existing re
 # and the real Google quota is per-project-per-model, not per-object, so module-level
 # state is the correct semantic match regardless.
 _RPM_WINDOW_SECONDS = 60.0
+# _RPM_CEILING is NOT a literal RPM cap -- it's a tuned knob, verified empirically, not
+# derived by arithmetic from the tier limit. Observed peak (evidence/
+# v1.0a-pathclear-rpm-verification.txt) runs consistently one call ABOVE the configured
+# ceiling (14 -> peak 15, 13 -> peak 14), most likely a sliding-vs-fixed window boundary
+# effect between this limiter's own admission-time bookkeeping and completion-time
+# external measurement. 13 is the verified-clean setting against the real 15 RPM
+# free-tier limit -- a ceiling of 14 still let peak touch exactly 15, the same number
+# that produced a real 429 pre-fix. DO NOT raise this to 15 on the assumption it maps
+# directly to a stated tier limit -- that reproduces the 429. Any tier change
+# (different model, different quota) re-verifies empirically against a real session,
+# the same way this number was reached, not by arithmetic against the documented limit.
 _RPM_CEILING = {
-    "gemini-3.1-flash-lite": 13,  # real ceiling is 15 (confirmed live). A ceiling of 14
-    # first pass still let the externally-observed peak touch exactly 15 -- the same
-    # number that produced a real 429 pre-fix -- because the admission-time window
-    # (this limiter's own bookkeeping) and completion-time measurement (the external
-    # verification script) don't share an anchor; real per-call network latency shifts
-    # a call across the 60s boundary between the two. -2 gives genuine headroom instead
-    # of grazing the exact limit that already failed once.
+    "gemini-3.1-flash-lite": 13,
 }
 _DEFAULT_RPM_CEILING = 13  # unrecognized model: stay conservative, not permissive (same
 # convention as engine.DEFAULT_CALL_DELAY).
