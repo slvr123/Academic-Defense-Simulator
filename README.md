@@ -4,39 +4,60 @@
 your research paper and uses it to interrogate you.**
 
 Upload a thesis, capstone, or research document and face a live, adaptive
-cross-examination from a panel of AI examiners — each grounded in your actual
-document, each with a distinct role, and each quietly adjusting difficulty
-based on how well you're holding up.
-
-> **Status:** in active development. v0.3 is deployed and fully functional —
-> multi-panelist sessions, adaptive difficulty, and end-of-session reports all
-> work today. See [Roadmap](#roadmap) for what's ahead.
+cross-examination from a panel of AI examiners — each grounded in a specific
+passage of your actual document, each holding a distinct role, and each quietly
+adjusting difficulty based on how well you're holding up.
 
 **[Try the live demo →](https://academic-defense-simulator.streamlit.app/)**
 
-![Full panel live session, mid-exchange](docs/img/hero-session.jpg)
+> Demo mode runs on a shared key with a small daily session cap. Paste your own
+> Gemini API key in the sidebar to bypass it — the key is held in session memory
+> only, never written to disk and never logged (verified with a sentinel-key
+> trace, not just by inspection). First load takes ~30s; see
+> [Known limitations](#known-limitations).
+
+![A full panel session, mid-exchange](docs/img/demo.gif)
+
+**[Read the case study →](docs/case-study.md)** — the evals, the findings, and
+the one that a later eval walked back.
 
 ---
 
 ## Why this is interesting
 
-- **RAG inverted** — retrieval feeds *question generation*, not answering.
-  Every question a panelist asks is grounded in a specific passage retrieved
-  from your document, with the grounding programmatically verified per turn.
-- **Adaptive difficulty you can't see** — every answer is scored internally
-  (clarity, depth, grounding) via structured output; the scores steer question
-  difficulty without ever being shown mid-session. The thermostat is hidden
-  because a defense you can read isn't practice.
-- **A panel, not a chatbot** — distinct examiner archetypes (methodology,
-  literature, technical, ethics) hold character across the full session, with
-  turn-taking, follow-up chains when a panelist smells weakness, and a
-  Devil's Advocate who cross-references earlier answers to contest your
-  strongest claim.
-- **Eval-driven development** — model behavior was measured, not assumed:
-  documented findings include a model downgrade decision reversed on evidence,
-  per-session LLM call budgets predicted from design docs and then verified
-  against live instrumentation, and prompt versioning stamped into every
-  exported transcript.
+- **RAG inverted.** Retrieval feeds *question generation*, not answering. Every
+  question a panelist asks is grounded in a passage retrieved from your
+  document, and the grounding is programmatically checked on every turn rather
+  than trusted.
+- **Adaptive difficulty you can't see.** Every answer is scored internally —
+  clarity, depth, grounding — via structured output, and those scores steer the
+  next question's difficulty without ever surfacing mid-session. The thermostat
+  is hidden because a defense you can read isn't practice.
+- **A panel, not a chatbot.** Nine examiner archetypes hold character across a
+  full session, with turn-taking, follow-up chains when a panelist smells
+  weakness, and a Devil's Advocate who cross-references earlier answers to
+  contest your strongest claim.
+- **Eval-driven, and the evals changed the design.** Model choice, prompt
+  wording, and orchestration were measured against real output, not assumed —
+  including one case where a second-document eval contradicted a headline
+  finding of mine and I published the contradiction. See the
+  [case study](docs/case-study.md).
+
+## The panel
+
+You compose the panel; a Devil's Advocate is always seated.
+
+| Archetype | Lane |
+|---|---|
+| Methodology Expert | Research design, sampling, instrumentation |
+| Literature & Theory Specialist | Framing, citation, theoretical grounding |
+| Technical Implementation Reviewer | Architecture, tooling, build decisions |
+| Ethics & Practicality Reviewer | Consent, risk, real-world deployability |
+| Research Problem & Objectives Reviewer | Problem statement, scope, objective alignment |
+| Statistical & Data Analysis Reviewer | Analysis choices, inference, data handling |
+| Results & Conclusions Reviewer | Whether the conclusions follow from the results |
+| Industry & Professional Practice Reviewer | Standards, practice, professional relevance |
+| Devil's Advocate | Contests your strongest claim, using your earlier answers |
 
 ## How it works
 
@@ -45,75 +66,141 @@ PDF ──► chunk (PyMuPDF, paragraph-aware) ──► relevance gate ──�
                                                                 (MiniLM)
         ┌───────────────────────────────────────────────────────────┘
         ▼
-  Defense profile (type, domain, panel) ──► persona generation
+  Defense profile (type, domain, selected archetypes) ──► persona generation
         ▼
-  ┌─ Agent loop ────────────────────────────────────────────────┐
-  │ retrieve chunk ► panelist asks grounded question ► you answer│
-  │ ► internal scoring ► difficulty adjusts ► follow-up or next  │
-  │   panelist (weakness = they keep the floor)                  │
-  └──────────────────────────────────────────────────────────────┘
+  ┌─ Agent loop ─────────────────────────────────────────────────┐
+  │ retrieve chunk ► panelist asks grounded question ► you answer │
+  │ ► internal scoring ► difficulty adjusts ► follow-up or next   │
+  │   panelist (weakness = they keep the floor)                   │
+  └───────────────────────────────────────────────────────────────┘
         ▼
-  Scoring report — narrative, difficulty trajectory, per-panelist
-  averages, pressure moments (did you recover, hold, or deteriorate?)
+  Scoring report — narrative, difficulty trajectory, per-panelist averages,
+  pressure moments (did you recover, hold, or deteriorate?), and per-answer
+  suggestions grounded in the same passages the questions came from
+        ▼
+  Persisted to disk ──► cross-session analytics (recurring gap themes)
 ```
 
-![Defense profile setup — panel composed from type, domain, and selected archetypes](docs/img/intake-panel.jpg)
+![Defense profile setup — the panel composed from type, domain, and selected archetypes](docs/img/intake-panel.jpg)
 
 Key implementation choices, and why:
 
 - **Structured state, not chat-history replay.** Each LLM call renders a fresh
-  prompt from a typed session model rather than replaying a growing
-  transcript — persona framing is re-injected every call and can't dilute
-  over distance.
-- **Grounding is enforced, not hoped for.** Every generated question carries a
-  reference that is programmatically checked against the retrieved chunk
-  (exact then fuzzy match). At high difficulty, failures trigger a
-  retry-then-flag path — flagged turns are visible in the exported transcript.
-- **Local embeddings, brute-force retrieval.** sentence-transformers +
-  numpy cosine similarity. At a few dozen vectors per document, a vector
-  database is complexity without payoff — this is a deliberate scale decision,
-  recorded, with the upgrade path known.
+  prompt from a typed session model instead of replaying a growing transcript.
+  Persona framing is re-injected every call and can't dilute over distance —
+  and as a free consequence, crash-resume is loading state rather than
+  reconstructing a conversation, because no context ever lived only in memory.
+- **Grounding is checked, not hoped for.** Every generated question carries a
+  reference that's matched against the retrieved chunk (exact, then fuzzy). At
+  high difficulty, failures trigger a retry-then-flag path; flagged turns stay
+  visible in the exported transcript. This check has a known false-negative
+  mode, documented below rather than buried.
+- **Local embeddings, brute-force retrieval.** sentence-transformers plus numpy
+  cosine similarity. At a few dozen vectors per document a vector database is
+  complexity without payoff — a deliberate scale decision, recorded, with the
+  upgrade path known.
 - **Provider-isolated LLM layer.** All Gemini-specific code sits behind one
-  boundary; every call passes through a single choke point that logs
-  lifecycle and counts calls — which is how a real orchestration bug was
-  caught (see below).
+  interface, and every call passes through a single choke point that logs
+  lifecycle, counts calls, and enforces a sliding-window rate limit. That choke
+  point is how a real orchestration bug was caught.
+- **Suggestions are post-mortem, by design.** Per-answer coaching is generated
+  once, at session end, from the full transcript — never during the session.
+  Scores and advice both stay out of the room while you're still in it.
 
-## Engineering process highlights
+## Engineering process
 
-The decision record in [`docs/`](docs/) keeps retired decisions alongside
-current ones — the reversals are documented, not erased.
+The decision record in [`docs/`](docs/) is the part I'd point at first. Retired
+decisions stay in it alongside current ones, with provenance recorded and
+deviations logged — including a rule I pre-committed to that turned out to be
+wrong, and a workflow violation I accused myself of that turned out never to
+have happened and was struck once `git reflog` disproved it.
 
-- **Measured, not assumed:** per-session LLM call count was predicted from
-  the design docs as a formula — 3 setup calls, 2 per turn, 1 report
-  narrative — then verified live by a counter at the provider boundary.
-  The first instrumented run measured a session terminating two turns
-  early: the counter exposed an orchestration bug where one panelist's
-  spent follow-ups silently blocked another's, characterized with
-  line-level evidence before any fix was written.
-- **Model fitness tested per task:** the cheaper dev-default model
-  (`gemini-3.1-flash-lite`) was diagnosed unfit for judgment tasks — it
-  inverted difficulty adjustments on weak answers and inflated clarity
-  scores — with probe results committed as permanent artifacts. The
-  document relevance gate is pinned to `gemini-2.5-flash` as a result;
-  migrating the remaining scoring path off the dev default is a queued
-  roadmap item.
-- **Prompts are versioned.** Every exported transcript is stamped with the
-  PROMPT_VERSION that produced it, because a prompt wording change silently
-  invalidates earlier verification — learned empirically, then enforced
-  mechanically.
-- **Failure modes taxonomized:** high-difficulty fabrication was split into
-  two distinct classes (invented statistics vs. accurate-but-ungrounded
-  paraphrase) with different fixes, rather than treated as one bug.
+- **A founding assumption, retired by evidence — then partly walked back by more
+  evidence.** I designed the internal scoring signal as a correctness detector;
+  a probe showed it was measuring something else. A later eval on a document the
+  system had never seen failed to reproduce the key contrast. Both halves are in
+  the [case study](docs/case-study.md), in that order.
+- **Model fitness tested per task, not assumed from price.** The cheap dev
+  default (`gemini-3.1-flash-lite`) was diagnosed unfit for judgment work, with
+  probe results committed as permanent artifacts. Judgment paths that fit the
+  free-tier budget run on `gemini-2.5-flash`; the one that doesn't is named in
+  [Known limitations](#known-limitations) rather than quietly left out.
+- **Predicted, then measured.** Per-session LLM call count was derived from the
+  design docs as a formula before instrumentation existed, then verified live by
+  a counter at the provider boundary. The first instrumented run measured a
+  session ending two turns early — the counter exposed an orchestration bug
+  where one panelist's spent follow-up budget silently blocked another's,
+  characterized with line-level evidence before any fix was written.
+- **Measured, never derived by arithmetic.** The rate limiter's ceiling doesn't
+  behave as a literal cap — observed peak runs one request above the configured
+  value. The shipped setting is the one empirically verified clean against the
+  real tier. Any tier change re-verifies from scratch.
+- **No LLM grading an LLM.** Every probe's quality columns are judged by hand.
+  The difficulty-tone probe emits a shuffled judging file with labels stripped
+  and a separate key, so the judgment is blind and the unblinding is mechanical.
+
+## Known limitations
+
+Stated here so they're read rather than discovered.
+
+**Retrieval isn't independently evaluated.** The central claim of the project is
+RAG-for-question-generation. The generation half is evaluated hard; the retrieval
+half never has been, and that's the largest gap here. One defect is already
+documented: the retrieval query for each archetype is a fixed string, so the
+embedding is fixed, so the ranking is identical across every session for a given
+document. It surfaces as repeated questions across runs and occasional
+front-matter hits. Three checks that need no labeled data are specified in
+`docs/` and not yet run.
+
+**The internal scoring signal did not reproduce across documents.** On the
+development document, a fluent non-committal answer and a genuine non-answer
+drew opposite difficulty responses — the contrast the whole interpretation rests
+on. On a held-out document, both eased. The mechanism runs; its reliability on
+the production model is unestablished. Full detail in the
+[case study](docs/case-study.md).
+
+**Adaptive difficulty is implemented, not calibration-verified.** No figure is
+claimed for it anywhere in this repo, and the one probe column that looks like
+evidence is explicitly declined as such in the case study.
+
+**Per-answer scoring still runs on the model diagnosed unfit for judgment.**
+`gemini-2.5-flash` can't sustain two calls per turn on a free tier, so scoring
+stays on the cheap model as a deliberate, documented tradeoff. `gemini-2.5-flash`
+is used where the budget allows: the relevance gate, answer suggestions, and gap
+clustering — two calls per session, capping the app at roughly ten full sessions
+a day. This is the single biggest thing a paid tier would change.
+
+**The grounding check has a systematic false-negative mode.** It matches a
+contiguous span, so a reference that legitimately assembles non-contiguous text
+— two figure captions, a range across rows, two cells of one table row — fails
+while being entirely accurate. It concentrates in the archetypes that must cite
+two things through a schema with one slot, which means the metric penalises the
+more sophisticated question types.
+
+**Analytics is local-only by design.** Sessions persist to disk on whichever
+machine runs the app, so the public demo shows an empty analytics view. That's
+the intended privacy behaviour, not a broken feature.
+
+**Live demo operational caveats.** The app sleeps after 12 hours without traffic,
+so a first visitor gets a wake-up click plus roughly 30 seconds. The embedding
+weights are fetched from HuggingFace at cold start — a real runtime dependency,
+not just latency. Working memory sits under Streamlit Community Cloud's
+documented maximum but above its guaranteed floor: it runs fine, and it isn't
+guaranteed to.
 
 ## Stack
 
 Python · Gemini API (`google-genai`) · sentence-transformers
-(`all-MiniLM-L6-v2`, local) · numpy retrieval · PyMuPDF · Pydantic ·
-Streamlit · pytest (131 tests)
+(`all-MiniLM-L6-v2`, local) · numpy retrieval · PyMuPDF · Pydantic · Streamlit ·
+pytest
 
-Business logic is Streamlit-free by rule — the UI is a thin layer over typed
-models, which is the planned migration seam for a future FastAPI + React
-frontend.
+229 tests, 228 passing. The one failure is a known test-isolation artifact — a
+real `.env` re-populates an env var the test clears — logged in `ROADMAP.md`
+rather than skipped to make the suite look green.
+
+Business logic is Streamlit-free by rule, verified by grep rather than assumed —
+no module outside the UI layer imports it. The UI is a thin shell over typed
+models, which is the migration seam for a future FastAPI + React frontend.
 
 ## Run it locally
 
@@ -127,11 +214,17 @@ streamlit run academic_defense_simulator/streamlit_app.py
 
 ## Roadmap
 
-- **v0.3 (current, deployed):** multi-panelist orchestration, adaptive
-  difficulty, Devil's Advocate, scoring report, relevance gate, call
-  instrumentation
-- **v0.4 (next):** session persistence, deeper evals, public API-key design
-- **v1.0:** analytics, deployment hardening, full case study
+**Shipped:** multi-panelist orchestration · adaptive difficulty · Devil's
+Advocate · scoring report with grounded per-answer suggestions · document
+relevance gate · session persistence and resume · cross-session analytics ·
+bring-your-own-key with a capped demo mode · nine archetypes · deployment
+hardening
+
+**Next:** a retrieval eval, closing the gap named above · a difficulty
+discrimination probe · widening `grounding_reference` to fix the false-negative
+mode at the schema rather than at the check
+
+---
 
 Built by **Sean Silver Allata** — [GitHub](https://github.com/slvr123) ·
 [LinkedIn](https://www.linkedin.com/in/sean-silver-allata-9b1885395/)
