@@ -1014,15 +1014,25 @@ def _render_panel_preview_row(
     `defense_type`/`other_subtype`/`selected_archetypes` feed `compose_panel`'s
     lookup) — this profile is a disposable preview object, never stored, never the
     one that starts the session."""
-    preview_profile = DefenseProfile(
-        defense_type=defense_type,
-        other_subtype=other_subtype,
-        domain="preview",
-        topic="preview",
-        selected_archetypes=selected_archetypes,
-        document_id=document_id,
-    )
-    archetype_keys = compose_full_roster(preview_profile)
+    if selected_archetypes:
+        preview_profile = DefenseProfile(
+            defense_type=defense_type,
+            other_subtype=other_subtype,
+            domain="preview",
+            topic="preview",
+            selected_archetypes=selected_archetypes,
+            document_id=document_id,
+        )
+        archetype_keys = compose_full_roster(preview_profile)
+    else:
+        # st.multiselect has no min-selection floor (no such parameter exists), so a
+        # user can clear every domain pick before the submit-time "Select at least
+        # one panelist" check below ever runs. DefenseProfile.selected_archetypes
+        # enforces min_length=1 for the real session profile, rightly — but this
+        # preview reruns on every keystroke and is disposable, so it must tolerate
+        # the zero-selection state instead of raising a ValidationError on it.
+        # Devil's Advocate is always seated regardless of domain selection.
+        archetype_keys = [DEVILS_ADVOCATE_KEY]
     st.markdown('<p class="small-caps-label">Your panel — composed from the profile</p>', unsafe_allow_html=True)
     # Flex row instead of st.columns (bug fix): st.columns divides the row into
     # `len(archetype_keys)` equal-width slots with no floor, and nested one level
