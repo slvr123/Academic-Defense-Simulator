@@ -84,6 +84,21 @@ pre-publish rename pass; interim `dayN`-style names until then).
   Findings: `is_grounded()` false-negative mode on non-contiguous references;
   lane drift tracks retrieval quality, not lane wording; front-matter chunks
   are retrievable. Shipped before v1.0d — deliberate resequencing.
+- **v1.0d complete. v1.0 is closed.**
+  All three gating checks in the close-out session came back clean.
+  No user-supplied key reaches disk, logs, or the export payload: verified
+  empirically with a sentinel key driven through a real provider call, not by
+  code reading alone.
+  No `.env` was ever committed and no Gemini key literal appears anywhere in
+  git history.
+  The committed document-text inventory is bounded and accounted for across all
+  three source documents, with the largest single exposure being a 3827-char
+  chunk of my own thesis in `scripts/v0_4c_stage_c_sample3_session.json`.
+  README and `docs/case-study.md` landed with the demo GIF embedded, and the
+  v1.1a decisions file picked up the dotted naming convention.
+  Secret scanning and push protection could not be enabled from this machine
+  (no `gh` CLI available), so they stay deferred to the post-public-flip step
+  where they were already scoped.
 
 ## Standing constraints (apply to every session below)
 
@@ -314,6 +329,10 @@ overridden).
 4. **Pre-publish rename pass.** All decision logs renamed to
    `v{version}-{slug}-{type}.md` per the standing naming plan. One pass, one commit.
 5. **LinkedIn/visibility writeup** — after everything above, never before.
+6. **`docs/case-study.md` is a deliberate exception to the
+   `v{version}-{slug}-{type}.md` convention**, because it is an audience-facing
+   artifact rather than a decision record. I'm recording it here as a decision so
+   it doesn't later read as naming drift.
 
 ## v1.0 scope addition — answer suggestions (2026-07-22)
 
