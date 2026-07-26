@@ -78,6 +78,12 @@ pre-publish rename pass; interim `dayN`-style names until then).
   verified live.
 - **v0.3 is fully closed.** README with hero and intake screenshots is in the
   repo. Next milestone: v0.4 - Depth & Persistence.
+- **v1.1a — Archetype expansion (shipped).** Four archetypes added
+  (problem/objectives, statistical analysis, results/conclusions, industry
+  practice). 22 probe rows judged; all four ship, no lane changes.
+  Findings: `is_grounded()` false-negative mode on non-contiguous references;
+  lane drift tracks retrieval quality, not lane wording; front-matter chunks
+  are retrievable. Shipped before v1.0d — deliberate resequencing.
 
 ## Standing constraints (apply to every session below)
 

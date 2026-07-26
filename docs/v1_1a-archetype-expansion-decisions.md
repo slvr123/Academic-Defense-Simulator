@@ -344,3 +344,45 @@ Fixed by giving each of the two calls in a pair its own fresh session, and holdi
 Pinning both archetypes in a pair to the identical chunk is a worst-case test: in a real session they'd retrieve different chunks and naturally diverge, so pinning asks the harder question of whether two archetypes given identical material still ask different things.
 That's the correct test — `archetype_lane` exists precisely so archetypes ask different things about the same material, and natural divergence masking a real lane collision would be luck, not design.
 Duplication in the pinned-chunk rows should be judged as a real collision on that basis, and Decision 4's rule fires on it as written, not reinterpreted after seeing what the six collision rows actually say.
+
+---
+
+## Repo state snapshot (recorded 2026-07-26, read-only report — no files changed by this check)
+
+Six commands run on request to confirm what had actually landed and pushed at this
+point in the session, versus what was still local or already cleaned up.
+
+```
+### 1. git log origin/main..HEAD --oneline
+59f14fc docs: render v1.1a probe results as a markdown review sheet
+
+### 2. git status --short
+ M docs/v1.0a-v1.0c-hardening-rename-brief.md
+
+### 3. ls assets/icons/
+advisor.png
+dean.png
+engineer.png
+gorilla.png
+hacker.png
+professor.png
+README.md
+researcher.png
+scholar.png
+student.png
+
+### 4. test -d docs/scratch
+gone
+
+### 5. wc -l
+  818 docs/v1.0a-v1.0c-hardening-rename-brief.md
+  346 docs/v1_1a-archetype-expansion-decisions.md
+ 1164 total
+
+### 6. grep -n "after v1.0d"
+15:**Sequencing:** ships after v1.0d. The README documents the system; changing the
+```
+
+Line 15's original sequencing call (ships after v1.0d) is superseded — see the
+`ROADMAP.md` shipped entry: v1.1a landed before v1.0d, a deliberate resequencing,
+not a slip.
