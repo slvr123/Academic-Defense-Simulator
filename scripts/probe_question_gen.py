@@ -691,7 +691,7 @@ def _write_followup_attribution_results(
 
 
 # ============================================================================
-# v1.1a archetype expansion probe (docs/v1_1a-archetype-expansion-decisions.md,
+# v1.1a archetype expansion probe (docs/v1.1a-archetype-expansion-decisions.md,
 # Code-session brief steps 4-5): per-archetype grounding/variety probes for the four
 # new archetypes, plus collision probes testing Decision 4's lane-drift branches.
 # ============================================================================
