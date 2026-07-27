@@ -39,6 +39,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # rule); these name which document a file's passages were retrieved from.
 DAZSMA = "DAZSMA"          # Group2_Library Management System for DAZSMA Documentation (1).pdf
 SAMPLE3 = "sample3.pdf"    # the TDOA wearable capstone
+# v1.0.1: unlike the two above, this document IS committed, deliberately — it is
+# synthetic project content with no third-party consent or licence attached
+# (Appendix A, Decision 0 as superseded). Its passages are inventoried anyway:
+# the point of this script is a complete account of what committing publishes,
+# and "this exposure is fine" is a conclusion the table should support rather
+# than an assumption that keeps a file out of it.
+ANICHECK = "sample-capstone-anicheck.pdf (synthetic, committed)"
 
 
 def _jsonl_fields(*fields: str) -> Callable[[Path], set[str]]:
@@ -145,6 +152,10 @@ SOURCES: tuple[Source, ...] = (
     Source("scripts/probe_question_gen_v1.1a_results.jsonl", DAZSMA, _jsonl_fields("grounding_reference")),
     Source("scripts/probe_question_gen_v1.1a_review.md", DAZSMA, _review_sheet),
     Source("scripts/v0_4c_stage_c_sample3_session.json", SAMPLE3, _session_export_turns),
+    # v1.0.1 brief step 7: the committed example-session fixture. Same extractor
+    # as the export above, so it gets the same document_chunks assertion — this
+    # file is the exact shape that leaked a 3,827-char chunk at the v1.0 close-out.
+    Source("academic_defense_simulator/sample/example_session.json", ANICHECK, _session_export_turns),
     Source("docs/v0.2-eval-results.md", DAZSMA, _markdown_quote_blocks),
     Source("docs/eval_run_1.log", DAZSMA, _eval_log),
     Source("docs/eval_run_2.log", DAZSMA, _eval_log),

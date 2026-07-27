@@ -32,6 +32,25 @@ intentional and should not be "fixed."
 ## Derived artifacts
 
 `chunks.json`, `embeddings.npy`, and `manifest.json` are generated from this PDF
-by the sidecar build script. **Do not edit the PDF without regenerating them** —
-the manifest carries the SHA-256 above and the staleness guard will reject a
-mismatch.
+by `scripts/build_sample_sidecar.py`. **Do not edit the PDF without regenerating
+them** — the manifest carries the SHA-256 above and the staleness guard in
+`academic_defense_simulator/sample_document.py` will reject a mismatch and fall
+back to ingesting the PDF live.
+
+Regenerate with:
+
+```
+python scripts/build_sample_sidecar.py
+```
+
+## Location
+
+This directory is `academic_defense_simulator/sample/`, inside the package, not
+at the repo root. It ships with the app: the sample loader resolves these files
+package-relative, so they resolve identically on a deployed instance.
+
+`example_session.json` also lives here — the recorded example session (v1.0.1
+Decision 5), rendered read-only by the example stage. It is recorded against
+this same document (Decision 1), and its `document_chunks` is redacted to an
+empty list before commit, asserted by
+`scripts/inventory_committed_document_text.py`.
