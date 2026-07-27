@@ -1,4 +1,11 @@
 [server]
+# Deploy default (v0.3 hardening; scoped to deploy by v1.0.1 Appendix C2). The
+# watcher force-imports the transformers model zoo via a lazy __getattr__ and
+# inflates boot RSS by roughly 225 MB, which matters on the deployed instance
+# where memory is the binding constraint. It does not matter locally, where the
+# watcher is what makes edit-then-re-run work — so scripts/restart_app.py sets
+# STREAMLIT_SERVER_FILE_WATCHER_TYPE, which takes precedence over this file.
+# Leave this as "none": it is what the deployed app resolves to.
 fileWatcherType = "none"
 
 [theme]
