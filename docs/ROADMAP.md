@@ -351,6 +351,26 @@ Docs: v1.0b-analytics-decisions.md, v1.0b-2-answer-suggestions-decisions.md.
 
 ---
 
+## v1.0.2 — Deferred out of the v1.0.1 presentation slice (2026-07-28)
+
+Four items surfaced during v1.0.1 and were deliberately not done in that slice.
+I am parking them here rather than in the appendices alone so they have a version to belong to.
+Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md` that actually specifies it — that entry is the spec, this list is only the schedule.
+
+- **Analytics entry-point gate** (Appendix C1).
+  The sidebar link is a dead end on the deployed app, where persistence is off and `sessions/` is permanently empty, so it invites a click and delivers nothing.
+- **`test_persistence_defaults_off_when_unset` fix, plus the sweep** (Appendix B8).
+  The test asserts a default that the local `.env` overrides, so it fails on any machine that has one.
+  `tests/test_persistence.py:303` folds into the same sweep: it hardcodes a gitignored `sessions/` file path and fails the moment that directory is cleared.
+  Same bug class — a test depending on local state that is not in the repo — so it gets fixed as part of that pass, not as a separate item.
+- **Deploy cold-start latency measurement** (Appendix C4) — post-push.
+  The whole premise of v1.0.1 is a shorter time-to-first-question and it has never been timed on a deployed build; C4 pre-commits the response to either outcome.
+- **Seed-query embedding precomputation** (Appendix C4, flagged as a proposal and not locked).
+  Turn one's retrieval uses fixed archetype seed strings whose embeddings could ship in the sidecar, moving the encoder load behind the first question.
+  Only worth doing if the C4 measurement says the sample path is slow; it needs its own manifest fields and Decision 3 guard assertions, so it is a real task rather than a tweak.
+
+---
+
 ## Parking Lot *(explicitly not scheduled; revisit only at their trigger)*
 
 - **Stack swap — FastAPI + React (Vite, Tailwind, Framer Motion), game-simulator

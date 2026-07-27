@@ -1,11 +1,17 @@
 [server]
 # Deploy default (v0.3 hardening; scoped to deploy by v1.0.1 Appendix C2). The
-# watcher force-imports the transformers model zoo via a lazy __getattr__ and
-# inflates boot RSS by roughly 225 MB, which matters on the deployed instance
-# where memory is the binding constraint. It does not matter locally, where the
-# watcher is what makes edit-then-re-run work — so scripts/restart_app.py sets
-# STREAMLIT_SERVER_FILE_WATCHER_TYPE, which takes precedence over this file.
-# Leave this as "none": it is what the deployed app resolves to.
+# watcher walks the transformers model zoo and costs memory on the deployed
+# instance, where memory is the binding constraint. It does not matter locally,
+# where the watcher is what makes edit-then-re-run work — so
+# scripts/restart_app.py sets STREAMLIT_SERVER_FILE_WATCHER_TYPE, which takes
+# precedence over this file. Leave this as "none": it is what the deployed app
+# resolves to.
+#
+# The saving is ~19 MB, measured with the model resident (v1.0.1 Appendix C5).
+# This comment previously claimed ~225 MB at boot; that figure does not
+# reproduce, because at boot sentence_transformers is not yet imported and there
+# is no model zoo for the watcher to walk. C2 still stands — 19 MB is real and
+# costs nothing to keep — but do not read this setting as defending a large win.
 fileWatcherType = "none"
 
 [theme]
