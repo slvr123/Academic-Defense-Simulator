@@ -1,0 +1,14 @@
+{
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_dim": 384,
+  "chunker_target_chars": 2800,
+  "chunker_overlap_chars": 400,
+  "chunk_count": 14,
+  "pdf_sha256": "6d7ff649bc48a9f8cfd37d82533fee4ccaef1a086b143bc749f8bc78e7c9a761",
+  "page_count": 16,
+  "document_assessment": {
+    "is_defense_material": true,
+    "document_kind": "capstone project",
+    "reason": "This document is explicitly identified as a capstone project, a common form of academic work presented and defended to fulfill degree requirements."
+  }
+}

@@ -1,0 +1,10 @@
+# v1.0.1: the sample document and its precomputed sidecar must round-trip through
+# git byte-for-byte. `core.autocrlf=true` plus git's own text/binary heuristic
+# (which looks for a NUL byte in the first 8000 bytes) classifies this PDF as
+# TEXT — it has none — so a checkout would rewrite its 372 LF bytes to CRLF,
+# change its size, and break the SHA-256 the sidecar manifest asserts against.
+# The staleness guard would then fire on every fresh clone and silently fall back
+# to live ingestion, which is exactly the quiet degradation Decision 3 exists to
+# prevent. Marking these binary is what makes the committed SHA-256 meaningful.
+academic_defense_simulator/sample/*.pdf binary
+academic_defense_simulator/sample/*.npy binary

@@ -44,3 +44,11 @@ sessions/
 
 # Ad-hoc test/driver scripts written during a Code session — not part of the shipped app
 e2e_driver.py
+
+# v1.0.1 Decision 2: the sample document and its precomputed sidecar are shipped
+# artifacts, not local scratch. They collide with two blanket rules above (`*.pdf`
+# for uploaded documents, `chunks.json` for per-run ingestion output), so this
+# directory is excepted explicitly rather than by loosening either rule.
+!academic_defense_simulator/sample/
+!academic_defense_simulator/sample/*.pdf
+!academic_defense_simulator/sample/chunks.json

@@ -88,6 +88,7 @@ from academic_defense_simulator.rag.chunking import DocumentIngestionError, chun
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
+from academic_defense_simulator.sample_document import SAMPLE_DISPLAY_NAME, load_sample_document
 
 # Thin permanent call-lifecycle logging (v0.3 hardening, Task 1b) — light enough to ship,
 # enough that a future hang recurrence has something to look at.
@@ -899,6 +900,18 @@ def _render_dev_view() -> None:
         dev_view = st.toggle("Developer view", key="dev_view_toggle")
         if not dev_view:
             return
+        # v1.0.1 Decision 4 — the sample path reuses a precomputed relevance
+        # assessment instead of calling the gate, and that must be visible rather
+        # than looking like the check was quietly dropped. `source` distinguishes
+        # the two real cases: "sidecar" is the precomputed result, "live" means
+        # the staleness guard rejected the sidecar and the gate ran normally.
+        sample_assessment = st.session_state.get("sample_assessment")
+        if sample_assessment is not None:
+            source = st.session_state.get("sample_assessment_source")
+            marker = "precomputed" if source == "sidecar" else "live (sidecar rejected by guard)"
+            st.caption(f"document relevance gate — {marker}")
+            st.json(sample_assessment.model_dump())
+
         session: DefenseSession | None = st.session_state.get("session")
         if session is not None:
             st.caption(f"difficulty_current: {session.difficulty_current}/5")
@@ -1491,6 +1504,48 @@ def _ingest_and_extract(uploaded_file, *, skip_relevance_check: bool = False) ->
     st.session_state.extracted_topic = extraction.topic
 
 
+def _load_sample_and_extract() -> None:
+    """The sample-document path (v1.0.1 Decisions 2/4). Same post-conditions as
+    `_ingest_and_extract` — `document_id` set, chunks/page count/extraction in
+    session state — reached without an upload and, when the sidecar is current,
+    without the chunking and document-embedding passes.
+
+    Two differences from the upload path, both deliberate. The relevance gate is
+    not called when the sidecar is current: the assessment is precomputed and
+    stored in the manifest (Decision 4), so the sample path spends one fewer
+    gemini-2.5-flash call per session. And if the guard rejects the sidecar, the
+    loader has already re-ingested live and returns `assessment=None` — a stale
+    manifest's assessment is never reused, so the gate fires here instead and the
+    optimisation degrades to the ordinary upload behaviour."""
+    embedding_model = _load_embedding_model()
+    sample = load_sample_document(embedding_model)
+
+    assessment = sample.assessment
+    if assessment is None:
+        with st.spinner("Checking document relevance..."):
+            assessment = assess_document([c.text for c in sample.chunks], _new_relevance_provider())
+
+    settings = load_settings()
+
+    with st.spinner("Extracting domain/topic from the document..."):
+        extraction = extract_document_profile(
+            [c.text for c in sample.chunks], _new_provider(LLM_STAGE_EXTRACTION)
+        )
+
+    st.session_state.document_id = str(uuid4())
+    st.session_state.uploaded_filename = SAMPLE_DISPLAY_NAME
+    st.session_state.page_count = sample.page_count
+    st.session_state.chunks = sample.chunks
+    st.session_state.embedding_model = embedding_model
+    st.session_state.gemini_model = settings.gemini_model
+    st.session_state.extracted_domain = extraction.domain
+    st.session_state.extracted_topic = extraction.topic
+    # Dev-view only (Decision 4's transparency requirement): the gate must not
+    # look absent on the sample path just because it did not fire this session.
+    st.session_state.sample_assessment = assessment
+    st.session_state.sample_assessment_source = sample.source
+
+
 def _render_case_file_sidebar() -> None:
     """Case-file sidebar (v0.3d Decision 9): session context that otherwise has no
     home. Every value here is already computed elsewhere — zero new LLM calls,
@@ -1655,6 +1710,19 @@ if st.session_state.stage == "intake":
             st.caption("PDF · thesis, capstone, or paper")
             process_clicked = st.button("Process document", type="primary", disabled=uploaded_file is None)
 
+            # v1.0.1 Decision 5 (as amended): the sample control lives *inside*
+            # the upload step, as an alternative to choosing a file — not as a
+            # shortcut on the intake screen. A visitor still passes the key-mode
+            # gate and the positioning copy before reaching a question; this
+            # only removes the need to have a PDF of your own to hand.
+            st.markdown(
+                '<p style="text-align:center;color:#8A8378;font-size:0.8rem;margin:0.35rem 0;">'
+                "or</p>",
+                unsafe_allow_html=True,
+            )
+            sample_clicked = st.button("Try a sample capstone", width="stretch")
+            st.caption("A synthetic capstone written for this demo — no upload needed.")
+
             # v0.3g Brief: soft relevance gate — a negative assessment from a prior
             # "Process document" click stays visible (in session_state) until either a
             # fresh "Process document" click re-checks it or "Proceed anyway" bypasses
@@ -1671,6 +1739,7 @@ if st.session_state.stage == "intake":
         else:
             process_clicked = False
             proceed_anyway_clicked = False
+            sample_clicked = False
             # Loaded-document summary (replaces the empty dropzone prompt) — same
             # composition as the prototype's docLoaded branch: filename, ingestion
             # stats, a "read by panel" confirmation.
@@ -1889,6 +1958,19 @@ if st.session_state.stage == "intake":
         with st.spinner("Processing document..."):
             _ingest_and_extract(uploaded_file)
         if "document_id" in st.session_state or st.session_state.relevance_warning is not None:
+            st.rerun()
+
+    if sample_clicked:
+        # Same counter lifecycle as a "Process document" click (v0.3h Brief): the
+        # tally is created at the earliest point any call can happen and keeps
+        # accumulating through extraction, persona generation, and every turn. On
+        # the sample path the gate call is normally absent from that tally — it was
+        # spent once, offline, when the sidecar was built.
+        st.session_state.relevance_warning = None
+        st.session_state.llm_call_counter = CallCounter()
+        with st.spinner("Loading the sample capstone..."):
+            _load_sample_and_extract()
+        if "document_id" in st.session_state:
             st.rerun()
 
     if proceed_anyway_clicked:

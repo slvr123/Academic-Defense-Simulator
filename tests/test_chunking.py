@@ -6,7 +6,7 @@ Exercises the pure packer `_pack` directly with synthetic paragraph lists — no
 
 from __future__ import annotations
 
-from academic_defense_simulator.rag.chunking import _OVERLAP_CHARS, _TARGET_CHARS, _pack, _paragraphs_from_page_text
+from academic_defense_simulator.rag.chunking import OVERLAP_CHARS, TARGET_CHARS, _pack, _paragraphs_from_page_text
 
 
 def _paras(count, size):
@@ -32,7 +32,7 @@ def test_no_chunk_exceeds_target_when_paragraphs_are_small():
     # a little longer because of the "\n\n" separators it joins on.
     for chunk in _pack(_paras(40, 150)):
         content_chars = sum(len(p) for p in chunk.split("\n\n"))
-        assert content_chars <= _TARGET_CHARS
+        assert content_chars <= TARGET_CHARS
 
 
 def test_paragraph_boundaries_are_respected():
@@ -54,11 +54,11 @@ def test_consecutive_chunks_overlap_within_bound():
     # Overlap is the head of chunk 2 and the tail of chunk 1, and stays within the budget.
     assert second[: len(shared)] == shared
     assert first[-len(shared):] == shared
-    assert sum(len(p) for p in shared) <= _OVERLAP_CHARS
+    assert sum(len(p) for p in shared) <= OVERLAP_CHARS
 
 
 def test_oversized_paragraph_is_not_split():
-    big = "BIG-" + "y" * (_TARGET_CHARS * 2)  # single paragraph larger than the target
+    big = "BIG-" + "y" * (TARGET_CHARS * 2)  # single paragraph larger than the target
     chunks = _pack([_paras(1, 150)[0], big, _paras(1, 150)[0]])
     assert any(big in chunk for chunk in chunks), "oversized paragraph must survive intact"
 
