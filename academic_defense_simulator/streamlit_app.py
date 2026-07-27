@@ -63,6 +63,10 @@ from academic_defense_simulator.engine import (
     select_active_panelist,
     session_is_complete,
 )
+from academic_defense_simulator.example_session import (
+    ExampleSessionUnavailable,
+    load_example_session,
+)
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider, validate_gemini_key
 from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
 from academic_defense_simulator.models.defense_profile import (
@@ -522,6 +526,20 @@ def _inject_theme_css() -> None:
             box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.18);
         }
 
+        /* Example-stage banner (v1.0.1 Decision 5, copy per Appendix B3). Same
+           keyed-container technique as .st-key-active_turn_block. This started
+           as st.info() and had to change: the native info box renders blue,
+           which is the one colour nowhere else in this palette, and it is the
+           first thing a visitor sees on the screen the demo-exhausted gate
+           sends them to. The oxblood left rule matches .ads-answer-inset's
+           shape language — a quiet aside, not an alert. */
+        .st-key-example_banner {
+            background: #1A1714;
+            border-left: 3px solid #8C3A3F !important;
+            border-radius: 0 8px 8px 0;
+            padding: 0.9rem 1.1rem;
+        }
+
         /* Intake dropzone (Task 1) — restyles the native file_uploader's own
            dropzone chrome; the widget's drag/drop and browse behavior are
            untouched, only its container border/background change. */
@@ -650,6 +668,52 @@ def _render_hero() -> None:
         "your study against questions that get harder every turn.</p>",
         unsafe_allow_html=True,
     )
+
+
+# v1.0.1 Decision 7 — locked positioning copy. Held as constants for the same
+# reason the example banner is: the decisions doc is the source of truth for this
+# wording, and a test asserts these render verbatim so drift shows up as a failure
+# rather than as a quietly reworded first screen.
+POSITIONING_HEADLINE = "Most RAG demos answer questions about your document. This one asks them."
+
+POSITIONING_EXPANDER_TITLE = "How this works"
+
+# Bullet one is the *verified* variant, not Decision 7's original string. The
+# original claimed "embedded locally — nothing about it is stored on a server",
+# which Decision 7 itself required be verified true on the deployed path before
+# shipping. Verification (this session): persistence is off on deploy —
+# `ADS_PERSISTENCE_ENABLED` unset resolves False, so no session JSON carrying
+# `document_chunks` is ever written there — but retrieved passages *are* sent to
+# Gemini on every question-generation call (`engine.py`, `retrieved_chunk=chunk_text`
+# interpolated into the panelist prompt). The original bullet implied the document
+# never leaves the machine, which is false. Sean locked this replacement in advance
+# for exactly this finding.
+POSITIONING_BULLETS = (
+    "Your document is processed in memory and never stored. Retrieved passages "
+    "are sent to the Gemini API to generate each question.",
+    "Each panelist retrieves a passage and writes a question grounded in that "
+    "specific passage, so the questions are about *your* work, not the topic in "
+    "general.",
+    "Your answer is scored behind the scenes, and that score steers how hard the "
+    "next question is. You never see the score during the session.",
+)
+
+
+def _render_positioning_copy() -> None:
+    """Decision 7: one sentence and three bullets, above the mode radio.
+
+    The headline carries the whole differentiator — RAG generates the questions,
+    not the answers — and the expander is collapsed by default so the fold stays
+    clear on a phone for anyone who does not want the mechanism explained."""
+    st.markdown(
+        '<p style="text-align:center;font-size:1.05rem;line-height:1.5;'
+        'max-width:620px;margin:0 auto 0.75rem;">'
+        f"{html.escape(POSITIONING_HEADLINE)}</p>",
+        unsafe_allow_html=True,
+    )
+    with st.expander(POSITIONING_EXPANDER_TITLE):
+        for bullet in POSITIONING_BULLETS:
+            st.markdown(f"- {bullet}")
 
 
 if st.session_state.stage == "intake":
@@ -858,6 +922,22 @@ def _render_key_gate() -> bool:
         )
         if demo_disabled_reason:
             st.error(demo_disabled_reason)
+            # v1.0.1 Decision 5 — the launch-day failure this exists to prevent:
+            # the post lands, the daily cap is reached, and every visitor after
+            # that meets a disabled button and nothing else. Both exhaustion
+            # paths (daily cap, already-used-this-browser) funnel through
+            # `demo_disabled_reason`, so one control here covers both. This is
+            # the one place the example view is offered at full prominence,
+            # because in this state it is the only thing left to offer.
+            st.write(
+                "You can still watch a complete recorded defense — no key, no upload, "
+                "nothing to set up."
+            )
+            if st.button(
+                "See a recorded example session", key="goto_example_gate", type="primary"
+            ):
+                st.session_state.stage = "example"
+                st.rerun()
             return False
         if st.button("Start demo session", type="primary"):
             # v0.4a Decision 5: the daily slot is spent here, at commit, not at
@@ -1334,6 +1414,72 @@ def _render_report(report: DefenseReport) -> None:
             st.markdown(f"**Turn {suggestion.turn_index + 1}:** {suggestion.suggestion}")
 
 
+# v1.0.1 Appendix B (B3), superseding Decision 5's original banner string. Held as
+# a module constant rather than inlined so the locked wording has exactly one home
+# and a test can assert it verbatim — the copy is a decision, not an implementation
+# detail, and drift here is the kind of thing nobody notices until it ships.
+EXAMPLE_BANNER = (
+    "**Recorded example session — not live.**\n\n"
+    "A complete defense against the sample capstone. The free demo is capped at "
+    "four turns; use your own API key for a full session."
+)
+
+
+def _render_example_stage() -> None:
+    """The read-only example view (v1.0.1 Decision 5): the committed fixture
+    rendered through the same `_render_exchange_history` and `_render_report`
+    every real session uses. No parallel render path — if this view is right,
+    those renderers are right, which is the self-verifying property Decision 5
+    picked it for.
+
+    Read-only means what Decision 5 says it means: no answer box, no submit
+    control, no dev-view toggle (suppressed at the sidebar call site below),
+    and exactly one CTA back to intake.
+
+    The fixture is *not* loaded into `st.session_state.session`. Keeping it in a
+    local means the case-file sidebar stays empty here (it keys off that exact
+    slot), and — more importantly — no live-session code path can ever find a
+    recorded session sitting in the place it expects a real one."""
+    try:
+        persisted = load_example_session()
+    except ExampleSessionUnavailable as exc:
+        # A broken fixture degrades to a message and the route out. It must never
+        # take down the screen, because intake is the only path to a real session.
+        logger.error("example session unavailable: %s", exc)
+        st.error("The recorded example session isn't available right now.")
+        if st.button("Back to intake", key="example_back_unavailable"):
+            st.session_state.stage = "intake"
+            st.rerun()
+        return
+
+    session = persisted.session
+
+    with st.container(key="example_banner"):
+        st.markdown(EXAMPLE_BANNER)
+
+    st.subheader(f"Recorded session — {len(session.turns)} turns")
+    st.caption(
+        f"{session.profile.defense_type.value} · {session.profile.domain} · "
+        f"{_turn_progress_label(session)}"
+    )
+
+    _render_exchange_history(session)
+
+    # Guaranteed non-None by `load_example_session`, which rejects a fixture
+    # without a report rather than letting this view render half a session.
+    assert session.report is not None
+    _render_report(session.report)
+
+    # A plain stage flip, not `_reset()`: the example view never writes session
+    # state, so returning the visitor to exactly the intake they left — key mode
+    # already chosen, document still loaded if they had one — is both correct and
+    # the smaller action. `_reset()` here would silently cost a demo visitor their
+    # resolved key mode for having looked at a recording.
+    if st.button("Back to intake", key="example_back", type="primary"):
+        st.session_state.stage = "intake"
+        st.rerun()
+
+
 def _render_analytics_nav_sidebar() -> None:
     """v1.0b: a small, always-visible sidebar link — not folded into the dev-view
     toggle (analytics is a real end-user feature, not a diagnostics tool) and not
@@ -1657,11 +1803,21 @@ def _render_resume_section() -> None:
     st.divider()
 
 
-_render_dev_view()
-_render_case_file_sidebar()
-_render_analytics_nav_sidebar()
+# v1.0.1 Decision 5: the example stage is read-only, and "no dev-view toggle" is
+# part of what read-only means there — so the three sidebar renderers are skipped
+# wholesale rather than each growing its own stage check. The case-file sidebar
+# would render nothing anyway (no `session` in session state) and the analytics
+# link is off on any deployed instance, but suppressing all three at one call site
+# is what actually makes the rule legible.
+if st.session_state.stage != "example":
+    _render_dev_view()
+    _render_case_file_sidebar()
+    _render_analytics_nav_sidebar()
 
-if st.session_state.stage == "intake":
+if st.session_state.stage == "example":
+    _render_example_stage()
+
+elif st.session_state.stage == "intake":
     # One combined page (Sean's ask): the dropzone and the defense-profile form
     # live on the same screen, matching the design prototype's composition. The
     # profile section only appears once `document_id` exists — that's the real
@@ -1680,6 +1836,12 @@ if st.session_state.stage == "intake":
     # the whole intake UI immediately, before the call starts, instead of
     # leaving stale content sitting above the spinner.
     #
+    # v1.0.1 Decision 7 — positioning copy, above the mode radio so it clears the
+    # fold on a phone. The wording is locked in the decisions doc and rendered from
+    # module constants rather than composed here: changing it is a decision, not an
+    # implementation detail.
+    _render_positioning_copy()
+
     # v0.4a Decision 1: the key/mode gate renders above all of the above and
     # everything below is unreachable until it resolves — st.stop() here is the
     # smallest-diff way to enforce that without re-nesting this whole 200-line
@@ -1736,6 +1898,20 @@ if st.session_state.stage == "intake":
                     f"{relevance_warning.reason}"
                 )
                 proceed_anyway_clicked = st.button("Proceed anyway")
+
+            # v1.0.1 Decision 5 (as amended): the example-session control sits
+            # *below* the upload step as a subordinate secondary control, and must
+            # not compete with the upload affordance or the primary CTA — hence a
+            # tertiary (link-styled) button, not a bordered one. It renders only
+            # while there is no document loaded: once a visitor has one ingested
+            # they are committed to a real session, and an offer to go read a
+            # recording instead is clutter at best.
+            #
+            # It gains full prominence in exactly one place — the demo-exhausted
+            # gate in `_render_key_gate`, where it is the only thing left to offer.
+            if st.button("See a recorded example session", key="goto_example_intake", type="tertiary"):
+                st.session_state.stage = "example"
+                st.rerun()
         else:
             process_clicked = False
             proceed_anyway_clicked = False
