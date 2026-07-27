@@ -318,7 +318,26 @@ def _abort_demo_limit() -> None:
     _persist(SessionStage.ABORTED)
 
 
-st.set_page_config(page_title="Academic Defense Simulator", initial_sidebar_state="expanded")
+# Stages where the sidebar carries live session context worth having open on arrival:
+# the case file, the panel roster, and turn progress all exist only once a defense is
+# under way. Intake and analytics get nothing from it, so it starts out of the way.
+_SIDEBAR_EXPANDED_STAGES = frozenset({"running", "aborted", "done"})
+
+# Verified against Streamlit 1.58 (headless browser, this repo's app): `initial_sidebar_state`
+# is applied on every script run, not just the first, but only when the value CHANGES.
+# Re-sending the same value is a no-op, and any manual toggle by the user disables the
+# mechanism outright for the rest of that page load. That gives exactly the behavior we
+# want from one stage-driven expression: collapsed through intake, then the flip to
+# "expanded" when the conversation with the panel starts opens it; every later turn
+# re-sends "expanded" unchanged, so a mid-session collapse by the user sticks. It is
+# also why intake declares "collapsed" rather than the old unconditional "expanded":
+# without a value change there is no way to open the sidebar at the stage transition.
+st.set_page_config(
+    page_title="Academic Defense Simulator",
+    initial_sidebar_state=(
+        "expanded" if st.session_state.get("stage") in _SIDEBAR_EXPANDED_STAGES else "collapsed"
+    ),
+)
 
 
 def _inject_theme_css() -> None:
