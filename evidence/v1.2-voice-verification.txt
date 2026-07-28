@@ -415,6 +415,90 @@ STILL NOT DONE, and not doable here: the listening judgement itself. The harness
 is the instrument; which pairs are indistinguishable is Sean's call.
 
 
+ADDENDUM 2026-07-29 — voice-close session (values pass 2)
+----------------------------------------------------------
+Closes the two items the close session had to record as FAILED. The Chrome
+extension was down when the values pass landed, so the probe fix shipped
+unexecuted; it has now been run.
+
+PROBE voiceschanged FIX (was DoD 2, failed -> closed)
+The probe previously read getVoices() before the list populated and reported
+"0 voices installed" on a browser with 26. It now waits on voiceschanged the
+same way the shipped component does. Live Chrome re-run:
+
+    voices reported by probe : 22    (was 0 before the fix)
+    English voices           : 6
+    fix took                 : true
+
+22 is exactly the count in the original evidence above, so the probe is no
+longer understating the inventory it exists to report.
+
+FULL INVENTORY DUMP (was DoD 3, failed -> closed)
+The probe now reports name / lang / localService / default, not only what
+resolved. Chrome:
+
+    name                                          lang     service   default
+    ----------------------------------------------------------------------
+    Microsoft David - English (United States)     en-US    local     DEFAULT
+    Microsoft Mark - English (United States)      en-US    local
+    Microsoft Zira - English (United States)      en-US    local
+    Google Deutsch                                de-DE    network
+    Google US English                             en-US    network
+    Google UK English Female                      en-GB    network
+    Google UK English Male                        en-GB    network
+    Google espanol                                es-ES    network
+    Google espanol de Estados Unidos              es-US    network
+    Google francais                               fr-FR    network
+    Google Hindi                                  hi-IN    network
+    Google Bahasa Indonesia                       id-ID    network
+    ... (22 total, 6 English)
+
+BACKWARD COMPATIBILITY, MEASURED (upgrades the deterministic check)
+The values pass prepends Edge voice names to every profile. The close session
+could only verify fall-through by walking voice_prefs against the recorded
+inventory in Python. Now measured live in Chrome:
+
+    archetype                           resolved (live)                             vs committed
+    -----------------------------------------------------------------------------------------
+    methodology_expert                  Google UK English Male                      unchanged
+    literature_theory_specialist        Google UK English Female                    unchanged
+    technical_implementation_reviewer   Microsoft David - English (United States)   unchanged
+    ethics_practicality_reviewer        Microsoft Zira - English (United States)    unchanged
+    devils_advocate                     Microsoft Mark - English (United States)    unchanged
+    problem_objectives_reviewer         Google US English                           unchanged
+    statistical_analysis_reviewer       Google UK English Male                      unchanged
+    results_conclusions_reviewer        Microsoft David - English (United States)   unchanged
+    industry_practice_reviewer          Microsoft Zira - English (United States)    unchanged
+
+    ALL 9 unchanged from committed evidence: true
+
+Why it holds: every prepended name is absent from Chrome's inventory, and
+"Microsoft David" (Edge) is a different string from "Microsoft David - English
+(United States)" (Chrome), so there is no accidental match.
+
+The new pitch/rate values are live in the components, confirming the values pass
+reached the shipped path rather than only the map:
+
+    methodology_expert                  pitch 0.95  rate 0.94
+    literature_theory_specialist        pitch 1.10  rate 0.90
+    technical_implementation_reviewer   pitch 1.15  rate 1.05
+    ethics_practicality_reviewer        pitch 0.70  rate 0.85
+    devils_advocate                     pitch 0.95  rate 1.10
+    problem_objectives_reviewer         pitch 1.00  rate 1.04
+    statistical_analysis_reviewer       pitch 1.05  rate 1.00
+    results_conclusions_reviewer        pitch 1.20  rate 1.06
+    industry_practice_reviewer          pitch 0.80  rate 0.90
+
+Forced no-match row still behaves per Decision 4 steps 3 and 4:
+
+    {"resolved":"(browser default)","pitch":1.42,"rate":0.61}
+
+STILL OPEN after this session, unchanged:
+DoD 5's by-ear listening pass. Recorded in Decision 5 as NOT PERFORMED, assumed,
+unverified. The shared-voice male pairs (ethics+technical on David,
+results+industry on Mark) are the case most likely to fail.
+
+
 CALL BUDGET
 -----------
 Zero LLM or embedding calls added by the feature, as declared. The 9 calls made
