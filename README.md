@@ -181,6 +181,12 @@ more sophisticated question types.
 machine runs the app, so the public demo shows an empty analytics view. That's
 the intended privacy behaviour, not a broken feature.
 
+**Panelist voice depends on your browser.** The panel reads questions aloud using
+the browser's own speech engine (opt-in, off by default). Which voices exist is
+the browser's business, not the app's: Edge ships several neural and accented
+English voices that Chrome doesn't have, so the same session sounds noticeably
+better there. Any recorded demo was captured in Edge.
+
 **Live demo operational caveats.** The app sleeps after 12 hours without traffic,
 so a first visitor gets a wake-up click plus roughly 30 seconds. The embedding
 weights are fetched from HuggingFace at cold start — a real runtime dependency,

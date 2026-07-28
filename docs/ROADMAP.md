@@ -99,6 +99,24 @@ pre-publish rename pass; interim `dayN`-style names until then).
   Secret scanning and push protection could not be enabled from this machine
   (no `gh` CLI available), so they stay deferred to the post-public-flip step
   where they were already scoped.
+- **v1.2 — Panelist voice (TTS). Closed 2026-07-29. Voice is closed, not parked.**
+  Browser-native speech for panelist questions: deterministic archetype → voice
+  map, one component per question with in-iframe controls, sidebar toggle
+  defaulting off. Zero API calls, zero new dependencies, zero prompt-template
+  edits — the first slice since v0.3a with a genuinely nil per-session cost.
+  Three values passes: the from-memory seeds, a correction after the resolution
+  probe found nine archetypes collapsing onto three Chrome voices with a worst
+  co-seatable pitch gap of 0.07, and a final pass onto the Edge inventory.
+  Same-gender voice reuse is forced by that inventory (three male English voices
+  against five male avatars) and accepted; the two reused pairs were computed to
+  be the two that never co-occur in a default panel.
+  **DoD 5's by-ear separation pass was not performed and is recorded as
+  unverified, not passed.** Per-panel distinguishability is assumed.
+  **No v1.3 voice slice.** Server-side audio, STT, Kokoro, Piper, edge-tts,
+  Gemini TTS and Cloud TTS were all evaluated and rejected 2026-07-28.
+  **Next milestone: the retrieval eval** (v1.1), which this slice deliberately
+  did not compete with for time — see `docs/v1.2-panelist-voice-decisions.md`
+  Decision 0.
 
 ## Standing constraints (apply to every session below)
 
@@ -385,8 +403,14 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
   boundary (standing constraint 4) is what makes this a wrap, not a rewrite.
   Estimated 3–6 weeks, mostly frontend work — a knowing trade of AI-signal time for
   full-stack-product signal. Gets its own design day(s) if triggered.
-- **Voice I/O** — v1.x garnish at most, after the core is done. Zero AI-engineering
-  signal; do not let it compete with orchestration or eval work for time.
+- ~~**Voice I/O** — v1.x garnish at most, after the core is done. Zero AI-engineering
+  signal; do not let it compete with orchestration or eval work for time.~~
+  **Output half shipped and closed as v1.2** (2026-07-29). The constraint this entry
+  existed to protect held: the slice cost no AI-core time and no API calls, and the
+  retrieval eval is still the next milestone. Speech-to-text stays unbuilt and
+  unparked — see Decision 1 for the guard any future STT slice must satisfy
+  (transcript lands in an editable box, text stays canonical, scoring never sees
+  audio). No v1.3 voice slice.
 - ~~Score-driven turn-taking — v0.3.x, only after round-robin is verified in
   evals.~~ **Shipped as v0.3f** (adaptive turn retention: follow-up floor
   retention + gated new-topic rotation) — no longer parked.
