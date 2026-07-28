@@ -113,10 +113,13 @@ def test_positioning_bullets_are_locked_copy() -> None:
     """Bullet one is the verified replacement, not Decision 7's original string —
     the original claimed nothing about the document leaves the machine, and
     retrieved passages demonstrably go to Gemini on every question-generation
-    call. Bullets two and three are Decision 7 verbatim."""
+    call. "transiently ... never retained" is deliberate: the upload does touch
+    disk as a temp file for the length of the chunking pass, so "in memory"
+    would have been the same kind of not-quite-true claim this bullet exists to
+    correct. Bullets two and three are Decision 7 verbatim."""
     assert app.POSITIONING_BULLETS == (
-        "Your document is processed in memory and never stored. Retrieved passages "
-        "are sent to the Gemini API to generate each question.",
+        "Your document is processed transiently and never retained. Retrieved "
+        "passages are sent to the Gemini API to generate each question.",
         "Each panelist retrieves a passage and writes a question grounded in that "
         "specific passage, so the questions are about *your* work, not the topic in "
         "general.",

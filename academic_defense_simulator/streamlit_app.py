@@ -686,11 +686,15 @@ POSITIONING_EXPANDER_TITLE = "How this works"
 # `document_chunks` is ever written there — but retrieved passages *are* sent to
 # Gemini on every question-generation call (`engine.py`, `retrieved_chunk=chunk_text`
 # interpolated into the panelist prompt). The original bullet implied the document
-# never leaves the machine, which is false. Sean locked this replacement in advance
-# for exactly this finding.
+# never leaves the machine, which is false.
+#
+# "transiently ... never retained" rather than "in memory ... never stored":
+# `_ingest_and_extract` writes the upload to a NamedTemporaryFile for the length
+# of the chunking pass and deletes it in a `finally`. Nothing survives that call,
+# so "never retained" is exactly true where "in memory" would not have been.
 POSITIONING_BULLETS = (
-    "Your document is processed in memory and never stored. Retrieved passages "
-    "are sent to the Gemini API to generate each question.",
+    "Your document is processed transiently and never retained. Retrieved "
+    "passages are sent to the Gemini API to generate each question.",
     "Each panelist retrieves a passage and writes a question grounded in that "
     "specific passage, so the questions are about *your* work, not the topic in "
     "general.",
