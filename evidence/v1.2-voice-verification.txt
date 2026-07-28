@@ -342,6 +342,79 @@ not (0 voices — no platform TTS engine), which is why the verification was don
 in Chrome instead. Nothing was added to the project environment.
 
 
+ADDENDUM 2026-07-28 — audible listening harness (close-out session)
+--------------------------------------------------------------------
+scripts/probe_voice_resolution.py gained a second mode so DoD 5's by-ear half
+can be performed without restarting the app or spending API calls.
+
+    /              resolution mode, DEFAULT, unchanged. speak() stubbed.
+    /?audible=1    listening mode. speak() wrapped and called through.
+
+Default mode verified unchanged after the edit — re-run live, output identical
+to the "AFTER (corrected table)" table above: 7 distinct resolved voices across
+10 profiles, the forced no-match row still (browser default) at pitch 1.42 /
+rate 0.61, and the same three shared pairs at gaps 0.38 / 0.38 / 0.32.
+
+Groups are DERIVED from PANEL_COMPOSITION and the compose_full_roster rule in
+academic_defense_simulator/panel.py, not hardcoded. compose_full_roster is
+`compose_panel(profile) + [DEVILS_ADVOCATE_KEY]` with no condition, which is why
+Devil's Advocate appears in all 8 groups. Two-domain stress panels are legal
+because DefenseProfile.selected_archetypes is min_length=1, max_length=3.
+
+    [default] thesis                       methodology, literature, problem, DA
+    [default] capstone                     technical, methodology, results, DA
+    [default] other/oral_comps             literature, methodology, problem, DA
+    [default] other/scholarship_panel      problem, ethics, methodology, DA
+    [default] other/certification_interview technical, industry, methodology, DA
+    [stress]  thesis    methodology + statistical     both want Google UK English Male
+    [stress]  thesis    technical + results           both want Microsoft David
+    [stress]  capstone  ethics + industry             both want Microsoft Zira
+
+    (other/grant_defense[:3] is identical to other/scholarship_panel[:3], so it
+    deduped away — 6 composition keys produce 5 distinct default panels.)
+
+NOTE WORTH ACTING ON: the capstone DEFAULT panel already contains a shared-voice
+pair (technical + results, both Microsoft David). That is not a contrived stress
+case, it is what a capstone visitor gets without touching the panel picker, so it
+is the first group to judge.
+
+Every archetype speaks one identical 14-word line, so a difference heard is the
+voice and not the words:
+    "The panel has reviewed your document and would like to discuss your methods now."
+
+Playback alternates across the panel and cycles twice, rather than blocking one
+voice before moving to the next — sequential blocking is an easier discrimination
+task than the real condition Decision 5 scoped the requirement to.
+
+Guard keys are pre-seeded before the iframes parse, so no component auto-speaks on
+load. Confirmed: 8 groups, 29 component iframes, 0 auto-spoke.
+
+Playback drives each component's OWN in-iframe play control, so the resolution
+chain exercised is the shipped one, not a copy.
+
+Per-archetype display, group 5 (stress), captured after a real run:
+    GROUP 5 — STRESS · thesis: methodology_expert + statistical_analysis_reviewer
+                        both want 'Google UK English Male'
+    status: done
+      methodology_expert            | resolved: Google UK English Male | pitch 0.80 · rate 0.94
+      statistical_analysis_reviewer | resolved: Google UK English Male | pitch 1.18 · rate 1.06
+      devils_advocate               | resolved: Microsoft Mark - English (US) | pitch 0.94 · rate 1.12
+
+Audio genuinely produced (this is the harness's whole point, so it was measured
+rather than assumed). Driving devils_advocate through the component's own play
+control and sampling speechSynthesis.speaking every 200ms for 8 seconds:
+
+    timeline: SSSSSSSSSSSSSSSSSSSSSS..................
+    ever speaking: true          speaking samples: 22/40
+
+i.e. ~4.4s of continuous speech for the 14-word line, then silence. The wrapped
+speak() also fires real onstart/onend events, confirming call-through rather than
+recording only.
+
+STILL NOT DONE, and not doable here: the listening judgement itself. The harness
+is the instrument; which pairs are indistinguishable is Sean's call.
+
+
 CALL BUDGET
 -----------
 Zero LLM or embedding calls added by the feature, as declared. The 9 calls made
