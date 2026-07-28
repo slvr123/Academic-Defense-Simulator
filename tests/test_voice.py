@@ -21,7 +21,11 @@ import re
 import pytest
 
 import academic_defense_simulator.streamlit_app as app
-from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, VOICE_PROFILES
+from academic_defense_simulator.panel import (
+    DEVILS_ADVOCATE_KEY,
+    PANEL_COMPOSITION,
+    VOICE_PROFILES,
+)
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 
 
@@ -116,6 +120,34 @@ def test_devils_advocate_does_not_share_a_first_preference():
     others = [k for k in VOICE_PROFILES if k != DEVILS_ADVOCATE_KEY]
     clashes = [k for k in others if VOICE_PROFILES[k]["voice_prefs"][0] == da_voice]
     assert clashes == [], f"Devil's Advocate shares its voice with {clashes}"
+
+
+def _default_panels() -> dict[str, list[str]]:
+    """The panel the UI pre-selects for each defense type: the first three of the
+    composition roster, plus Devil's Advocate, which `compose_full_roster` appends to
+    every roster unconditionally."""
+    return {ck: roster[:3] + [DEVILS_ADVOCATE_KEY] for ck, roster in PANEL_COMPOSITION.items()}
+
+
+def test_default_panels_have_no_repeated_first_preference():
+    """The strict form of the per-panel property, and it is only assertable because the
+    inventory happens to allow it.
+
+    Edge offers three male English voices, and the avatar set is five male to four
+    female, so male reuse across the nine archetypes is forced. Whether that reuse can
+    be kept *out of* every default panel is a separate question, and it comes down to
+    the worst panel: `capstone` and `other/certification_interview` each seat three
+    male archetypes. Three seats, three male voices, so the strict property is exactly
+    satisfiable — with no margin. Add a fourth male archetype to either panel and this
+    test becomes unsatisfiable and must be weakened to "at most one shared pair per
+    panel, shared pairs at least 0.30 apart in pitch"; see the Decision 5 amendment."""
+    for comp_key, members in _default_panels().items():
+        firsts = [VOICE_PROFILES[m]["voice_prefs"][0] for m in members]
+        dupes = {v for v in firsts if firsts.count(v) > 1}
+        assert not dupes, (
+            f"default panel {comp_key!r} seats two archetypes wanting the same voice "
+            f"{dupes}: " + ", ".join(f"{m}->{VOICE_PROFILES[m]['voice_prefs'][0]}" for m in members)
+        )
 
 
 def test_fallback_tiers_are_spread_too():

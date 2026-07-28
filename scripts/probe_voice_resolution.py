@@ -315,14 +315,33 @@ def _build_page() -> str:
 <div id="out">resolving...</div>
 <script>
 const PREFS = {expected};
-window.addEventListener("load", () => setTimeout(() => {{
-  const voices = speechSynthesis.getVoices().map(v => v.name);
+
+// The probe used to read getVoices() straight off, and on Edge that returned an empty
+// list on a machine with 26 voices installed — the same async quirk the shipped
+// component handles via `voiceschanged` (Decision 4, step 1). The probe not handling it
+// was a measurement bug, not a product bug, but it produced an all-"(browser default)"
+// table that reads exactly like a broken map. Same wait as the component, so the probe
+// cannot understate the inventory it exists to report.
+function whenVoicesReady(callback) {{
+  if (speechSynthesis.getVoices().length > 0) {{ callback(); return; }}
+  var fired = false;
+  function fire() {{ if (fired) {{ return; }} fired = true; callback(); }}
+  speechSynthesis.addEventListener("voiceschanged", fire, {{ once: true }});
+  setTimeout(fire, 3000);
+}}
+
+window.addEventListener("load", () => whenVoicesReady(() => setTimeout(() => {{
+  const inventory = speechSynthesis.getVoices().map(v => ({{
+    name: v.name, lang: v.lang, localService: v.localService, default: v.default,
+  }}));
+  const voices = inventory.map(v => v.name);
+  const english = inventory.filter(v => /^en\\b|^en-/i.test(v.lang));
   const rows = [...document.querySelectorAll("#frames iframe")].map(f => {{
     const r = f.contentWindow.__result;
     return {{ key: f.dataset.key, resolved: r ? (r.voice || "(browser default)") : "(did not speak)",
               pitch: r ? r.pitch : null, rate: r ? r.rate : null }};
   }});
-  window.__ads_probe = {{ inventory: voices, rows }};
+  window.__ads_probe = {{ inventory: voices, voices: inventory, english, rows }};
 
   const counts = {{}};
   rows.forEach(r => counts[r.resolved] = (counts[r.resolved] || 0) + 1);
@@ -332,14 +351,23 @@ window.addEventListener("load", () => setTimeout(() => {{
            `<td>${{r.pitch}}</td><td>${{r.rate}}</td>` +
            `<td>${{PREFS[r.key].join(" &middot; ")}}</td></tr>`;
   }}).join("");
+  // Full inventory, not just what resolved: name, lang, localService. A profile can
+  // only resolve to something in this list, so when a table looks wrong this is the
+  // first thing to read.
+  const invRows = inventory.map(v =>
+    `<tr><td>${{v.name}}</td><td>${{v.lang}}</td>` +
+    `<td>${{v.localService ? "local" : "network"}}</td>` +
+    `<td>${{v.default ? "DEFAULT" : ""}}</td></tr>`).join("");
+
   document.getElementById("out").innerHTML =
-    `<p>${{voices.length}} voices installed; ` +
+    `<p>${{voices.length}} voices installed (${{english.length}} English); ` +
     `${{new Set(rows.map(r => r.resolved)).size}} distinct voices resolved across ` +
     `${{rows.length}} profiles. Shaded rows share a resolved voice.</p>` +
     `<table><tr><th>archetype</th><th>resolved voice</th><th>pitch</th><th>rate</th>` +
     `<th>voice_prefs</th></tr>${{body}}</table>` +
-    `<h2>installed</h2><pre>${{voices.join("\\n")}}</pre>`;
-}}, 2500));
+    `<h2>full inventory (${{voices.length}})</h2>` +
+    `<table><tr><th>name</th><th>lang</th><th>service</th><th></th></tr>${{invRows}}</table>`;
+}}, 2500)));
 </script>
 </body></html>
 """

@@ -74,9 +74,33 @@ class VoiceProfile(TypedDict):
     rate: float  # 0.1-10.0, browser default 1.0
 
 
-# v1.2 amendment (2026-07-28), replacing the Decision 5 seed values. The seeds are kept
-# in the decisions file per the retired-decisions rule; this is what the resolution probe
-# produced. `scripts/probe_voice_resolution.py` regenerates the evidence on any machine.
+# v1.2 values pass 2 (2026-07-28, voice-close session). Edge exposes nine English voices
+# where Chrome exposes six, including six network-backed ones Chrome does not have, so the
+# Edge names are PREPENDED and every previous entry stays below them. Chrome never matches
+# the new names and falls straight through to the behaviour verified in the committed
+# evidence — backward compatible by construction, not by testing after the fact.
+#
+# The inventory forces something the earlier passes did not have to deal with. Edge offers
+# three male English voices and six female, while the avatar set is five male and four
+# female. Female archetypes therefore get four distinct voices with no reuse; male
+# archetypes cannot, and two reuses are forced. That is accepted (Sean, 2026-07-28), not a
+# mapping error, and there is no male en-GB/en-AU/en-IN voice to spread into.
+#
+# Which pairs share was computed, not picked. Default-panel co-occurrence for every male
+# pair was counted, and the two reused pairs are the two that co-occur zero times:
+# ethics+technical on David, results+industry on Mark. Devil's Advocate holds the only
+# neural male voice alone, because it joins every roster and so is heard more than any
+# other archetype. The result satisfies the strict property that within each of the six
+# default panels every seated archetype resolves to a distinct first-preference voice.
+#
+# Gender alignment holds on Edge only. On Chrome the fall-through means some archetypes
+# still resolve to a voice that does not match their avatar's gender; that is the price of
+# not breaking the verified Chrome behaviour, and it is recorded in Decision 10.
+#
+# Earlier v1.2 amendment (2026-07-28), replacing the Decision 5 seed values. The seeds are
+# kept in the decisions file per the retired-decisions rule; this is what the resolution
+# probe produced. `scripts/probe_voice_resolution.py` regenerates the evidence on any
+# machine.
 #
 # What the seeds got wrong was the preference lists, not the pitch and rate values. On a
 # stock Windows Chrome the browser offers 22 voices but only six in English, and the seed
@@ -100,49 +124,94 @@ class VoiceProfile(TypedDict):
 # acoustic only. No archetype's voice was chosen to suit what it does.
 VOICE_PROFILES: dict[str, VoiceProfile] = {
     "methodology_expert": {
-        "voice_prefs": ["Google UK English Male", "Daniel", "Microsoft David - English (United States)"],
-        "pitch": 0.80,
+        "voice_prefs": [
+            "Microsoft Aria Online (Natural)",  # Edge
+            "Google UK English Male",
+            "Daniel",
+            "Microsoft David - English (United States)",
+        ],
+        "pitch": 0.95,
         "rate": 0.94,
     },
     "literature_theory_specialist": {
-        "voice_prefs": ["Google UK English Female", "Karen", "Microsoft Zira - English (United States)"],
-        "pitch": 1.15,
+        "voice_prefs": [
+            "Microsoft Libby Online (Natural)",  # Edge
+            "Google UK English Female",
+            "Karen",
+            "Microsoft Zira - English (United States)",
+        ],
+        "pitch": 1.10,
         "rate": 0.90,
     },
     "technical_implementation_reviewer": {
-        "voice_prefs": ["Microsoft David - English (United States)", "Alex", "Google US English"],
-        "pitch": 0.86,
-        "rate": 1.00,
+        "voice_prefs": [
+            "Microsoft David",  # Edge
+            "Microsoft David - English (United States)",
+            "Alex",
+            "Google US English",
+        ],
+        "pitch": 1.15,
+        "rate": 1.05,
     },
     "ethics_practicality_reviewer": {
-        "voice_prefs": ["Microsoft Zira - English (United States)", "Moira", "Google UK English Female"],
-        "pitch": 1.08,
-        "rate": 0.92,
+        "voice_prefs": [
+            "Microsoft David",  # Edge
+            "Microsoft Zira - English (United States)",
+            "Moira",
+            "Google UK English Female",
+        ],
+        "pitch": 0.70,
+        "rate": 0.85,
     },
     "devils_advocate": {
-        "voice_prefs": ["Microsoft Mark - English (United States)", "Rishi", "Google UK English Male"],
-        "pitch": 0.94,
-        "rate": 1.12,
+        "voice_prefs": [
+            "Microsoft Guy Online (Natural)",  # Edge
+            "Microsoft Mark - English (United States)",
+            "Rishi",
+            "Google UK English Male",
+        ],
+        "pitch": 0.95,
+        "rate": 1.10,
     },
     "problem_objectives_reviewer": {
-        "voice_prefs": ["Google US English", "Samantha", "Microsoft Zira - English (United States)"],
-        "pitch": 1.05,
+        "voice_prefs": [
+            "Microsoft Hayley Online",  # Edge
+            "Google US English",
+            "Samantha",
+            "Microsoft Zira - English (United States)",
+        ],
+        "pitch": 1.00,
         "rate": 1.04,
     },
     "statistical_analysis_reviewer": {
-        "voice_prefs": ["Google UK English Male", "Oliver", "Microsoft Mark - English (United States)"],
-        "pitch": 1.18,
-        "rate": 1.06,
+        "voice_prefs": [
+            "Microsoft Priya Online",  # Edge
+            "Google UK English Male",
+            "Oliver",
+            "Microsoft Mark - English (United States)",
+        ],
+        "pitch": 1.05,
+        "rate": 1.00,
     },
     "results_conclusions_reviewer": {
-        "voice_prefs": ["Microsoft David - English (United States)", "Tessa", "Google UK English Female"],
-        "pitch": 1.24,
-        "rate": 1.08,
+        "voice_prefs": [
+            "Microsoft Mark",  # Edge
+            "Microsoft David - English (United States)",
+            "Tessa",
+            "Google UK English Female",
+        ],
+        "pitch": 1.20,
+        "rate": 1.06,
     },
     "industry_practice_reviewer": {
-        "voice_prefs": ["Microsoft Zira - English (United States)", "Fiona", "Google US English"],
-        "pitch": 0.76,
-        "rate": 0.98,
+        "voice_prefs": [
+            "Microsoft Mark",  # Edge
+            "Microsoft Zira - English (United States)",
+            "Fiona",
+            "Google US English",
+        ],
+        "pitch": 0.80,
+        "rate": 0.90,
     },
 }
 
