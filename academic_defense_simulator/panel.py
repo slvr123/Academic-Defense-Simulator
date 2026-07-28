@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TypedDict
 
 from academic_defense_simulator.llm.provider import LLMProvider, LLMProviderError
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
@@ -45,6 +46,104 @@ ARCHETYPE_DEFAULT_ICONS: dict[str, str] = {
     "statistical_analysis_reviewer": "📊",
     "results_conclusions_reviewer": "📈",
     "industry_practice_reviewer": "💼",
+}
+
+# v1.2 Decision 3 — the archetype -> voice map, deliberately beside the avatar map:
+# one archetype key, one lookup, both cosmetic identity fields together. Same reason
+# the icon block above lives here rather than in ARCHETYPE_CONFIG — nothing in it ever
+# reaches an LLM call, and adding it here keeps the standing import boundary intact
+# (this module still imports no streamlit). It is read only by the Streamlit layer.
+#
+# Decision 4's shape: an ordered preference list plus pitch and rate. The list is
+# ordered because browser voice inventories are platform-dependent and uncontrollable
+# — first name present wins, and where none is present the browser default is used
+# with pitch and rate still applied (that unconditional application is what stops a
+# panel collapsing into one voice reading everything).
+#
+# Decision 6: assignment is on acoustic separation alone. Voices are NOT matched to
+# what an archetype does — no female-voiced ethics reviewer, no male-voiced technical
+# reviewer. A later tuning pass must not reintroduce that while chasing "fit".
+#
+# Decision 5: the requirement is that the 2-4 archetypes actually seated are
+# distinguishable from each other, not that all nine are mutually distinguishable.
+# Key order below mirrors ARCHETYPE_DEFAULT_ICONS for readability only — unlike that
+# map, nothing here depends on index position.
+class VoiceProfile(TypedDict):
+    voice_prefs: list[str]  # ordered, first available wins
+    pitch: float  # 0.0-2.0, browser default 1.0
+    rate: float  # 0.1-10.0, browser default 1.0
+
+
+# v1.2 amendment (2026-07-28), replacing the Decision 5 seed values. The seeds are kept
+# in the decisions file per the retired-decisions rule; this is what the resolution probe
+# produced. `scripts/probe_voice_resolution.py` regenerates the evidence on any machine.
+#
+# What the seeds got wrong was the preference lists, not the pitch and rate values. On a
+# stock Windows Chrome the browser offers 22 voices but only six in English, and the seed
+# table named just three of them — so all nine archetypes resolved onto three voices, in
+# groups of three, with the two closest co-seatable pairs 0.07 pitch apart on an identical
+# voice. Decision 4 says it outright: a different synthesis voice separates two panelists
+# far better than the same voice at two pitches. Spreading first preferences across all
+# six English voices is therefore the fix, and pitch/rate go back to breaking only the
+# doubles that remain.
+#
+# The six-voice Windows spread: three archetypes sit alone on a voice, three pairs share
+# one, and every pair is at least 0.32 pitch apart. Devil's Advocate holds a voice no
+# domain archetype claims first, because unlike them it is appended to every single
+# session's roster (compose_full_roster) and so collides with everything otherwise.
+#
+# Second preferences are macOS voice names, third are the local Microsoft SAPI voices —
+# the offline fallback, since every "Google ..." voice is network-only. Both tiers are
+# spread the same way so the degradation is graceful rather than a collapse onto one name.
+#
+# Decision 6 still holds and is worth re-reading before touching this: the assignment is
+# acoustic only. No archetype's voice was chosen to suit what it does.
+VOICE_PROFILES: dict[str, VoiceProfile] = {
+    "methodology_expert": {
+        "voice_prefs": ["Google UK English Male", "Daniel", "Microsoft David - English (United States)"],
+        "pitch": 0.80,
+        "rate": 0.94,
+    },
+    "literature_theory_specialist": {
+        "voice_prefs": ["Google UK English Female", "Karen", "Microsoft Zira - English (United States)"],
+        "pitch": 1.15,
+        "rate": 0.90,
+    },
+    "technical_implementation_reviewer": {
+        "voice_prefs": ["Microsoft David - English (United States)", "Alex", "Google US English"],
+        "pitch": 0.86,
+        "rate": 1.00,
+    },
+    "ethics_practicality_reviewer": {
+        "voice_prefs": ["Microsoft Zira - English (United States)", "Moira", "Google UK English Female"],
+        "pitch": 1.08,
+        "rate": 0.92,
+    },
+    "devils_advocate": {
+        "voice_prefs": ["Microsoft Mark - English (United States)", "Rishi", "Google UK English Male"],
+        "pitch": 0.94,
+        "rate": 1.12,
+    },
+    "problem_objectives_reviewer": {
+        "voice_prefs": ["Google US English", "Samantha", "Microsoft Zira - English (United States)"],
+        "pitch": 1.05,
+        "rate": 1.04,
+    },
+    "statistical_analysis_reviewer": {
+        "voice_prefs": ["Google UK English Male", "Oliver", "Microsoft Mark - English (United States)"],
+        "pitch": 1.18,
+        "rate": 1.06,
+    },
+    "results_conclusions_reviewer": {
+        "voice_prefs": ["Microsoft David - English (United States)", "Tessa", "Google UK English Female"],
+        "pitch": 1.24,
+        "rate": 1.08,
+    },
+    "industry_practice_reviewer": {
+        "voice_prefs": ["Microsoft Zira - English (United States)", "Fiona", "Google US English"],
+        "pitch": 0.76,
+        "rate": 0.98,
+    },
 }
 
 # v0.3j amendment (2026-07-20): curated image icons. Sean drops icon files into

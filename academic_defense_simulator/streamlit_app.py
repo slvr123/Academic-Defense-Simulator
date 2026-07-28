@@ -40,6 +40,7 @@ from uuid import uuid4
 import pandas as pd
 import psutil
 import streamlit as st
+import streamlit.components.v1 as components
 from pydantic import ValidationError
 
 from academic_defense_simulator import analytics, persistence
@@ -81,6 +82,7 @@ from academic_defense_simulator.models.session import DefenseSession, PersistedS
 from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
+    VOICE_PROFILES,
     archetype_default_icon,
     compose_full_roster,
     generate_panel,
@@ -1168,6 +1170,198 @@ def _render_panel_preview_row(
     st.markdown(f'<div class="ads-preview-row">{cards_html}</div>', unsafe_allow_html=True)
 
 
+# ---------------------------------------------------------------------------
+# v1.2 panelist voice — docs/v1.2-panelist-voice-decisions.md
+#
+# Entirely client-side (Decision 2): the visitor's browser synthesises the speech,
+# so there are no API calls, no audio bytes on the wire, and no new Python
+# dependency. The archetype -> profile map itself lives in panel.py beside the
+# avatar map (Decision 3); everything here is the Streamlit-side wiring.
+# ---------------------------------------------------------------------------
+
+VOICE_ENABLED_KEY = "voice_enabled"
+
+# Decision 7 part 4 belt: the utterance never carries anything but the question, and
+# Chrome silently truncates long network-voice utterances after ~15s unless resumed.
+_VOICE_KEEPALIVE_MS = 8000
+
+
+def _js_string_literal(value: str) -> str:
+    """A JS string literal safe to paste inside a `<script>` block (Decision 7 part 4).
+
+    `json.dumps` handles quotes, backslashes, newlines and control characters. It does
+    not handle `</script>`: an HTML parser ends the script element at that byte
+    sequence regardless of JS string context, so the page breaks before the JS parser
+    ever sees it. Escaping `</` as `<\\/` produces an identical JS string (`\\/` is
+    just `/`) that no longer contains the terminator. The question text is
+    LLM-generated and will eventually contain a quote, an apostrophe, or a bracket
+    sequence, so this is not hypothetical."""
+    return json.dumps(value).replace("</", "<\\/")
+
+
+def _js_string_literal_list(values: list[str]) -> str:
+    """A JS array literal of strings, each escaped by `_js_string_literal`."""
+    return "[" + ", ".join(_js_string_literal(v) for v in values) + "]"
+
+
+def _voice_component_html(question: str, archetype_key: str, guard_key: str) -> str:
+    """The full iframe document for one question's speech component.
+
+    Pure function of its arguments so it can be asserted on in tests — whether sound
+    actually came out is a by-ear item (Decision 10), but the escaping, the profile
+    binding, and the guard key are all checkable here.
+
+    `archetype_key` is looked up in `VOICE_PROFILES`; a missing key would be a
+    KeyError, which is exactly what the completeness test in test_panel.py exists to
+    turn into a red test instead of a failure in front of a visitor."""
+    profile = VOICE_PROFILES[archetype_key]
+    return f"""
+<style>
+  body {{ margin: 0; background: transparent;
+         font-family: "Source Sans Pro", -apple-system, sans-serif; }}
+  .ads-voice {{ display: flex; gap: 0.4rem; align-items: center; }}
+  .ads-voice button {{
+      background: #1A1714; color: #ECE7DD; border: 1px solid #2E2A25;
+      border-radius: 8px; padding: 0.25rem 0.7rem; font-size: 0.8rem;
+      cursor: pointer; line-height: 1.4;
+  }}
+  .ads-voice button:hover:enabled {{ border-color: #8C3A3F; color: #F2E9E4; }}
+  .ads-voice button:disabled {{ opacity: 0.45; cursor: default; }}
+</style>
+<div class="ads-voice">
+  <button type="button" id="ads-voice-play">&#9654; Replay</button>
+  <button type="button" id="ads-voice-stop">&#9632; Stop</button>
+</div>
+<script>
+(function () {{
+  var TEXT  = {_js_string_literal(question)};
+  var PREFS = {_js_string_literal_list(profile["voice_prefs"])};
+  var PITCH = {profile["pitch"]};
+  var RATE  = {profile["rate"]};
+  var GUARD = {_js_string_literal(guard_key)};
+
+  var playBtn = document.getElementById("ads-voice-play");
+  var stopBtn = document.getElementById("ads-voice-stop");
+  var synth = window.speechSynthesis;
+
+  if (!synth) {{
+    playBtn.disabled = true;
+    stopBtn.disabled = true;
+    playBtn.textContent = "Voice unavailable";
+    return;
+  }}
+
+  // Decision 4 step 2: first preferred name present in the browser's inventory wins.
+  // Step 3: no match returns null, and the caller leaves utterance.voice unset, which
+  // is how the browser default gets used.
+  function pickVoice() {{
+    var voices = synth.getVoices() || [];
+    for (var i = 0; i < PREFS.length; i++) {{
+      for (var j = 0; j < voices.length; j++) {{
+        if (voices[j].name === PREFS[i]) {{ return voices[j]; }}
+      }}
+    }}
+    return null;
+  }}
+
+  var keepalive = null;
+  function stopKeepalive() {{
+    if (keepalive !== null) {{ clearInterval(keepalive); keepalive = null; }}
+  }}
+
+  function speak() {{
+    synth.cancel();
+    var utterance = new SpeechSynthesisUtterance(TEXT);
+    var voice = pickVoice();
+    if (voice) {{ utterance.voice = voice; }}
+    // Decision 4 step 4, the load-bearing one: pitch and rate are applied in EVERY
+    // branch, the default-voice branch included. Where no preferred voice resolves
+    // they are the only thing keeping a panel from collapsing into one voice.
+    utterance.pitch = PITCH;
+    utterance.rate  = RATE;
+    utterance.onend    = stopKeepalive;
+    utterance.onerror  = stopKeepalive;
+    synth.speak(utterance);
+    // Chrome stops long utterances after roughly 15 seconds unless nudged. A question
+    // read slowly can cross that, and the failure mode is a sentence cut mid-word.
+    stopKeepalive();
+    keepalive = setInterval(function () {{
+      if (synth.speaking) {{ synth.resume(); }} else {{ stopKeepalive(); }}
+    }}, {_VOICE_KEEPALIVE_MS});
+  }}
+
+  // Decision 4 step 1: getVoices() is routinely empty on the first call — the voice
+  // list loads asynchronously. Speaking immediately means speaking with the default
+  // voice at best, and this is the single most common way a naive implementation
+  // ships silent. Wait for `voiceschanged`, then re-read.
+  function whenVoicesReady(callback) {{
+    if ((synth.getVoices() || []).length > 0) {{ callback(); return; }}
+    var fired = false;
+    function fire() {{
+      if (fired) {{ return; }}
+      fired = true;
+      callback();
+    }}
+    synth.addEventListener("voiceschanged", fire, {{ once: true }});
+    // Some engines never fire the event at all. Falling through to the default voice
+    // with pitch and rate applied is a worse voice, but it is not silence.
+    setTimeout(fire, 1200);
+  }}
+
+  // Decision 7 part 2: plain HTML controls, not Streamlit buttons — an in-iframe click
+  // triggers no rerun, and it grants this document real user activation, which is what
+  // makes replay a genuine fallback when autoplay policy blocks the automatic attempt.
+  playBtn.addEventListener("click", function () {{ whenVoicesReady(speak); }});
+  stopBtn.addEventListener("click", function () {{ stopKeepalive(); synth.cancel(); }});
+
+  // Decision 7 part 1: auto-speak once per question. Streamlit reruns re-render this
+  // component, and fire-and-forget speak()-on-render would re-speak the question every
+  // time — the primary bug class in this slice. The guard is keyed on session and turn
+  // and lives in this iframe's own sessionStorage, not st.session_state, because the
+  // component is deliberately never removed server-side (part 3): the utterance belongs
+  // to this window and dies with it.
+  var spoken;
+  try {{
+    spoken = window.sessionStorage.getItem(GUARD) !== null;
+    if (!spoken) {{ window.sessionStorage.setItem(GUARD, "1"); }}
+  }} catch (err) {{
+    // Storage unavailable (blocked cookies, opaque origin). Auto-speak once on this
+    // render rather than going silent; the cost is a repeat on rerun, and replay/stop
+    // both still work.
+    spoken = false;
+  }}
+  if (!spoken) {{ whenVoicesReady(speak); }}
+}})();
+</script>
+"""
+
+
+def _voice_guard_key(turn_num: int) -> str:
+    """`ads-spoken:{session_id}:{turn_index}` (Decision 7 part 1).
+
+    `session_id` is only minted when persistence is enabled (v0.4b Decision 2), so it
+    cannot be relied on here. A browser-session-scoped uuid is minted lazily instead
+    and reused — it is stable across reruns for exactly as long as the guard needs to
+    be, and it keeps the feature identical whether persistence is on or off."""
+    session_id = st.session_state.get("session_id")
+    if session_id is None:
+        session_id = st.session_state.get("voice_session_id")
+        if session_id is None:
+            session_id = str(uuid4())
+            st.session_state.voice_session_id = session_id
+    return f"ads-spoken:{session_id}:{turn_num}"
+
+
+def _render_voice_component(question: str, archetype_key: str, turn_num: int) -> None:
+    """Render the speech component for the active question. Called only when the
+    sidebar toggle is on (Decision 8) — off means this never runs, so the feature is
+    provably inert. Height is the control row and nothing else."""
+    components.html(
+        _voice_component_html(question, archetype_key, _voice_guard_key(turn_num)),
+        height=42,
+    )
+
+
 def _turn_header(turn_num: int, panelist_name: str, archetype_key: str) -> str:
     """Permanent small-caps header (v0.3d Decision 8) — attribution lives in the
     transcript block itself, not a floating avatar, so it can't scroll away from
@@ -1279,6 +1473,13 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         header = _turn_header(turn_num, turn.panelist_name, turn.panelist_archetype_key)
         st.markdown(f'<div class="ads-turn-header">{html.escape(header)}</div>', unsafe_allow_html=True)
         st.write(turn.question)
+        # v1.2 Decision 9: only the question text is spoken — not the header above it,
+        # not the panelist name, not the grounding reference. Decision 8: rendered only
+        # while the sidebar toggle is on, and once rendered it stays rendered for the
+        # life of the turn (Decision 7 part 3) because removing the iframe kills the
+        # utterance it just started.
+        if st.session_state.get(VOICE_ENABLED_KEY, False):
+            _render_voice_component(turn.question, turn.panelist_archetype_key, turn_num)
         answer = st.text_area("Your answer", key=f"answer_{turn_num}")
         submitted = st.button("Submit answer", key=f"submit_{turn_num}")
 
@@ -1731,6 +1932,19 @@ def _render_case_file_sidebar() -> None:
 
         st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
         st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
+
+        # v1.2 Decision 8: one global control, default off. Audio starting unbidden in
+        # an office or on a train is a bad first impression for a portfolio link, and
+        # opt-in is also what makes the whole feature provably inert for anyone who
+        # doesn't want it. `st.toggle` writes VOICE_ENABLED_KEY into session_state
+        # itself via the widget key, so no separate assignment is needed.
+        st.markdown('<p class="sidebar-section-label">Voice</p>', unsafe_allow_html=True)
+        st.toggle(
+            "Panel speaks questions",
+            key=VOICE_ENABLED_KEY,
+            value=False,
+            help="Your browser reads each question aloud. Nothing is sent anywhere.",
+        )
 
 
 def _resume_session(persisted: PersistedSession) -> None:

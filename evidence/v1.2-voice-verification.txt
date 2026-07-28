@@ -1,0 +1,349 @@
+v1.2 PANELIST VOICE (TTS) — VERIFICATION EVIDENCE
+=================================================
+Date:     2026-07-28
+Brief:    docs/v1.2-panelist-voice-decisions.md
+Browser:  Chrome (Sean's own profile), Windows 11
+Model:    gemini-3.1-flash-lite (dev default) for the live session
+
+
+SUMMARY
+-------
+Closed:  DoD 1, 2, 3, 4, 6, 7, 8, 9, 10, 11
+Partial: DoD 5 (resolution half measured for all 9 archetypes; live binding
+         confirmed for 2 archetypes in 1 session; the by-ear listening
+         judgement is NOT done and cannot be done by Code)
+
+
+DoD 1 — pytest green, existing count unchanged or higher
+--------------------------------------------------------
+Baseline before any v1.2 change:
+    2 failed, 258 passed in 13.26s
+
+After:
+    2 failed, 288 passed in 11.49s
+
++30 tests, all new (tests/test_voice.py). The 2 failures are pre-existing and
+unrelated to this slice, both environment-dependent on this machine:
+
+  tests/test_config.py::test_persistence_defaults_off_when_unset
+      AssertionError: assert True is False
+       +  where True = Settings(..., persistence_enabled=True).persistence_enabled
+      Cause: the local .env sets persistence on, so the "unset" default cannot
+      be observed here.
+
+  tests/test_persistence.py::test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults
+      FileNotFoundError: ...\sessions\b4bfb649-e3fc-4aab-b930-645c309bb3c4.json
+      Cause: the test reads a local session file that is not in the repo.
+
+Both were confirmed failing on a clean tree before any edit in this slice.
+
+
+DoD 2 — registry keys read from source, alongside the map keys
+---------------------------------------------------------------
+ARCHETYPE_CONFIG keys (academic_defense_simulator/prompts/panelist_prompts.py):
+    methodology_expert
+    literature_theory_specialist
+    technical_implementation_reviewer
+    ethics_practicality_reviewer
+    problem_objectives_reviewer
+    statistical_analysis_reviewer
+    results_conclusions_reviewer
+    industry_practice_reviewer
+    devils_advocate
+
+VOICE_PROFILES keys (academic_defense_simulator/panel.py):
+    methodology_expert
+    literature_theory_specialist
+    technical_implementation_reviewer
+    ethics_practicality_reviewer
+    devils_advocate
+    problem_objectives_reviewer
+    statistical_analysis_reviewer
+    results_conclusions_reviewer
+    industry_practice_reviewer
+
+    registry - map : []
+    map - registry : []
+    identical sets : True
+
+DIVERGENCE REPORTED (brief step 1): none. All nine keys in the Decision 5 table
+matched the registry exactly, the four v1.1a additions and the original five
+alike. Nothing was renamed.
+
+Completeness test output:
+    tests/test_voice.py::test_every_registry_archetype_has_a_voice_profile PASSED
+    tests/test_voice.py::test_every_voice_profile_names_a_real_archetype PASSED
+
+
+DoD 3 — escaping unit tests, with input and output strings
+-----------------------------------------------------------
+    tests/test_voice.py::test_escaping_double_quote PASSED
+    tests/test_voice.py::test_escaping_single_quote PASSED
+    tests/test_voice.py::test_escaping_newline PASSED
+    tests/test_voice.py::test_escaping_script_terminator PASSED
+    tests/test_voice.py::test_escaping_list_produces_a_js_array PASSED
+    tests/test_voice.py::test_component_survives_a_script_terminator_in_the_question PASSED
+    6 passed, 24 deselected in 2.70s
+
+_js_string_literal(), input -> output:
+
+  double quote
+     in : 'He said "no".'
+     out: "He said \"no\"."
+     contains "</": False
+
+  single quote
+     in : "the study's scope"
+     out: "the study's scope"
+     contains "</": False
+
+  newline
+     in : 'line one\nline two'
+     out: "line one\nline two"
+     contains "</": False
+
+  literal </script>
+     in : 'a naive <script>alert(1)</script> tag'
+     out: "a naive <script>alert(1)<\/script> tag"
+     contains "</": False
+
+  real-shaped question
+     in : 'Why "purposive"? Your n=30 <script>-adjacent claim needs support.'
+     out: "Why \"purposive\"? Your n=30 <script>-adjacent claim needs support."
+     contains "</": False
+
+End to end: a question containing </script> produces a document in which the
+only </script> is the one the component itself wrote (count == 1).
+
+
+DoD 4 — rerun re-speak check
+-----------------------------
+MECHANISM: a MutationObserver in the parent page hooks every voice-component
+iframe the instant it is inserted and wraps its speechSynthesis.speak, tallying
+every utterance the component builds. Reruns were triggered by a NAMED widget
+interaction: the sidebar "Developer view" toggle, which reruns the full script.
+A second, independent rerun came from a real answer submit.
+
+State before the reruns (turn 1, voice on):
+    voice component iframes: 1
+    iframe same-origin reachable: true
+    guard store: accessible
+    guard entries present: 1        <- turn 1 auto-spoke
+    guard var well-formed: true     <- matches ads-spoken:{uuid}:{turn}
+    pitch: 0.8   rate: 0.94   first pref: Google UK English Male
+
+After rerun #1 (Developer view on):
+    dev-view section now on screen: true      <- the rerun really happened
+    voice component iframes after rerun: 1    <- component re-rendered
+    speak() calls captured since observer armed: 0
+    guard entries present: 1
+
+After rerun #2 (Developer view off): still 0 speak() calls.
+
+THE DETECTOR IS NOT BLIND. Clicking the in-iframe Replay control immediately
+produced exactly one captured utterance:
+    [{ "voice": "Google UK English Male", "pitch": 0.80, "rate": 0.94, "chars": 352 }]
+
+So: two reruns, zero re-speaks, on an instrument demonstrated to fire.
+
+
+DoD 5 — by-ear separation pass  [PARTIAL — see "still open" below]
+-------------------------------------------------------------------
+RESOLUTION HALF (measured, all nine archetypes, one real browser):
+
+Chrome reported 22 installed voices, of which six are English:
+    Microsoft David - English (United States)   local   DEFAULT
+    Microsoft Mark - English (United States)    local
+    Microsoft Zira - English (United States)    local
+    Google US English                           network
+    Google UK English Female                    network
+    Google UK English Male                      network
+
+BEFORE (Decision 5 seed table) — 3 distinct voices across 9 archetypes:
+
+    archetype                           resolved voice              pitch  rate
+    ------------------------------------------------------------------------
+    methodology_expert                  Google UK English Male      0.85   0.95
+    literature_theory_specialist        Google UK English Female    1.25   0.90
+    technical_implementation_reviewer   Google US English           0.70   1.05
+    ethics_practicality_reviewer        Google UK English Female    1.10   0.92
+    devils_advocate                     Google UK English Male      0.95   1.12
+    problem_objectives_reviewer         Google US English           1.35   1.00
+    statistical_analysis_reviewer       Google UK English Male      0.78   0.88
+    results_conclusions_reviewer        Google UK English Female    1.18   1.08
+    industry_practice_reviewer          Google US English           1.00   0.85
+
+    COLLISIONS:
+      Google UK English Male (x3)
+          statistical_analysis_reviewer      pitch 0.78  rate 0.88
+          methodology_expert                 pitch 0.85  rate 0.95   gap 0.07
+          devils_advocate                    pitch 0.95  rate 1.12   gap 0.10
+      Google UK English Female (x3)
+          ethics_practicality_reviewer       pitch 1.10  rate 0.92
+          results_conclusions_reviewer       pitch 1.18  rate 1.08   gap 0.08
+          literature_theory_specialist       pitch 1.25  rate 0.90   gap 0.07
+      Google US English (x3)
+          technical_implementation_reviewer  pitch 0.70  rate 1.05
+          industry_practice_reviewer         pitch 1.00  rate 0.85   gap 0.30
+          problem_objectives_reviewer        pitch 1.35  rate 1.00   gap 0.35
+
+AFTER (corrected table) — 6 distinct voices across 9 archetypes:
+
+    archetype                           resolved voice                              pitch  rate
+    -------------------------------------------------------------------------------------------
+    methodology_expert                  Google UK English Male                      0.80   0.94
+    literature_theory_specialist        Google UK English Female                    1.15   0.90
+    technical_implementation_reviewer   Microsoft David - English (United States)   0.86   1.00
+    ethics_practicality_reviewer        Microsoft Zira - English (United States)    1.08   0.92
+    devils_advocate                     Microsoft Mark - English (United States)    0.94   1.12
+    problem_objectives_reviewer         Google US English                           1.05   1.04
+    statistical_analysis_reviewer       Google UK English Male                      1.18   1.06
+    results_conclusions_reviewer        Microsoft David - English (United States)   1.24   1.08
+    industry_practice_reviewer          Microsoft Zira - English (United States)    0.76   0.98
+
+    REMAINING SHARED VOICES (worst gap 0.32, was 0.07):
+      Google UK English Male (x2)      methodology 0.80 / statistical 1.18   gap 0.38
+      Microsoft David (x2)             technical 0.86 / results 1.24         gap 0.38
+      Microsoft Zira (x2)              industry 0.76 / ethics 1.08           gap 0.32
+
+    Devil's Advocate now holds a voice no domain archetype claims first.
+
+LIVE BINDING HALF (real app, real session, sample capstone, thesis panel of
+methodology_expert + literature_theory_specialist + problem_objectives_reviewer
++ devils_advocate):
+
+    Turn 1 — Dr. Nguyen  · Methodology Expert
+        component first pref: Google UK English Male, pitch 0.8, rate 0.94
+        auto-spoke (guard entry written)
+        Replay produced: Google UK English Male, pitch 0.80, rate 0.94, 352 chars
+        iframe synth speaking: true   <- audio genuinely produced
+
+    Turn 2 — Dr. Okonkwo · Literature & Theory Specialist
+        auto-spoke on a DIFFERENT voice, unprompted:
+        Google UK English Female, pitch 1.15, rate 0.90, 483 chars
+        guard entries present: 2 (one per turn spoken)
+
+    Turns 3 and 4 — Dr. Okonkwo retained the floor (adaptive retention), each
+    new turn auto-spoke correctly, confirming the guard is keyed per TURN and
+    not per panelist:
+        1. Google UK English Male     pitch 0.80  rate 0.94  352 chars
+        2. Google UK English Female   pitch 1.15  rate 0.90  483 chars
+        3. Google UK English Female   pitch 1.15  rate 0.90  543 chars
+        4. Google UK English Female   pitch 1.15  rate 0.90  579 chars
+
+STILL OPEN, stated rather than quietly dropped:
+  1. The listening judgement. Whether two seated panelists are DISTINGUISHABLE
+     to a human ear is not something Code can determine — Decision 10 already
+     says no test asserts audio, and no tool here can assert audibility either.
+     Sean runs this.
+  2. Live-binding coverage narrowed under the pre-agreed cut line (item 1 of
+     the cut list): two archetypes confirmed in one session rather than five
+     across two. The remaining seven are covered by the probe, which drives the
+     same _voice_component_html code path, but not by a live session.
+
+  To finish it: the app is at http://localhost:8504 (voice toggle is in the
+  sidebar under "Voice") and the probe at http://127.0.0.1:8766. Re-run the
+  probe any time with:  python scripts/probe_voice_resolution.py
+
+
+DoD 6 — autoplay-block fallback
+--------------------------------
+The in-iframe Replay control speaks the question. Captured at the moment of the
+click, in the real app:
+
+    [{ "voice": "Google UK English Male", "pitch": 0.80, "rate": 0.94, "chars": 352 }]
+    iframe synth speaking now: true
+    iframe synth pending: false
+
+A genuine autoplay block could not be triggered naturally here — the page had
+already received user gestures by the time the component rendered, which is the
+normal case in this app since a session cannot start without clicks. What is
+proven is the property that matters: the control produces a real utterance
+independently of the automatic attempt, and it does so from a click inside the
+iframe, which is what grants that document its own user activation.
+
+The Stop control was also verified (it is cuttable per the cut line; it was not
+cut):
+    after Stop clicked -> iframe synth speaking: false, pending: false
+    (was speaking: true before the click)
+
+
+DoD 7 — no-matching-voice fallback, forced
+-------------------------------------------
+MECHANISM: the probe injects an extra row, __forced_no_match__, built from the
+real component and then rewritten to point at preferences that cannot exist:
+    ["Definitely Not An Installed Voice", "Nor Is This One"]
+with pitch 1.42 and rate 0.61 (values used by nothing else, so they cannot be
+confused with a real profile).
+
+Result, from a real browser:
+    {"key":"__forced_no_match__","resolved":"(browser default)",
+     "pitch":1.4199999570846558,"rate":0.6100000143051147}
+
+The browser default voice was used AND pitch and rate were still applied. That
+is Decision 4 step 3 and step 4 together, which is the pairing that matters:
+step 4 is what keeps a panel from collapsing when step 2 resolves nothing.
+
+Also asserted structurally in tests, because the no-match path is what most
+visitors will actually get:
+    tests/test_voice.py::test_component_applies_pitch_and_rate_outside_the_voice_match_branch PASSED
+
+
+DoD 8 — toggle off = fully inert
+---------------------------------
+Real app, turn 1 live, voice toggle at its default (off):
+
+    TOGGLE OFF (default) — DoD item 8
+    component iframes in DOM: 0
+    total iframes in DOM: 0
+    speechSynthesis.speaking: false
+    speechSynthesis.pending: false
+    guard entries present: 0
+
+    turn header on screen: Turn 1 — Dr. Nguyen · Methodology Expert
+
+The question was rendered and the turn was live; the component did not exist in
+the DOM at all, nothing was speaking, and no guard key had been written. Voice
+off is not "muted", it is absent.
+
+
+DoD 9 — import boundary intact
+-------------------------------
+    $ grep -rn "import streamlit" --include=*.py academic_defense_simulator/ \
+        | grep -v "streamlit_app.py"
+    (no output)
+
+    $ grep -rln "import streamlit" --include=*.py academic_defense_simulator/
+    academic_defense_simulator/streamlit_app.py
+
+Exactly one module imports streamlit, and it is the UI layer. VOICE_PROFILES
+lives in panel.py beside ARCHETYPE_DEFAULT_ICONS (Decision 3: both cosmetic
+identity fields in one place, one lookup) and adds no streamlit import there.
+
+
+DoD 10 — prompt versions unmoved
+---------------------------------
+    academic_defense_simulator/prompts/analytics_prompts.py:12:ANALYTICS_PROMPT_VERSION = 1
+    academic_defense_simulator/prompts/answer_suggestions_prompts.py:10:ANSWER_SUGGESTIONS_PROMPT_VERSION = 1
+    academic_defense_simulator/prompts/panelist_prompts.py:28:PROMPT_VERSION = "0.3g"
+
+    $ git diff -- academic_defense_simulator/prompts/
+    (no output — the prompts package was not touched at all)
+
+
+DoD 11 — no new Python dependencies
+------------------------------------
+    $ git diff -- requirements.txt
+    (empty)
+
+Playwright was installed only into a throwaway venv in the session scratchpad
+while investigating whether a headless browser could enumerate voices. It could
+not (0 voices — no platform TTS engine), which is why the verification was done
+in Chrome instead. Nothing was added to the project environment.
+
+
+CALL BUDGET
+-----------
+Zero LLM or embedding calls added by the feature, as declared. The 9 calls made
+during this verification are the ordinary cost of running a live session to
+observe the UI, not a cost of the feature.
