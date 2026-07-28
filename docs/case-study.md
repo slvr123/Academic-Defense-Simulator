@@ -329,9 +329,11 @@ are different problems with different fixes, and I don't know which I have.
 Counterargument worth stating: the same document has the same weaknesses, so
 *some* cross-session consistency is correct behaviour.
 
-**One test fails.** 228 of 229 pass. The failure is a test-isolation artifact —
-a real `.env` re-populates an env var the test clears — logged in `ROADMAP.md`
-rather than skipped to make the suite look green.
+**Two tests fail.** 288 of 290 pass. Both failures are environment artifacts
+rather than defects, and both are logged rather than skipped to make the suite
+look green: one is a test-isolation artifact where a real `.env` re-populates an
+env var the test clears, and the other reads a pre-existing session file that
+lives outside the repo and so is absent on a fresh clone.
 
 ---
 
