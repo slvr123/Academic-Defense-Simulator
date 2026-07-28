@@ -365,6 +365,9 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
   Same bug class — a test depending on local state that is not in the repo — so it gets fixed as part of that pass, not as a separate item.
 - **Deploy cold-start latency measurement** (Appendix C4) — post-push.
   The whole premise of v1.0.1 is a shorter time-to-first-question and it has never been timed on a deployed build; C4 pre-commits the response to either outcome.
+- **v1.0.1 evidence screenshots captured and committed** (Appendix B9 as corrected by D3) — post-push.
+  B9 recorded these in the present tense as though committed; they never were, and no Session A brief included committing them.
+  Deferred rather than backfilled from localhost: their purpose is README and case-study material, so they should be captured from the deployed app, which is what those documents ought to show.
 - **Seed-query embedding precomputation** (Appendix C4, flagged as a proposal and not locked).
   Turn one's retrieval uses fixed archetype seed strings whose embeddings could ship in the sidecar, moving the encoder load behind the first question.
   Only worth doing if the C4 measurement says the sample path is slow; it needs its own manifest fields and Decision 3 guard assertions, so it is a real task rather than a tweak.
