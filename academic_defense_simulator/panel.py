@@ -127,8 +127,8 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
         "voice_prefs": [
             "Microsoft Aria Online (Natural)",  # Edge
             "Microsoft Zira - English (United States)",  # v1.2.1: was "Google UK English Male" — wrong gender for the female (advisor) avatar on Chrome, where the Edge name above never resolves
-            "Daniel",
-            "Microsoft David - English (United States)",
+            "Moira",  # v1.2.2: was "Daniel" — wrong gender for the female (advisor) avatar on macOS
+            "Google US English",  # v1.2.2: was "Microsoft David - English (United States)" — wrong gender for the female (advisor) avatar offline
         ],
         "pitch": 0.95,
         "rate": 0.94,
@@ -148,7 +148,7 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
             "Microsoft David",  # Edge
             "Microsoft David - English (United States)",
             "Alex",
-            "Google US English",
+            "Microsoft Mark - English (United States)",  # v1.2.2: was "Google US English" — wrong gender for the male (engineer) avatar offline
         ],
         "pitch": 1.15,
         "rate": 1.05,
@@ -157,8 +157,8 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
         "voice_prefs": [
             "Microsoft David",  # Edge
             "Google UK English Male",  # v1.2.1: was "Microsoft Zira - English (United States)" — wrong gender for the male (gorilla) avatar on Chrome
-            "Moira",
-            "Google UK English Female",
+            "Daniel",  # v1.2.2: was "Moira" — wrong gender for the male (gorilla) avatar on macOS
+            "Microsoft David - English (United States)",  # v1.2.2: was "Google UK English Female" — wrong gender for the male (gorilla) avatar offline
         ],
         "pitch": 0.70,
         "rate": 0.85,
@@ -187,8 +187,8 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
         "voice_prefs": [
             "Microsoft Priya Online",  # Edge
             "Microsoft Zira - English (United States)",  # v1.2.1: was "Google UK English Male" — wrong gender for the female (researcher) avatar on Chrome
-            "Oliver",
-            "Microsoft Mark - English (United States)",
+            "Tessa",  # v1.2.2: was "Oliver" — wrong gender for the female (researcher) avatar on macOS
+            "Google UK English Female",  # v1.2.2: was "Microsoft Mark - English (United States)" — wrong gender for the female (researcher) avatar offline
         ],
         "pitch": 1.05,
         "rate": 1.00,
@@ -197,8 +197,8 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
         "voice_prefs": [
             "Microsoft Mark",  # Edge
             "Microsoft David - English (United States)",
-            "Tessa",
-            "Google UK English Female",
+            "Oliver",  # v1.2.2: was "Tessa" — wrong gender for the male (scholar) avatar on macOS
+            "Google UK English Male",  # v1.2.2: was "Google UK English Female" — wrong gender for the male (scholar) avatar offline
         ],
         "pitch": 1.20,
         "rate": 1.06,
@@ -207,8 +207,8 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
         "voice_prefs": [
             "Microsoft Mark",  # Edge
             "Google UK English Male",  # v1.2.1: was "Microsoft Zira - English (United States)" — wrong gender for the male (student) avatar on Chrome
-            "Fiona",
-            "Google US English",
+            "Arthur",  # v1.2.2: was "Fiona" — wrong gender for the male (student) avatar on macOS; no other archetype's macOS entry was free to swap into, so this is a new name, not a swap
+            "Microsoft David - English (United States)",  # v1.2.2: was "Google US English" — wrong gender for the male (student) avatar offline
         ],
         "pitch": 0.80,
         "rate": 0.90,

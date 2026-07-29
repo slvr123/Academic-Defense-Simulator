@@ -25,6 +25,7 @@ from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
     VOICE_PROFILES,
+    archetype_default_icon,
 )
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 
@@ -148,6 +149,91 @@ def test_default_panels_have_no_repeated_first_preference():
             f"default panel {comp_key!r} seats two archetypes wanting the same voice "
             f"{dupes}: " + ", ".join(f"{m}->{VOICE_PROFILES[m]['voice_prefs'][0]}" for m in members)
         )
+
+
+# ---------------------------------------------------------------------------
+# Avatar-gender alignment (v1.2.2) — the regression guard for the bug class v1.2.1
+# found and fixed: `voice_prefs[0]` is Edge-only, so every other browser falls
+# through to a lower tier, and nothing enforced that the tier actually reached had
+# the right gender. v1.2.1 fixed tier 1 (Chrome) after a live probe found four
+# archetypes resolving to the wrong gender there; auditing the remaining two named
+# tiers for the same session then found five wrong on tier 2 (Apple/macOS) and six
+# wrong on tier 3 (offline SAPI/Google fallback) — every tier had drifted except
+# tier 0, which is the one tier Amendment 2 actually built with gender in mind.
+#
+# Gender is read from the live avatar (`archetype_default_icon`), not a hardcoded
+# archetype table, so this also catches a future icon-file change silently moving
+# an archetype onto a different-gendered avatar (Decision 1: the avatar is ground
+# truth, the map is the thing that can drift). Voice-name genders below are the
+# well-known identities of these specific TTS voices — there is no programmatic
+# source for them, same epistemic status as the archetype icon judgment itself.
+# ---------------------------------------------------------------------------
+
+AVATAR_GENDER = {
+    "advisor": "F",
+    "dean": "F",
+    "professor": "F",
+    "researcher": "F",
+    "engineer": "M",
+    "gorilla": "M",
+    "hacker": "M",
+    "scholar": "M",
+    "student": "M",
+}
+
+# Tiers 1 and 3 draw from the same six-voice Windows/Chrome English inventory
+# (Decision 5 amendment), so they share one gender table.
+_CHROME_TIER_GENDER = {
+    "Microsoft David - English (United States)": "M",
+    "Microsoft Mark - English (United States)": "M",
+    "Microsoft Zira - English (United States)": "F",
+    "Google US English": "F",
+    "Google UK English Female": "F",
+    "Google UK English Male": "M",
+}
+
+VOICE_PREF_TIER_GENDER: dict[int, dict[str, str]] = {
+    0: {  # Edge (Amendment 2 inventory)
+        "Microsoft Aria Online (Natural)": "F",
+        "Microsoft Libby Online (Natural)": "F",
+        "Microsoft David": "M",
+        "Microsoft Guy Online (Natural)": "M",
+        "Microsoft Hayley Online": "F",
+        "Microsoft Priya Online": "F",
+        "Microsoft Mark": "M",
+    },
+    1: _CHROME_TIER_GENDER,
+    2: {  # Apple/macOS
+        "Daniel": "M",
+        "Karen": "F",
+        "Alex": "M",
+        "Moira": "F",
+        "Rishi": "M",
+        "Samantha": "F",
+        "Oliver": "M",
+        "Tessa": "F",
+        "Fiona": "F",
+        "Arthur": "M",
+    },
+    3: _CHROME_TIER_GENDER,
+}
+
+
+@pytest.mark.parametrize("tier", sorted(VOICE_PREF_TIER_GENDER))
+def test_voice_prefs_tier_matches_avatar_gender(tier):
+    gender_table = VOICE_PREF_TIER_GENDER[tier]
+    mismatches = []
+    for archetype_key, profile in VOICE_PROFILES.items():
+        avatar_gender = AVATAR_GENDER[archetype_default_icon(archetype_key)]
+        voice_name = profile["voice_prefs"][tier]
+        voice_gender = gender_table.get(voice_name)
+        assert voice_gender is not None, (
+            f"tier {tier} name {voice_name!r} ({archetype_key}) is not in the known-gender "
+            "table above — add it rather than leaving this tier unchecked"
+        )
+        if voice_gender != avatar_gender:
+            mismatches.append(f"{archetype_key} (avatar={avatar_gender}) -> {voice_name} ({voice_gender})")
+    assert mismatches == [], f"tier {tier} gender mismatches:\n" + "\n".join(mismatches)
 
 
 def test_fallback_tiers_are_spread_too():

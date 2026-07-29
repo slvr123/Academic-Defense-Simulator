@@ -329,7 +329,7 @@ are different problems with different fixes, and I don't know which I have.
 Counterargument worth stating: the same document has the same weaknesses, so
 *some* cross-session consistency is correct behaviour.
 
-**Two tests fail.** 293 of 295 pass. Both failures are environment artifacts
+**Two tests fail.** 297 of 299 pass. Both failures are environment artifacts
 rather than defects, and both are logged rather than skipped to make the suite
 look green: one is a test-isolation artifact where a real `.env` re-populates an
 env var the test clears, and the other reads a pre-existing session file that
