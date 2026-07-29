@@ -945,5 +945,82 @@ def _write_v1_1a_results(records: list[dict], model: str, results_path: Path) ->
     print(f"\nWrote {len(records)} question records (+1 meta) to {results_path}")
 
 
+# ============================================================================
+# v1.2.2 delivery-register probe (docs/v1.2.2-question-register-decisions.md,
+# Decision 3): deterministic A/B on identical chunks. Run once BEFORE the register
+# block is added to PANELIST_SYSTEM_PROMPT, once AFTER — retrieval depends only on
+# archetype_focus (unchanged) and the growing per-session exclude set (same call
+# sequence both times), never on the prompt wording itself, so chunk_index must
+# come back identical across arms; that identity is verified by the caller, not
+# assumed here.
+# ============================================================================
+
+_REGISTER_ARCHETYPES = [
+    (_PROBE_PERSONA, "methodology_expert"),
+    (_STATISTICAL_ANALYSIS_PERSONA, "statistical_analysis_reviewer"),
+    (_TIR_PROBE_PERSONA, "technical_implementation_reviewer"),
+]
+
+
+def main_probe_v1_2_2_register() -> list[dict]:
+    """3 archetypes x difficulty (1, 3, 5) = 9 new-topic questions, one fresh session
+    per archetype so used_chunk_indices forces 3 distinct chunks per archetype — same
+    variety mechanism as main_probe(). No scoring calls (register affects question
+    phrasing only), so this is 9 generation calls per arm, 18 total (Call budget)."""
+    settings = load_settings()
+    model = settings.gemini_model
+    print(f"[model: {model}] [prompt_version: {PROMPT_VERSION}]")
+    print(f"[pdf: {_PDF_PATH.name}]")
+
+    texts = chunk_pdf(str(_PDF_PATH))
+    embedding_model = EmbeddingModel()
+    embeddings = embedding_model.encode(texts)
+    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    print(f"[chunks: {len(chunks)}]")
+
+    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
+
+    records: list[dict] = []
+    for persona, archetype_key in _REGISTER_ARCHETYPES:
+        profile = _profile(archetype_key=archetype_key)
+        session = _session(1, persona, profile)
+        print(f"\n=== {archetype_key} ({persona.panelist_name}) ===")
+        for difficulty in (1, 3, 5):
+            session.difficulty_current = difficulty
+            turn = engine._generate_question(provider, session, chunks, embedding_model, persona, "", model)
+            grounded = is_grounded(turn.grounding_reference, turn.chunk_text)
+            ratio = grounding_ratio(turn.grounding_reference, turn.chunk_text)
+            rec = {
+                "archetype": archetype_key,
+                "panelist_name": persona.panelist_name,
+                "difficulty": difficulty,
+                "chunk_index": turn.chunk_index,
+                "question": turn.question,
+                "grounding_reference": turn.grounding_reference,
+                "grounded": grounded,
+                "grounding_ratio": round(ratio, 4),
+                "grounding_retry_used": turn.grounding_retry_used,
+                "grounding_flagged": turn.grounding_flagged,
+            }
+            records.append(rec)
+            print(
+                f"  diff{difficulty} chunk{turn.chunk_index}: grounded={grounded} ratio={round(ratio, 4)} "
+                f"retry={turn.grounding_retry_used} flagged={turn.grounding_flagged}"
+            )
+            print(f"    Q: {turn.question}")
+            print(f"    G: {turn.grounding_reference!r}")
+            session.turns.append(turn)  # score stays None -> stays new-topic, excludes this chunk
+            time.sleep(pacing)
+
+    grounded_count = sum(1 for r in records if r["grounded"])
+    flagged_count = sum(1 for r in records if r["grounding_flagged"])
+    print(f"\n=== TALLY [prompt_version={PROMPT_VERSION}] ===")
+    print(f"grounded: {grounded_count}/{len(records)}")
+    print(f"flagged: {flagged_count}/{len(records)}")
+    print(f"chunk sequence: {[(r['archetype'], r['difficulty'], r['chunk_index']) for r in records]}")
+    return records
+
+
 if __name__ == "__main__":
     main_probe()

@@ -25,7 +25,13 @@
 # acknowledge on the opening question. Zero wording change to FOLLOWUP_SYSTEM_PROMPT or
 # DEVILS_ADVOCATE_SYSTEM_PROMPT — both paths always have real prior content to react to,
 # so their unconditional acknowledgment wording was never the bug.
-PROMPT_VERSION = "0.3g"
+# 1.2.2 (docs/v1.2.2-question-register-decisions.md, Decision 2): PANELIST_SYSTEM_PROMPT
+# only gains a DELIVERY REGISTER section (question phrasing sounds spoken, not form-field)
+# plus a second grounding_reference guard line beside the JSON schema field. Verbatim,
+# locked wording — no paraphrase. FOLLOWUP_SYSTEM_PROMPT and DEVILS_ADVOCATE_SYSTEM_PROMPT
+# are untouched; the Decision 3 probe only exercises the new-topic path this template
+# serves, so only this template's evidence backs the change.
+PROMPT_VERSION = "1.2.2"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
 # the same way other_subtype_line is — both are empty strings on turn 1 (nothing to
@@ -91,10 +97,22 @@ The question must:
 - If the excerpt has no natural connection to your lane, do NOT pivot into another archetype's territory. Instead, reframe the excerpt through your own lane's lens — e.g., ask why this gap wasn't caught by the kind of scrutiny your role represents — even if that means a softer or more foundational question than usual.
 - Match the target difficulty level: {difficulty_level}/5 (1 = foundational/clarifying, 5 = adversarial/stress-testing an assumption)
 {high_difficulty_guard}
+DELIVERY REGISTER:
+Ask the question the way an examiner says it out loud, not the way a form field reads.
+- Open with one short lead-in clause naming the specific claim, number, or decision from the excerpt you are pressing on. Then ask the question.
+- Use contractions. Vary sentence length — put a short sentence next to a longer one.
+- You may hedge the lead-in ("I'm not sure I follow the reasoning here."). Never hedge the question itself — ask it directly.
+- Do not use filler or disfluency tokens ("um", "uh", "well,"), humor, sarcasm, idioms, or slang.
+- Do not cite a page, figure, or table number unless that number appears verbatim in the excerpt.
+- When referring to the document's content, use the document's own terminology. Do not substitute synonyms for its terms.
+- The register above governs your question text only. It never applies to grounding_reference.
+
 Document excerpt:
 \"\"\"
 {retrieved_chunk}
 \"\"\"
+
+grounding_reference must remain a verbatim span copied from the excerpt. The delivery register does not apply to this field.
 
 Respond ONLY with JSON matching this schema, no other text — {response_format_note}:
 {{

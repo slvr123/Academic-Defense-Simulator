@@ -1,0 +1,52 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[model: gemini-3.1-flash-lite] [prompt_version: 0.3g]
+[pdf: Group2_Library Management System for DAZSMA Documentation (1).pdf]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 2481.47it/s]
+[chunks: 92]
+
+=== methodology_expert (Okonkwo) ===
+[branch: new-topic — chunk 51]
+  diff1 chunk51: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Given the purposive sampling approach for your 20 respondents, how do you defend the statistical representativeness of this sample size in isolating the system's performance metrics across your five specified quality criteria?
+    G: 'The sample will include 20 respondents, who will be split into two categories: 10 IT-related professionals and 10 non-IT respondents'
+[branch: new-topic — chunk 69]
+  diff3 chunk69: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Given that your evaluation relies on a very small, non-random sample of only 20 respondents, how do you defend the statistical validity and generalizability of your Weighted Mean results, especially since this sample size is susceptible to significant bias from the users' subjective familiarity with the new system?
+    G: 'The evaluation involved 20 respondents, comprising 10 technical users (IT professionals) and 10 non-technical users, who performed hands-on testing of the system and answered a structured Likert-scale questionnaire.'
+[branch: new-topic — chunk 43]
+  diff5 chunk43: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Given that your entire assessment of the 'inefficiency in tracking borrowed books' and system requirements relies exclusively on a single qualitative interview with one librarian, how do you justify the external validity of your system design requirements, and what methodological controls have you implemented to mitigate the significant risk of observer bias and individual cognitive distortion in these self-reported data?
+    G: 'The formal interview was carried out with the librarian to obtain detailed information about the current manual library system and its existing challenges.'
+
+=== statistical_analysis_reviewer (Whitfield) ===
+[branch: new-topic — chunk 71]
+  diff1 chunk71: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Can you clarify the mathematical basis for the 'Overall Weighted Mean' calculations presented in Tables 9 through 13, specifically explaining how you determined the weights applied to individual survey items to arrive at these composite scores?
+    G: 'Overall Weighted Mean'
+[branch: new-topic — chunk 43]
+  diff3 chunk43: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the qualitative data obtained from the interview, what specific criteria or thematic coding framework did you apply to categorize the librarian's narrative responses into the identified systemic limitations, such as 'inefficiency' or 'lack of an organized database', and how did you ensure the reliability of this interpretation during the transcription and translation process?
+    G: 'The gathered response has been transcribed into a full english translation for better clarity and also documentation purposes.'
+[branch: new-topic — chunk 70]
+  diff5 chunk70: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Given that the Likert scale responses for almost every item across Tables 5 through 8 result in an identical weighted mean of 4.90, can you justify why you chose to report these as weighted means rather than reporting the frequency distributions or calculating the standard deviation to demonstrate the variability—or lack thereof—in respondent sentiment?
+    G: 'Overall Weighted Mean 4.90'
+
+=== technical_implementation_reviewer (Reyes) ===
+[branch: new-topic — chunk 24]
+  diff1 chunk24: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Since you define architecture as a 'quality-driven' discipline that minimizes complexity, what specific architectural pattern or structural view did you implement to handle the data synchronization between the librarian processes and student requirements while ensuring the system remains maintainable?
+    G: 'Good architecture minimizes complexity by breaking down concerns into different views, meets the requirements of a heterogeneous group of stakeholders'
+[branch: new-topic — chunk 9]
+  diff3 chunk9: grounded=True ratio=1.0 retry=False flagged=False
+    Q: You cite the PQCT model to justify your software engineering approach, but specifically regarding the 'Q' (Quality) component: what concrete, automated testing protocols or CI/CD metrics have you implemented in your development pipeline to quantify that quality, rather than just asserting it as a theoretical outcome?
+    G: 'concentrating on productivity (P) and quality (Q), and minimizing costs (C) and time to market (T), a strategy called PQCT (Kung, 2023).'
+[branch: new-topic — chunk 41]
+  diff5 chunk41: grounded=True ratio=1.0 retry=False flagged=False
+    Q: You claim that using a three-tier architecture enhances scalability and modularity for the DAZSMA library system, but how exactly does your implementation of the Logic Tier handle the concurrency constraints of your barcode scanner integration to prevent data race conditions when multiple users process borrowing and returning tasks simultaneously?
+    G: 'For the system architecture diagram, the proponents are going to follow a three-tier architecture under the Client-Server Model; it consists of Presentation, Logic, and Data Tiers.'
+
+=== TALLY [prompt_version=0.3g] ===
+grounded: 9/9
+flagged: 0/9
+chunk sequence: [('methodology_expert', 1, 51), ('methodology_expert', 3, 69), ('methodology_expert', 5, 43), ('statistical_analysis_reviewer', 1, 71), ('statistical_analysis_reviewer', 3, 43), ('statistical_analysis_reviewer', 5, 70), ('technical_implementation_reviewer', 1, 24), ('technical_implementation_reviewer', 3, 9), ('technical_implementation_reviewer', 5, 41)]

@@ -1,0 +1,52 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[model: gemini-3.1-flash-lite] [prompt_version: 1.2.2]
+[pdf: Group2_Library Management System for DAZSMA Documentation (1).pdf]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 5045.65it/s]
+[chunks: 92]
+
+=== methodology_expert (Okonkwo) ===
+[branch: new-topic — chunk 51]
+  diff1 chunk51: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding your choice of purposive sampling for only 20 respondents, how do you defend the statistical reliability of a Likert-based evaluation when the sample size is divided into two distinct, non-randomized groups?
+    G: 'The sample will include 20 respondents, who will be split into two categories: 10 IT-related professionals and 10 non-IT respondents of the library and administrative departments of the school.'
+[branch: new-topic — chunk 69]
+  diff3 chunk69: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the evaluation of the Library Management System, you utilized a sample of 20 respondents to assess Functional Suitability. Given that this cohort is split evenly between technical and non-technical users, how can you statistically justify that this sample size provides sufficient granularity to isolate software-specific performance from the subjective bias of individual user experience?
+    G: 'The evaluation involved 20 respondents, comprising 10 technical users (IT professionals) and 10 non-technical users, who performed hands-on testing of the system and answered a structured Likert-scale questionnaire.'
+[branch: new-topic — chunk 43]
+  diff5 chunk43: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the exclusive reliance on a single librarian's interview to identify the limitations of the current manual system, how did you control for individual subjective bias to ensure these identified inefficiencies aren't just anecdotal reports rather than empirical system requirements?
+    G: 'The formal interview was carried out with the librarian to obtain detailed information about the current manual library system and its existing challenges.'
+
+=== statistical_analysis_reviewer (Whitfield) ===
+[branch: new-topic — chunk 71]
+  diff1 chunk71: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the Overall Weighted Mean of 4.37 reported in both Table 10 and Table 11, how did you verify that the underlying variance between individual respondent scores within these categories justifies the use of a simple arithmetic mean as a representative summary statistic?
+    G: 'Overall Weighted Mean 4.37'
+[branch: new-topic — chunk 43]
+  diff3 chunk43: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding your use of the librarian's interview, you've mentioned that responses were transcribed into a full English translation. How did you verify the accuracy of this translation against the original recording, and what specific steps were taken to ensure that the process of translating and summarizing the librarian's workflow didn't introduce bias or data loss before you identified the limitations of the current system?
+    G: 'The gathered response has been transcribed into a full english translation for better clarity and also documentation purposes.'
+[branch: new-topic — chunk 70]
+  diff5 chunk70: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the consistent 4.90 weighted means reported across tables 5 and 6, how did you handle the distribution of individual scores to ensure that these results are not a byproduct of skewed data or an artifact of your aggregation method?
+    G: 'Overall Weighted Mean 4.90'
+
+=== technical_implementation_reviewer (Reyes) ===
+[branch: new-topic — chunk 24]
+  diff1 chunk24: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding your claim that architecture is quality-driven rather than functionality-focused, how did you specifically quantify those utility requirements like reliability and maintainability when building the DAZSMA Library Management System roadmap?
+    G: 'Architecture is quality-driven; it captures the requirements of reliability, maintainability, security, availability, and other "utilities" instead of concentrating on functionality.'
+[branch: new-topic — chunk 9]
+  diff3 chunk9: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding your focus on PQCT, how did you quantify the trade-offs between productivity and quality during the actual development cycles of the Library Management System for DAZSMA? I am interested in knowing which specific technical bottlenecks forced you to deviate from your initial cost and time estimates.
+    G: 'Software engineering offers a model that converts the possible anarchy into regulated and meaningful innovation in the digital realm by concentrating on productivity (P) and quality (Q), and minimizing costs (C) and time to market (T), a strategy called PQCT (Kung, 2023).'
+[branch: new-topic — chunk 41]
+  diff5 chunk41: grounded=True ratio=1.0 retry=False flagged=False
+    Q: Regarding the three-tier architecture, you claim this design enhances scalability and maintainability. How does your specific implementation of the Data Tier handle concurrent read-write contention from the barcode scanner input, and what latency metrics are you tracking to ensure this doesn't bottleneck the entire client-server transaction?
+    G: 'For the system architecture diagram, the proponents are going to follow a three-tier architecture under the Client-Server Model; it consists of Presentation, Logic, and Data Tiers.'
+
+=== TALLY [prompt_version=1.2.2] ===
+grounded: 9/9
+flagged: 0/9
+chunk sequence: [('methodology_expert', 1, 51), ('methodology_expert', 3, 69), ('methodology_expert', 5, 43), ('statistical_analysis_reviewer', 1, 71), ('statistical_analysis_reviewer', 3, 43), ('statistical_analysis_reviewer', 5, 70), ('technical_implementation_reviewer', 1, 24), ('technical_implementation_reviewer', 3, 9), ('technical_implementation_reviewer', 5, 41)]
