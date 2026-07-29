@@ -93,7 +93,7 @@ from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
-from academic_defense_simulator.report import build_report
+from academic_defense_simulator.report import build_report, rescale_score_to_100
 from academic_defense_simulator.sample_document import SAMPLE_DISPLAY_NAME, load_sample_document
 
 # Thin permanent call-lifecycle logging (v0.3 hardening, Task 1b) — light enough to ship,
@@ -1576,9 +1576,15 @@ def _render_report(report: DefenseReport) -> None:
     st.markdown(f"**Difficulty trajectory:** {trajectory}")
 
     avg_cols = st.columns(3)
-    avg_cols[0].metric("Avg clarity", f"{report.overall_avg_clarity:.2f}")
-    avg_cols[1].metric("Avg depth", f"{report.overall_avg_depth:.2f}")
-    avg_cols[2].metric("Avg grounding", f"{report.overall_avg_grounding:.2f}")
+    avg_cols[0].metric("Avg clarity", f"{rescale_score_to_100(report.overall_avg_clarity)}/100")
+    avg_cols[1].metric("Avg depth", f"{rescale_score_to_100(report.overall_avg_depth)}/100")
+    avg_cols[2].metric("Avg grounding", f"{rescale_score_to_100(report.overall_avg_grounding)}/100")
+    # v1.2.1 Decision 4 — stated, not hidden: an ordinal 1-5 judgment dressed as a
+    # percentage manufactures precision it doesn't have. Caption wording is locked.
+    st.caption(
+        "Panel ratings are a 1–5 judgment rescaled to a 100-point display, not a "
+        "percentage of correct answers. The scale floor is 20."
+    )
 
     st.markdown('<p class="small-caps-label">Per-panelist</p>', unsafe_allow_html=True)
     for section in report.panelist_sections:
@@ -1586,8 +1592,9 @@ def _render_report(report: DefenseReport) -> None:
         st.markdown(f"**Dr. {section.panelist_name}** — {archetype_title} · {section.turns_taken} turn(s)")
         if section.turns_taken:
             st.caption(
-                f"clarity {section.avg_clarity:.2f} · depth {section.avg_depth:.2f} · "
-                f"grounding {section.avg_grounding:.2f}"
+                f"clarity {rescale_score_to_100(section.avg_clarity)}/100 · "
+                f"depth {rescale_score_to_100(section.avg_depth)}/100 · "
+                f"grounding {rescale_score_to_100(section.avg_grounding)}/100"
             )
             for gap in section.primary_gaps:
                 st.write(f"- {gap}")

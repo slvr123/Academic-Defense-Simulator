@@ -19,8 +19,10 @@ from academic_defense_simulator.report import (
     _difficulty_trajectory,
     _overall_averages,
     _panelist_sections,
+    _rescaled_narrative_payload,
     _transcript_payload,
     build_report,
+    rescale_score_to_100,
 )
 
 _PANEL = [
@@ -212,12 +214,14 @@ class _StubTextProvider:
     def __init__(self, response):
         self._response = response
         self.calls = 0
+        self.last_prompt = None
 
     def generate_structured(self, prompt, response_model):
         raise NotImplementedError
 
     def generate_text(self, prompt):
         self.calls += 1
+        self.last_prompt = prompt
         if isinstance(self._response, Exception):
             raise self._response
         return self._response
@@ -362,3 +366,63 @@ def test_pushback_classification_reuses_should_follow_ups_strong_threshold():
     events = _classify_pushback_events(session)
     assert events[0].quality_sum_at == STRONG_ANSWER_SUM_THRESHOLD
     assert events[0].outcome == PushbackOutcome.RECOVERED
+
+
+# --- 8. Score rescale (v1.2.1 Decision 4): presentation-only 1-5 -> 0-100 ---
+
+
+def test_rescale_named_cases():
+    assert rescale_score_to_100(1) == 20
+    assert rescale_score_to_100(3) == 60
+    assert rescale_score_to_100(3.4) == 68
+    assert rescale_score_to_100(5) == 100
+
+
+def test_rescale_rounds_half_up_not_to_even():
+    """1.025 -> 20.5 exactly, which the builtin `round` ties to 20 (round-half-to-even).
+    Decision 4 requires round-half-up, so this must land on 21."""
+    assert round(20.5) == 20  # pins the builtin behavior this function deliberately avoids
+    assert rescale_score_to_100(1.025) == 21
+
+
+def test_rescaled_narrative_payload_carries_100_point_numbers_not_1_5():
+    """Decision 5: the narrative call must see the same numbers the UI renders, or its
+    prose can contradict the screen (e.g. "3.4 out of 5" under a report showing 68)."""
+    session = _session(
+        _turn("methodology_expert", "Reyes", 2, 4, 3, 4),
+        _turn("methodology_expert", "Reyes", 3, 3, 3, 3),
+        panel=[_PANEL[0]],
+    )
+    report_overall_avg_clarity, _, _ = _overall_averages(session)
+    assert report_overall_avg_clarity == 3.5  # (4+3)/2 — the raw 1-5 value
+
+    from academic_defense_simulator.models.report import DefenseReport
+
+    report = DefenseReport(
+        difficulty_trajectory=_difficulty_trajectory(session),
+        overall_avg_clarity=3.5,
+        overall_avg_depth=3.0,
+        overall_avg_grounding=3.5,
+        panelist_sections=_panelist_sections(session),
+        pushback_events=[],
+    )
+    payload = _rescaled_narrative_payload(report)
+    # (3.5 / 5) * 100 = 70 exactly — rescaled after averaging, not averaged after rescale.
+    assert payload["overall_avg_clarity"] == 70
+    assert payload["overall_avg_depth"] == 60
+    assert payload["overall_avg_grounding"] == 70
+    assert payload["panelist_sections"][0]["avg_clarity"] == rescale_score_to_100(
+        report.panelist_sections[0].avg_clarity
+    )
+
+
+def test_narrative_call_receives_rescaled_numbers():
+    """End to end: build_report's narrative prompt contains 100-point numbers, not the
+    raw 1-5 averages, so a real model can't echo the wrong scale back."""
+    provider = _StubTextProvider("n")
+    session = _session(_turn("methodology_expert", "Reyes", 2, 3, 3, 3))  # avg 3.0 -> rescaled 60
+
+    build_report(session, provider, _StubSuggestionsProvider())
+
+    assert '"overall_avg_clarity": 60' in provider.last_prompt
+    assert '"overall_avg_clarity": 3.0' not in provider.last_prompt

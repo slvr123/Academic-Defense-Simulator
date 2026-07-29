@@ -126,7 +126,7 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
     "methodology_expert": {
         "voice_prefs": [
             "Microsoft Aria Online (Natural)",  # Edge
-            "Google UK English Male",
+            "Microsoft Zira - English (United States)",  # v1.2.1: was "Google UK English Male" — wrong gender for the female (advisor) avatar on Chrome, where the Edge name above never resolves
             "Daniel",
             "Microsoft David - English (United States)",
         ],
@@ -156,7 +156,7 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
     "ethics_practicality_reviewer": {
         "voice_prefs": [
             "Microsoft David",  # Edge
-            "Microsoft Zira - English (United States)",
+            "Google UK English Male",  # v1.2.1: was "Microsoft Zira - English (United States)" — wrong gender for the male (gorilla) avatar on Chrome
             "Moira",
             "Google UK English Female",
         ],
@@ -186,7 +186,7 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
     "statistical_analysis_reviewer": {
         "voice_prefs": [
             "Microsoft Priya Online",  # Edge
-            "Google UK English Male",
+            "Microsoft Zira - English (United States)",  # v1.2.1: was "Google UK English Male" — wrong gender for the female (researcher) avatar on Chrome
             "Oliver",
             "Microsoft Mark - English (United States)",
         ],
@@ -206,7 +206,7 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
     "industry_practice_reviewer": {
         "voice_prefs": [
             "Microsoft Mark",  # Edge
-            "Microsoft Zira - English (United States)",
+            "Google UK English Male",  # v1.2.1: was "Microsoft Zira - English (United States)" — wrong gender for the male (student) avatar on Chrome
             "Fiona",
             "Google US English",
         ],

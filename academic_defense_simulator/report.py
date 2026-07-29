@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from typing import Optional
 
 from academic_defense_simulator.digest import turn_total_score
@@ -46,6 +47,32 @@ logger = logging.getLogger(__name__)
 # |quality_sum delta| <= this band -> "held" (Decision 1). Defensible default, not
 # evidence-tuned — same epistemic status as the 0.85 grounding threshold at v0.2.5.
 HELD_BAND = 1
+
+
+def rescale_score_to_100(score: float) -> int:
+    """v1.2.1 Decision 4 — presentation-only 1-5 -> 0-100 rescale, `(x / 5) * 100`
+    rounded half up. `AnswerScore` and every persisted/exported value stay 1-5; this
+    exists only for rendered report surfaces and the narrative payload below.
+    `math.floor(x + 0.5)` rather than the builtin `round` because `round` breaks ties
+    to even (round(60.5) == 60), not up."""
+    return math.floor(score / 5 * 100 + 0.5)
+
+
+def _rescaled_narrative_payload(report: DefenseReport) -> dict:
+    """v1.2.1 Decision 5 — the narrative call sees the same 100-point numbers the UI
+    renders, so its prose can't contradict what's on screen (e.g. narrative says "3.4
+    out of 5" under a report showing 68). Averages are rescaled after computation,
+    never rescale-then-average. Template wording is untouched — only the payload
+    values change."""
+    payload = report.model_dump(mode="json", exclude={"narrative", "narrative_fallback_used"})
+    payload["overall_avg_clarity"] = rescale_score_to_100(report.overall_avg_clarity)
+    payload["overall_avg_depth"] = rescale_score_to_100(report.overall_avg_depth)
+    payload["overall_avg_grounding"] = rescale_score_to_100(report.overall_avg_grounding)
+    for section, raw in zip(payload["panelist_sections"], report.panelist_sections):
+        section["avg_clarity"] = rescale_score_to_100(raw.avg_clarity)
+        section["avg_depth"] = rescale_score_to_100(raw.avg_depth)
+        section["avg_grounding"] = rescale_score_to_100(raw.avg_grounding)
+    return payload
 
 
 def _difficulty_trajectory(session: DefenseSession) -> list[int]:
@@ -153,7 +180,7 @@ def _generate_narrative(report: DefenseReport, provider: LLMProvider) -> tuple[O
     retried once internally, per `GeminiProvider.generate_text`'s retry-once-then-raise
     behavior), fall back to a numbers-only report rather than failing the session
     (Decision 4)."""
-    payload = report.model_dump(mode="json", exclude={"narrative", "narrative_fallback_used"})
+    payload = _rescaled_narrative_payload(report)
     prompt = REPORT_NARRATIVE_PROMPT.format(report_json=json.dumps(payload, indent=2))
     try:
         narrative = provider.generate_text(prompt)
