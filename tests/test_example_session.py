@@ -110,21 +110,21 @@ def test_positioning_expander_title_is_locked() -> None:
 
 
 def test_positioning_bullets_are_locked_copy() -> None:
-    """Bullet one is the verified replacement, not Decision 7's original string —
-    the original claimed nothing about the document leaves the machine, and
-    retrieved passages demonstrably go to Gemini on every question-generation
-    call. "transiently ... never retained" is deliberate: the upload does touch
-    disk as a temp file for the length of the chunking pass, so "in memory"
-    would have been the same kind of not-quite-true claim this bullet exists to
-    correct. Bullets two and three are Decision 7 verbatim."""
+    """Reordered 2026-07-29 (Sean): reverse-RAG framing leads, retention bullet
+    moved last. That bullet still says "processed transiently" rather than "in
+    memory" — the upload does touch disk as a temp file for the length of the
+    chunking pass, so "in memory" would be the same kind of not-quite-true claim
+    this wording exists to avoid."""
     assert app.POSITIONING_BULLETS == (
-        "Your document is processed transiently and never retained. Retrieved "
-        "passages are sent to the Gemini API to generate each question.",
-        "Each panelist retrieves a passage and writes a question grounded in that "
-        "specific passage, so the questions are about *your* work, not the topic in "
-        "general.",
+        "This uses retrieval-augmented generation in reverse. Most RAG systems "
+        "retrieve passages to answer questions - here, each panelist retrieves a "
+        "passage from your document and uses it to ask one. Questions are "
+        "grounded in your specific text, not the topic in general.",
         "Your answer is scored behind the scenes, and that score steers how hard the "
         "next question is. You never see the score during the session.",
+        "Your document is chunked and embedded locally, processed transiently, and "
+        "never retained. Retrieved passages are sent to a hosted language model to "
+        "generate each question; nothing else is stored or reused.",
     )
 
 

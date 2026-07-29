@@ -680,28 +680,31 @@ POSITIONING_HEADLINE = "Most RAG demos answer questions about your document. Thi
 
 POSITIONING_EXPANDER_TITLE = "How this works"
 
-# Bullet one is the *verified* variant, not Decision 7's original string. The
-# original claimed "embedded locally — nothing about it is stored on a server",
-# which Decision 7 itself required be verified true on the deployed path before
-# shipping. Verification (this session): persistence is off on deploy —
-# `ADS_PERSISTENCE_ENABLED` unset resolves False, so no session JSON carrying
-# `document_chunks` is ever written there — but retrieved passages *are* sent to
-# Gemini on every question-generation call (`engine.py`, `retrieved_chunk=chunk_text`
-# interpolated into the panelist prompt). The original bullet implied the document
-# never leaves the machine, which is false.
+# v1.0.1 Decision 7 revised 2026-07-29 (Sean): reordered so the reverse-RAG
+# framing leads, moved the retention/embedding bullet last, and swapped "the
+# Gemini API" for "a hosted language model" so the copy doesn't name a specific
+# provider. The last bullet still says "processed transiently" rather than
+# "in memory": `_ingest_and_extract` writes the upload to a NamedTemporaryFile
+# for the length of the chunking pass and deletes it in a `finally`, so it's
+# never purely memory-resident and "in memory" would be the same kind of
+# not-quite-true claim this wording exists to avoid.
 #
-# "transiently ... never retained" rather than "in memory ... never stored":
-# `_ingest_and_extract` writes the upload to a NamedTemporaryFile for the length
-# of the chunking pass and deletes it in a `finally`. Nothing survives that call,
-# so "never retained" is exactly true where "in memory" would not have been.
+# Retention/exposure facts this bullet still has to hold (verified earlier):
+# persistence is off on deploy — `ADS_PERSISTENCE_ENABLED` unset resolves
+# False, so no session JSON carrying `document_chunks` is ever written there —
+# but retrieved passages *are* sent to the LLM on every question-generation
+# call (`engine.py`, `retrieved_chunk=chunk_text` interpolated into the
+# panelist prompt).
 POSITIONING_BULLETS = (
-    "Your document is processed transiently and never retained. Retrieved "
-    "passages are sent to the Gemini API to generate each question.",
-    "Each panelist retrieves a passage and writes a question grounded in that "
-    "specific passage, so the questions are about *your* work, not the topic in "
-    "general.",
+    "This uses retrieval-augmented generation in reverse. Most RAG systems "
+    "retrieve passages to answer questions - here, each panelist retrieves a "
+    "passage from your document and uses it to ask one. Questions are "
+    "grounded in your specific text, not the topic in general.",
     "Your answer is scored behind the scenes, and that score steers how hard the "
     "next question is. You never see the score during the session.",
+    "Your document is chunked and embedded locally, processed transiently, and "
+    "never retained. Retrieved passages are sent to a hosted language model to "
+    "generate each question; nothing else is stored or reused.",
 )
 
 
