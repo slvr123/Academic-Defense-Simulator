@@ -1180,6 +1180,20 @@ def _render_panel_preview_row(
 # ---------------------------------------------------------------------------
 
 VOICE_ENABLED_KEY = "voice_enabled"
+# v1.2.3: the sidebar toggle is easy to miss mid-session, so a second toggle mirrors it
+# on the main screen. Streamlit forbids two widgets sharing one `key`, so the main-screen
+# toggle gets its own key and an on_change callback copies whichever one just changed
+# onto VOICE_ENABLED_KEY, the single flag `_render_answer_fragment` actually reads —
+# Streamlit's own documented pattern for syncing two widgets to one value.
+VOICE_ENABLED_MAIN_KEY = "voice_enabled_main"
+
+
+def _sync_voice_from_main() -> None:
+    st.session_state[VOICE_ENABLED_KEY] = st.session_state[VOICE_ENABLED_MAIN_KEY]
+
+
+def _sync_voice_from_sidebar() -> None:
+    st.session_state[VOICE_ENABLED_MAIN_KEY] = st.session_state[VOICE_ENABLED_KEY]
 
 # Decision 7 part 4 belt: the utterance never carries anything but the question, and
 # Chrome silently truncates long network-voice utterances after ~15s unless resumed.
@@ -1951,6 +1965,7 @@ def _render_case_file_sidebar() -> None:
             key=VOICE_ENABLED_KEY,
             value=False,
             help="Your browser reads each question aloud. Nothing is sent anywhere.",
+            on_change=_sync_voice_from_sidebar,
         )
 
 
@@ -2456,6 +2471,14 @@ elif st.session_state.stage == "running":
     # renders in the main flow mid-session, only in the report's trajectory after the
     # session ends. It remains visible in dev-view (`_render_dev_view` above).
     st.subheader(f"Turn {turn_num} — {_turn_progress_label(session)}")
+
+    # v1.2.3: mirrors the sidebar's voice toggle where it's actually visible mid-session.
+    st.toggle(
+        "🔊 Panel speaks questions",
+        key=VOICE_ENABLED_MAIN_KEY,
+        value=st.session_state.get(VOICE_ENABLED_KEY, False),
+        on_change=_sync_voice_from_main,
+    )
 
     _render_panel_row(session, active_panelist)
     _render_exchange_history(session)
