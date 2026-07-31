@@ -1184,29 +1184,12 @@ def _render_panel_preview_row(
 # avatar map (Decision 3); everything here is the Streamlit-side wiring.
 # ---------------------------------------------------------------------------
 
-VOICE_ENABLED_KEY = "voice_enabled"
-# v1.2.3: the sidebar toggle is easy to miss mid-session, so a second toggle mirrors it
-# on the main screen. Streamlit forbids two widgets sharing one `key`, so the main-screen
-# toggle gets its own key and an on_change callback copies whichever one just changed
-# onto VOICE_ENABLED_KEY, the single flag `_render_answer_fragment` actually reads —
-# Streamlit's own documented pattern for syncing two widgets to one value.
-VOICE_ENABLED_MAIN_KEY = "voice_enabled_main"
-
-# v1.2.2 Decision 3 (RETIRED 2026-07-31 — see docs/v1.2.2-mimo-deployed-
-# decisions.md): a separate session-level opt-in/disclosure toggle used to
-# gate the Mimo path here, stacked on top of VOICE_ENABLED_KEY. Sean decided
-# Mimo is the default voice now, not a secondary opt-in feature, and removed
-# the toggle. When the resolved provider is mimo, `_render_voice_component`
-# uses it automatically, gated only by VOICE_ENABLED_KEY same as the browser
-# path always was.
-
-
-def _sync_voice_from_main() -> None:
-    st.session_state[VOICE_ENABLED_KEY] = st.session_state[VOICE_ENABLED_MAIN_KEY]
-
-
-def _sync_voice_from_sidebar() -> None:
-    st.session_state[VOICE_ENABLED_MAIN_KEY] = st.session_state[VOICE_ENABLED_KEY]
+# v1.2 Decision 8's sidebar toggle, v1.2.3's mirrored main-screen toggle, and
+# v1.2.2 Decision 3's separate Mimo opt-in are all RETIRED 2026-07-31 (Sean
+# specified/locked — see docs/v1.2.2-mimo-deployed-decisions.md). Voice
+# renders unconditionally now, on by default, for every turn — no session-
+# state flag left to gate it on, and nothing left to sync between two
+# widgets.
 
 # Decision 7 part 4 belt: the utterance never carries anything but the question, and
 # Chrome silently truncates long network-voice utterances after ~15s unless resumed.
@@ -1548,12 +1531,13 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         st.markdown(f'<div class="ads-turn-header">{html.escape(header)}</div>', unsafe_allow_html=True)
         st.write(turn.question)
         # v1.2 Decision 9: only the question text is spoken — not the header above it,
-        # not the panelist name, not the grounding reference. Decision 8: rendered only
-        # while the sidebar toggle is on, and once rendered it stays rendered for the
+        # not the panelist name, not the grounding reference. Decision 8's sidebar
+        # opt-in toggle (RETIRED 2026-07-31, Sean specified/locked — see
+        # docs/v1.2.2-mimo-deployed-decisions.md) is gone; voice now renders
+        # unconditionally, on by default. Once rendered it stays rendered for the
         # life of the turn (Decision 7 part 3) because removing the iframe kills the
         # utterance it just started.
-        if st.session_state.get(VOICE_ENABLED_KEY, False):
-            _render_voice_component(turn.question, turn.panelist_archetype_key, turn_num)
+        _render_voice_component(turn.question, turn.panelist_archetype_key, turn_num)
         answer = st.text_area("Your answer", key=f"answer_{turn_num}")
         submitted = st.button("Submit answer", key=f"submit_{turn_num}")
 
@@ -2014,28 +1998,12 @@ def _render_case_file_sidebar() -> None:
         st.markdown('<p class="sidebar-section-label">Session</p>', unsafe_allow_html=True)
         st.caption(f"{_turn_progress_label(session)} · {session.profile.defense_type.value}")
 
-        # v1.2 Decision 8: one global control, default off. Audio starting unbidden in
-        # an office or on a train is a bad first impression for a portfolio link, and
-        # opt-in is also what makes the whole feature provably inert for anyone who
-        # doesn't want it. `st.toggle` writes VOICE_ENABLED_KEY into session_state
-        # itself via the widget key, so no separate assignment is needed.
-        st.markdown('<p class="sidebar-section-label">Voice</p>', unsafe_allow_html=True)
-        st.toggle(
-            "Panel speaks questions",
-            key=VOICE_ENABLED_KEY,
-            value=False,
-            help="Your browser reads each question aloud. Nothing is sent anywhere.",
-            on_change=_sync_voice_from_sidebar,
-        )
-
-        # v1.2.2 Decision 3 (RETIRED 2026-07-31 — see docs/v1.2.2-mimo-deployed-
-        # decisions.md) used to render a disclosure caption + a separate opt-in
-        # toggle here whenever the resolved provider was mimo. Sean decided Mimo
-        # is the default voice now, not a secondary opt-in feature, and had both
-        # removed the same day they shipped. `_render_voice_component` uses Mimo
-        # automatically whenever it resolves as the provider; the toggle above
-        # ("Panel speaks questions") is the only gate left, same as it always
-        # was for the browser path.
+        # v1.2 Decision 8's "Panel speaks questions" toggle (one global control,
+        # default off) and v1.2.2 Decision 3's Mimo-specific opt-in toggle are
+        # both RETIRED 2026-07-31 (Sean specified/locked — see
+        # docs/v1.2.2-mimo-deployed-decisions.md). Voice now renders
+        # unconditionally, on by default, no sidebar control left to configure —
+        # Mimo when it resolves as the provider, browser otherwise.
 
 
 def _resume_session(persisted: PersistedSession) -> None:
@@ -2541,13 +2509,9 @@ elif st.session_state.stage == "running":
     # session ends. It remains visible in dev-view (`_render_dev_view` above).
     st.subheader(f"Turn {turn_num} — {_turn_progress_label(session)}")
 
-    # v1.2.3: mirrors the sidebar's voice toggle where it's actually visible mid-session.
-    st.toggle(
-        "🔊 Panel speaks questions",
-        key=VOICE_ENABLED_MAIN_KEY,
-        value=st.session_state.get(VOICE_ENABLED_KEY, False),
-        on_change=_sync_voice_from_main,
-    )
+    # v1.2.3's mirrored voice toggle is RETIRED 2026-07-31 along with the sidebar
+    # original (Sean specified/locked — see docs/v1.2.2-mimo-deployed-decisions.md).
+    # Voice is unconditional now; there is nothing left to mirror.
 
     _render_panel_row(session, active_panelist)
     _render_exchange_history(session)
