@@ -181,11 +181,16 @@ more sophisticated question types.
 machine runs the app, so the public demo shows an empty analytics view. That's
 the intended privacy behaviour, not a broken feature.
 
-**Panelist voice depends on your browser.** The panel reads questions aloud using
-the browser's own speech engine (opt-in, off by default). Which voices exist is
-the browser's business, not the app's: Edge ships several neural and accented
+**Panelist voice runs on Xiaomi's Mimo API, with a browser fallback.** Every
+question is spoken aloud by default, through nine distinct designed voices (one
+per archetype, via Mimo's voice-design model, not a fixed preset) when
+`MIMO_API_KEY` is configured — which it is on the live demo. Any synthesis
+failure — auth, quota, timeout, or the API's free-tier promo lapsing — falls
+back silently to the browser's own speech engine for that turn only, never
+breaking the session. On the fallback path, which voices exist is the
+browser's business, not the app's: Edge ships several neural and accented
 English voices that Chrome doesn't have, so the same session sounds noticeably
-better there. Any recorded demo was captured in Edge.
+better there.
 
 **Live demo operational caveats.** The app sleeps after 12 hours without traffic,
 so a first visitor gets a wake-up click plus roughly 30 seconds. The embedding
@@ -196,13 +201,13 @@ guaranteed to.
 
 ## Stack
 
-Python · Gemini API (`google-genai`) · sentence-transformers
+Python · Gemini API (`google-genai`) · Xiaomi Mimo TTS · sentence-transformers
 (`all-MiniLM-L6-v2`, local) · numpy retrieval · PyMuPDF · Pydantic · Streamlit ·
 pytest
 
-229 tests, 228 passing. The one failure is a known test-isolation artifact — a
-real `.env` re-populates an env var the test clears — logged in `ROADMAP.md`
-rather than skipped to make the suite look green.
+321 tests, 320 passing. The one failure reads a real local session fixture
+that lives outside the repo (gitignored), so it's absent on a fresh clone —
+logged in `ROADMAP.md` rather than skipped to keep the suite honestly green.
 
 Business logic is Streamlit-free by rule, verified by grep rather than assumed —
 no module outside the UI layer imports it. The UI is a thin shell over typed
@@ -224,7 +229,8 @@ streamlit run academic_defense_simulator/streamlit_app.py
 Advocate · scoring report with grounded per-answer suggestions · document
 relevance gate · session persistence and resume · cross-session analytics ·
 bring-your-own-key with a capped demo mode · nine archetypes · deployment
-hardening
+hardening · AI voice narration (Xiaomi Mimo, nine designed voices, browser
+fallback)
 
 **Next:** a retrieval eval, closing the gap named above · a difficulty
 discrimination probe · widening `grounding_reference` to fix the false-negative

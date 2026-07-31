@@ -474,6 +474,35 @@ then: monkeypatch `load_dotenv` itself in these tests rather than the
 individual env var; point affected tests at an isolated/empty `.env` path;
 or have `load_settings()` accept a flag to skip dotenv loading under test.
 
+**Resolved 2026-07-31 (v1.2.1 Phase 2, S.3).** Chose the first candidate fix:
+`monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: None)` in every test
+that `delenv`s a variable this machine's real `.env` also sets. Applied to
+`test_persistence_defaults_off_when_unset` and, once `ADS_TTS_PROVIDER` and
+`MIMO_API_KEY` joined `.env` the same session, to every test exercising their
+unset paths too — the risk-scope warning above was correct that this wasn't
+audited yet; it was audited as part of this fix, not left for a separate one.
+What actually forced the fix: this exact defect was what let a live
+`MIMO_API_KEY` render into a pytest assertion diff and leak into a Code
+session transcript, twice — see `docs/v1.2.2-mimo-deployed-decisions.md` and
+`tests/test_credential_handling.py`.
+
+### Known issue — one persistence test reads a real local session fixture (logged 2026-07-31)
+
+`tests/test_persistence.py::test_real_pre_existing_file_missing_answer_
+suggestions_loads_with_defaults` reads a real completed session
+(`sessions/b4bfb649-e3fc-4aab-b930-645c309bb3c4.json`) generated before v1.0b-2
+added `answer_suggestions`/`suggestions_fallback_used`, to prove the loader
+still defaults those fields correctly on an old-shaped file. `sessions/` is
+gitignored (v0.4b Decision 1: local-disk persistence is opt-in and
+machine-local), so the fixture is absent on a fresh clone — the test fails
+there with `FileNotFoundError`, not an assertion failure.
+
+Not fixed here. The migration-safety property it checks is real and worth
+keeping a live test for; the fix would be committing a synthetic old-shaped
+fixture (mirroring `example_session.py`'s pattern) rather than depending on a
+real file that only exists on the machine that recorded it — scoped to its
+own session, same as the entry above.
+
 ### Known issue — dev-hot-reload can invalidate a live session's persisted save (logged 2026-07-23)
 
 Editing a file in `DefenseSession`'s import chain (`models/session.py` or
