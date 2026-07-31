@@ -1,0 +1,51 @@
+v1.2.1 PHASE 2 — INTEGRATED SYNTHESIS PATH CHECK
+==================================================
+Date:     2026-07-31
+Purpose:  Part 3 DoD line "ADS_TTS_PROVIDER=mimo produces nine distinct
+          archetype voices in a real local session." Distinct from Phase 1's
+          evidence (evidence/v1.2.1-mimo-distinctness.txt), which validated the
+          same nine description texts via the standalone probe script
+          (scripts/probe_mimo_voices.py). This run instead exercises the real
+          SHIPPED code path: academic_defense_simulator.mimo_provider.
+          synthesize_speech() reading academic_defense_simulator.panel.
+          MIMO_VOICE_DESCRIPTIONS directly -- the exact call chain
+          _render_voice_component -> _cached_mimo_audio -> synthesize_speech
+          uses in the running app.
+
+Sentence synthesized (same as Phase 1's controlled sentence, ~40 words):
+  "Before we continue, I want to press you on one specific choice in your
+  methodology, because the panel needs to understand whether that decision
+  was justified by your data or simply convenient given your timeline and
+  resources."
+
+RAW OUTPUT (real network calls, real MIMO_API_KEY, real responses):
+  devils_advocate:                    652844 bytes
+  ethics_practicality_reviewer:       752684 bytes
+  industry_practice_reviewer:         629804 bytes
+  literature_theory_specialist:       706604 bytes
+  methodology_expert:                 814124 bytes
+  problem_objectives_reviewer:        606764 bytes
+  results_conclusions_reviewer:       499244 bytes
+  statistical_analysis_reviewer:      629804 bytes
+  technical_implementation_reviewer:  483884 bytes
+
+9 archetypes synthesized successfully via the real integrated path.
+Distinct byte-lengths: 8 of 9 (industry_practice_reviewer and
+statistical_analysis_reviewer coincidentally produced the same length).
+
+Byte-length equality is not evidence of identical audio, so this was checked
+directly: both were re-synthesized and SHA-256'd.
+  industry_practice_reviewer:    2fa4c88a597596ee...
+  statistical_analysis_reviewer: 553125943d9e44bc...
+  identical bytes: False
+
+CONCLUSION
+----------
+The integrated code path (panel.MIMO_VOICE_DESCRIPTIONS -> mimo_provider.
+synthesize_speech) produces nine successful, non-identical audio outputs using
+the exact descriptions Sean already judged 9/9 distinguishable by ear in Phase
+1 (evidence/v1.2.1-mimo-distinctness.txt) -- same input text, same model, same
+call shape. This run proves the WIRING reproduces that result mechanically; it
+does not re-run the listening judgement, since the description text going in
+is unchanged and re-litigating an already-settled by-ear verdict would not be
+a good use of Sean's time.

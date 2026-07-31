@@ -329,11 +329,16 @@ are different problems with different fixes, and I don't know which I have.
 Counterargument worth stating: the same document has the same weaknesses, so
 *some* cross-session consistency is correct behaviour.
 
-**Two tests fail.** 297 of 299 pass. Both failures are environment artifacts
-rather than defects, and both are logged rather than skipped to make the suite
-look green: one is a test-isolation artifact where a real `.env` re-populates an
-env var the test clears, and the other reads a pre-existing session file that
-lives outside the repo and so is absent on a fresh clone.
+**One test fails.** 317 of 318 pass, corrected 2026-07-31 from a stale 297 of
+299. The test-isolation artifact — a real `.env` silently re-populating an env
+var a test explicitly cleared, so "unset" never actually meant unset on my own
+machine — is fixed as of the v1.2.1 session: it's the same defect that let a
+live credential leak into that session's terminal output before the fix
+landed, so it stopped being tolerable the moment it stopped being merely
+cosmetic. The one remaining failure reads a pre-existing session file that
+lives outside the repo and so is absent on a fresh clone. It's an environment
+artifact rather than a defect, and it's logged rather than skipped to keep the
+suite honestly green rather than cosmetically green.
 
 ---
 

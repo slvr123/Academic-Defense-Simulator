@@ -6,9 +6,11 @@ monkeypatch so they don't depend on a real `.env`.
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
-from academic_defense_simulator.config import load_settings
+from academic_defense_simulator.config import TTS_PROVIDER_BROWSER, TTS_PROVIDER_MIMO, load_settings
 
 
 @pytest.fixture(autouse=True)
@@ -42,3 +44,37 @@ def test_persistence_enabled_on_truthy_values(monkeypatch, value):
 def test_persistence_disabled_on_falsy_values(monkeypatch, value):
     monkeypatch.setenv("ADS_PERSISTENCE_ENABLED", value)
     assert load_settings().persistence_enabled is False
+
+
+# ---------------------------------------------------------------------------
+# v1.2.1 Decision 3 / Decision 8: ADS_TTS_PROVIDER — browser (default) | mimo.
+# Any other value falls back to browser with a warning logged, never raises.
+# ---------------------------------------------------------------------------
+
+
+def test_tts_provider_defaults_to_browser_when_unset(monkeypatch):
+    """Same S.3 fix as `test_persistence_defaults_off_when_unset` above, and for
+    the identical reason: this machine's `.env` sets `ADS_TTS_PROVIDER=mimo`, so
+    a bare `delenv` would have been silently repopulated by `load_dotenv()`
+    inside `load_settings()` rather than actually simulating "unset"."""
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
+    monkeypatch.delenv("ADS_TTS_PROVIDER", raising=False)
+    assert load_settings().tts_provider == TTS_PROVIDER_BROWSER
+
+
+def test_tts_provider_browser_recognized_case_insensitively(monkeypatch):
+    monkeypatch.setenv("ADS_TTS_PROVIDER", "BROWSER")
+    assert load_settings().tts_provider == TTS_PROVIDER_BROWSER
+
+
+def test_tts_provider_mimo_recognized(monkeypatch):
+    monkeypatch.setenv("ADS_TTS_PROVIDER", "mimo")
+    assert load_settings().tts_provider == TTS_PROVIDER_MIMO
+
+
+def test_unknown_tts_provider_falls_back_to_browser_with_warning(monkeypatch, caplog):
+    monkeypatch.setenv("ADS_TTS_PROVIDER", "definitely-not-a-real-provider")
+    with caplog.at_level(logging.WARNING):
+        settings = load_settings()
+    assert settings.tts_provider == TTS_PROVIDER_BROWSER
+    assert "definitely-not-a-real-provider" in caplog.text

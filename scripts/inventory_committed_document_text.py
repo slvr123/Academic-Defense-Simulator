@@ -66,12 +66,38 @@ def _jsonl_fields(*fields: str) -> Callable[[Path], set[str]]:
     return extract
 
 
+_CREDENTIAL_KEY_SUBSTRINGS = ("api_key", "apikey", "mimo", "secret", "credential", "token")
+
+
+def _assert_no_credential_shaped_keys(data: object, path: Path) -> None:
+    """v1.2.1 Decision 4: the v1.1 inventory regression check below (document_chunks
+    redaction) extended to MIMO_API_KEY -- "the v1.1 inventory-script regression
+    check ... is extended to assert no MIMO_API_KEY value appears in any persisted
+    artifact." Walks the parsed JSON looking for any dict key whose name suggests a
+    credential, so a future accidental inclusion is caught by name, not by having
+    to already know what a real key value looks like."""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            lowered = key.lower()
+            if any(s in lowered for s in _CREDENTIAL_KEY_SUBSTRINGS) and value:
+                raise SystemExit(
+                    f"{path.name}: key {key!r} looks credential-shaped and is non-empty. "
+                    "MIMO_API_KEY (and any other credential) must never appear in a "
+                    "persisted artifact (v1.2.1 Decision 4)."
+                )
+            _assert_no_credential_shaped_keys(value, path)
+    elif isinstance(data, list):
+        for item in data:
+            _assert_no_credential_shaped_keys(item, path)
+
+
 def _session_export_turns(path: Path) -> set[str]:
     """`chunk_text` + `grounding_reference` across every turn of a persisted
     session export. `document_chunks` is deliberately not read: it is stripped
     to an empty list before commit (v0.4c Decision 6), and a non-empty one here
     would mean that redaction regressed -- so it is asserted instead."""
     data = json.loads(path.read_text(encoding="utf-8"))
+    _assert_no_credential_shaped_keys(data, path)
     chunks = data.get("document_chunks")
     if chunks:
         raise SystemExit(

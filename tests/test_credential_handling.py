@@ -67,3 +67,72 @@ def test_secret_get_returns_the_real_value():
     the real value to make a network call."""
     secret = Secret(SENTINEL_MIMO_KEY)
     assert secret.get() == SENTINEL_MIMO_KEY
+
+
+# ---------------------------------------------------------------------------
+# Task 2.8 — Decision 4's key-leak assertion: "The v1.1 inventory-script
+# regression check ... is extended to assert no MIMO_API_KEY value appears in
+# any persisted artifact. Sentinel-key precedent: a rejected call from the
+# provider is the evidence, not a grep."
+#
+# The live half of that precedent was run once outside this suite (2026-07-31,
+# not re-run here — it needs a real network call and a genuine rejection isn't
+# something to depend on in a test that runs on every commit):
+# `mimo_provider.synthesize_speech` was called with sentinel key
+# "mimo-sk-SENTINEL-DO-NOT-SHIP-20260731" and rejected by the real API
+# (MimoTTSError raised) — proving the key genuinely went over the wire.
+# `sessions/`, `evidence/`, and the whole git-tracked tree were then grepped
+# for that sentinel: zero matches anywhere.
+#
+# What runs on every commit instead is the structural guarantee that live
+# check depended on. Two guards, matching `scripts/inventory_committed_
+# document_text.py`'s extended `_assert_no_credential_shaped_keys` check:
+# ---------------------------------------------------------------------------
+
+
+def test_persisted_session_schema_has_no_credential_or_audio_shaped_field():
+    """`PersistedSession` (and its nested `DefenseSession`/`ConversationTurn`)
+    is the entire persisted-artifact surface — `persistence.py` serializes
+    exactly one `PersistedSession` per file, and `example_session.py`'s
+    committed fixture is the same shape. None of their field names should ever
+    suggest a credential or a raw audio payload; if one does, Decision 4 has
+    regressed, whether or not anyone thinks to check its actual value."""
+    from academic_defense_simulator.models.session import ConversationTurn, DefenseSession, PersistedSession
+
+    suspicious = ("api_key", "apikey", "mimo", "audio", "secret", "credential", "token")
+    offending = []
+    for model in (PersistedSession, DefenseSession, ConversationTurn):
+        for field_name in model.model_fields:
+            lowered = field_name.lower()
+            if any(s in lowered for s in suspicious):
+                offending.append(f"{model.__name__}.{field_name}")
+    assert offending == [], f"credential/audio-shaped field(s) on the persisted schema: {offending}"
+
+
+def test_committed_example_session_carries_no_credential_shaped_key():
+    """The mirror of `scripts/inventory_committed_document_text.py`'s
+    `_assert_no_credential_shaped_keys`, run directly against the actual
+    committed fixture rather than the Pydantic type — catches a leak in the raw
+    JSON even if a future schema change made `PersistedSession` silently ignore
+    an unknown field instead of rejecting it."""
+    import json
+
+    from academic_defense_simulator.example_session import EXAMPLE_SESSION_PATH
+
+    suspicious = ("api_key", "apikey", "mimo", "secret", "credential", "token")
+
+    def walk(node: object) -> list[str]:
+        found = []
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if any(s in key.lower() for s in suspicious) and value:
+                    found.append(key)
+                found.extend(walk(value))
+        elif isinstance(node, list):
+            for item in node:
+                found.extend(walk(item))
+        return found
+
+    raw = json.loads(EXAMPLE_SESSION_PATH.read_text(encoding="utf-8"))
+    offending = walk(raw)
+    assert offending == [], f"credential-shaped key(s) in the committed example session: {offending}"

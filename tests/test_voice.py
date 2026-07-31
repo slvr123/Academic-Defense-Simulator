@@ -23,6 +23,7 @@ import pytest
 import academic_defense_simulator.streamlit_app as app
 from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
+    MIMO_VOICE_DESCRIPTIONS,
     PANEL_COMPOSITION,
     VOICE_PROFILES,
     archetype_default_icon,
@@ -45,6 +46,26 @@ def test_every_registry_archetype_has_a_voice_profile():
 def test_every_voice_profile_names_a_real_archetype():
     unknown = sorted(set(VOICE_PROFILES) - set(ARCHETYPE_CONFIG))
     assert unknown == [], f"voice profiles for non-existent archetypes: {unknown}"
+
+
+# v1.2.1 Decision 8: MIMO_VOICE_DESCRIPTIONS covers all nine archetypes and
+# contains nine distinct strings. Separate from VOICE_PROFILES's completeness
+# tests above by design (Decision 5) — the two maps have unrelated inventories.
+
+
+def test_every_voice_profile_archetype_has_a_mimo_description():
+    missing = sorted(set(VOICE_PROFILES) - set(MIMO_VOICE_DESCRIPTIONS))
+    assert missing == [], f"archetypes with no Mimo voice description: {missing}"
+
+
+def test_every_mimo_description_names_a_real_archetype():
+    unknown = sorted(set(MIMO_VOICE_DESCRIPTIONS) - set(VOICE_PROFILES))
+    assert unknown == [], f"Mimo voice descriptions for non-existent archetypes: {unknown}"
+
+
+def test_mimo_descriptions_are_nine_distinct_strings():
+    assert len(MIMO_VOICE_DESCRIPTIONS) == 9
+    assert len(set(MIMO_VOICE_DESCRIPTIONS.values())) == 9
 
 
 @pytest.mark.parametrize("archetype_key", sorted(VOICE_PROFILES))
