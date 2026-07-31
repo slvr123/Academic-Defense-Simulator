@@ -411,6 +411,28 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
   unparked — see Decision 1 for the guard any future STT slice must satisfy
   (transcript lands in an editable box, text stays canonical, scoring never sees
   audio). No v1.3 voice slice.
+- **Rejected voice options (evaluated 2026-07-28).** Moved here 2026-07-31 —
+  `docs/v1.2.1-mimo-tts-brief.md` Decision 2 originally cited a
+  `docs/handoff-v1.2-close-to-v1.1.md` as this row's source; that file was
+  never committed and I decided it stays out of the repo, so this Parking Lot
+  section is the row's actual home going forward.
+
+  > **Server-side audio generally** — **Rejected** — Retires Decision 2 entirely —
+  > reintroduces quota, RAM, latency, and a network failure mode into a path that
+  > currently cannot fail. Questions are generated at runtime, so nothing can be
+  > pre-generated.
+
+  **Correction appended 2026-07-30 (v1.2.1 Decision 2):** this row is narrowed to
+  *server-side audio **in the deployed path***. It stands unchanged for Community
+  Cloud. It does not cover an env-flagged local/self-hosted provider that leaves
+  the deployed path byte-identical, on the `ADS_PERSISTENCE_ENABLED` precedent.
+
+  **What changed, stated honestly: no new evidence.** Nothing in the 2026-07-28
+  measurements has been contradicted. What changed is that I decided to spend on
+  voice quality anyway, and structured the spend so the deployed path carries none
+  of the risk the original row described. Every objection in that row — quota,
+  latency, network failure — still applies to the flagged path and is accepted
+  there, scoped to my own machine and my own key.
 - ~~Score-driven turn-taking — v0.3.x, only after round-robin is verified in
   evals.~~ **Shipped as v0.3f** (adaptive turn retention: follow-up floor
   retention + gated new-topic rotation) — no longer parked.
