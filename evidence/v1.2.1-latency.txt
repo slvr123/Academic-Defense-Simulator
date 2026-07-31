@@ -28,11 +28,11 @@ RAW RUNS (seconds, wall clock, one HTTPS request each, non-streaming):
   run  9: 5.555
   run 10: 5.566
 
-SUMMARY
--------
-  min:    4.947s
-  median: 6.160s
-  max:    7.395s
+SUMMARY (raw, unrounded)
+------------------------
+  min:    4.947491300001275s
+  median: 6.160330749997229s
+  max:    7.395218900011969s
 
 This lands on top of the existing ~15s question-generation time (Decision 0c),
 for a combined pause of roughly 20-22s (min-median) to 22s+ (max) before a
@@ -43,4 +43,14 @@ Decision 0's branch rule reads latency against a 3s threshold:
   - median <= 3s -> Branch A eligible
   - median >  3s -> Branch B territory (opt-in toggle, default off)
 
-Measured median (6.160s) is above the 3s threshold.
+Measured median (6.160330749997229s) is above the 3s threshold.
+
+CAVEATS ON THIS NUMBER
+-----------------------
+- This is Sean's own machine on Sean's own connection — the optimistic case,
+  not the typical one. A user on a slower connection or during Mimo API load
+  will see higher latency than this, not lower.
+- At six seconds a question, Decision 7's synthesis cache moves from
+  "important" to load-bearing: without it, every Streamlit rerun of a page
+  re-synthesizes and re-burns six-plus seconds and a quota unit per rerun,
+  not just per new question.

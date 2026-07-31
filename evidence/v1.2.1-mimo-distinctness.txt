@@ -80,11 +80,20 @@ Decision 9's confirmed role mapping):
 This is a human listening judgement, same discipline as Decision 0a. Code is
 not rendering a distinguishability verdict or a count.
 
-VERDICT: Sean, 2026-07-31, via chat — "every voice in evidence v1.2.1-voices
-are good." All nine archetype voices judged distinguishable.
+VERDICT (human listening judgement, rendered by Sean in the Code session via
+chat, 2026-07-31): "every voice in evidence v1.2.1-voices are good." All nine
+archetype voices judged distinguishable. Not a probe output — the script only
+synthesizes and writes files; it renders no verdict.
 
 DISTINGUISHABLE COUNT: 9 / 9.
 
 Decision 0's gate needs >= 7 distinguishable voices to clear Branch A/B.
 9 >= 7 — gate cleared. See Task 1.4 / evidence/v1.2.1-latency.txt for the
 combined branch selection with 0c.
+
+ORDERING NOTE: this verdict was rendered before the 0a browser baseline
+(evidence/v1.2.1-browser-baseline.txt), inverted from the brief's intent of
+establishing a baseline before judging Mimo. The gate only needed a
+distinguishable-voice count, so this does not invalidate Branch B — but it
+means the "is Mimo better than what shipped" comparison, the question that
+motivated this slice, is still unanswered pending the 0a verdict.
