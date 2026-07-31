@@ -1192,13 +1192,18 @@ VOICE_ENABLED_KEY = "voice_enabled"
 # Streamlit's own documented pattern for syncing two widgets to one value.
 VOICE_ENABLED_MAIN_KEY = "voice_enabled_main"
 
-# v1.2.1 Decision 0 Branch B / Task 2.6 — the one new UI control Decision 3 permits.
-# Only rendered when the operator has opted the whole app into Mimo via
-# ADS_TTS_PROVIDER=mimo (env-only, never a UI control itself), so it's invisible on
-# Community Cloud, where that env var is never set (Decision 1). A second,
-# session-level opt-in stacked on top of VOICE_ENABLED_KEY: median synthesis latency
-# measured at 6.160330749997229s (evidence/v1.2.1-latency.txt), so this is the user
-# explicitly choosing slow narration, never narration imposed (Decision 0 Branch B).
+# v1.2.1 Decision 0 Branch B / Task 2.6, now also v1.2.2 Decision 3's disclosure
+# gate. Rendered whenever the resolved provider is mimo — originally only under
+# an explicit ADS_TTS_PROVIDER=mimo (local-only, per v1.2.1 Decision 1), and now
+# also whenever MIMO_API_KEY is simply present, including on the deployed path
+# (v1.2.1 Decision 1 retired by v1.2.2 Decision 1 — see
+# docs/v1.2.2-mimo-deployed-decisions.md). A second, session-level opt-in stacked
+# on top of VOICE_ENABLED_KEY: median synthesis latency measured at
+# 6.160330749997229s locally (evidence/v1.2.1-latency.txt; that figure does not
+# transfer to the deployed path, per v1.2.2 Decision 4), so this is the user
+# explicitly choosing slow narration, never narration imposed (Decision 0 Branch
+# B) — and, as of v1.2.2, explicitly consenting to their question text being
+# sent to Xiaomi's API, never assumed.
 MIMO_AUDIO_ENABLED_KEY = "mimo_audio_enabled"
 
 
@@ -2027,18 +2032,30 @@ def _render_case_file_sidebar() -> None:
             on_change=_sync_voice_from_sidebar,
         )
 
-        # v1.2.1 Decision 0 Branch B / Task 2.6: the one new UI control Decision 3
-        # permits, and only when the operator has opted the whole app into Mimo via
-        # ADS_TTS_PROVIDER=mimo — invisible otherwise, including on Community Cloud,
-        # where that env var is never set (Decision 1).
+        # v1.2.2 Decision 3 — disclosure gate. Shown whenever the resolved provider
+        # is mimo, which can now be the deployed default once MIMO_API_KEY is set
+        # (v1.2.2 retires v1.2.1 Decision 1's browser-only-deployed rule; see
+        # docs/v1.2.2-mimo-deployed-decisions.md). The statement below is visible
+        # body text, not buried in `help=` alone, per Decision 3's "the UI states"
+        # requirement — it renders every rerun while Mimo is the active provider,
+        # so it is on screen before any synthesis this session could possibly have
+        # happened. The toggle below it IS the acknowledgement: the Decision 6 call
+        # site gates the Mimo attempt on this same session-state key, so audio is
+        # provably off until it's checked, and it's `st.session_state`-only — never
+        # written to disk or secrets — so it is never persisted across sessions.
         if load_settings().tts_provider == TTS_PROVIDER_MIMO:
+            st.caption(
+                "Higher-quality AI voices send each question's text to Xiaomi's "
+                "Mimo API for speech synthesis."
+            )
             st.toggle(
-                "Use higher-quality AI voices (slower, ~6s per question)",
+                "I understand — use AI voices (slower, ~6s per question)",
                 key=MIMO_AUDIO_ENABLED_KEY,
                 value=False,
                 help=(
                     "Sends each question's text to Xiaomi's Mimo API for synthesis. "
-                    "Falls back to your browser's voice automatically if it fails."
+                    "Falls back to your browser's voice automatically if it fails. "
+                    "This choice is not saved between sessions."
                 ),
             )
 

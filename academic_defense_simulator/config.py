@@ -93,21 +93,32 @@ def load_settings() -> Settings:
         "on",
     )
 
-    # v1.2.1 Decision 3: unset means browser; any value other than "browser"/"mimo"
-    # logs a warning and falls back to browser rather than raising — misconfiguring
-    # this must never abort a session, since audio is garnish (Decision 6).
+    mimo_api_key = os.getenv("MIMO_API_KEY", "").strip()
+
+    # v1.2.2 Decision 2 (retires v1.2.1 Decision 3's "unset means browser" for
+    # the unset case only): explicit "browser" always means browser, regardless
+    # of key presence. Explicit "mimo" or unset both resolve against whether
+    # MIMO_API_KEY is actually present — a key-less "mimo" must never reach the
+    # call site, because that would mean attempting (and fail-open catching) a
+    # network call that was always going to fail for lack of credentials, once
+    # per synthesis, forever. Any other value logs a warning and falls back to
+    # browser rather than raising — misconfiguring this must never abort a
+    # session, since audio is garnish (Decision 6).
     tts_provider_raw = os.getenv("ADS_TTS_PROVIDER", "").strip().lower()
-    if tts_provider_raw in ("", TTS_PROVIDER_BROWSER):
+    if tts_provider_raw == TTS_PROVIDER_BROWSER:
         tts_provider = TTS_PROVIDER_BROWSER
-    elif tts_provider_raw == TTS_PROVIDER_MIMO:
-        tts_provider = TTS_PROVIDER_MIMO
+    elif tts_provider_raw in ("", TTS_PROVIDER_MIMO):
+        if mimo_api_key:
+            tts_provider = TTS_PROVIDER_MIMO
+        else:
+            if tts_provider_raw == TTS_PROVIDER_MIMO:
+                logger.warning("ADS_TTS_PROVIDER=mimo but MIMO_API_KEY is not set — falling back to browser")
+            tts_provider = TTS_PROVIDER_BROWSER
     else:
         logger.warning(
             "Unknown ADS_TTS_PROVIDER=%r — falling back to %r", tts_provider_raw, TTS_PROVIDER_BROWSER
         )
         tts_provider = TTS_PROVIDER_BROWSER
-
-    mimo_api_key = os.getenv("MIMO_API_KEY", "").strip()
 
     return Settings(
         gemini_api_key=Secret(api_key),

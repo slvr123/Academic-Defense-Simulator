@@ -73,16 +73,47 @@ def test_browser_provider_renders_the_unmodified_browser_component(monkeypatch):
     assert captured["kwargs"] == {"height": 42}
 
 
-def test_unset_provider_renders_the_unmodified_browser_component(monkeypatch):
+def test_no_key_renders_the_unmodified_browser_component(monkeypatch):
+    """v1.2.2 Task 4: this test used to assert on `ADS_TTS_PROVIDER` unset,
+    back when unset always meant browser. It no longer does — v1.2.2 Decision 2
+    makes the default key-presence-driven, so the actual "renders browser"
+    guarantee is keyed on the absence of `MIMO_API_KEY`, not on the provider
+    env var's literal unset-ness."""
     _reset_voice_session(monkeypatch)
     monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.delenv("ADS_TTS_PROVIDER", raising=False)
+    monkeypatch.delenv("MIMO_API_KEY", raising=False)
     captured = _capture_rendered_html(monkeypatch)
 
     app._render_voice_component("A real question?", "methodology_expert", 2)
 
     expected = app._voice_component_html(
         "A real question?", "methodology_expert", app._voice_guard_key(2)
+    )
+    assert captured["html"] == expected
+
+
+def test_no_key_never_attempts_a_mimo_network_call(monkeypatch):
+    """v1.2.2 Decision 2's other half: "key absence must resolve to browser
+    with no failed network call — do not default to mimo and rely on
+    fail-open to catch it." Proven, not assumed: `synthesize_speech` is made
+    to raise if it is ever called at all, and the render still has to
+    succeed — with an EXPLICIT `ADS_TTS_PROVIDER=mimo`, not just unset, since
+    that's the stricter of the two no-key paths."""
+    _reset_voice_session(monkeypatch)
+    monkeypatch.setenv("ADS_TTS_PROVIDER", "mimo")
+    monkeypatch.delenv("MIMO_API_KEY", raising=False)
+
+    def _must_not_be_called(text, archetype_key, api_key):
+        raise AssertionError("synthesize_speech was called despite no MIMO_API_KEY being set")
+
+    monkeypatch.setattr(app, "synthesize_speech", _must_not_be_called)
+    captured = _capture_rendered_html(monkeypatch)
+
+    app._render_voice_component("A real question?", "methodology_expert", 7)
+
+    expected = app._voice_component_html(
+        "A real question?", "methodology_expert", app._voice_guard_key(7)
     )
     assert captured["html"] == expected
 

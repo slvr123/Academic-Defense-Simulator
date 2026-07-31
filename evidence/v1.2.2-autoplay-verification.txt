@@ -1,0 +1,66 @@
+v1.2.2 TASK 6 — st.audio AUTOPLAY WITHOUT A USER GESTURE
+============================================================
+Date:     2026-07-31
+Script:   scripts/probe_mimo_autoplay.py (standalone, no Mimo API/key
+          dependency — this tests browser autoplay policy, not synthesis)
+Browser:  Chrome (Sean's own profile, per Claude in Chrome), real page loads,
+          real click events, not simulated
+Method:   two ports, both serving the same probe.
+  - localhost:8766 — a port previously used by this browser profile during
+    earlier v1.2.1 dev sessions.
+  - localhost:8791 — a port never before visited by this profile, as a stand-
+    in for a first-time visitor's browser with no accumulated site engagement.
+
+RESULT 1 — localhost:8766 (previously-visited origin)
+-------------------------------------------------------
+Cold `st.audio(autoplay=True)`, rendered before any click on the page,
+autoplayed and played through to completion with NO click at all:
+  {"beforeEnded": true, ...}
+This result is NOT representative of a first-time visitor — see Result 2.
+
+RESULT 2 — localhost:8791 (fresh, never-before-visited origin)
+-----------------------------------------------------------------
+Cold `st.audio(autoplay=True)`, no click, checked after 7s:
+  {"paused": true, "readyState": 0, "currentTime": 0, "ended": false,
+   "networkState": 2}
+readyState 0 = HAVE_NOTHING. The browser did not even load the media, let
+alone play it. Confirms autoplay is blocked on a genuinely fresh origin.
+
+A real click was then made on the page's button (a stand-in for the v1.2.2
+Decision 3 disclosure-gate toggle). After the click:
+  - The COLD player (already in the DOM, autoplay attempt already made)
+    loaded its metadata (readyState 4, duration 1) but did NOT resume
+    playback on its own: {"paused": true, "currentTime": 0}. A failed
+    autoplay attempt does not retry itself once permission changes.
+  - A SECOND player, rendered fresh in the Streamlit rerun caused by the
+    click, stayed at readyState 0 for the remainder of the observation
+    window (6+ seconds): {"paused": true, "readyState": 0, "currentTime": 0,
+    "duration": null}. A prior click elsewhere on the page did NOT reliably
+    carry forward autoplay permission to this later-rendered element.
+
+RESULT 3 — the native play control (the actual fallback)
+-------------------------------------------------------------
+The second (post-click) player's own native "|>" control was then clicked
+directly (a genuine, targeted user gesture on the media element itself,
+distinct from a page-level click). Result:
+  {"paused": true, "readyState": 4, "currentTime": 1.2, "duration": 1.2}
+Fully loaded and played through to completion. The native control is
+reliable regardless of autoplay policy.
+
+CONCLUSION
+----------
+`st.audio(..., autoplay=True)` cannot be relied on for a first-time visitor,
+and a prior click elsewhere on the page does not fix this for later-rendered
+audio elements either. This confirms Sean's concern: Web Speech's autoplay
+handling (a custom-built keepalive + Replay-button fallback,
+v1.2-panelist-voice-decisions.md Decision 7 part 2) does not carry over to
+`st.audio`.
+
+The gate already exists and works: `_render_voice_component`
+(academic_defense_simulator/streamlit_app.py) never suppresses `st.audio`'s
+default `controls` -- confirmed `controls: true` on every rendered player.
+The native play button is the same shape of fallback the browser path's
+Replay button provides -- worst case, the user clicks once, same as the
+worst case on the browser path today. No code change was required; this
+task closes by verifying the existing default is the correct gate, not by
+adding a new one.
