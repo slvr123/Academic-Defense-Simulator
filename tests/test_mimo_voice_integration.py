@@ -28,7 +28,6 @@ def _reset_voice_session(monkeypatch):
     _real_gemini_key(monkeypatch)
     app.st.session_state.pop("session_id", None)
     app.st.session_state.pop("voice_session_id", None)
-    app.st.session_state.pop(app.MIMO_AUDIO_ENABLED_KEY, None)
     app._cached_mimo_audio.clear()
 
 
@@ -48,9 +47,10 @@ def _capture_rendered_html(monkeypatch):
 
 
 def _force_mimo(monkeypatch, api_key="test-mimo-key-not-real"):
+    """v1.2.2 Decision 3 (retired 2026-07-31): Mimo no longer needs a separate
+    session-level toggle acknowledged — resolving as the provider is enough."""
     monkeypatch.setenv("ADS_TTS_PROVIDER", "mimo")
     monkeypatch.setenv("MIMO_API_KEY", api_key)
-    app.st.session_state[app.MIMO_AUDIO_ENABLED_KEY] = True
 
 
 # ---------------------------------------------------------------------------
@@ -99,8 +99,16 @@ def test_no_key_never_attempts_a_mimo_network_call(monkeypatch):
     fail-open to catch it." Proven, not assumed: `synthesize_speech` is made
     to raise if it is ever called at all, and the render still has to
     succeed — with an EXPLICIT `ADS_TTS_PROVIDER=mimo`, not just unset, since
-    that's the stricter of the two no-key paths."""
+    that's the stricter of the two no-key paths.
+
+    S.3-class fix (2026-07-31, caught here on 2026-07-31 during the Decision 3
+    retirement): `delenv("MIMO_API_KEY")` alone is not "unset" on a machine
+    whose real `.env` sets it — `load_dotenv()` inside `load_settings()`
+    silently repopulates it, which is exactly what made this test's mock get
+    called with a real key and print it into a pytest traceback the first
+    time this test ran without the `dotenv.load_dotenv` no-op below."""
     _reset_voice_session(monkeypatch)
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.setenv("ADS_TTS_PROVIDER", "mimo")
     monkeypatch.delenv("MIMO_API_KEY", raising=False)
 

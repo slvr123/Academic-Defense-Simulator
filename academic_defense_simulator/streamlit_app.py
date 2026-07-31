@@ -1192,19 +1192,13 @@ VOICE_ENABLED_KEY = "voice_enabled"
 # Streamlit's own documented pattern for syncing two widgets to one value.
 VOICE_ENABLED_MAIN_KEY = "voice_enabled_main"
 
-# v1.2.1 Decision 0 Branch B / Task 2.6, now also v1.2.2 Decision 3's disclosure
-# gate. Rendered whenever the resolved provider is mimo — originally only under
-# an explicit ADS_TTS_PROVIDER=mimo (local-only, per v1.2.1 Decision 1), and now
-# also whenever MIMO_API_KEY is simply present, including on the deployed path
-# (v1.2.1 Decision 1 retired by v1.2.2 Decision 1 — see
-# docs/v1.2.2-mimo-deployed-decisions.md). A second, session-level opt-in stacked
-# on top of VOICE_ENABLED_KEY: median synthesis latency measured at
-# 6.160330749997229s locally (evidence/v1.2.1-latency.txt; that figure does not
-# transfer to the deployed path, per v1.2.2 Decision 4), so this is the user
-# explicitly choosing slow narration, never narration imposed (Decision 0 Branch
-# B) — and, as of v1.2.2, explicitly consenting to their question text being
-# sent to Xiaomi's API, never assumed.
-MIMO_AUDIO_ENABLED_KEY = "mimo_audio_enabled"
+# v1.2.2 Decision 3 (RETIRED 2026-07-31 — see docs/v1.2.2-mimo-deployed-
+# decisions.md): a separate session-level opt-in/disclosure toggle used to
+# gate the Mimo path here, stacked on top of VOICE_ENABLED_KEY. Sean decided
+# Mimo is the default voice now, not a secondary opt-in feature, and removed
+# the toggle. When the resolved provider is mimo, `_render_voice_component`
+# uses it automatically, gated only by VOICE_ENABLED_KEY same as the browser
+# path always was.
 
 
 def _sync_voice_from_main() -> None:
@@ -1419,15 +1413,17 @@ def _render_voice_component(question: str, archetype_key: str, turn_num: int) ->
     provably inert. Height is the control row and nothing else.
 
     v1.2.1 Decision 6: one branch here, and it is the only place this slice
-    touches the v1.2 browser path. When Mimo is configured via env
-    (`ADS_TTS_PROVIDER=mimo`) and the session has opted in (Task 2.6's toggle),
-    attempt synthesis; on any failure — network, auth, quota, malformed response,
-    timeout, all caught inside `_cached_mimo_audio` — fall straight through to the
-    existing browser component below, unmodified. A failed Mimo attempt never
-    extends the pause beyond what the browser path would have taken and never
-    surfaces a traceback into the defense flow."""
+    touches the v1.2 browser path. When the resolved provider is mimo (v1.2.2
+    Decision 2: key-presence-driven, default now, not a secondary opt-in —
+    Decision 3's separate toggle was retired the same day it shipped, see
+    docs/v1.2.2-mimo-deployed-decisions.md), attempt synthesis; on any failure —
+    network, auth, quota, malformed response, timeout, all caught inside
+    `_cached_mimo_audio` — fall straight through to the existing browser
+    component below, unmodified. A failed Mimo attempt never extends the pause
+    beyond what the browser path would have taken and never surfaces a
+    traceback into the defense flow."""
     settings = load_settings()
-    if settings.tts_provider == TTS_PROVIDER_MIMO and st.session_state.get(MIMO_AUDIO_ENABLED_KEY, False):
+    if settings.tts_provider == TTS_PROVIDER_MIMO:
         audio_bytes = _cached_mimo_audio(
             _mimo_text_hash(question), archetype_key, question, settings.mimo_api_key.get()
         )
@@ -2032,32 +2028,14 @@ def _render_case_file_sidebar() -> None:
             on_change=_sync_voice_from_sidebar,
         )
 
-        # v1.2.2 Decision 3 — disclosure gate. Shown whenever the resolved provider
-        # is mimo, which can now be the deployed default once MIMO_API_KEY is set
-        # (v1.2.2 retires v1.2.1 Decision 1's browser-only-deployed rule; see
-        # docs/v1.2.2-mimo-deployed-decisions.md). The statement below is visible
-        # body text, not buried in `help=` alone, per Decision 3's "the UI states"
-        # requirement — it renders every rerun while Mimo is the active provider,
-        # so it is on screen before any synthesis this session could possibly have
-        # happened. The toggle below it IS the acknowledgement: the Decision 6 call
-        # site gates the Mimo attempt on this same session-state key, so audio is
-        # provably off until it's checked, and it's `st.session_state`-only — never
-        # written to disk or secrets — so it is never persisted across sessions.
-        if load_settings().tts_provider == TTS_PROVIDER_MIMO:
-            st.caption(
-                "Higher-quality AI voices send each question's text to Xiaomi's "
-                "Mimo API for speech synthesis."
-            )
-            st.toggle(
-                "I understand — use AI voices (slower, ~6s per question)",
-                key=MIMO_AUDIO_ENABLED_KEY,
-                value=False,
-                help=(
-                    "Sends each question's text to Xiaomi's Mimo API for synthesis. "
-                    "Falls back to your browser's voice automatically if it fails. "
-                    "This choice is not saved between sessions."
-                ),
-            )
+        # v1.2.2 Decision 3 (RETIRED 2026-07-31 — see docs/v1.2.2-mimo-deployed-
+        # decisions.md) used to render a disclosure caption + a separate opt-in
+        # toggle here whenever the resolved provider was mimo. Sean decided Mimo
+        # is the default voice now, not a secondary opt-in feature, and had both
+        # removed the same day they shipped. `_render_voice_component` uses Mimo
+        # automatically whenever it resolves as the provider; the toggle above
+        # ("Panel speaks questions") is the only gate left, same as it always
+        # was for the browser path.
 
 
 def _resume_session(persisted: PersistedSession) -> None:
