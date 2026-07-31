@@ -1,0 +1,30 @@
+v1.2.1 DECISION 0a — BROWSER BASELINE LISTENING PASS
+=====================================================
+Date:     2026-07-31
+Brief:    docs/v1.2.1-mimo-tts-brief.md, Decision 0a
+Purpose:  Closes v1.2 DoD 5 (the by-ear half, left open on purpose in v1.2).
+          Establishes the baseline Mimo must beat before any "improvement"
+          claim is made.
+
+Server:   scripts/probe_voice_resolution.py --port 8765, run under
+          .venv/Scripts/python.exe (bare pandas/streamlit import needs the
+          project venv, not the system interpreter).
+URL:      http://127.0.0.1:8765/?audible=1
+
+Pairs to judge (Decision 0a, exact wording from the brief):
+  1. ethics_practicality_reviewer + technical_implementation_reviewer
+     Microsoft David, pitch 0.70 vs 1.15
+  2. results_conclusions_reviewer + industry_practice_reviewer
+     Microsoft Mark, pitch 0.80 vs 1.20
+
+This is a human listening judgement. Per Decision 0a and the standing
+instruction to Code ("record it as such, do not synthesise a verdict"),
+Code is not rendering a verdict here.
+
+VERDICT: awaiting Sean.
+
+Instructions for Sean: open the URL above, find the two STRESS panels
+matching the pairs listed (label text names the shared voice and the two
+archetypes), click "Play this panel" for each, and record whether the two
+panelists in each pair are distinguishable by ear. Two rounds play
+automatically, alternating.

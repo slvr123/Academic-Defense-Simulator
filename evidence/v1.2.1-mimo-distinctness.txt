@@ -1,0 +1,90 @@
+v1.2.1 DECISION 0b — MIMO VOICE-DESIGN DISTINCTNESS PROBE
+============================================================
+Date:     2026-07-31
+Brief:    docs/v1.2.1-mimo-tts-brief.md, Decision 0b
+Script:   scripts/probe_mimo_voices.py (run_distinctness), .venv/Scripts/python.exe
+Model:    mimo-v2.5-tts-voicedesign (id read from live docs 2026-07-31)
+Endpoint: https://api.xiaomimimo.com/v1/chat/completions
+
+Nine archetypes, nine natural-language voice descriptions (authored to
+existing archetype character per ARCHETYPE_CONFIG and current avatar gender
+assignments per VOICE_PROFILES), one identical ~40-word defense-flavoured
+sentence synthesized under each. Audio files written to
+evidence/v1.2.1-voices/:
+
+  methodology_expert.wav                  (714284 bytes)
+  literature_theory_specialist.wav         (737324 bytes)
+  technical_implementation_reviewer.wav    (483884 bytes)
+  ethics_practicality_reviewer.wav         (806444 bytes)
+  devils_advocate.wav                      (506924 bytes)
+  problem_objectives_reviewer.wav          (606764 bytes)
+  statistical_analysis_reviewer.wav        (622124 bytes)
+  results_conclusions_reviewer.wav         (529964 bytes)
+  industry_practice_reviewer.wav           (637484 bytes)
+
+Sentence spoken by all nine (identical, so any difference heard is the
+voice and not the words):
+  "Before we continue, I want to press you on one specific choice in your
+  methodology, because the panel needs to understand whether that decision
+  was justified by your data or simply convenient given your timeline and
+  resources."
+
+Voice descriptions sent (one per archetype, the USER-role message per
+Decision 9's confirmed role mapping):
+
+  methodology_expert:
+    A composed woman in her 40s, precise academic diction, a calm and
+    measured pace, a low warm timbre. She speaks like a rigorous
+    methodologist double-checking your assumptions.
+
+  literature_theory_specialist:
+    A thoughtful woman in her 30s, articulate and unhurried, a faintly
+    British cadence, a warm mellow voice. She speaks like a well-read
+    theorist weighing every citation before she trusts it.
+
+  technical_implementation_reviewer:
+    An energetic man in his 30s, clipped and direct, a brisk pace, a clear
+    crisp timbre. He speaks like a hands-on engineer who wants to see
+    exactly how it was built.
+
+  ethics_practicality_reviewer:
+    A grave older man, a deep resonant voice, an unhurried deliberate pace,
+    a serious sober tone. He speaks like a pragmatic reviewer weighing
+    real-world consequences.
+
+  devils_advocate:
+    A sharp confident man in his 40s, fast and challenging, an edged
+    assertive tone. He speaks like a devil's advocate hunting for the
+    weakest claim in the room.
+
+  problem_objectives_reviewer:
+    A clear-voiced woman in her 30s, a neutral even tone, a brisk efficient
+    pace. She speaks like a reviewer who wants the research question stated
+    precisely and nothing more.
+
+  statistical_analysis_reviewer:
+    An analytical woman in her late 30s, crisp precise diction, an even
+    measured pace, a faintly clinical tone. She speaks like a statistician
+    checking every number against its claim.
+
+  results_conclusions_reviewer:
+    A bright alert man in his 30s, a slightly higher pitch, an evaluative
+    inquisitive tone, a moderate brisk pace. He speaks like a scholar
+    testing whether the conclusions overreach.
+
+  industry_practice_reviewer:
+    A grounded practical man in his 50s, a low steady voice, an unhurried
+    confident pace. He speaks like an industry veteran asking whether this
+    would survive contact with a real deployment.
+
+This is a human listening judgement, same discipline as Decision 0a. Code is
+not rendering a distinguishability verdict or a count.
+
+VERDICT: Sean, 2026-07-31, via chat — "every voice in evidence v1.2.1-voices
+are good." All nine archetype voices judged distinguishable.
+
+DISTINGUISHABLE COUNT: 9 / 9.
+
+Decision 0's gate needs >= 7 distinguishable voices to clear Branch A/B.
+9 >= 7 — gate cleared. See Task 1.4 / evidence/v1.2.1-latency.txt for the
+combined branch selection with 0c.

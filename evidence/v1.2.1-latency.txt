@@ -1,0 +1,46 @@
+v1.2.1 DECISION 0c — MIMO SYNTHESIS LATENCY
+============================================
+Date:     2026-07-31
+Brief:    docs/v1.2.1-mimo-tts-brief.md, Decision 0c
+Script:   scripts/probe_mimo_voices.py (run_latency), .venv/Scripts/python.exe
+Model:    mimo-v2.5-tts-voicedesign (id read from live docs 2026-07-31)
+Endpoint: https://api.xiaomimimo.com/v1/chat/completions
+
+Question synthesized (~45 words, held constant across all 10 runs):
+  "Your document claims a fifteen percent improvement in accuracy over the
+  baseline model, but the sample size in your evaluation set is quite small.
+  Can you walk the panel through why you believe this result would
+  generalize to a larger, more diverse population of users?"
+
+Voice description used: methodology_expert's (see evidence/v1.2.1-voices/).
+Latency should track text length and network conditions, not which
+description was sent, so one fixed description was used for all 10 runs.
+
+RAW RUNS (seconds, wall clock, one HTTPS request each, non-streaming):
+  run  1: 7.395
+  run  2: 6.333
+  run  3: 6.098
+  run  4: 4.947
+  run  5: 6.338
+  run  6: 6.352
+  run  7: 5.958
+  run  8: 6.223
+  run  9: 5.555
+  run 10: 5.566
+
+SUMMARY
+-------
+  min:    4.947s
+  median: 6.160s
+  max:    7.395s
+
+This lands on top of the existing ~15s question-generation time (Decision 0c),
+for a combined pause of roughly 20-22s (min-median) to 22s+ (max) before a
+panelist's question is both generated and spoken, versus 0s of added latency
+on the browser (Web Speech) path, which speaks as soon as generation returns.
+
+Decision 0's branch rule reads latency against a 3s threshold:
+  - median <= 3s -> Branch A eligible
+  - median >  3s -> Branch B territory (opt-in toggle, default off)
+
+Measured median (6.160s) is above the 3s threshold.
