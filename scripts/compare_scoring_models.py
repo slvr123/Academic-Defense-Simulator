@@ -289,7 +289,7 @@ def main() -> None:
                 "rep": rep,
             }
             try:
-                score = _score(model, ANSWER_TEXTS[variant], settings.gemini_api_key)
+                score = _score(model, ANSWER_TEXTS[variant], settings.gemini_api_key.get())
                 results.append(Result(model=model, answer_variant=variant, rep=rep, score=score))
                 record["score"] = score.model_dump()
                 record["error"] = None

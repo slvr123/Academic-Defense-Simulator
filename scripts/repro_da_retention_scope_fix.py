@@ -51,7 +51,7 @@ _WEAK_ANSWER = (
 
 
 def _labeled_provider(settings, model: str, counter: CallCounter, label: str) -> GeminiProvider:
-    return GeminiProvider(api_key=settings.gemini_api_key, model=model, call_counter=counter, label=label)
+    return GeminiProvider(api_key=settings.gemini_api_key.get(), model=model, call_counter=counter, label=label)
 
 
 def _pace(model: str) -> None:

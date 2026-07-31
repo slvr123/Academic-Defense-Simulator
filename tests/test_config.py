@@ -17,6 +17,17 @@ def _real_gemini_key(monkeypatch):
 
 
 def test_persistence_defaults_off_when_unset(monkeypatch):
+    """S.3 fix (2026-07-31): `load_settings()` calls `load_dotenv()` internally,
+    which repopulates any env var absent from the process but present in the
+    local `.env` file. A bare `delenv` here was therefore not simulating "unset"
+    at all on a machine whose `.env` sets `ADS_PERSISTENCE_ENABLED` — this test
+    had been silently failing-and-tolerated on exactly that kind of machine since
+    v1.2, which is what rendered a live `Settings` repr into a pytest assertion
+    diff and leaked a real credential (2026-07-31 Phase 2 session). Patching
+    `load_dotenv` to a no-op makes "unset" mean unset regardless of the local
+    `.env`'s contents, so this test's result no longer depends on which machine
+    runs it."""
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.delenv("ADS_PERSISTENCE_ENABLED", raising=False)
     assert load_settings().persistence_enabled is False
 

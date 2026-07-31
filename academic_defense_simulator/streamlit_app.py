@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import base64
 import concurrent.futures
+import hashlib
 import html
 import json
 import logging
@@ -44,7 +45,7 @@ import streamlit.components.v1 as components
 from pydantic import ValidationError
 
 from academic_defense_simulator import analytics, persistence
-from academic_defense_simulator.config import load_settings
+from academic_defense_simulator.config import TTS_PROVIDER_MIMO, load_settings
 from academic_defense_simulator.demo_counter import (
     consume_demo_session,
     demo_available,
@@ -79,6 +80,7 @@ from academic_defense_simulator.models.defense_profile import (
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession, PersistedSession, SessionStage
+from academic_defense_simulator.mimo_provider import MimoTTSError, synthesize_speech
 from academic_defense_simulator.panel import (
     DEVILS_ADVOCATE_KEY,
     PANEL_COMPOSITION,
@@ -955,7 +957,7 @@ def _render_key_gate() -> bool:
             # coarser gaming/concurrency tradeoffs at this scale.
             consume_demo_session()
             st.session_state.demo_sessions_started = demo_sessions_started + 1
-            st.session_state.active_api_key = load_settings().gemini_api_key
+            st.session_state.active_api_key = load_settings().gemini_api_key.get()
             st.session_state.api_key_mode = "demo"
             st.rerun()
         return False
@@ -1190,6 +1192,15 @@ VOICE_ENABLED_KEY = "voice_enabled"
 # Streamlit's own documented pattern for syncing two widgets to one value.
 VOICE_ENABLED_MAIN_KEY = "voice_enabled_main"
 
+# v1.2.1 Decision 0 Branch B / Task 2.6 — the one new UI control Decision 3 permits.
+# Only rendered when the operator has opted the whole app into Mimo via
+# ADS_TTS_PROVIDER=mimo (env-only, never a UI control itself), so it's invisible on
+# Community Cloud, where that env var is never set (Decision 1). A second,
+# session-level opt-in stacked on top of VOICE_ENABLED_KEY: median synthesis latency
+# measured at 6.160330749997229s (evidence/v1.2.1-latency.txt), so this is the user
+# explicitly choosing slow narration, never narration imposed (Decision 0 Branch B).
+MIMO_AUDIO_ENABLED_KEY = "mimo_audio_enabled"
+
 
 def _sync_voice_from_main() -> None:
     st.session_state[VOICE_ENABLED_KEY] = st.session_state[VOICE_ENABLED_MAIN_KEY]
@@ -1369,10 +1380,55 @@ def _voice_guard_key(turn_num: int) -> str:
     return f"ads-spoken:{session_id}:{turn_num}"
 
 
+def _mimo_text_hash(text: str) -> str:
+    """Decision 7's cache key is `(text_hash, archetype)`, not the raw text — this
+    keeps the cache's own key short rather than duplicating every question's full
+    text as a dict key."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+@st.cache_data(show_spinner=False)
+def _cached_mimo_audio(text_hash: str, archetype_key: str, _text: str, _api_key: str) -> bytes | None:
+    """Decision 7: cached on `(text_hash, archetype)` only. `_text` and `_api_key`
+    are excluded from the cache key by Streamlit's leading-underscore convention —
+    the function still has what it needs to make the real call, but the key
+    matches the decision exactly. Non-negotiable, not an optimisation: Streamlit
+    reruns the entire script on every widget interaction, and without this, one
+    question would be re-synthesized on every rerun of the page it appears on —
+    burning quota and re-triggering audio (Decision 7).
+
+    A failed synthesis is cached as `None` too. Decision 6's fail-open already
+    means this turn falls back to browser regardless of whether the failure is
+    cached; caching it means a turn that just failed does not re-attempt the same
+    doomed call — and burn more of the timeout — on every subsequent rerun."""
+    try:
+        return synthesize_speech(_text, archetype_key, _api_key)
+    except MimoTTSError as exc:
+        logger.warning("Mimo synthesis failed for archetype=%s: %s", archetype_key, exc)
+        return None
+
+
 def _render_voice_component(question: str, archetype_key: str, turn_num: int) -> None:
     """Render the speech component for the active question. Called only when the
     sidebar toggle is on (Decision 8) — off means this never runs, so the feature is
-    provably inert. Height is the control row and nothing else."""
+    provably inert. Height is the control row and nothing else.
+
+    v1.2.1 Decision 6: one branch here, and it is the only place this slice
+    touches the v1.2 browser path. When Mimo is configured via env
+    (`ADS_TTS_PROVIDER=mimo`) and the session has opted in (Task 2.6's toggle),
+    attempt synthesis; on any failure — network, auth, quota, malformed response,
+    timeout, all caught inside `_cached_mimo_audio` — fall straight through to the
+    existing browser component below, unmodified. A failed Mimo attempt never
+    extends the pause beyond what the browser path would have taken and never
+    surfaces a traceback into the defense flow."""
+    settings = load_settings()
+    if settings.tts_provider == TTS_PROVIDER_MIMO and st.session_state.get(MIMO_AUDIO_ENABLED_KEY, False):
+        audio_bytes = _cached_mimo_audio(
+            _mimo_text_hash(question), archetype_key, question, settings.mimo_api_key.get()
+        )
+        if audio_bytes is not None:
+            st.audio(audio_bytes, format="audio/wav", autoplay=True)
+            return
     components.html(
         _voice_component_html(question, archetype_key, _voice_guard_key(turn_num)),
         height=42,
@@ -1970,6 +2026,21 @@ def _render_case_file_sidebar() -> None:
             help="Your browser reads each question aloud. Nothing is sent anywhere.",
             on_change=_sync_voice_from_sidebar,
         )
+
+        # v1.2.1 Decision 0 Branch B / Task 2.6: the one new UI control Decision 3
+        # permits, and only when the operator has opted the whole app into Mimo via
+        # ADS_TTS_PROVIDER=mimo — invisible otherwise, including on Community Cloud,
+        # where that env var is never set (Decision 1).
+        if load_settings().tts_provider == TTS_PROVIDER_MIMO:
+            st.toggle(
+                "Use higher-quality AI voices (slower, ~6s per question)",
+                key=MIMO_AUDIO_ENABLED_KEY,
+                value=False,
+                help=(
+                    "Sends each question's text to Xiaomi's Mimo API for synthesis. "
+                    "Falls back to your browser's voice automatically if it fails."
+                ),
+            )
 
 
 def _resume_session(persisted: PersistedSession) -> None:

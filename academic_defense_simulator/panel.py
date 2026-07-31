@@ -215,6 +215,68 @@ VOICE_PROFILES: dict[str, VoiceProfile] = {
     },
 }
 
+# v1.2.1 Decision 5 — nine natural-language voice descriptions for Mimo's
+# voice-design-by-text-description model, one per archetype. Separate from
+# VOICE_PROFILES, deliberately not merged: the two providers have unrelated
+# inventories and unrelated constraints (Mimo has no browser-style scarcity, so
+# merging would couple the browser map's zero-margin test to a provider that
+# doesn't share it). Authored to the existing archetype character (see
+# ARCHETYPE_CONFIG in prompts/panelist_prompts.py) and the current avatar gender
+# assignments (see the gender comments on VOICE_PROFILES above) so the two paths
+# stay consistent for a user switching between them. Validated in Phase 1 (Task
+# 1.2): synthesized under all nine, judged 9/9 distinguishable by Sean, 2026-07-31
+# (evidence/v1.2.1-mimo-distinctness.txt, evidence/v1.2.1-voices/). Carried
+# unchanged from scripts/probe_mimo_voices.py::VOICE_DESCRIPTIONS — the probe's
+# copy is the one that was actually judged, so this is that same text, not a
+# rewrite of it.
+MIMO_VOICE_DESCRIPTIONS: dict[str, str] = {
+    "methodology_expert": (
+        "A composed woman in her 40s, precise academic diction, a calm and "
+        "measured pace, a low warm timbre. She speaks like a rigorous "
+        "methodologist double-checking your assumptions."
+    ),
+    "literature_theory_specialist": (
+        "A thoughtful woman in her 30s, articulate and unhurried, a faintly "
+        "British cadence, a warm mellow voice. She speaks like a well-read "
+        "theorist weighing every citation before she trusts it."
+    ),
+    "technical_implementation_reviewer": (
+        "An energetic man in his 30s, clipped and direct, a brisk pace, a clear "
+        "crisp timbre. He speaks like a hands-on engineer who wants to see "
+        "exactly how it was built."
+    ),
+    "ethics_practicality_reviewer": (
+        "A grave older man, a deep resonant voice, an unhurried deliberate pace, "
+        "a serious sober tone. He speaks like a pragmatic reviewer weighing "
+        "real-world consequences."
+    ),
+    "devils_advocate": (
+        "A sharp confident man in his 40s, fast and challenging, an edged "
+        "assertive tone. He speaks like a devil's advocate hunting for the "
+        "weakest claim in the room."
+    ),
+    "problem_objectives_reviewer": (
+        "A clear-voiced woman in her 30s, a neutral even tone, a brisk efficient "
+        "pace. She speaks like a reviewer who wants the research question stated "
+        "precisely and nothing more."
+    ),
+    "statistical_analysis_reviewer": (
+        "An analytical woman in her late 30s, crisp precise diction, an even "
+        "measured pace, a faintly clinical tone. She speaks like a statistician "
+        "checking every number against its claim."
+    ),
+    "results_conclusions_reviewer": (
+        "A bright alert man in his 30s, a slightly higher pitch, an evaluative "
+        "inquisitive tone, a moderate brisk pace. He speaks like a scholar "
+        "testing whether the conclusions overreach."
+    ),
+    "industry_practice_reviewer": (
+        "A grounded practical man in his 50s, a low steady voice, an unhurried "
+        "confident pace. He speaks like an industry veteran asking whether this "
+        "would survive contact with a real deployment."
+    ),
+}
+
 # v0.3j amendment (2026-07-20): curated image icons. Sean drops icon files into
 # assets/icons/ and each one becomes a picker choice; a file named exactly after an
 # archetype key (e.g. methodology_expert.png) becomes that archetype's default. The

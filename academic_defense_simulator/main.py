@@ -111,7 +111,7 @@ def main() -> None:
     )
 
     print(f"[model: {settings.gemini_model}]")
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=settings.gemini_model)
 
     archetype_roster = compose_full_roster(profile)
     panel, fallback_used = generate_panel(profile, archetype_roster, provider)
@@ -157,7 +157,7 @@ def main() -> None:
     # (Decision 2 — a judgment task, same rule as the relevance gate). This CLI driver
     # has no separate key/mode gate to resolve a provider from, so it reuses the same
     # API key as the narrative/session provider, just a different model.
-    suggestions_provider = GeminiProvider(api_key=settings.gemini_api_key, model="gemini-2.5-flash")
+    suggestions_provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model="gemini-2.5-flash")
     session.report = build_report(session, provider, suggestions_provider)
     _print_report(session.report)
 

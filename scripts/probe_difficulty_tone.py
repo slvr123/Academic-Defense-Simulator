@@ -176,7 +176,7 @@ def main_probe() -> None:
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
 
     records: list[dict] = []
     pairs: list[dict] = []  # {pair_id, archetype_key, chunk_index, low_question, high_question}

@@ -112,7 +112,7 @@ def main() -> None:
     else:
         print(f"\nRelevance gate ({_RELEVANCE_ASSESSMENT_MODEL})...")
         provider = GeminiProvider(
-            api_key=load_settings().gemini_api_key,
+            api_key=load_settings().gemini_api_key.get(),
             model=_RELEVANCE_ASSESSMENT_MODEL,
             label=_LLM_STAGE_RELEVANCE_GATE,
         )

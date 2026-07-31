@@ -181,7 +181,7 @@ def main_probe(
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
     pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
     profile = _profile(defense_type=defense_type, domain=domain, topic=topic, archetype_key=persona.archetype_key)
@@ -413,7 +413,7 @@ def main_probe_hardening(
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
 
     records: list[dict] = []
 
@@ -599,7 +599,7 @@ def main_probe_followup_attribution(
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
     pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
     records: list[dict] = []
@@ -829,7 +829,7 @@ def main_probe_v1_1a(results_path: Path = _RESULTS_PATH_V1_1A) -> None:
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
     pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
     records: list[dict] = []
@@ -978,7 +978,7 @@ def main_probe_v1_2_2_register() -> list[dict]:
     chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
     print(f"[chunks: {len(chunks)}]")
 
-    provider = GeminiProvider(api_key=settings.gemini_api_key, model=model)
+    provider = GeminiProvider(api_key=settings.gemini_api_key.get(), model=model)
     pacing = engine.MODEL_CALL_DELAY_SECONDS.get(model, engine.DEFAULT_CALL_DELAY)
 
     records: list[dict] = []
