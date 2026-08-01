@@ -91,6 +91,7 @@ from academic_defense_simulator.panel import (
     image_icon_path,
     list_icon_choices,
 )
+from academic_defense_simulator.markdown_export import render_session_markdown
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PROMPT_VERSION
 from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
@@ -2561,7 +2562,13 @@ elif st.session_state.stage == "done":
         "session": json.loads(session.model_dump_json()),
     }
     st.download_button(
-        "Download transcript",
+        "Download transcript (Markdown)",
+        data=render_session_markdown(session, PROMPT_VERSION),
+        file_name=f"defense_session_{session.profile.document_id}.md",
+        mime="text/markdown",
+    )
+    st.download_button(
+        "Download session data (JSON)",
         data=json.dumps(export_payload, indent=2),
         file_name=f"defense_session_{session.profile.document_id}.json",
         mime="application/json",
