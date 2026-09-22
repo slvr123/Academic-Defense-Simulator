@@ -12,6 +12,14 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - public pilot (2026-09-23)
+
+I am starting the [public pilot roadmap](public-pilot-roadmap.md) on `feat/public-pilot`.
+This is the active sequence for upcoming work and supersedes older next-milestone statements below where they conflict.
+My first user-facing slice makes panel selection prominent through selectable cards and an explicit panel summary.
+The remaining slices cover retrieval quality, scoring, a complete short demo, recovery, public-operation controls, and a small usability pilot.
+All of these changes are planned; the existing version history below records earlier work.
+
 ## Current position
 
 - **v0.2 complete.** Multi-turn agent loop, adaptive difficulty, follow-up branching,
