@@ -3,7 +3,7 @@ v0.3d defense-simulation UI). Reuses `engine.py`'s turn-loop helpers and
 `DefenseSession` as-is; no changes to `retrieve()`, prompt templates, scoring, or
 report logic. Flow (0.3a Decision 4): upload -> ingest -> extract (one LLM call,
 cached per document_id) -> profile form (prefilled, editable) -> start session.
-Panel composition is a multiselect scoped to the selected defense type/subtype, capped
+Panel composition uses visible selection cards scoped to the defense type/subtype, capped
 at 3 domain archetypes (v0.3e Decision 6). v0.3j adds per-slot name/icon customization
 rows and a visible `difficulty_start` select_slider (Decisions 1-4) — presentation and
 profile plumbing only, zero prompt-template changes.
@@ -45,6 +45,7 @@ import streamlit.components.v1 as components
 from pydantic import ValidationError
 
 from academic_defense_simulator import analytics, persistence
+from academic_defense_simulator.panel_selection_ui import render_panel_selection, panel_customization_inputs
 from academic_defense_simulator.config import TTS_PROVIDER_MIMO, load_settings
 from academic_defense_simulator.demo_counter import (
     consume_demo_session,
@@ -2234,131 +2235,11 @@ elif st.session_state.stage == "intake":
                 with topic_col:
                     topic = st.text_input("Research title / topic", value=st.session_state.extracted_topic)
 
+            with st.container(border=True, key="panel_picker"):
                 type_roster = PANEL_COMPOSITION[_composition_key(defense_type, other_subtype)]
-                # Default: top 3 in natural (priority) order — st.multiselect returns
-                # selections in option-list order regardless of click order, so this is
-                # already natural order; compose_panel (v0.3e Decision 4) re-derives
-                # natural order from PANEL_COMPOSITION independently either way.
-                selected_archetypes = st.multiselect(
-                    "Panel",
-                    options=type_roster,
-                    default=type_roster[:3],
-                    format_func=_archetype_title,
-                    max_selections=3,
-                )
-                # Panel caption (v0.3d Decision 1, updated v0.3e) — compose_full_roster
-                # appends Devil's Advocate unconditionally, so the visible panel is always
-                # one bigger than the selection; state the arithmetic explicitly rather
-                # than let it read as a bug.
-                st.markdown(
-                    f'<p class="small-caps-label">{len(selected_archetypes)} domain panelists + '
-                    f"Devil's Advocate = {len(selected_archetypes) + 1} total</p>",
-                    unsafe_allow_html=True,
-                )
-                # v1.1a Decision 6 — static applicability note only, no content-based gating
-                # (that's v1.1b). Statistical & Data Analysis and Results & Conclusions both
-                # depend on document content that may not exist yet at intro+methodology+
-                # implementation stage.
-                st.caption(
-                    "Select Statistical & Data Analysis or Results & Conclusions only if your "
-                    "document contains those sections."
-                )
+                selected_archetypes = render_panel_selection(type_roster)
 
-                # v0.3j Decision 1 — per-slot customization rows. The intake widgets are
-                # NOT inside an st.form (plain widgets + a regular button), so these rows
-                # can track the multiselect reactively — the smallest-diff path of the
-                # two the decision doc allowed; no restructuring needed. One row per
-                # selected archetype in speaking order, plus the always-seated DA row.
-                # Widget keys are archetype-scoped so a slot's entries survive unrelated
-                # reruns and vanish with the slot when it's deselected.
-                #
-                # v0.3j amendment (2026-07-20): the rows live in a default-collapsed
-                # expander (Sean: open-by-default cluttered the intake screen), and the
-                # icon picker is fed by the curated-image registry in panel.py — image
-                # stems first, emoji as the standing fallback. The preview row below the
-                # expander stays always-visible, so a collapsed expander still shows the
-                # customized result.
-                customization_inputs: dict[str, tuple[str, str]] = {}
-                preview_keys = [a for a in type_roster if a in selected_archetypes] + [DEVILS_ADVOCATE_KEY]
-                icon_choices = list_icon_choices()
-                with st.expander("Customize your panel — optional", expanded=False):
-                    for archetype_key in preview_keys:
-                        default_icon = archetype_default_icon(archetype_key)
-                        title_col, name_col, icon_col = st.columns([2, 2, 1], vertical_alignment="center")
-                        with title_col:
-                            st.markdown(
-                                f'<p class="small-caps-label" style="margin:0;">'
-                                f"{html.escape(_archetype_title(archetype_key))}</p>",
-                                unsafe_allow_html=True,
-                            )
-                        with name_col:
-                            custom_name = st.text_input(
-                                "Panelist name",
-                                key=f"panelist_name_{archetype_key}",
-                                placeholder="Name (optional) — “Dr.” is added automatically",
-                                label_visibility="collapsed",
-                            )
-                        with icon_col:
-                            # v0.3j amendment 2 — game-style icon select. The slot keeps
-                            # its current choice in plain session state (no widget owns
-                            # the key anymore); the popover frames the full curated grid,
-                            # one click selects. Stale stems (file renamed/removed since
-                            # the choice) fall back to the archetype default.
-                            state_key = f"panelist_icon_{archetype_key}"
-                            current_icon = st.session_state.get(state_key, default_icon)
-                            if current_icon not in icon_choices:
-                                current_icon = default_icon
-                            thumb_col, pick_col = st.columns([1, 2], vertical_alignment="center")
-                            with thumb_col:
-                                current_path = image_icon_path(current_icon)
-                                if current_path is not None:
-                                    st.image(str(current_path), width=40)
-                                else:
-                                    st.markdown(
-                                        f'<div style="font-size:1.6rem;text-align:center;">'
-                                        f"{html.escape(current_icon)}</div>",
-                                        unsafe_allow_html=True,
-                                    )
-                            with pick_col:
-                                with st.popover("Change", width="stretch"):
-                                    st.markdown(
-                                        f'<p class="small-caps-label">Choose an icon — '
-                                        f"{html.escape(_archetype_title(archetype_key))}</p>",
-                                        unsafe_allow_html=True,
-                                    )
-                                    grid_width = 4
-                                    for row_start in range(0, len(icon_choices), grid_width):
-                                        grid_cols = st.columns(grid_width, gap="small")
-                                        for cell, stem in zip(
-                                            grid_cols, icon_choices[row_start : row_start + grid_width]
-                                        ):
-                                            with cell:
-                                                stem_path = image_icon_path(stem)
-                                                if stem_path is not None:
-                                                    st.image(str(stem_path), width="stretch")
-                                                else:
-                                                    st.markdown(
-                                                        f'<div style="font-size:2rem;text-align:center;">'
-                                                        f"{html.escape(stem)}</div>",
-                                                        unsafe_allow_html=True,
-                                                    )
-                                                if stem == current_icon:
-                                                    st.button(
-                                                        "✓",
-                                                        key=f"pick_{archetype_key}_{stem}",
-                                                        disabled=True,
-                                                        width="stretch",
-                                                        help=f"{_icon_choice_label(stem)} — selected",
-                                                    )
-                                                elif st.button(
-                                                    _icon_choice_label(stem),
-                                                    key=f"pick_{archetype_key}_{stem}",
-                                                    width="stretch",
-                                                    help=_icon_choice_label(stem),
-                                                ):
-                                                    st.session_state[state_key] = stem
-                                                    st.rerun()
-                        customization_inputs[archetype_key] = (custom_name, current_icon)
+                customization_inputs = panel_customization_inputs(selected_archetypes)
 
                 _render_panel_preview_row(
                     defense_type,
@@ -2379,7 +2260,8 @@ elif st.session_state.stage == "intake":
 
             _, cta_col, _ = st.columns([1, 1, 1])
             with cta_col:
-                start_clicked = st.button("Convene the Panel", type="primary", width="stretch")
+                start_clicked = st.button("Convene the Panel", type="primary", width="stretch",
+                                          disabled=not selected_archetypes)
         else:
             start_clicked = False
 
