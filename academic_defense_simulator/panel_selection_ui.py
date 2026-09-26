@@ -117,7 +117,7 @@ def render_panel_selection(roster: list[str]) -> list[str]:
         }
         .ads-picker-eyebrow { color: #D2A24C; font-size: .76rem;
             letter-spacing: .13em; text-transform: uppercase; margin-bottom: .4rem; }
-        .ads-picker-card { min-height: 126px; }
+        .ads-picker-card { min-height: 160px; }
         .ads-picker-card h4 { color: #ECE7DD; font: 1.15rem Georgia, serif;
             margin: .55rem 0; padding: 0; line-height: 1.35; }
         .ads-picker-card p { color: #BDB4A7; font-size: .9rem; line-height: 1.5; }
@@ -126,6 +126,12 @@ def render_panel_selection(roster: list[str]) -> list[str]:
         .ads-picker-status { color: #C2B7A9; font-size: .75rem;
             letter-spacing: .06em; text-transform: uppercase; }
         [class*="st-key-panel_card_"] { background: #1A1714; border-radius: 12px; }
+        /* Reserve the same space for selected and available cards. The latter
+           have no profile controls, but still belong to the same visual grid. */
+        [class*="st-key-panel_card_"]:not(.st-key-panel_card_devils_advocate) {
+            min-height: 26rem;
+        }
+        [class*="st-key-panel_select_"] button { min-height: 3rem; }
         [class*="st-key-panel_card_"]:has(.ads-picker-selected) {
             border-color: #A65357 !important; background: #2B1D1D;
         }
@@ -135,7 +141,12 @@ def render_panel_selection(roster: list[str]) -> list[str]:
         .ads-picker-included { border-left: 2px solid #D2A24C; padding: .6rem 1rem;
             color: #BDB4A7; margin: .4rem 0 1rem; }
         .ads-picker-included strong { color: #ECE7DD; }
-        @media (max-width: 640px) { .ads-picker-card { min-height: 0; } }
+        @media (max-width: 640px) {
+            .ads-picker-card { min-height: 0; }
+            [class*="st-key-panel_card_"]:not(.st-key-panel_card_devils_advocate) {
+                min-height: 0;
+            }
+        }
         </style>
         <div class="ads-picker-eyebrow">Build your defense panel</div>
         """, unsafe_allow_html=True)
@@ -160,7 +171,7 @@ def render_panel_selection(roster: list[str]) -> list[str]:
             title = ARCHETYPE_CONFIG[key]["archetype_title"]
             chosen = key in selected
             icon_html = _icon_html(key)
-            with column, st.container(border=True, key=f"panel_card_{key}"):
+            with column, st.container(border=True, height="stretch", key=f"panel_card_{key}"):
                 status = "Selected" if chosen else "Available"
                 selected_class = " ads-picker-selected" if chosen else ""
                 st.markdown(
