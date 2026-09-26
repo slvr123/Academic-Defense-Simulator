@@ -405,7 +405,7 @@ def _inject_theme_css() -> None:
             color: #F2E9E4 !important;
         }
 
-        .ads-card {
+        .defense-card {
             border: 1px solid #2E2A25;
             border-radius: 12px;
             padding: 0.85rem 1rem;
@@ -413,14 +413,14 @@ def _inject_theme_css() -> None:
             margin-bottom: 0.5rem;
             text-align: center;
         }
-        .ads-card.speaking {
+        .defense-card.speaking {
             border: 2px solid #8C3A3F;
             box-shadow: 0 0 0 2px rgba(140, 58, 63, 0.22);
         }
-        .ads-card.completed {
+        .defense-card.completed {
             border-color: #6B655E;
         }
-        .ads-card.waiting {
+        .defense-card.waiting {
             opacity: 0.55;
         }
         .ads-avatar {
@@ -469,19 +469,19 @@ def _inject_theme_css() -> None:
             min-height: 1.6rem;
             padding: 0 0.25rem;
         }
-        .ads-card-name {
+        .defense-card-name {
             font-family: Georgia, serif;
             font-weight: 600;
             color: #ECE7DD;
         }
         /* Card archetype labels: tracked tighter and smaller than section labels
            (0.62rem / 0.06em) so long titles don't break mid-word. */
-        .ads-card-title.small-caps-label {
+        .defense-card-title.small-caps-label {
             margin-top: 0.15rem;
             letter-spacing: 0.06em;
             font-size: 0.62rem;
         }
-        .ads-card-status {
+        .defense-card-status {
             margin-top: 0.35rem;
             font-size: 0.82rem;
             color: #B5AEA2;
@@ -561,10 +561,10 @@ def _inject_theme_css() -> None:
             justify-content: center !important;
         }
 
-        /* Panel-composition preview cards (Task 1) — same .ads-card language as
+        /* Panel-composition preview cards (Task 1) — same .defense-card language as
            the live session's panel row, no state modifier (no session exists
            yet), placeholder name slot dimmed to read clearly as a placeholder. */
-        .ads-card-name.ads-placeholder {
+        .defense-card-name.ads-placeholder {
             opacity: 0.6;
             font-style: italic;
             font-size: 0.85rem;
@@ -579,7 +579,7 @@ def _inject_theme_css() -> None:
             flex-wrap: wrap;
             gap: 0.6rem;
         }
-        .ads-preview-row .ads-card {
+        .ads-preview-row .defense-card {
             flex: 1 1 165px;
             min-width: 165px;
         }
@@ -1080,13 +1080,13 @@ def _render_panelist_card(panelist: Panelist, state: str, status_line: str) -> s
     status_html = (
         f'<div class="ads-speaking-badge">{status}</div>'
         if state == "speaking"
-        else f'<div class="ads-card-status">{status}</div>'
+        else f'<div class="defense-card-status">{status}</div>'
     )
     return (
-        f'<div class="ads-card {state}">'
+        f'<div class="defense-card {state}">'
         f'<div class="{avatar_class}">{initial}</div>'
-        f'<div class="ads-card-name">{name}</div>'
-        f'<div class="ads-card-title small-caps-label">{title}</div>'
+        f'<div class="defense-card-name">{name}</div>'
+        f'<div class="defense-card-title small-caps-label">{title}</div>'
         f"{status_html}"
         f"</div>"
     )
@@ -1104,7 +1104,7 @@ def _render_panel_row(session: DefenseSession, active_panelist: Panelist) -> Non
 
 def _render_panel_preview_card(archetype_key: str, custom_name: str = "", icon: str = "") -> str:
     """Panel-composition preview for the intake screen (Task 1, presentation
-    only) — same `.ads-card` visual language as the live session's panel row.
+    only) — same `.defense-card` visual language as the live session's panel row.
     v0.3j: a slot with a custom name shows it; slots left blank keep the honest
     "Assigned at convene" placeholder (persona generation hasn't run). The avatar
     slot shows the chosen icon where one is picked, the title initial otherwise."""
@@ -1112,15 +1112,15 @@ def _render_panel_preview_card(archetype_key: str, custom_name: str = "", icon: 
     avatar = _avatar_inner_html(icon) if icon else html.escape(title[:1].upper())
     avatar_class = "ads-avatar da" if archetype_key == DEVILS_ADVOCATE_KEY else "ads-avatar"
     name_html = (
-        f'<div class="ads-card-name">{html.escape(f"Dr. {custom_name}")}</div>'
+        f'<div class="defense-card-name">{html.escape(f"Dr. {custom_name}")}</div>'
         if custom_name
-        else '<div class="ads-card-name ads-placeholder">Assigned at convene</div>'
+        else '<div class="defense-card-name ads-placeholder">Assigned at convene</div>'
     )
     return (
-        f'<div class="ads-card">'
+        f'<div class="defense-card">'
         f'<div class="{avatar_class}">{avatar}</div>'
         f"{name_html}"
-        f'<div class="ads-card-title small-caps-label">{title}</div>'
+        f'<div class="defense-card-title small-caps-label">{title}</div>'
         f"</div>"
     )
 
@@ -2199,11 +2199,11 @@ elif st.session_state.stage == "intake":
             # composition as the prototype's docLoaded branch: filename, ingestion
             # stats, a "read by panel" confirmation.
             st.markdown(
-                '<div class="ads-card" style="text-align:left;display:flex;align-items:center;gap:14px;">'
+                '<div class="defense-card" style="text-align:left;display:flex;align-items:center;gap:14px;">'
                 '<div class="ads-avatar" style="border-radius:4px;font-size:0.7rem;">PDF</div>'
                 '<div style="flex:1;min-width:0;">'
-                f'<div class="ads-card-name">{html.escape(st.session_state.uploaded_filename)}</div>'
-                '<div class="ads-card-status" style="margin-top:2px;">'
+                f'<div class="defense-card-name">{html.escape(st.session_state.uploaded_filename)}</div>'
+                '<div class="defense-card-status" style="margin-top:2px;">'
                 f"ingested · {st.session_state.page_count} pages · {len(st.session_state.chunks)} chunks embedded"
                 "</div></div>"
                 '<div class="ads-speaking-badge">✓ Read by panel</div>'
