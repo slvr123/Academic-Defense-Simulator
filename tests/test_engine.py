@@ -258,6 +258,7 @@ def test_da_selects_highest_scored_prior_claim_and_reuses_its_chunk():
     weak = _turn("methodology_expert", "Reyes", 1, "chunk one text", _score(2, 2, 2), question="q1")
     strongest = _turn("literature_theory_specialist", "Okafor", 2, "chunk two text", _score(5, 4, 4), question="q2")
     mid = _turn("ethics_practicality_reviewer", "Alvarez", 3, "chunk three text", _score(3, 3, 3), question="q3")
+    strongest.source_pages = [17]
     session = _session(weak, strongest, mid)
 
     response = PanelistQuestion(question="challenge", grounding_reference="chunk two text", difficulty_level=3)
@@ -267,6 +268,7 @@ def test_da_selects_highest_scored_prior_claim_and_reuses_its_chunk():
 
     assert result.chunk_index == 2
     assert result.chunk_text == "chunk two text"
+    assert result.source_pages == [17]
     assert result.panelist_archetype_key == DEVILS_ADVOCATE_KEY
     assert result.panelist_name == "Marlowe"
     assert "q2" in provider.last_prompt  # targeted the strongest claim's original question
@@ -436,3 +438,19 @@ def test_new_topic_high_difficulty_guard_absent_below_difficulty_4(monkeypatch):
     assert turn.grounding_retry_used is False
     assert turn.grounding_flagged is False
     assert HIGH_DIFFICULTY_GROUNDING_GUARD.strip() not in provider.prompts[0]
+
+
+def test_source_pages_survives_new_question_and_followup(monkeypatch):
+    chunk = Chunk(text="The study uses a survey.", embedding=[1.0], page_numbers=(9,))
+    monkeypatch.setattr(engine_module, "retrieve", lambda *a, **kw: [(0, chunk)])
+    provider = _StubProvider(PanelistQuestion(question="Why a survey?", grounding_reference=chunk.text, difficulty_level=2))
+    session = _session()
+    turn = _generate_question(provider, session, [chunk], None, _PANEL[0], "", "test")
+    assert turn.source_pages == [9]
+    turn.answer = "For convenience."
+    turn.score = _score(1, 1, 1)
+    session.turns.append(turn)
+    monkeypatch.setattr(engine_module, "retrieve", lambda *a, **kw: pytest.fail("Followup should reuse source"))
+    followup = _generate_question(provider, session, [chunk], None, _PANEL[0], "", "test")
+    assert followup.source_pages == [9]
+    assert followup.chunk_text == turn.chunk_text

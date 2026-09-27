@@ -90,6 +90,9 @@ def _render_transcript(session: DefenseSession, report: Optional[DefenseReport])
         lines.append("")
         lines.append(f"**Q:** {turn.question}")
         lines.append("")
+        pages = ", ".join(map(str, turn.source_pages)) or "not recorded"
+        lines.append(f"**Source PDF pages:** {pages}")
+        lines.append("")
         answer_text = turn.answer if turn.answer is not None else "*(unanswered)*"
         lines.append(f"**A:** {answer_text}")
         lines.append("")

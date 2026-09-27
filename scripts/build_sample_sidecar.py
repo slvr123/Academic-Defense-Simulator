@@ -96,7 +96,8 @@ def main() -> None:
     print(f"  pages:      {page_count}")
 
     print(f"\nChunking (target={chunking.TARGET_CHARS}, overlap={chunking.OVERLAP_CHARS})...")
-    texts = chunking.chunk_pdf(SAMPLE_PDF_PATH)
+    passages = chunking.chunk_pdf_with_sources(SAMPLE_PDF_PATH)
+    texts = [p.text for p in passages]
     print(f"  chunks:     {len(texts)}")
     print(f"  chars:      {[len(t) for t in texts]}")
 
@@ -125,6 +126,7 @@ def main() -> None:
         chunker_target_chars=chunking.TARGET_CHARS,
         chunker_overlap_chars=chunking.OVERLAP_CHARS,
         chunk_count=len(texts),
+        chunk_pages=[list(p.page_numbers) for p in passages],
         pdf_sha256=sha,
         page_count=page_count,
         document_assessment=assessment,

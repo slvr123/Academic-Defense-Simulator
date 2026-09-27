@@ -17,6 +17,14 @@ class EmbeddingModel:
 
         self._model = SentenceTransformer(self.model_name)
 
+    @property
+    def tokenizer(self):
+        return self._model.tokenizer
+
+    @property
+    def max_seq_length(self) -> int:
+        return self._model.max_seq_length
+
     def encode(self, texts: list[str]) -> list[list[float]]:
         vectors = self._model.encode(texts, normalize_embeddings=True)
         return vectors.tolist()

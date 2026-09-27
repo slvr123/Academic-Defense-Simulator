@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from academic_defense_simulator.models.document_assessment import DocumentAssessment
 from academic_defense_simulator.rag import chunking
@@ -62,6 +62,7 @@ class SampleManifest(BaseModel):
     chunker_target_chars: int
     chunker_overlap_chars: int
     chunk_count: int
+    chunk_pages: list[list[int]] = Field(default_factory=list)
     pdf_sha256: str
     page_count: int
     document_assessment: DocumentAssessment
@@ -184,9 +185,15 @@ def _load_sidecar(embedding_model: EmbeddingModel) -> SampleDocument | None:
         )
         return None
 
+    if (len(manifest.chunk_pages) != len(chunk_texts)
+            or any(not pages or any(p < 1 or p > manifest.page_count for p in pages)
+                   for pages in manifest.chunk_pages)):
+        logger.warning("Sample sidecar is stale: chunk_pages metadata is missing or invalid.")
+        return None
+
     chunks = [
-        Chunk(text=text, embedding=vector.tolist())
-        for text, vector in zip(chunk_texts, embeddings)
+        Chunk(text=text, embedding=vector.tolist(), page_numbers=tuple(pages))
+        for text, vector, pages in zip(chunk_texts, embeddings, manifest.chunk_pages)
     ]
     return SampleDocument(
         chunks=chunks,
@@ -199,9 +206,10 @@ def _load_sidecar(embedding_model: EmbeddingModel) -> SampleDocument | None:
 def _ingest_live(embedding_model: EmbeddingModel) -> SampleDocument:
     """The fallback path: exactly what a real upload does, minus the relevance
     gate — that stays the caller's call, because the caller owns the provider."""
-    texts = chunking.chunk_pdf(SAMPLE_PDF_PATH)
+    passages = chunking.chunk_pdf_with_sources(SAMPLE_PDF_PATH)
+    texts = [p.text for p in passages]
     embeddings = embedding_model.encode(texts)
-    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    chunks = [Chunk(text=p.text, embedding=e, page_numbers=p.page_numbers) for p, e in zip(passages, embeddings)]
     return SampleDocument(
         chunks=chunks,
         page_count=_count_pdf_pages(SAMPLE_PDF_PATH),

@@ -284,6 +284,7 @@ def _generate_da_question(
         grounding_reference=panelist_question.grounding_reference,
         chunk_index=target_turn.chunk_index,
         chunk_text=target_turn.chunk_text,
+        source_pages=target_turn.source_pages,
         difficulty_level=session.difficulty_current,
         grounding_retry_used=retry_used,
         grounding_flagged=flagged,
@@ -326,6 +327,7 @@ def _generate_question(
             raise RuntimeError("Retrieval returned no chunks — document may be exhausted.")
         chunk_index, chunk = results[0]
         chunk_text = chunk.text
+        source_pages = list(chunk.page_numbers)
         # Acknowledgment fields: empty on turn 1 (nothing to react to yet), populated on
         # every later new-topic turn — whether we pivoted because the answer was strong or
         # because the follow-up cap forced it. Same conditional-field pattern as other_subtype_line.
@@ -362,6 +364,7 @@ def _generate_question(
     else:
         assert previous_turn is not None and previous_turn.score is not None
         chunk_index, chunk_text = previous_turn.chunk_index, previous_turn.chunk_text
+        source_pages = previous_turn.source_pages
         prompt = FOLLOWUP_SYSTEM_PROMPT.format(
             panelist_name=panelist.panelist_name,
             persona_framing=panelist.persona_framing,
@@ -392,6 +395,7 @@ def _generate_question(
         grounding_reference=panelist_question.grounding_reference,
         chunk_index=chunk_index,
         chunk_text=chunk_text,
+        source_pages=source_pages,
         difficulty_level=session.difficulty_current,
         grounding_retry_used=retry_used,
         grounding_flagged=flagged,

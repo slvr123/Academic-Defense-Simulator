@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "session_id": "sess-1",
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "stage": "in_progress",
+  "session": {
+    "profile": {
+      "defense_type": "thesis",
+      "other_subtype": null,
+      "domain": "library science",
+      "topic": "Adaptive retrieval for thesis defense",
+      "selected_archetypes": [
+        "methodology_expert"
+      ],
+      "difficulty_start": 2,
+      "document_id": "doc-1",
+      "panel_customizations": []
+    },
+    "panel": [
+      {
+        "archetype_key": "methodology_expert",
+        "panelist_name": "Reyes",
+        "persona_framing": "f",
+        "icon": "\ud83c\udf93"
+      },
+      {
+        "archetype_key": "devils_advocate",
+        "panelist_name": "Marlowe",
+        "persona_framing": "f",
+        "icon": "\u2694\ufe0f"
+      }
+    ],
+    "difficulty_current": 3,
+    "turns": [
+      {
+        "panelist_archetype_key": "methodology_expert",
+        "panelist_name": "Reyes",
+        "question": "Why this method?",
+        "grounding_reference": "the chosen approach",
+        "chunk_index": 0,
+        "chunk_text": "Excerpt discussing the chosen approach.",
+        "difficulty_level": 2,
+        "grounding_retry_used": false,
+        "grounding_flagged": false,
+        "answer": "Because it fits the data.",
+        "score": {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 3,
+          "difficulty_delta": 1,
+          "primary_gap": "depth",
+          "answer_summary": "claim"
+        }
+      }
+    ],
+    "report": {
+      "difficulty_trajectory": [
+        2,
+        3
+      ],
+      "overall_avg_clarity": 4.0,
+      "overall_avg_depth": 3.0,
+      "overall_avg_grounding": 3.0,
+      "panelist_sections": [
+        {
+          "archetype_key": "methodology_expert",
+          "panelist_name": "Reyes",
+          "turns_taken": 1,
+          "avg_clarity": 4.0,
+          "avg_depth": 3.0,
+          "avg_grounding": 3.0,
+          "primary_gaps": [
+            "depth"
+          ]
+        }
+      ],
+      "pushback_events": [
+        {
+          "turn_index": 1,
+          "prior_turn_index": 0,
+          "difficulty_from": 2,
+          "difficulty_to": 3,
+          "quality_sum_prior": 10,
+          "quality_sum_at": 13,
+          "outcome": "recovered"
+        }
+      ],
+      "narrative": "A solid defense with room to deepen methodology discussion.",
+      "narrative_fallback_used": false
+    }
+  },
+  "document_chunks": [
+    "Excerpt discussing the chosen approach.",
+    "A second chunk of document text."
+  ]
+}

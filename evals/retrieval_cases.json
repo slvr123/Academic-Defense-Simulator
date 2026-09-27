@@ -1,0 +1,65 @@
+{
+  "description": "Manually selected diagnostic questions and evidence spans, fixed before comparing chunkers. Physical PDF pages; not a held-out quality estimate.",
+  "documents": [
+    {
+      "file": "sample3.pdf",
+      "sha256": "eb81a4d20ea830bc708b7ae47378f935098fbc71646502a60eac1e5263c0e534",
+      "cases": [
+        {
+          "id": "scope",
+          "query": "Does the device recognize categories of sounds or only locate their direction?",
+          "page": 10,
+          "evidence": "rather than classifying the specific nature"
+        },
+        {
+          "id": "design",
+          "query": "What experimental variables and research design are used to validate the wearable?",
+          "page": 43,
+          "evidence": "Quantitative-Experimental Approach"
+        },
+        {
+          "id": "buffer",
+          "query": "How are microphone channels synchronized without losing audio samples?",
+          "page": 49,
+          "evidence": "independent Direct Memory Access"
+        },
+        {
+          "id": "power",
+          "query": "How is the expected battery runtime calculated?",
+          "page": 53,
+          "evidence": "approximately 10 hours"
+        }
+      ]
+    },
+    {
+      "file": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+      "sha256": "b342cdf4bebecaf589a55e51779e1459cb844a4d7848f41fb49ae624432d1331",
+      "cases": [
+        {
+          "id": "accessibility",
+          "query": "What accessibility support is missing for visually impaired library users?",
+          "page": 27,
+          "evidence": "screen reader compatibility"
+        },
+        {
+          "id": "sampling",
+          "query": "How are participants selected and divided between technical staff and library users?",
+          "page": 121,
+          "evidence": "Purposive sampling"
+        },
+        {
+          "id": "perspectives",
+          "query": "Why combine feedback from technical and nontechnical participants?",
+          "page": 122,
+          "evidence": "both the technical and practical views"
+        },
+        {
+          "id": "results",
+          "query": "What are the combined technical and nontechnical system evaluation scores?",
+          "page": 176,
+          "evidence": "Table 16 Combined System Evaluation Results"
+        }
+      ]
+    }
+  ]
+}

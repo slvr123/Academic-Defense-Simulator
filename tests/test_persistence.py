@@ -294,14 +294,10 @@ def test_delete_nonexistent_session_does_not_raise(tmp_path):
 # --- v1.0b-2 Decision 1: old-shaped persisted files load with new fields defaulted ---
 
 
-def test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults():
-    """One of Sean's three real completed sessions, generated before v1.0b-2 existed
-    — `session.report` in this file on disk has no `answer_suggestions` or
-    `suggestions_fallback_used` key at all (confirmed: only the eight v0.3c fields
-    are present). Must still load, with the new fields correctly defaulted, no
-    migration, no schema_version bump."""
-    real_file = Path(__file__).resolve().parent.parent / "sessions" / "b4bfb649-e3fc-4aab-b930-645c309bb3c4.json"
-    raw = real_file.read_text(encoding="utf-8")
+def test_legacy_fixture_missing_answer_suggestions_loads_with_defaults():
+    """A committed synthetic legacy session loads without private local files."""
+    fixture = Path(__file__).parent / "fixtures" / "legacy_session_v1.json"
+    raw = fixture.read_text(encoding="utf-8")
     raw_dict = json.loads(raw)
     assert "answer_suggestions" not in raw_dict["session"]["report"]
     assert "suggestions_fallback_used" not in raw_dict["session"]["report"]

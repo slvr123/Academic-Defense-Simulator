@@ -252,3 +252,11 @@ def test_same_session_renders_identical_string_twice():
     first = render_session_markdown(session, "1.2.2")
     second = render_session_markdown(session, "1.2.2")
     assert first == second
+
+
+def test_source_page_references_appear_without_private_passage():
+    turn = _turn(chunk_text="PRIVATE-PASSAGE")
+    turn.source_pages = [3, 4]
+    output = render_session_markdown(_session(turn), "1.2.2")
+    assert "**Source PDF pages:** 3, 4" in output
+    assert "PRIVATE-PASSAGE" not in output

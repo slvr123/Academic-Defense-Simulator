@@ -64,6 +64,7 @@ def test_sidecar_loads_and_matches_manifest(real_manifest):
     assert len(doc.chunks) == real_manifest["chunk_count"]
     assert all(len(c.embedding) == real_manifest["embedding_dim"] for c in doc.chunks)
     assert doc.page_count == real_manifest["page_count"]
+    assert [list(c.page_numbers) for c in doc.chunks] == real_manifest["chunk_pages"]
     # The saving is real: nothing was encoded on this path.
     assert encoder.encode_calls == 0
 
@@ -187,3 +188,11 @@ def test_loader_makes_no_llm_call(tmp_path, monkeypatch, real_manifest, force_fa
     doc = sd.load_sample_document(_StubEncoder())
 
     assert doc.source == ("live" if force_fallback else "sidecar")
+
+
+@pytest.mark.parametrize("pages", [[], [[0]], [[999]]])
+def test_missing_or_invalid_page_metadata_falls_back(tmp_path, monkeypatch, real_manifest, pages):
+    _tamper(tmp_path, monkeypatch, real_manifest, "chunk_pages", pages)
+    doc = sd.load_sample_document(_StubEncoder())
+    assert doc.source == "live"
+    assert all(c.page_numbers for c in doc.chunks)

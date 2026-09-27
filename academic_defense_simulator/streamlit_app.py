@@ -41,6 +41,7 @@ from uuid import uuid4
 import pandas as pd
 import psutil
 import streamlit as st
+from academic_defense_simulator.source_passage_ui import render_question_source
 import streamlit.components.v1 as components
 from pydantic import ValidationError
 
@@ -94,7 +95,7 @@ from academic_defense_simulator.panel import (
 )
 from academic_defense_simulator.markdown_export import render_session_markdown
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG, PROMPT_VERSION
-from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
+from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf_with_sources
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report, rescale_score_to_100
@@ -244,6 +245,7 @@ def _build_persisted_session(stage: SessionStage) -> PersistedSession:
         stage=stage,
         session=st.session_state.session,
         document_chunks=[c.text for c in st.session_state.chunks],
+        document_chunk_pages=[list(c.page_numbers) for c in st.session_state.chunks],
     )
 
 
@@ -1443,9 +1445,9 @@ def _turn_progress_label(session: DefenseSession) -> str:
 
 def _render_turn_content(turn) -> None:
     """Question + (once answered) the candidate's inset answer — the body shared
-    by a collapsed-history block and the active turn block. `grounding_reference`
-    never renders here (Decision 4 extension) — it lives in dev-view only."""
+    by a collapsed-history block and the active turn block, with source context."""
     st.write(turn.question)
+    render_question_source(turn)
     if turn.answer is not None:
         st.markdown(
             '<div class="ads-answer-inset">'
@@ -1532,6 +1534,7 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         header = _turn_header(turn_num, turn.panelist_name, turn.panelist_archetype_key)
         st.markdown(f'<div class="ads-turn-header">{html.escape(header)}</div>', unsafe_allow_html=True)
         st.write(turn.question)
+        render_question_source(turn)
         # v1.2 Decision 9: only the question text is spoken — not the header above it,
         # not the panelist name, not the grounding reference. Decision 8's sidebar
         # opt-in toggle (RETIRED 2026-07-31, Sean specified/locked — see
@@ -1887,7 +1890,8 @@ def _ingest_and_extract(uploaded_file, *, skip_relevance_check: bool = False) ->
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
             tmp.write(uploaded_file.getvalue())
             tmp_path = tmp.name
-        texts = chunk_pdf(tmp_path)
+        passages = chunk_pdf_with_sources(tmp_path)
+        texts = [p.text for p in passages]
         page_count = _count_pdf_pages(tmp_path)
     except DocumentIngestionError as exc:
         st.error(f"Could not process document: {exc}")
@@ -1905,7 +1909,7 @@ def _ingest_and_extract(uploaded_file, *, skip_relevance_check: bool = False) ->
 
     embedding_model = _load_embedding_model()
     embeddings = embedding_model.encode(texts)
-    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    chunks = [Chunk(text=p.text, embedding=e, page_numbers=p.page_numbers) for p, e in zip(passages, embeddings)]
 
     settings = load_settings()
 
@@ -2018,7 +2022,9 @@ def _resume_session(persisted: PersistedSession) -> None:
     embedding_model = _load_embedding_model()
     with st.spinner("Re-embedding document..."):
         embeddings = embedding_model.encode(persisted.document_chunks)
-    chunks = [Chunk(text=t, embedding=e) for t, e in zip(persisted.document_chunks, embeddings)]
+    pages = persisted.document_chunk_pages or [[] for _ in persisted.document_chunks]
+    chunks = [Chunk(text=t, embedding=e, page_numbers=tuple(p))
+              for t, e, p in zip(persisted.document_chunks, embeddings, pages)]
 
     session = persisted.session
     settings = load_settings()

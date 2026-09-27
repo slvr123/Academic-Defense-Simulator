@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import re
 from pathlib import Path
 
@@ -44,61 +45,105 @@ def _paragraphs_from_page_text(text: str) -> list[str]:
 
 
 def chunk_pdf(path: str | Path) -> list[str]:
-    try:
-        import fitz  # PyMuPDF
-    except ImportError as exc:
-        raise RuntimeError("PyMuPDF is required for PDF chunking") from exc
+    """Compatibility text-only interface for existing probes and evaluation scripts."""
+    return [chunk.text for chunk in chunk_pdf_with_sources(path)]
 
-    try:
-        document = fitz.open(str(path))
-        paragraphs: list[str] = []
-        total_chars = 0
-        for page in document:
-            text = page.get_text("text")
-            total_chars += len(text)
-            paragraphs.extend(_paragraphs_from_page_text(text))
-    except Exception as exc:
-        # Deliberately not interpolating `exc` into the message: PyMuPDF's own exception
-        # text embeds the filesystem path it was given (e.g. a temp path on the server),
-        # which would leak into this user-facing message. The original exception is still
-        # chained via `from exc` for anyone reading server-side logs/tracebacks.
-        raise DocumentIngestionError(
-            "Could not open or read the uploaded document as a PDF."
-        ) from exc
 
-    if total_chars < _MIN_EXTRACTED_CHARS:
-        raise DocumentIngestionError(
-            f"The uploaded document yielded only {total_chars} characters of extractable "
-            f"text (minimum {_MIN_EXTRACTED_CHARS}) — it may be blank, scanned-image-only, "
-            "or corrupted."
-        )
+@dataclass(frozen=True)
+class LocatedChunk:
+    text: str
+    page_numbers: tuple[int, ...]
 
-    return _pack(paragraphs)
+
+def chunk_pdf_with_sources(path: str | Path) -> list[LocatedChunk]:
+    paragraphs = [(para, page.page_number) for page in extract_pages(path)
+                  for para in _paragraphs_from_page_text(page.text)]
+    return _pack_with_sources(paragraphs)
+
+
+def _pack_with_sources(paragraphs: list[tuple[str, int]]) -> list[LocatedChunk]:
+    result = []
+    current = []
+    current_len = 0
+
+    def emit():
+        result.append(LocatedChunk("\n\n".join(p for p, _ in current),
+                                   tuple(dict.fromkeys(n for _, n in current))))
+
+    for para, page in paragraphs:
+        if current and current_len + len(para) > TARGET_CHARS:
+            emit()
+            overlap = []
+            overlap_len = 0
+            for item in reversed(current):
+                if overlap_len + len(item[0]) > OVERLAP_CHARS:
+                    break
+                overlap.insert(0, item)
+                overlap_len += len(item[0])
+            current = overlap
+            current_len = overlap_len
+        current.append((para, page))
+        current_len += len(para)
+    if current:
+        emit()
+    return result
 
 
 def _pack(paragraphs: list[str]) -> list[str]:
-    chunks: list[str] = []
-    current: list[str] = []
-    current_len = 0
+    return [chunk.text for chunk in _pack_with_sources([(p, 1) for p in paragraphs])]
 
-    for para in paragraphs:
-        para_len = len(para)
-        if current and current_len + para_len > TARGET_CHARS:
-            chunks.append("\n\n".join(current))
-            # carry back overlap paragraphs from the tail
-            overlap: list[str] = []
-            overlap_len = 0
-            for p in reversed(current):
-                if overlap_len + len(p) > OVERLAP_CHARS:
-                    break
-                overlap.insert(0, p)
-                overlap_len += len(p)
-            current = overlap
-            current_len = overlap_len
-        current.append(para)
-        current_len += para_len
 
-    if current:
-        chunks.append("\n\n".join(current))
+CHUNKER_VERSION = "page-token-v1"
+TOKEN_OVERLAP = 32
 
-    return chunks
+
+@dataclass(frozen=True)
+class SourcePassage:
+    text: str
+    page_number: int
+
+
+def extract_pages(path: str | Path) -> list[SourcePassage]:
+    """Extract physical PDF pages (one-based), never guessed printed page labels."""
+    import fitz
+
+    try:
+        with fitz.open(str(path)) as document:
+            pages = [SourcePassage("\n\n".join(_paragraphs_from_page_text(page.get_text("text"))), i + 1)
+                     for i, page in enumerate(document)]
+    except Exception as exc:
+        raise DocumentIngestionError("Could not open or read the uploaded document as a PDF.") from exc
+    if sum(len(page.text) for page in pages) < _MIN_EXTRACTED_CHARS:
+        raise DocumentIngestionError("The uploaded document has too little extractable text; it may be scanned or blank.")
+    return pages
+
+
+def chunk_pages(pages: list[SourcePassage], embedding_model) -> list[SourcePassage]:
+    """Keep every passage within the encoder budget, including special tokens.
+
+    Offset slicing preserves original spelling and whitespace, unlike decode().
+    Pages never mix, so each returned passage has an exact source page.
+    """
+    tokenizer = embedding_model.tokenizer
+    budget = embedding_model.max_seq_length - tokenizer.num_special_tokens_to_add(pair=False)
+    if budget <= TOKEN_OVERLAP:
+        raise ValueError("Encoder token budget must exceed the overlap.")
+    passages = []
+    for page in pages:
+        offsets = tokenizer(page.text, add_special_tokens=False, truncation=False,
+                            return_offsets_mapping=True)["offset_mapping"]
+        start = 0
+        while start < len(offsets):
+            end = min(start + budget, len(offsets))
+            text = page.text[offsets[start][0]:offsets[end - 1][1]]
+            # A substring beginning inside a word can retokenize differently.
+            while len(tokenizer.encode(text, add_special_tokens=True, truncation=False)) > embedding_model.max_seq_length:
+                end -= 1
+                if end <= start:
+                    raise ValueError("Unable to fit source text within the encoder budget.")
+                text = page.text[offsets[start][0]:offsets[end - 1][1]]
+            passages.append(SourcePassage(text, page.page_number))
+            if end == len(offsets):
+                break
+            start = max(start + 1, end - TOKEN_OVERLAP)
+    return passages

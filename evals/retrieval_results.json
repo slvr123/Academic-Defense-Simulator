@@ -1,0 +1,216 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "max_seq_length": 256,
+  "documents": [
+    {
+      "file": "sample3.pdf",
+      "sha256": "eb81a4d20ea830bc708b7ae47378f935098fbc71646502a60eac1e5263c0e534",
+      "variants": {
+        "legacy_chars": {
+          "chunks": 49,
+          "max_tokens": 3522,
+          "truncated_chunks": 48,
+          "hit_at_1": 0.5,
+          "hit_at_3": 0.5,
+          "cases": [
+            {
+              "id": "scope",
+              "first_evidence_rank": 6,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "design",
+              "first_evidence_rank": 22,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "buffer",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "power",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            }
+          ]
+        },
+        "page_tokens": {
+          "chunks": 167,
+          "max_tokens": 256,
+          "truncated_chunks": 0,
+          "hit_at_1": 0.25,
+          "hit_at_3": 0.5,
+          "cases": [
+            {
+              "id": "scope",
+              "first_evidence_rank": 14,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "design",
+              "first_evidence_rank": 4,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "buffer",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "power",
+              "first_evidence_rank": 2,
+              "hit_at_1": false,
+              "hit_at_3": true
+            }
+          ]
+        },
+        "page_pooled": {
+          "chunks": 82,
+          "max_tokens": 3522,
+          "truncated_chunks": 0,
+          "hit_at_1": 0.25,
+          "hit_at_3": 0.5,
+          "cases": [
+            {
+              "id": "scope",
+              "first_evidence_rank": 22,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "design",
+              "first_evidence_rank": 5,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "buffer",
+              "first_evidence_rank": 3,
+              "hit_at_1": false,
+              "hit_at_3": true
+            },
+            {
+              "id": "power",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "file": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+      "sha256": "b342cdf4bebecaf589a55e51779e1459cb844a4d7848f41fb49ae624432d1331",
+      "variants": {
+        "legacy_chars": {
+          "chunks": 92,
+          "max_tokens": 3388,
+          "truncated_chunks": 87,
+          "hit_at_1": 0.5,
+          "hit_at_3": 0.75,
+          "cases": [
+            {
+              "id": "accessibility",
+              "first_evidence_rank": 5,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "sampling",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "perspectives",
+              "first_evidence_rank": 2,
+              "hit_at_1": false,
+              "hit_at_3": true
+            },
+            {
+              "id": "results",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            }
+          ]
+        },
+        "page_tokens": {
+          "chunks": 340,
+          "max_tokens": 256,
+          "truncated_chunks": 0,
+          "hit_at_1": 0.5,
+          "hit_at_3": 0.75,
+          "cases": [
+            {
+              "id": "accessibility",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "sampling",
+              "first_evidence_rank": 2,
+              "hit_at_1": false,
+              "hit_at_3": true
+            },
+            {
+              "id": "perspectives",
+              "first_evidence_rank": 30,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "results",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            }
+          ]
+        },
+        "page_pooled": {
+          "chunks": 217,
+          "max_tokens": 3388,
+          "truncated_chunks": 0,
+          "hit_at_1": 0.75,
+          "hit_at_3": 0.75,
+          "cases": [
+            {
+              "id": "accessibility",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "sampling",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            },
+            {
+              "id": "perspectives",
+              "first_evidence_rank": 19,
+              "hit_at_1": false,
+              "hit_at_3": false
+            },
+            {
+              "id": "results",
+              "first_evidence_rank": 1,
+              "hit_at_1": true,
+              "hit_at_3": true
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

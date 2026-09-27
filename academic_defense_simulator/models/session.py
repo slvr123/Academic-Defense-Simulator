@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile
@@ -21,6 +21,7 @@ class ConversationTurn(BaseModel):
     grounding_reference: str
     chunk_index: int
     chunk_text: str
+    source_pages: list[Annotated[int, Field(ge=1)]] = Field(default_factory=list)
     difficulty_level: int
     grounding_retry_used: bool = False  # first is_grounded() attempt failed at difficulty >= 4; retry issued
     grounding_flagged: bool = False  # both attempts failed; served anyway (v0.3 hardening Decision 4)
@@ -101,3 +102,11 @@ class PersistedSession(BaseModel):
     stage: SessionStage
     session: DefenseSession
     document_chunks: list[str]
+
+    document_chunk_pages: list[list[Annotated[int, Field(ge=1)]]] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_source_pages(self):
+        if self.document_chunk_pages and len(self.document_chunk_pages) != len(self.document_chunks):
+            raise ValueError("Source pages must match the number of document chunks.")
+        return self

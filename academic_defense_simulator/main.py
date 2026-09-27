@@ -24,7 +24,7 @@ from academic_defense_simulator.models.defense_profile import DefenseProfile, De
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import DefenseSession
 from academic_defense_simulator.panel import PANEL_COMPOSITION, compose_full_roster, generate_panel
-from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf
+from academic_defense_simulator.rag.chunking import DocumentIngestionError, chunk_pdf_with_sources
 from academic_defense_simulator.rag.embeddings import EmbeddingModel
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
@@ -96,7 +96,8 @@ def main() -> None:
     # 5. Chunk PDF
     print("\nProcessing document...")
     try:
-        texts = chunk_pdf(pdf_path)
+        passages = chunk_pdf_with_sources(pdf_path)
+        texts = [p.text for p in passages]
     except DocumentIngestionError as exc:
         print(f"\nCould not process document: {exc}")
         return
@@ -104,7 +105,7 @@ def main() -> None:
     # 6. Embed chunks
     embedding_model = EmbeddingModel()
     embeddings = embedding_model.encode(texts)
-    chunks = [Chunk(text=t, embedding=e) for t, e in zip(texts, embeddings)]
+    chunks = [Chunk(text=p.text, embedding=e, page_numbers=p.page_numbers) for p, e in zip(passages, embeddings)]
 
     other_subtype_line = (
         f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""

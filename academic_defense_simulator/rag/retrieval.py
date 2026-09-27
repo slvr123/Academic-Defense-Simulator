@@ -13,6 +13,7 @@ from academic_defense_simulator.rag.embeddings import EmbeddingModel
 class Chunk:
     text: str
     embedding: list[float]
+    page_numbers: tuple[int, ...] = ()
 
 
 def retrieve(
