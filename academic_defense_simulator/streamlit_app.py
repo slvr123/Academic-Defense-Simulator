@@ -400,6 +400,23 @@ def _inject_theme_css() -> None:
             background-color: #A3453F !important;
             border-color: #A3453F !important;
         }
+        /* v1.3a: the !important fill above also painted disabled primaries, so a
+           disabled "Process document" looked live in the demo-exhausted state. The
+           fill and text are faded separately rather than with element opacity, so
+           the label keeps a readable contrast against the faded fill. */
+        button[data-testid^="stBaseButton"]:disabled,
+        button[data-testid^="stBaseButton"]:disabled:hover {
+            cursor: not-allowed !important;
+        }
+        button[data-testid="stBaseButton-primary"]:disabled,
+        button[data-testid="stBaseButton-primary"]:disabled:hover {
+            background-color: rgba(140, 58, 63, 0.4) !important;
+            border-color: rgba(140, 58, 63, 0.4) !important;
+            color: rgba(242, 233, 228, 0.7) !important;
+        }
+        button[data-testid="stBaseButton-secondary"]:disabled {
+            color: rgba(236, 231, 221, 0.6) !important;
+        }
 
         /* Active defense-type pill: solid accent fill, same treatment as a CTA */
         div[data-testid="stButtonGroup"] button[data-testid="stBaseButton-pillsActive"] {
