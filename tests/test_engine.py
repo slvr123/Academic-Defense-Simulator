@@ -499,12 +499,19 @@ def test_record_scored_turn_still_records_an_equal_but_distinct_turn():
     assert len(session.turns) == 2
 
 
+def _report():
+    return DefenseReport(
+        difficulty_trajectory=[2, 2, 2, 2], overall_avg_clarity=5, overall_avg_depth=5,
+        overall_avg_grounding=5, panelist_sections=[], pushback_events=[],
+    )
+
+
 def test_reconcile_clears_a_pending_turn_that_is_already_recorded():
     session = _session()
     turn = _scored_turn()
     record_scored_turn(session, turn)
 
-    actions = reconcile_actions(session, pending_turn=turn, saved_turn_count=1)
+    actions = reconcile_actions(session, pending_turn=turn, saved_turn_count=1, stage="running")
 
     assert actions == ReconcileActions(clear_pending=True)
 
@@ -513,46 +520,57 @@ def test_reconcile_keeps_a_pending_turn_that_is_not_yet_recorded():
     session = _session()
     unanswered = _scored_turn()
 
-    assert reconcile_actions(session, pending_turn=unanswered, saved_turn_count=0) == ReconcileActions()
+    actions = reconcile_actions(session, pending_turn=unanswered, saved_turn_count=0, stage="running")
+
+    assert actions == ReconcileActions()
 
 
 def test_reconcile_persists_when_turns_outrun_the_saved_count():
     session = _session()
     record_scored_turn(session, _scored_turn())
 
-    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=0)
+    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=0, stage="running")
 
     assert actions == ReconcileActions(persist_in_progress=True)
 
 
-def test_reconcile_finishes_a_complete_session_without_a_report():
+def test_reconcile_builds_the_report_and_finishes_a_complete_session_without_one():
     session = _completed_session()
 
-    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=4)
+    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=4, stage="running")
+
+    assert actions == ReconcileActions(build_report=True, finish_session=True)
+
+
+def test_reconcile_only_finishes_a_complete_session_whose_report_is_already_stored():
+    # The shape a run stopped between storing the report and setting the stage leaves.
+    session = _completed_session()
+    session.report = _report()
+
+    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=4, stage="running")
 
     assert actions == ReconcileActions(finish_session=True)
 
 
-def test_reconcile_after_a_stopped_final_submit_fires_all_three():
-    # The shape a stopped run leaves behind: final turn recorded, pending not
+def test_reconcile_after_a_stopped_final_submit_fires_every_rule():
+    # The shape a stopped submit run leaves: final turn recorded, pending not
     # cleared, nothing saved since the previous turn, no report.
     session = _completed_session()
     final_turn = session.turns[-1]
 
-    actions = reconcile_actions(session, pending_turn=final_turn, saved_turn_count=3)
+    actions = reconcile_actions(session, pending_turn=final_turn, saved_turn_count=3, stage="running")
 
-    assert actions == ReconcileActions(clear_pending=True, persist_in_progress=True, finish_session=True)
+    assert actions == ReconcileActions(
+        clear_pending=True, persist_in_progress=True, build_report=True, finish_session=True
+    )
 
 
 def test_reconcile_on_an_already_reconciled_state_returns_no_actions():
     session = _session()
     record_scored_turn(session, _scored_turn())
     # The driver acted on the first result: pending cleared, count updated.
-    assert reconcile_actions(session, pending_turn=None, saved_turn_count=1) == ReconcileActions()
+    assert reconcile_actions(session, pending_turn=None, saved_turn_count=1, stage="running") == ReconcileActions()
 
     finished = _completed_session()
-    finished.report = DefenseReport(
-        difficulty_trajectory=[2, 2, 2, 2], overall_avg_clarity=5, overall_avg_depth=5,
-        overall_avg_grounding=5, panelist_sections=[], pushback_events=[],
-    )
-    assert reconcile_actions(finished, pending_turn=None, saved_turn_count=4) == ReconcileActions()
+    finished.report = _report()
+    assert reconcile_actions(finished, pending_turn=None, saved_turn_count=4, stage="done") == ReconcileActions()

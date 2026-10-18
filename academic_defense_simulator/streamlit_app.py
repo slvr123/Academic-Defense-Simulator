@@ -1478,13 +1478,16 @@ def _reconcile_running_session(session: DefenseSession) -> None:
     so it never depends on which run recorded the turn. Each action updates the state
     its own condition reads, which is what makes a second pass a no-op.
 
-    Order inside `finish_session` matters: the stage is set before the report is
-    stored. If this run is stopped at the stage write, the report stays unset and the
-    next pass rebuilds it; storing it first would strand a reported session in
-    `running`, where the reconcile condition no longer fires."""
+    The report is stored on the session object (a plain mutation) the moment the
+    call returns, before any session-state access. If this run is then stopped at the
+    stage write, the next pass sees the stored report, skips `build_report`, and only
+    finishes the session — the report is never built twice."""
     with st.session_state.turn_lock:
         actions = reconcile_actions(
-            session, st.session_state.pending_turn, st.session_state.get("saved_turn_count", 0)
+            session,
+            st.session_state.pending_turn,
+            st.session_state.get("saved_turn_count", 0),
+            st.session_state.stage,
         )
         if actions.clear_pending:
             st.session_state.pending_turn = None
@@ -1493,10 +1496,10 @@ def _reconcile_running_session(session: DefenseSession) -> None:
             # session end — a crash loses at most the in-flight turn.
             _persist(SessionStage.IN_PROGRESS)
             st.session_state.saved_turn_count = len(session.turns)
-        if actions.finish_session:
+        if actions.build_report:
             try:
                 with st.spinner("Building end-of-session report..."):
-                    report = _call_with_timeout(
+                    session.report = _call_with_timeout(
                         build_report,
                         session,
                         _new_provider(LLM_STAGE_REPORT_NARRATIVE),
@@ -1506,8 +1509,8 @@ def _reconcile_running_session(session: DefenseSession) -> None:
             except LLMProviderError as exc:
                 _abort(LLM_STAGE_REPORT_BUILD, exc)
                 st.rerun()
+        if actions.finish_session:
             st.session_state.stage = "done"
-            session.report = report
             _persist(SessionStage.COMPLETED)
             st.rerun()
 

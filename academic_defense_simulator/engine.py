@@ -212,22 +212,29 @@ class ReconcileActions:
 
     clear_pending: bool = False
     persist_in_progress: bool = False
+    build_report: bool = False
     finish_session: bool = False
 
 
 def reconcile_actions(
-    session: DefenseSession, pending_turn: ConversationTurn | None, saved_turn_count: int
+    session: DefenseSession, pending_turn: ConversationTurn | None, saved_turn_count: int, stage: str
 ) -> ReconcileActions:
     """Decides the bookkeeping that follows a recorded turn, from state alone rather
     than from which driver run happened to record it. A run can be stopped by its
     driver right after `record_scored_turn` (Streamlit raises on the next session-state
     access), so the bookkeeping can't live in the run that scores: whichever run comes
-    next derives it from here. Idempotent by construction — once the driver has acted
-    on the result, the same inputs produce no actions."""
+    next derives it from here.
+
+    Building the report and finishing the session are separate rules, each keyed on
+    the state it produces, so a run stopped between them leaves the next run only the
+    remaining one: a stored report is never rebuilt. Idempotent by construction —
+    once the driver has acted on the result, the same inputs produce no actions."""
+    complete = session_is_complete(session)
     return ReconcileActions(
         clear_pending=pending_turn is not None and is_turn_recorded(session, pending_turn),
         persist_in_progress=len(session.turns) > saved_turn_count,
-        finish_session=session_is_complete(session) and session.report is None,
+        build_report=complete and session.report is None,
+        finish_session=complete and stage != "done",
     )
 
 
