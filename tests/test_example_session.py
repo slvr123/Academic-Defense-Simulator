@@ -51,6 +51,15 @@ def test_committed_fixture_carries_no_document_text() -> None:
     assert persisted.document_chunks == []
 
 
+def test_committed_fixture_has_no_duplicated_turn() -> None:
+    """v1.3a Decision 3 tripwire. The previous recording carried one turn twice
+    (identical question, answer and score) from the overlapping-rerun race; a
+    re-recording that reintroduces that shape fails here instead of shipping."""
+    turns = load_example_session().session.turns
+    pairs = [(turn.question, turn.answer) for turn in turns]
+    assert len(pairs) == len(set(pairs))
+
+
 def test_missing_fixture_raises(tmp_path: Path) -> None:
     with pytest.raises(ExampleSessionUnavailable):
         load_example_session(tmp_path / "nope.json")

@@ -54,3 +54,7 @@ Decision 5), rendered read-only by the example stage. It is recorded against
 this same document (Decision 1), and its `document_chunks` is redacted to an
 empty list before commit, asserted by
 `scripts/inventory_committed_document_text.py`.
+
+The candidate answers in `example_session.json` were drafted by AI to a
+pre-committed strength schedule and submitted live by an automated browser; all
+panel output is unedited (v1.3a Decision 4, recorded 2026-10-18).
