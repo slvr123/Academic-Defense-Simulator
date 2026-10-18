@@ -484,6 +484,9 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
 - **Missing-session-file test** (added 2026-10-18).
   `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` reads a gitignored local session file that is no longer on disk, so it is the one known failure in every v1.3a run.
   It is [public pilot](public-pilot-roadmap.md) Phase 0 item 1 (replace it with a committed synthetic fixture), and out of v1.3a scope.
+- **Scanned-PDF support via Gemini PDF input** (added 2026-10-18, from the [v2.0 hosting spike](v2.0-hosting-spike-results.md)).
+  PyMuPDF extracts no text from a scanned PDF; Gemini can read the PDF itself.
+  Trigger: scanned uploads show up as a real failure mode.
 
 ---
 
