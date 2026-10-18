@@ -32,6 +32,7 @@ from academic_defense_simulator.panel import (
     image_icon_path,
     list_icon_choices,
 )
+from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 
 
 def _profile(defense_type, other_subtype=None, selected_archetypes=None, panel_customizations=None):
@@ -346,3 +347,33 @@ def test_icon_registry_distributes_defaults_when_files_not_archetype_named(tmp_p
     # An archetype-named file still wins over the distribution.
     (tmp_path / "devils_advocate.png").write_bytes(b"png-bytes")
     assert archetype_default_icon("devils_advocate", tmp_path) == "devils_advocate"
+
+
+# --- v1.3a Decision 5: the static fallback covers every archetype ---
+
+
+def test_every_archetype_has_a_static_fallback_persona():
+    assert set(FALLBACK_PANELISTS) == set(ARCHETYPE_CONFIG)
+    for key, persona in FALLBACK_PANELISTS.items():
+        assert persona.archetype_key == key
+
+
+def test_static_fallback_surnames_are_unique():
+    names = [persona.panelist_name for persona in FALLBACK_PANELISTS.values()]
+    assert len(set(names)) == len(names)
+
+
+def test_double_failure_on_the_recommended_thesis_panel_falls_back_instead_of_raising():
+    # The shape that raised KeyError before Decision 5: problem_objectives_reviewer seated.
+    selected = ["methodology_expert", "literature_theory_specialist", "problem_objectives_reviewer"]
+    profile = _profile(DefenseType.THESIS, selected_archetypes=selected)
+    roster = [*selected, DEVILS_ADVOCATE_KEY]
+
+    class _DownProvider:
+        def generate_structured(self, prompt, response_model):
+            raise LLMProviderError("provider down")
+
+    panel, fallback_used = generate_panel(profile, roster, _DownProvider())
+
+    assert fallback_used is True
+    assert [p.archetype_key for p in panel] == roster

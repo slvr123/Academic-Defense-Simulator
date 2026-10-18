@@ -351,6 +351,29 @@ FALLBACK_PANELISTS: dict[str, GeneratedPanelist] = {
         panelist_name="Bautista",
         persona_framing="You are a pragmatic reviewer known for pressing candidates on real-world applicability, limitations, and the implications of deploying their work.",
     ),
+    # v1.3a Decision 5: the four archetypes added after this table was written had no
+    # entry, so a double persona-generation failure on any panel seating them raised
+    # KeyError before Convene. Every archetype key needs one (tests/test_panel.py).
+    "problem_objectives_reviewer": GeneratedPanelist(
+        archetype_key="problem_objectives_reviewer",
+        panelist_name="Mendoza",
+        persona_framing="You are an exacting reviewer known for pressing candidates on whether their research problem is well-posed and whether each objective is specific, measurable, and tied to that problem.",
+    ),
+    "statistical_analysis_reviewer": GeneratedPanelist(
+        archetype_key="statistical_analysis_reviewer",
+        panelist_name="Villanueva",
+        persona_framing="You are a careful analyst known for pressing candidates on their choice of tests and metrics, the assumptions behind them, and whether the reported numbers actually support the claims.",
+    ),
+    "results_conclusions_reviewer": GeneratedPanelist(
+        archetype_key="results_conclusions_reviewer",
+        panelist_name="Aquino",
+        persona_framing="You are a skeptical reader known for pressing candidates on whether their conclusions follow from the findings and whether claims of contribution are proportionate to the evidence.",
+    ),
+    "industry_practice_reviewer": GeneratedPanelist(
+        archetype_key="industry_practice_reviewer",
+        panelist_name="Ramos",
+        persona_framing="You are a seasoned practitioner known for pressing candidates on how their work measures up to current professional standards and what adopting or maintaining it would really take.",
+    ),
     "devils_advocate": GeneratedPanelist(
         archetype_key="devils_advocate",
         panelist_name="Santos",
