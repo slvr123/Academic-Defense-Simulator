@@ -22,6 +22,7 @@ Its delivery order supersedes the one in the [public pilot roadmap](public-pilot
 The sequence after v1.3a:
 
 1. **v1.3b** — source-passage reveal and report rebuild.
+   The rebuilt report must not present the difficulty trajectory as evidence of adaptation: on flash-lite the per-answer scorer raises difficulty after weak answers too (see the Parking Lot entry below), so the curve does not show the panel adapting to the candidate.
 2. **v1.3c** — panel-selection tightening and in-session polish.
 3. **Decision gate — FastAPI + React.** After v1.3c I decide whether to move off Streamlit (see the Parking Lot's stack-swap entry for the trigger).
 
@@ -475,6 +476,8 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
 - **README test-count line is stale** (added 2026-10-18).
   It also carried the stale ".env isolation failure" reference that v1.0.1 B8 had already fixed.
   Trigger: the next README pass.
+- **Per-answer scorer raises difficulty after weak answers on flash-lite** (added 2026-10-18; reproduced in the v1.3a fixture, turns 2 and 5).
+  Candidate fixes: move the delta judgment to a stronger model, or derive the delta from the clarity/depth/grounding scores.
 - **Missing-session-file test** (added 2026-10-18).
   `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` reads a gitignored local session file that is no longer on disk, so it is the one known failure in every v1.3a run.
   It is [public pilot](public-pilot-roadmap.md) Phase 0 item 1 (replace it with a committed synthetic fixture), and out of v1.3a scope.
