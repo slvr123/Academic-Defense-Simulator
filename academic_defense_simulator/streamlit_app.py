@@ -638,9 +638,13 @@ def _inject_theme_css() -> None:
         }
         /* v1.3a Decision 1, branch C (approved as a deviation): below 1024px the open
            sidebar covered most of the defense (77% at 390px), and at 768px its close
-           control stayed hidden until hover. It holds captions only; the main column
-           already carries the roster and turn progress (v1.0.1 Decision 8). The expand
-           control goes too, so no dead button is left in the header. */
+           control stayed hidden until hover. The sidebar has three blocks: the case-file
+           captions, whose roster and progress the main column already carries (v1.0.1
+           Decision 8); the Developer view toggle; and the "View practice analytics"
+           button. Hiding it makes the last two unreachable below 1024px, which is
+           accepted: analytics only renders with persistence on, which is local-only, so
+           the deployed app loses nothing, and the dev view is a developer tool. The
+           expand control goes too, so no dead button is left in the header. */
         @media (max-width: 1023px) {
             [data-testid="stSidebar"],
             [data-testid="stExpandSidebarButton"] {
