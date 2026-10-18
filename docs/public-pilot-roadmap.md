@@ -150,6 +150,8 @@ I will record remaining limitations and decide whether to widen access from the 
 
 ## Delivery order and boundaries
 
+*Superseded 2026-10-18: `v1.3a-first-impression-decisions.md` sets the delivery order (v1.3a → v1.3b → v1.3c → FastAPI decision); this roadmap's phase content still defines what each item must achieve.*
+
 I will complete Phase 0, then implement the panel-selection slice first so the visible improvement arrives early.
 Retrieval and scoring work follow before I treat the app's feedback as ready for wider use.
 The short-session experience, recovery, and public-operation controls must all be complete before the pilot release gate.

@@ -12,6 +12,19 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v1.3a first-impression fixes (2026-10-18)
+
+Decisions and verification notes: [`v1.3a-first-impression-decisions.md`](v1.3a-first-impression-decisions.md), on `feat/v1.3a-first-impression`.
+v1.3a fixes the mobile layout (D1), moves the demo slot from landing to first document processing (D2), fixes the duplicate-turn race behind the example's repeated turn (D3), and closes the static persona fallback gap (D5).
+The example re-recording (D4) is the last step and needs me at the keyboard.
+Its delivery order supersedes the one in the [public pilot roadmap](public-pilot-roadmap.md) where they conflict; that roadmap's phase content still defines what each item must achieve.
+
+The sequence after v1.3a:
+
+1. **v1.3b** — source-passage reveal and report rebuild.
+2. **v1.3c** — panel-selection tightening and in-session polish.
+3. **Decision gate — FastAPI + React.** After v1.3c I decide whether to move off Streamlit (see the Parking Lot's stack-swap entry for the trigger).
+
 ## Active work - public pilot (2026-09-23)
 
 I am starting the [public pilot roadmap](public-pilot-roadmap.md) on `feat/public-pilot`.
@@ -452,6 +465,19 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
   and a dead demo is worse than soft scoring. Revisit at v1.0, on the BYO-key
   design, or if a better model with generous RPD ships — whichever comes
   first.
+- **`runner.fastReruns = false` as a root-cause alternative** (added 2026-10-18, v1.3a D3).
+  With fast reruns on, a full rerun during a blocked LLM call starts a second script run for the same session; v1.3a guards against that with a per-session lock, an idempotent turn record and a reconcile step.
+  Turning fast reruns off would stop the overlap at its source, at the cost of slower reruns.
+  Trigger: another overlapping-run bug, or a reason to measure rerun latency anyway.
+- **Pace by time since the last LLM call, not unconditionally** (added 2026-10-18, v1.3a D3).
+  The per-model delay now runs before every question generation once a session has a turn, so a resumed session waits one interval for nothing.
+  Trigger: resume becomes a deployed feature, or the pacing shows up in session-length complaints.
+- **README test-count line is stale** (added 2026-10-18).
+  It also carried the stale ".env isolation failure" reference that v1.0.1 B8 had already fixed.
+  Trigger: the next README pass.
+- **Missing-session-file test** (added 2026-10-18).
+  `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` reads a gitignored local session file that is no longer on disk, so it is the one known failure in every v1.3a run.
+  It is [public pilot](public-pilot-roadmap.md) Phase 0 item 1 (replace it with a committed synthetic fixture), and out of v1.3a scope.
 
 ---
 
@@ -553,3 +579,6 @@ amendment for the full diagnosis and reproduction.
 | v0.3h/i Instrumentation + DA fix | 1 Code session | Call count matches budget; DA retention rescoped, reproduced then verified |
 | v0.4 Depth | 2–3 Code sessions | Second-doc eval + persistence + key design done |
 | v1.0 Polish | 2–3 sessions + writing | Live URL + README + analytics |
+| v1.3a First impression | 1 Code session + 1 recording | Sweep passes at 390/768/1024/1440; example re-recorded with no duplicate turns |
+| v1.3b Source passages + report | TBD | TBD |
+| v1.3c Panel selection + in-session polish | TBD | FastAPI + React decision |
