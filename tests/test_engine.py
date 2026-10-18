@@ -11,9 +11,13 @@ import pytest
 import academic_defense_simulator.engine as engine_module
 from academic_defense_simulator.engine import (
     MAX_FOLLOW_UPS_PER_TOPIC,
+    ReconcileActions,
     _generate_da_question,
     _generate_question,
     _should_follow_up,
+    is_turn_recorded,
+    reconcile_actions,
+    record_scored_turn,
     select_active_panelist,
     session_is_complete,
     t_max,
@@ -22,6 +26,7 @@ from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
+from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
 from academic_defense_simulator.prompts.panelist_prompts import HIGH_DIFFICULTY_GROUNDING_GUARD
@@ -436,3 +441,118 @@ def test_new_topic_high_difficulty_guard_absent_below_difficulty_4(monkeypatch):
     assert turn.grounding_retry_used is False
     assert turn.grounding_flagged is False
     assert HIGH_DIFFICULTY_GROUNDING_GUARD.strip() not in provider.prompts[0]
+
+
+
+# --- record_scored_turn / reconcile_actions (v1.3a Decision 3, duplicate-turn fix) ---
+
+
+def _scored_turn(delta=0):
+    score = _score(4, 4, 4).model_copy(update={"difficulty_delta": delta})
+    return _turn("methodology_expert", "Reyes", 0, "c0", score)
+
+
+def _completed_session():
+    turns = [
+        _turn("methodology_expert", "Reyes", 0, "c0", _score(5, 5, 5)),
+        _turn("literature_theory_specialist", "Okafor", 1, "c1", _score(5, 5, 5)),
+        _turn("ethics_practicality_reviewer", "Alvarez", 2, "c2", _score(5, 5, 5)),
+        _turn(DEVILS_ADVOCATE_KEY, "Marlowe", 1, "c1", _score(5, 5, 5)),
+    ]
+    session = _session(*turns)
+    assert session_is_complete(session) is True
+    return session
+
+
+def test_record_scored_turn_appends_and_applies_the_delta_once():
+    session = _session()  # difficulty_current=2
+    turn = _scored_turn(delta=1)
+
+    assert record_scored_turn(session, turn) is True
+    assert session.turns == [turn]
+    assert session.difficulty_current == 3
+
+    assert record_scored_turn(session, turn) is False
+    assert len(session.turns) == 1
+    assert session.difficulty_current == 3  # not applied a second time
+
+
+def test_record_scored_turn_clamps_the_delta():
+    session = _session()
+    session.difficulty_current = 5
+
+    record_scored_turn(session, _scored_turn(delta=1))
+
+    assert session.difficulty_current == 5
+
+
+def test_record_scored_turn_still_records_an_equal_but_distinct_turn():
+    # Identity, not equality: a field-for-field equal turn is a different turn.
+    session = _session()
+    first = _scored_turn()
+    second = first.model_copy(deep=True)
+    record_scored_turn(session, first)
+
+    assert second == first
+    assert is_turn_recorded(session, second) is False
+    assert record_scored_turn(session, second) is True
+    assert len(session.turns) == 2
+
+
+def test_reconcile_clears_a_pending_turn_that_is_already_recorded():
+    session = _session()
+    turn = _scored_turn()
+    record_scored_turn(session, turn)
+
+    actions = reconcile_actions(session, pending_turn=turn, saved_turn_count=1)
+
+    assert actions == ReconcileActions(clear_pending=True)
+
+
+def test_reconcile_keeps_a_pending_turn_that_is_not_yet_recorded():
+    session = _session()
+    unanswered = _scored_turn()
+
+    assert reconcile_actions(session, pending_turn=unanswered, saved_turn_count=0) == ReconcileActions()
+
+
+def test_reconcile_persists_when_turns_outrun_the_saved_count():
+    session = _session()
+    record_scored_turn(session, _scored_turn())
+
+    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=0)
+
+    assert actions == ReconcileActions(persist_in_progress=True)
+
+
+def test_reconcile_finishes_a_complete_session_without_a_report():
+    session = _completed_session()
+
+    actions = reconcile_actions(session, pending_turn=None, saved_turn_count=4)
+
+    assert actions == ReconcileActions(finish_session=True)
+
+
+def test_reconcile_after_a_stopped_final_submit_fires_all_three():
+    # The shape a stopped run leaves behind: final turn recorded, pending not
+    # cleared, nothing saved since the previous turn, no report.
+    session = _completed_session()
+    final_turn = session.turns[-1]
+
+    actions = reconcile_actions(session, pending_turn=final_turn, saved_turn_count=3)
+
+    assert actions == ReconcileActions(clear_pending=True, persist_in_progress=True, finish_session=True)
+
+
+def test_reconcile_on_an_already_reconciled_state_returns_no_actions():
+    session = _session()
+    record_scored_turn(session, _scored_turn())
+    # The driver acted on the first result: pending cleared, count updated.
+    assert reconcile_actions(session, pending_turn=None, saved_turn_count=1) == ReconcileActions()
+
+    finished = _completed_session()
+    finished.report = DefenseReport(
+        difficulty_trajectory=[2, 2, 2, 2], overall_avg_clarity=5, overall_avg_depth=5,
+        overall_avg_grounding=5, panelist_sections=[], pushback_events=[],
+    )
+    assert reconcile_actions(finished, pending_turn=None, saved_turn_count=4) == ReconcileActions()

@@ -60,11 +60,12 @@ from academic_defense_simulator.document_relevance import assess_document
 from academic_defense_simulator.engine import (
     DEFAULT_CALL_DELAY,
     MODEL_CALL_DELAY_SECONDS,
-    _clamp_difficulty,
     _generate_question,
     _score_answer,
+    is_turn_recorded,
+    reconcile_actions,
+    record_scored_turn,
     select_active_panelist,
-    session_is_complete,
 )
 from academic_defense_simulator.example_session import (
     ExampleSessionUnavailable,
@@ -659,6 +660,18 @@ _inject_theme_css()
 if "stage" not in st.session_state:
     st.session_state.stage = "intake"
 
+# v1.3a Decision 3: one Lock per browser session, shared by every script run of that
+# session. Two runs of one session really can execute at once: with runner.fastReruns
+# on (the default), a full-rerun request while a run is blocked in an LLM call or
+# time.sleep() tells that run to stop and starts a second ScriptRunner thread
+# immediately, and the blocked run carries on until its next checkpoint. The lock used
+# to live in module globals behind a `not in globals()` guard, but Streamlit execs the
+# script into a fresh module on every rerun, so that guard always created a new Lock and
+# serialized nothing (reproduced: two concurrent scorings of one turn, appended twice).
+# A Lock in session_state is incompatible with runner.enforceSerializableSessionState.
+if "turn_lock" not in st.session_state:
+    st.session_state.turn_lock = threading.Lock()
+
 
 def _render_hero() -> None:
     """Intake hero (presentation only) — eyebrow, serif title, muted tagline.
@@ -734,19 +747,6 @@ if st.session_state.stage == "intake":
 else:
     st.title("Academic Defense Simulator")
 
-# A long blocking LLM call + time.sleep() inside a script run gives Streamlit's cooperative
-# rerun-cancellation no checkpoint to interrupt at, so a second rerun for the same session
-# can start concurrently with one still in flight (observed live: two overlapping
-# _generate_question calls racing on st.session_state and deadlocking Streamlit's own
-# session-state machinery). A real threading.Lock with double-checked locking closes that
-# race regardless of any session-state visibility timing between the two threads — a plain
-# session_state boolean flag was tried first and was not sufficient. Streamlit re-executes
-# this module's top-level code on every rerun against the same module namespace, so the
-# `not in globals()` guard is required — otherwise every rerun would allocate a fresh Lock,
-# defeating the point of sharing one across concurrent reruns.
-if "_turn_lock" not in globals():
-    _turn_lock = threading.Lock()
-
 
 def _reset() -> None:
     # v0.4a Decision 5: "N demo sessions per browser session" has to survive this
@@ -755,10 +755,14 @@ def _reset() -> None:
     # Without preserving the count here, that click would silently hand out a fresh
     # demo, defeating the cap it just enforced.
     demo_sessions_started = st.session_state.get("demo_sessions_started", 0)
+    # v1.3a Decision 3: the session's turn lock outlives a reset too, so a run still in
+    # flight and the next one can never hold two different locks.
+    turn_lock = st.session_state.turn_lock
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.session_state.stage = "intake"
     st.session_state.demo_sessions_started = demo_sessions_started
+    st.session_state.turn_lock = turn_lock
 
 
 def _composition_key(defense_type: DefenseType, other_subtype: OtherSubtype | None) -> str:
@@ -1467,6 +1471,47 @@ def _render_exchange_history(session: DefenseSession) -> None:
             _render_turn_content(turn)
 
 
+def _reconcile_running_session(session: DefenseSession) -> None:
+    """v1.3a Decision 3 (deviation 2): executes `engine.reconcile_actions` at the top of
+    every `running` pass, under the session lock and before any question generation.
+    Whichever run gets here does the bookkeeping a stopped submit run may have skipped,
+    so it never depends on which run recorded the turn. Each action updates the state
+    its own condition reads, which is what makes a second pass a no-op.
+
+    Order inside `finish_session` matters: the stage is set before the report is
+    stored. If this run is stopped at the stage write, the report stays unset and the
+    next pass rebuilds it; storing it first would strand a reported session in
+    `running`, where the reconcile condition no longer fires."""
+    with st.session_state.turn_lock:
+        actions = reconcile_actions(
+            session, st.session_state.pending_turn, st.session_state.get("saved_turn_count", 0)
+        )
+        if actions.clear_pending:
+            st.session_state.pending_turn = None
+        if actions.persist_in_progress:
+            # v0.4b Decision 3: save fires after every completed turn, not just at
+            # session end — a crash loses at most the in-flight turn.
+            _persist(SessionStage.IN_PROGRESS)
+            st.session_state.saved_turn_count = len(session.turns)
+        if actions.finish_session:
+            try:
+                with st.spinner("Building end-of-session report..."):
+                    report = _call_with_timeout(
+                        build_report,
+                        session,
+                        _new_provider(LLM_STAGE_REPORT_NARRATIVE),
+                        _new_suggestions_provider(),
+                        label=LLM_STAGE_REPORT_BUILD,
+                    )
+            except LLMProviderError as exc:
+                _abort(LLM_STAGE_REPORT_BUILD, exc)
+                st.rerun()
+            st.session_state.stage = "done"
+            session.report = report
+            _persist(SessionStage.COMPLETED)
+            st.rerun()
+
+
 def _render_current_exchange(session: DefenseSession, active_panelist: Panelist, turn_num: int) -> None:
     """Runs in the main script body, NOT fragment-scoped — this block's abort path calls
     `st.rerun()` on its very first, unconditional (non-widget-triggered) execution within
@@ -1482,12 +1527,19 @@ def _render_current_exchange(session: DefenseSession, active_panelist: Panelist,
         st.rerun()
 
     if st.session_state.pending_turn is None:
-        with _turn_lock:
+        with st.session_state.turn_lock:
             # Re-check after acquiring the lock: if a concurrent (overlapping) rerun got
             # here first and already finished, pending_turn is no longer None and this
             # rerun has nothing left to do.
             if st.session_state.pending_turn is None:
                 with st.spinner(f"Dr. {active_panelist.panelist_name} is preparing a question..."):
+                    # Per-model RPM pacing between a scoring call and the next question
+                    # (moved here from the submit path by v1.3a Decision 3). Turn 1 has
+                    # no preceding call within this session to pace against.
+                    if session.turns:
+                        time.sleep(
+                            MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY)
+                        )
                     try:
                         st.session_state.pending_turn = _call_with_timeout(
                             _generate_question,
@@ -1547,25 +1599,22 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
         if not answer.strip():
             st.warning("Answer cannot be blank — please respond.")
         else:
-            # Perceived-latency fix (post-0.3 deploy bugfix pass): the spinner used to open
-            # only around the score LLM call itself, after turn.answer assignment and lock
-            # acquisition had already run — those are microseconds, not the 3-4s users saw,
-            # but no visible feedback existed until Streamlit's next paint reached that inner
-            # `with`. Opening the spinner here, before any of that, paints something within
-            # milliseconds of the click. This does not make the score/report calls faster —
-            # only when "loading" first becomes visible. The lock's critical section (recheck
-            # -> score -> append -> clear pending_turn) is left exactly as it was; only the
-            # spinner's boundary moved outward around it, so the concurrent-rerun guard is
-            # unaffected. One side effect: on the session-final turn, this spinner and the
-            # "Building end-of-session report..." spinner below are both active briefly (the
-            # inner one nested inside the outer), so two loading lines show at once for that
-            # one turn — a minor, disclosed cosmetic overlap, not a functional issue.
+            # Perceived-latency fix (post-0.3 deploy bugfix pass): the spinner opens before
+            # lock acquisition, so something paints within milliseconds of the click.
+            #
+            # v1.3a Decision 3 (deviation 2): this path only scores, records and clears
+            # pending_turn. Persisting, the completion check, the report and the stage
+            # change all moved to `_reconcile_running_session`, which the next run executes
+            # from state. Streamlit stops a superseded run at its next session-state
+            # access, so anything here after `record_scored_turn` may never run, and the
+            # bookkeeping must not depend on it.
             with st.spinner("Scoring your answer..."):
-                turn.answer = answer.strip()
-                with _turn_lock:
-                    # Re-check after acquiring the lock: if a concurrent (overlapping) rerun
-                    # already scored and consumed this pending_turn, there's nothing left to do.
-                    if st.session_state.pending_turn is not None:
+                with st.session_state.turn_lock:
+                    # Checked against the session's own turn list, not pending_turn, and
+                    # before the scoring call: an overlapping or stale rerun of an
+                    # already-recorded turn spends no call and changes nothing.
+                    if not is_turn_recorded(session, turn):
+                        turn.answer = answer.strip()
                         try:
                             turn.score = _call_with_timeout(
                                 _score_answer,
@@ -1579,45 +1628,13 @@ def _render_answer_fragment(session: DefenseSession, active_panelist: Panelist, 
                             _abort(LLM_STAGE_ANSWER_SCORING, exc)
                             st.rerun()
 
-                        session.turns.append(turn)
+                        record_scored_turn(session, turn)
                         if len(session.turns) == 1:
                             _log_rss("after the first fully scored turn of the session")
-                        session.difficulty_current = _clamp_difficulty(
-                            session.difficulty_current + turn.score.difficulty_delta
-                        )
+                    # Identity-guarded: a stale fragment for an older turn must not drop
+                    # a newer pending question that a later run already generated.
+                    if st.session_state.pending_turn is turn:
                         st.session_state.pending_turn = None
-
-                        if session_is_complete(session):
-                            # Driver-level wire-up (v0.3 hardening, Task 1d): same call CLI's
-                            # `main()` already makes at session-end. Zero changes to
-                            # `report.py` — orchestration only. v0.3f: the old fixed-turn-count
-                            # check is replaced by `engine.session_is_complete` (Decision 5),
-                            # engine.py's own termination condition — this driver call is the
-                            # minimal wiring needed for that condition to have any effect on
-                            # a real session, not a redesign of this file's scope.
-                            try:
-                                with st.spinner("Building end-of-session report..."):
-                                    session.report = _call_with_timeout(
-                                        build_report,
-                                        session,
-                                        _new_provider(LLM_STAGE_REPORT_NARRATIVE),
-                                        _new_suggestions_provider(),
-                                        label=LLM_STAGE_REPORT_BUILD,
-                                    )
-                            except LLMProviderError as exc:
-                                _abort(LLM_STAGE_REPORT_BUILD, exc)
-                                st.rerun()
-                            else:
-                                st.session_state.stage = "done"
-                                _persist(SessionStage.COMPLETED)
-                        else:
-                            # v0.4b Decision 3: save fires after every completed turn,
-                            # not just at session end — a crash loses at most the
-                            # in-flight turn.
-                            _persist(SessionStage.IN_PROGRESS)
-                            time.sleep(
-                                MODEL_CALL_DELAY_SECONDS.get(st.session_state.gemini_model, DEFAULT_CALL_DELAY)
-                            )
             st.rerun()
 
 
@@ -2040,6 +2057,7 @@ def _resume_session(persisted: PersistedSession) -> None:
     # locked schema for a field with no functional effect.
     st.session_state.personas_fallback_used = False
     st.session_state.pending_turn = None
+    st.session_state.saved_turn_count = len(session.turns)  # already on disk
     st.session_state.stage = "running"
 
 
@@ -2364,6 +2382,7 @@ elif st.session_state.stage == "intake":
                 f"\n- Defense subtype: {other_subtype.value}" if other_subtype is not None else ""
             )
             st.session_state.pending_turn = None
+            st.session_state.saved_turn_count = 0
             st.session_state.stage = "running"
             # v0.4b Decision 2: session_id is minted here, at session start — before
             # any save has fired (the first save is turn 1's completion, per
@@ -2376,6 +2395,9 @@ elif st.session_state.stage == "intake":
 
 elif st.session_state.stage == "running":
     session: DefenseSession = st.session_state.session
+    # Before anything renders: a finished session reruns straight into `done` from
+    # here, and any recorded-but-unsaved turn is saved before the next question.
+    _reconcile_running_session(session)
     turn_num = len(session.turns) + 1
     active_panelist = select_active_panelist(session)
 

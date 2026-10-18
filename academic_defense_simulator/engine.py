@@ -7,11 +7,14 @@ Drivers own I/O (prompting for input, rendering output, sleeping between reruns)
 call into this module for: which panelist speaks next (`select_active_panelist`),
 question generation (`_generate_question`, dispatching internally to the Devil's
 Advocate path when appropriate), scoring (`_score_answer`), and difficulty clamping.
+v1.3a adds the idempotent turn record (`record_scored_turn`) and the post-turn
+bookkeeping decision (`reconcile_actions`) that drivers execute.
 """
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 
 from academic_defense_simulator.digest import render_digest_block, turn_total_score
 from academic_defense_simulator.grounding import is_grounded
@@ -157,6 +160,25 @@ def _should_follow_up(session: DefenseSession) -> bool:
     return not _is_strong_answer(previous_turn.score)
 
 
+def is_turn_recorded(session: DefenseSession, turn: ConversationTurn) -> bool:
+    """Identity, not equality: two genuinely different turns can compare equal field for
+    field, but the same object appearing twice is always a duplicate (v1.3a Decision 3)."""
+    return any(recorded is turn for recorded in session.turns)
+
+
+def record_scored_turn(session: DefenseSession, turn: ConversationTurn) -> bool:
+    """v1.3a Decision 3: appends a scored `turn` and applies its clamped difficulty
+    delta, unless this exact object is already in `session.turns`; returns whether it
+    recorded. Both changes are plain mutations of `session`, never session-state
+    writes, so a driver run that Streamlit has told to stop cannot be killed between
+    them — it stops at its next `st.session_state` access, which comes after."""
+    if is_turn_recorded(session, turn):
+        return False
+    session.turns.append(turn)
+    session.difficulty_current = _clamp_difficulty(session.difficulty_current + turn.score.difficulty_delta)
+    return True
+
+
 def t_max(session: DefenseSession) -> int:
     """v0.3f Decision 6: a computed backstop, not a chosen number — 1 initial question
     + MAX_FOLLOW_UPS_PER_TOPIC(2) follow-ups per panelist, worst case. A defensive
@@ -181,6 +203,32 @@ def session_is_complete(session: DefenseSession) -> bool:
     if last_turn is None or last_turn.panelist_archetype_key != DEVILS_ADVOCATE_KEY:
         return False
     return not _should_follow_up(session)
+
+
+@dataclass(frozen=True)
+class ReconcileActions:
+    """What a driver must do before rendering the next turn (v1.3a Decision 3,
+    deviation 2). All False means the session is already reconciled."""
+
+    clear_pending: bool = False
+    persist_in_progress: bool = False
+    finish_session: bool = False
+
+
+def reconcile_actions(
+    session: DefenseSession, pending_turn: ConversationTurn | None, saved_turn_count: int
+) -> ReconcileActions:
+    """Decides the bookkeeping that follows a recorded turn, from state alone rather
+    than from which driver run happened to record it. A run can be stopped by its
+    driver right after `record_scored_turn` (Streamlit raises on the next session-state
+    access), so the bookkeeping can't live in the run that scores: whichever run comes
+    next derives it from here. Idempotent by construction — once the driver has acted
+    on the result, the same inputs produce no actions."""
+    return ReconcileActions(
+        clear_pending=pending_turn is not None and is_turn_recorded(session, pending_turn),
+        persist_in_progress=len(session.turns) > saved_turn_count,
+        finish_session=session_is_complete(session) and session.report is None,
+    )
 
 
 # Difficulty floor for is_grounded() enforcement escalation (v0.3 hardening, Decision 2).
