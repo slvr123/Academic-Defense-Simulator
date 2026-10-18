@@ -19,8 +19,8 @@ What is stubbed:
   question text and a mid-range score.
 - `document_profile.extract_document_profile`: fixed domain/topic.
 - `document_relevance.assess_document`: always "defense material".
-- `panel.generate_panel`: the static fallback roster, with a cloned template persona for
-  any archetype that roster doesn't cover.
+- `panel.generate_panel`: the static fallback roster (`FALLBACK_PANELISTS`, which covers
+  every archetype since v1.3a Decision 5).
 - `rag.embeddings.EmbeddingModel`: deterministic 384-dim unit vectors, no model download.
 - `report.build_report` is NOT stubbed: it runs for real against the raising Gemini
   provider and takes its own narrative/suggestions fallback path.
@@ -105,12 +105,7 @@ def _fake_assess(chunks, provider):
 
 
 def _fake_generate_panel(profile, archetype_keys, provider):
-    template = next(iter(panel.FALLBACK_PANELISTS.values()))
-    roster = [
-        panel.FALLBACK_PANELISTS.get(key)
-        or template.model_copy(update={"archetype_key": key, "panelist_name": f"Stub{index}"})
-        for index, key in enumerate(archetype_keys)
-    ]
+    roster = [panel.FALLBACK_PANELISTS[key] for key in archetype_keys]
     return panel.apply_customizations(roster, profile), True
 
 
