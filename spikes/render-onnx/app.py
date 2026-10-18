@@ -1,8 +1,9 @@
 """Throwaway hosting spike: all-MiniLM-L6-v2 on ONNX Runtime behind FastAPI.
 
-Not part of the app. It answers one question: does the embedding model fit
-Render's free instance without torch, with vectors that match the committed
-sentence-transformers sidecar?
+Not part of the app. Spike 2 asks whether batched embedding, a capped glibc
+arena count and a one-at-a-time lock keep the model under Render free's memory
+limit once the real backend's heavy imports are loaded. Spike 1's code is at
+commit 11ba5fc.
 """
 
 from __future__ import annotations
@@ -27,6 +28,10 @@ MODEL_DIR = HERE / "model"
 # with truncation at 128, so it must be overridden or long chunks diverge.
 MAX_SEQ_LENGTH = 256
 MB = 1024 * 1024
+
+# One embedding at a time per process, so concurrent requests queue instead of
+# stacking activation memory.
+EMBED_LOCK = threading.Lock()
 
 
 def rss_mb() -> float:
@@ -74,10 +79,20 @@ class Embedder:
     session: Any
     tokenizer: Any
     input_names: list[str]
+    batch_size: int
 
     def encode(self, texts: list[str]) -> np.ndarray:
         """Mirror SentenceTransformer.encode(normalize_embeddings=True):
-        truncate at 256 tokens, mean-pool over the attention mask, L2-normalise."""
+        truncate at 256 tokens, mean-pool over the attention mask, L2-normalise.
+        Runs in batches of batch_size, holding EMBED_LOCK for the whole call."""
+        with EMBED_LOCK:
+            batches = [
+                self._encode_batch(texts[start : start + self.batch_size])
+                for start in range(0, len(texts), self.batch_size)
+            ]
+        return np.concatenate(batches)
+
+    def _encode_batch(self, texts: list[str]) -> np.ndarray:
         encodings = self.tokenizer.encode_batch(texts)
         ids = np.array([e.ids for e in encodings], dtype=np.int64)
         mask = np.array([e.attention_mask for e in encodings], dtype=np.int64)
@@ -86,6 +101,14 @@ class Embedder:
         weights = mask[..., None].astype(np.float32)
         pooled = (token_vectors * weights).sum(axis=1) / np.clip(weights.sum(axis=1), 1e-9, None)
         return pooled / np.linalg.norm(pooled, axis=1, keepdims=True)
+
+
+def import_backend_deps() -> None:
+    """Load the real backend's heavy runtime modules so the baseline RSS is
+    honest. Import only: no client is constructed and no API call is made."""
+    import fitz  # noqa: F401  (pymupdf)
+    import google.genai  # noqa: F401
+    import pydantic  # noqa: F401
 
 
 def load_embedder() -> Embedder:
@@ -103,16 +126,24 @@ def load_embedder() -> Embedder:
     session = ort.InferenceSession(
         str(MODEL_DIR / "model.onnx"), options, providers=["CPUExecutionProvider"]
     )
-    return Embedder(session, tokenizer, [i.name for i in session.get_inputs()])
+    return Embedder(
+        session,
+        tokenizer,
+        [i.name for i in session.get_inputs()],
+        batch_size=int(os.environ.get("EMBED_BATCH", "2")),
+    )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    rss_bare = rss_mb()
+    import_backend_deps()
     rss_before = rss_mb()
     started = time.perf_counter()
     app.state.embedder = load_embedder()
     app.state.load = {
         "model_load_s": round(time.perf_counter() - started, 3),
+        "rss_bare_mb": round(rss_bare, 1),
         "rss_before_load_mb": round(rss_before, 1),
         "rss_after_load_mb": round(rss_mb(), 1),
     }
@@ -123,6 +154,28 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+def cosines(vectors: np.ndarray, reference: np.ndarray) -> np.ndarray:
+    return (vectors * reference).sum(axis=1) / (
+        np.linalg.norm(vectors, axis=1) * np.linalg.norm(reference, axis=1)
+    )
+
+
+def run_info() -> dict[str, Any]:
+    session_options = app.state.embedder.session.get_session_options()
+    os_peak = os_peak_rss_mb()
+    return {
+        "rss_os_high_water_mb": round(os_peak, 1) if os_peak is not None else None,
+        **app.state.load,
+        "embed_batch": app.state.embedder.batch_size,
+        "malloc_arena_max": os.environ.get("MALLOC_ARENA_MAX"),
+        "ort_threads": session_options.intra_op_num_threads,
+        "ort_cpu_mem_arena": session_options.enable_cpu_mem_arena,
+        "cpu_count_visible": os.cpu_count(),
+        "python": sys.version.split()[0],
+        "platform": sys.platform,
+    }
 
 
 @app.get("/health")
@@ -137,24 +190,47 @@ def spike() -> dict[str, Any]:
         started = time.perf_counter()
         vectors = app.state.embedder.encode(app.state.chunks)
         embed_s = time.perf_counter() - started
-    reference = app.state.reference
-    cosines = (vectors * reference).sum(axis=1) / (
-        np.linalg.norm(vectors, axis=1) * np.linalg.norm(reference, axis=1)
-    )
-    os_peak = os_peak_rss_mb()
+    similarity = cosines(vectors, app.state.reference)
     return {
         "request_number": app.state.requests,
-        **app.state.load,
         "chunk_count": len(app.state.chunks),
         "embed_s": round(embed_s, 3),
         "rss_peak_during_embed_mb": round(sampler.peak_mb, 1),
-        "rss_os_high_water_mb": round(os_peak, 1) if os_peak is not None else None,
-        "cosine_min": float(cosines.min()),
-        "cosine_mean": float(cosines.mean()),
-        "cosine_per_chunk": [round(float(c), 7) for c in cosines],
-        "ort_threads": app.state.embedder.session.get_session_options().intra_op_num_threads,
-        "ort_cpu_mem_arena": app.state.embedder.session.get_session_options().enable_cpu_mem_arena,
-        "cpu_count_visible": os.cpu_count(),
-        "python": sys.version.split()[0],
-        "platform": sys.platform,
+        "cosine_min": float(similarity.min()),
+        "cosine_mean": float(similarity.mean()),
+        "cosine_per_chunk": [round(float(c), 7) for c in similarity],
+        **run_info(),
+    }
+
+
+@app.get("/spike-concurrent")
+def spike_concurrent() -> dict[str, Any]:
+    """Two full embeddings on two threads at once; the lock should serialise them."""
+    app.state.requests += 1
+    results: list[dict[str, Any]] = [{}, {}]
+
+    def worker(index: int) -> None:
+        started = time.perf_counter()
+        try:
+            vectors = app.state.embedder.encode(app.state.chunks)
+            results[index]["cosine_min"] = float(cosines(vectors, app.state.reference).min())
+        except Exception as exc:  # reported, not raised: the point is to see it
+            results[index]["error"] = repr(exc)
+        results[index]["elapsed_s"] = round(time.perf_counter() - started, 3)
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(2)]
+    with PeakSampler() as sampler:
+        started = time.perf_counter()
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        wall_s = time.perf_counter() - started
+    return {
+        "request_number": app.state.requests,
+        "chunk_count": len(app.state.chunks),
+        "wall_s": round(wall_s, 3),
+        "threads": results,
+        "rss_peak_during_embed_mb": round(sampler.peak_mb, 1),
+        **run_info(),
     }
