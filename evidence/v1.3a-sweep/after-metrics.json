@@ -1,0 +1,282 @@
+[
+  {
+    "stage": "intake",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 390,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 0,
+      "right": 390,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 390,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 0,
+      "right": 390,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 390,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 0,
+      "right": 390,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 390,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 0,
+      "right": 390,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "intake",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 768,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 768,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 768,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 768,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "intake",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1024,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 992,
+      "width": 692
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": true
+  },
+  {
+    "stage": "example",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1024,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 992,
+      "width": 692
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1024,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 992,
+      "width": 692
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": true
+  },
+  {
+    "stage": "running",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1024,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 992,
+      "width": 692
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "intake",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": true
+  },
+  {
+    "stage": "example",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": true
+  },
+  {
+    "stage": "running",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false,
+    "sidebarExpandControlVisible": false
+  }
+]

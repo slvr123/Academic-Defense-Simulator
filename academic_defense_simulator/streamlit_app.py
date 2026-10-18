@@ -612,8 +612,40 @@ def _inject_theme_css() -> None:
            shift on toggle, since the sidebar stays out of flow either way. */
         .stMainBlockContainer {
             max-width: 900px;
-            margin-left: max(300px, calc(50vw - 450px)) !important;
-            margin-right: auto;
+        }
+        /* v1.3a Decision 1: the clamp above was never scoped, so on a phone it pushed
+           the 390px-wide container 300px to the right, mostly off-screen (inside
+           Streamlit's own scroller, which clips it, so the page itself never looked
+           wider). Below 1024px the container keeps Streamlit's normal centred layout
+           and default gutters.
+
+           --ads-sidebar-w is the sidebar's rendered width, measured on Streamlit 1.58
+           (300px; its computed min-width is 200px). At 1024-1199px the clamp's 300px
+           offset plus a 900px container overflowed by up to 176px, so the width is
+           capped to what is left beside the sidebar. The 32px gutter is 16px of
+           breathing room plus room for a classic ~17px scrollbar on stMain, which
+           headless Chromium does not render. */
+        :root {
+            --ads-sidebar-w: 300px;
+            --ads-main-gutter: 32px;
+        }
+        @media (min-width: 1024px) {
+            .stMainBlockContainer {
+                margin-left: max(var(--ads-sidebar-w), calc(50vw - 450px)) !important;
+                margin-right: auto;
+                max-width: min(900px, calc(100vw - var(--ads-sidebar-w) - var(--ads-main-gutter)));
+            }
+        }
+        /* v1.3a Decision 1, branch C (approved as a deviation): below 1024px the open
+           sidebar covered most of the defense (77% at 390px), and at 768px its close
+           control stayed hidden until hover. It holds captions only; the main column
+           already carries the roster and turn progress (v1.0.1 Decision 8). The expand
+           control goes too, so no dead button is left in the header. */
+        @media (max-width: 1023px) {
+            [data-testid="stSidebar"],
+            [data-testid="stExpandSidebarButton"] {
+                display: none !important;
+            }
         }
 
         /* Resume-session list (v0.4b-surface): compact single row per session —

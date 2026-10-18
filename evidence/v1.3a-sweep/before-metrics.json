@@ -1,0 +1,274 @@
+[
+  {
+    "stage": "intake",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 690,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 300,
+      "right": 690,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 690,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 165,
+      "right": 555,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 690,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 16,
+      "right": 406,
+      "width": 390
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "innerScrollWidth": 690,
+    "innerClientWidth": 390,
+    "main": {
+      "left": 16,
+      "right": 406,
+      "width": 390
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0.73,
+    "sidebarCloseControlVisible": true
+  },
+  {
+    "stage": "intake",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 1068,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 300,
+      "right": 1068,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 1068,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 300,
+      "right": 1068,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 1068,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 16,
+      "right": 784,
+      "width": 768
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 768,
+    "innerWidth": 768,
+    "scrollWidth": 768,
+    "innerScrollWidth": 1068,
+    "innerClientWidth": 768,
+    "main": {
+      "left": 16,
+      "right": 784,
+      "width": 768
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0.37,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "intake",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1200,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1200,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1200,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 140,
+      "right": 1040,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1024,
+    "innerScrollWidth": 1200,
+    "innerClientWidth": 1024,
+    "main": {
+      "left": 140,
+      "right": 1040,
+      "width": 900
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0.18,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "intake",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "example",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "panel",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": null,
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  },
+  {
+    "stage": "running",
+    "width": 1440,
+    "innerWidth": 1440,
+    "scrollWidth": 1440,
+    "innerScrollWidth": 1440,
+    "innerClientWidth": 1440,
+    "main": {
+      "left": 300,
+      "right": 1200,
+      "width": 900
+    },
+    "sidebar": {
+      "left": 0,
+      "right": 300,
+      "width": 300
+    },
+    "sidebarCoversMain": 0,
+    "sidebarCloseControlVisible": false
+  }
+]
