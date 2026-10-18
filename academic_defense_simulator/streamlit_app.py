@@ -899,110 +899,115 @@ def _cached_cluster_gap_themes(cache_key: tuple, _provider: GeminiProvider):
     return analytics.cluster_gap_themes(primary_gaps, _provider)
 
 
-def _render_key_gate() -> bool:
-    """v0.4a Decision 1 — mode radio above the upload step. Returns True once
-    `st.session_state.active_api_key` is resolved (own key validated, or a demo
-    session granted); the caller renders nothing else and stops the script for
-    this run while this returns False, so the dropzone/profile form below is
-    unreachable until a key is ready — the pre-session half of Decision 6's two
-    exhaustion paths (daily-cap-reached, demo-already-used) is enforced entirely
-    here, before any upload or LLM call can happen."""
-    if "active_api_key" in st.session_state:
+def _demo_unavailable_reason() -> str | None:
+    """v0.4a Decision 6's two exhaustion paths, checked in the same order with the
+    same copy: this browser session's allowance first, then the worldwide daily cap.
+    None means a fresh demo grant is still possible."""
+    if st.session_state.get("demo_sessions_started", 0) >= demo_sessions_per_browser():
+        return "Already used this browser session — refresh to try again later."
+    if not demo_available():
+        used = demo_sessions_used_today()
+        return (
+            f"Today's {used}/{demo_daily_session_cap()} demo sessions are used — "
+            "come back tomorrow, or use your own key."
+        )
+    return None
+
+
+def _demo_exhausted_reason() -> str | None:
+    """The intake's exhausted state (v1.3a Decision 2): only a visitor with no key
+    yet, and no demo grant already under way, can be out of demo sessions. A grant
+    already made in this browser session keeps working for re-processing."""
+    if "active_api_key" in st.session_state or st.session_state.get("api_key_mode") == "demo":
+        return None
+    return _demo_unavailable_reason()
+
+
+def _ensure_session_key() -> bool:
+    """v1.3a Decision 2: the demo slot is spent here, at the first click that commits
+    to a document (Process document, Try a sample capstone, Resume), before that
+    path makes any LLM call — not on landing, so curious visitors who never upload
+    spend nothing. Returns True once `active_api_key` is set; a visitor who already
+    has one (own key, or a demo grant earlier in this browser session) passes
+    straight through and spends nothing, so re-processing never costs a second slot.
+
+    Runs under the session lock, and the write order is what keeps it from ever
+    double-counting. Streamlit stops a superseded run at its next session-state
+    access, so a run can die between any two lines below. `api_key_mode = "demo"`
+    goes first and marks the grant as begun; `active_api_key` goes last among the
+    grant writes and marks it complete; `consume_demo_session()` comes after both.
+    A run stopped before the mode write has done nothing. One stopped between the
+    mode write and the key write leaves a begun grant, which the next click
+    completes without incrementing the browser counter again (that counter may then
+    be one low). One stopped after the key write but before the counter call leaves
+    the daily counter one low. Under-counting by one is accepted: the caps are a
+    speed bump, not a security boundary (v0.4a Decision 5)."""
+    with st.session_state.turn_lock:
+        if "active_api_key" in st.session_state:
+            return True
+        if st.session_state.get("api_key_mode") != "demo":
+            if _demo_unavailable_reason() is not None:
+                return False
+            st.session_state.api_key_mode = "demo"
+            st.session_state.demo_sessions_started = st.session_state.get("demo_sessions_started", 0) + 1
+        st.session_state.active_api_key = load_settings().gemini_api_key.get()
+        consume_demo_session()
         return True
 
-    with st.container(border=True):
-        st.markdown('<p class="small-caps-label">Choose how to run this session</p>', unsafe_allow_html=True)
 
-        demo_sessions_started = st.session_state.get("demo_sessions_started", 0)
-        browser_limit_hit = demo_sessions_started >= demo_sessions_per_browser()
-        daily_cap_hit = not demo_available()
-        demo_disabled_reason = None
-        if browser_limit_hit:
-            demo_disabled_reason = "Already used this browser session — refresh to try again later."
-        elif daily_cap_hit:
-            used = demo_sessions_used_today()
-            demo_disabled_reason = f"Today's {used}/{demo_daily_session_cap()} demo sessions are used — come back tomorrow, or use your own key."
+def _render_example_entry(primary: bool) -> None:
+    """v1.3a Decision 2, intake item 2: the recorded defense, directly under the
+    positioning copy, offered before any key or upload question. Secondary while a
+    demo is available, primary once the visitor is out of demo sessions. This path
+    never touches the demo counter."""
+    if st.button("Watch a recorded defense", key="goto_example", type="primary" if primary else "secondary"):
+        st.session_state.stage = "example"
+        st.rerun()
+    st.caption("No key, no upload, doesn't use a demo slot.")
 
-        mode = st.radio(
-            "Mode",
-            options=["demo", "own_key"],
-            format_func=lambda m: (
-                "Use my own Gemini API key (recommended)"
-                if m == "own_key"
-                else "Demo mode — limited session" + (f" ({demo_disabled_reason})" if demo_disabled_reason else "")
-            ),
-            index=0,
-            label_visibility="collapsed",
-            key="api_key_mode_radio",
+
+def _render_mode_line() -> None:
+    """v1.3a Decision 2, intake item 3: a compact line, demo by default, with the
+    own-key path behind one control. Nothing here spends a demo slot. The key input,
+    the "Don't have a key?" expander and validation are unchanged from v0.4a
+    Decisions 2-3."""
+    if st.session_state.get("api_key_mode") == "own" and "active_api_key" in st.session_state:
+        st.caption("Running on your own Gemini key.")
+        return
+
+    cap = demo_daily_session_cap()
+    left = max(0, cap - demo_sessions_used_today())
+    st.caption(f"Running on the free demo ({demo_max_turns()} turns · {left} of {cap} left today)")
+
+    if not st.toggle("Use my own key instead", key="own_key_toggle"):
+        return
+    with st.expander("Don't have a key? It's free — 60 seconds"):
+        st.markdown(
+            "1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)\n"
+            "2. Sign in with any Google account\n"
+            "3. Click **Create API key**\n"
+            "4. Paste it below\n\n"
+            "Free tier — no billing setup, no card required."
         )
-
-        if mode == "own_key":
-            with st.expander("Don't have a key? It's free — 60 seconds"):
-                st.markdown(
-                    "1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)\n"
-                    "2. Sign in with any Google account\n"
-                    "3. Click **Create API key**\n"
-                    "4. Paste it below\n\n"
-                    "Free tier — no billing setup, no card required."
-                )
-            key_input = st.text_input(
-                "Gemini API key", type="password", key="own_key_input", label_visibility="collapsed",
-                placeholder="Paste your Gemini API key",
-            )
-            validate_clicked = st.button("Use this key", type="primary")
-            if validate_clicked:
-                if not key_input.strip():
-                    st.error("Paste a key first.")
-                else:
-                    with st.spinner("Checking your key..."):
-                        ok = validate_gemini_key(key_input.strip())
-                    if ok:
-                        st.session_state.active_api_key = key_input.strip()
-                        st.session_state.api_key_mode = "own"
-                        st.rerun()
-                    else:
-                        st.error(
-                            "This key was rejected by Google — check for missing characters "
-                            "or create a fresh key."
-                        )
-            return False
-
-        # demo mode
-        st.caption(
-            f"Demo sessions are capped at {demo_max_turns()} turns, "
-            f"{demo_sessions_per_browser()} per browser session, "
-            f"{demo_daily_session_cap()} total worldwide per day."
-        )
-        if demo_disabled_reason:
-            st.error(demo_disabled_reason)
-            # v1.0.1 Decision 5 — the launch-day failure this exists to prevent:
-            # the post lands, the daily cap is reached, and every visitor after
-            # that meets a disabled button and nothing else. Both exhaustion
-            # paths (daily cap, already-used-this-browser) funnel through
-            # `demo_disabled_reason`, so one control here covers both. This is
-            # the one place the example view is offered at full prominence,
-            # because in this state it is the only thing left to offer.
-            st.write(
-                "You can still watch a complete recorded defense — no key, no upload, "
-                "nothing to set up."
-            )
-            if st.button(
-                "See a recorded example session", key="goto_example_gate", type="primary"
-            ):
-                st.session_state.stage = "example"
+    key_input = st.text_input(
+        "Gemini API key", type="password", key="own_key_input", label_visibility="collapsed",
+        placeholder="Paste your Gemini API key",
+    )
+    if st.button("Use this key", type="primary"):
+        if not key_input.strip():
+            st.error("Paste a key first.")
+        else:
+            with st.spinner("Checking your key..."):
+                ok = validate_gemini_key(key_input.strip())
+            if ok:
+                st.session_state.active_api_key = key_input.strip()
+                st.session_state.api_key_mode = "own"
                 st.rerun()
-            return False
-        if st.button("Start demo session", type="primary"):
-            # v0.4a Decision 5: the daily slot is spent here, at commit, not at
-            # Convene — simpler than tracking whether an in-progress demo pick
-            # ever turns into a real session, and Decision 5 already accepts
-            # coarser gaming/concurrency tradeoffs at this scale.
-            consume_demo_session()
-            st.session_state.demo_sessions_started = demo_sessions_started + 1
-            st.session_state.active_api_key = load_settings().gemini_api_key.get()
-            st.session_state.api_key_mode = "demo"
-            st.rerun()
-        return False
+            else:
+                st.error(
+                    "This key was rejected by Google — check for missing characters "
+                    "or create a fresh key."
+                )
 
 
 @st.cache_resource(show_spinner=False)
@@ -1742,15 +1747,22 @@ def _render_report(report: DefenseReport) -> None:
             st.markdown(f"**Turn {suggestion.turn_index + 1}:** {suggestion.suggestion}")
 
 
-# v1.0.1 Appendix B (B3), superseding Decision 5's original banner string. Held as
-# a module constant rather than inlined so the locked wording has exactly one home
-# and a test can assert it verbatim — the copy is a decision, not an implementation
-# detail, and drift here is the kind of thing nobody notices until it ships.
-EXAMPLE_BANNER = (
-    "**Recorded example session — not live.**\n\n"
-    "A complete defense against the sample capstone. The free demo is capped at "
-    "four turns; use your own API key for a full session."
+# v1.3a Decision 2, superseding v1.0.1 B3's banner, which hardcoded "four turns"
+# (false on deploy, where the demo runs 12). The cap sentence renders only when the
+# live demo cap is below the recorded session's length. Held as module constants so
+# the locked wording has exactly one home and a test can assert it verbatim.
+EXAMPLE_BANNER_HEADING = "**Recorded example session — not live.**"
+EXAMPLE_BANNER_BODY = "A complete defense against the sample capstone."
+EXAMPLE_BANNER_CAP_SENTENCE = (
+    "The free demo is capped at {turns} turns; use your own API key for a full session."
 )
+
+
+def example_banner(recorded_turns: int, demo_turns: int) -> str:
+    body = EXAMPLE_BANNER_BODY
+    if demo_turns < recorded_turns:
+        body = f"{body} {EXAMPLE_BANNER_CAP_SENTENCE.format(turns=demo_turns)}"
+    return f"{EXAMPLE_BANNER_HEADING}\n\n{body}"
 
 
 def _render_example_stage() -> None:
@@ -1783,7 +1795,7 @@ def _render_example_stage() -> None:
     session = persisted.session
 
     with st.container(key="example_banner"):
-        st.markdown(EXAMPLE_BANNER)
+        st.markdown(example_banner(len(session.turns), demo_max_turns()))
 
     st.subheader(f"Recorded session — {len(session.turns)} turns")
     st.caption(
@@ -2126,8 +2138,12 @@ def _render_resume_section() -> None:
                 )
             with resume_col:
                 if st.button("Resume", key=f"resume_{persisted.session_id}", type="primary"):
-                    _resume_session(persisted)
-                    st.rerun()
+                    # v1.3a Decision 2: resuming commits to a session like Process
+                    # does, so a visitor without a key spends a demo slot here.
+                    if _ensure_session_key():
+                        _resume_session(persisted)
+                        st.rerun()
+                    st.error(_demo_unavailable_reason())
             with delete_col:
                 with st.popover("Delete", key=f"session_delete_{persisted.session_id}"):
                     st.write("Delete this saved session permanently? This can't be undone.")
@@ -2172,18 +2188,22 @@ elif st.session_state.stage == "intake":
     # the whole intake UI immediately, before the call starts, instead of
     # leaving stale content sitting above the spinner.
     #
-    # v1.0.1 Decision 7 — positioning copy, above the mode radio so it clears the
-    # fold on a phone. The wording is locked in the decisions doc and rendered from
-    # module constants rather than composed here: changing it is a decision, not an
-    # implementation detail.
+    # v1.0.1 Decision 7 — positioning copy, first, so it clears the fold on a phone
+    # and nobody reaches anything before reading what the app is. The wording is
+    # locked in the decisions doc and rendered from module constants rather than
+    # composed here: changing it is a decision, not an implementation detail.
     _render_positioning_copy()
 
-    # v0.4a Decision 1: the key/mode gate renders above all of the above and
-    # everything below is unreachable until it resolves — st.stop() here is the
-    # smallest-diff way to enforce that without re-nesting this whole 200-line
-    # block inside an `if key_ready:`.
-    if not _render_key_gate():
-        st.stop()
+    # v1.3a Decision 2 (supersedes v0.4a Decision 1's gate): the recorded defense,
+    # then a compact mode line, then the upload step — all reachable without
+    # spending anything. The demo slot is spent at Process document / Try a sample
+    # capstone (`_ensure_session_key`). Once the visitor is out of demo sessions,
+    # the example becomes the primary action and the upload controls disable.
+    exhausted_reason = _demo_exhausted_reason()
+    _render_example_entry(primary=exhausted_reason is not None)
+    _render_mode_line()
+    if exhausted_reason is not None:
+        st.error(exhausted_reason)
 
     # v0.4b Decision 4: the resume list sits above the fresh-upload flow, and is
     # itself gated on the persistence flag — off means `_render_resume_section`
@@ -2203,22 +2223,28 @@ elif st.session_state.stage == "intake":
                 unsafe_allow_html=True,
             )
             uploaded_file = st.file_uploader(
-                "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed"
+                "Upload your research document (PDF)", type=["pdf"], label_visibility="collapsed",
+                disabled=exhausted_reason is not None,
             )
             st.caption("PDF · thesis, capstone, or paper")
-            process_clicked = st.button("Process document", type="primary", disabled=uploaded_file is None)
+            process_clicked = st.button(
+                "Process document", type="primary",
+                disabled=uploaded_file is None or exhausted_reason is not None,
+            )
 
             # v1.0.1 Decision 5 (as amended): the sample control lives *inside*
             # the upload step, as an alternative to choosing a file — not as a
-            # shortcut on the intake screen. A visitor still passes the key-mode
-            # gate and the positioning copy before reaching a question; this
-            # only removes the need to have a PDF of your own to hand.
+            # shortcut on the intake screen. A visitor still passes the
+            # positioning copy before reaching a question; this only removes the
+            # need to have a PDF of your own to hand.
             st.markdown(
                 '<p style="text-align:center;color:#8A8378;font-size:0.8rem;margin:0.35rem 0;">'
                 "or</p>",
                 unsafe_allow_html=True,
             )
-            sample_clicked = st.button("Try a sample capstone", width="stretch")
+            sample_clicked = st.button(
+                "Try a sample capstone", width="stretch", disabled=exhausted_reason is not None
+            )
             st.caption("A synthetic capstone written for this demo — no upload needed.")
 
             # v0.3g Brief: soft relevance gate — a negative assessment from a prior
@@ -2235,19 +2261,6 @@ elif st.session_state.stage == "intake":
                 )
                 proceed_anyway_clicked = st.button("Proceed anyway")
 
-            # v1.0.1 Decision 5 (as amended): the example-session control sits
-            # *below* the upload step as a subordinate secondary control, and must
-            # not compete with the upload affordance or the primary CTA — hence a
-            # tertiary (link-styled) button, not a bordered one. It renders only
-            # while there is no document loaded: once a visitor has one ingested
-            # they are committed to a real session, and an offer to go read a
-            # recording instead is clutter at best.
-            #
-            # It gains full prominence in exactly one place — the demo-exhausted
-            # gate in `_render_key_gate`, where it is the only thing left to offer.
-            if st.button("See a recorded example session", key="goto_example_intake", type="tertiary"):
-                st.session_state.stage = "example"
-                st.rerun()
         else:
             process_clicked = False
             proceed_anyway_clicked = False
@@ -2321,6 +2334,14 @@ elif st.session_state.stage == "intake":
                                           disabled=not selected_archetypes)
         else:
             start_clicked = False
+
+    # v1.3a Decision 2: the demo slot check and spend run before anything else on
+    # every path that can reach an LLM call — ahead of the relevance gate on the
+    # upload path. The buttons were rendered enabled, but the cap can have been
+    # reached since (another visitor, another tab), so a refused grant stops here.
+    if (process_clicked or sample_clicked or proceed_anyway_clicked) and not _ensure_session_key():
+        st.error(_demo_unavailable_reason())
+        process_clicked = sample_clicked = proceed_anyway_clicked = False
 
     if process_clicked:
         # Deliberately NOT pre-cleared like the Convene path below: on ingestion

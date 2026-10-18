@@ -26,14 +26,18 @@ What is stubbed:
   provider and takes its own narrative/suggestions fallback path.
 
 Set ADS_TTS_PROVIDER=browser when running this; the MiMo stub raises if it is reached.
+Set ADS_STUB_LATENCY_SECONDS (default 0) to make every stubbed LLM call sleep that long,
+for reproducing races that need a call to be in flight.
 """
 
 from __future__ import annotations
 
 import hashlib
 import math
+import os
 import runpy
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -64,6 +68,10 @@ _STUB_QUESTION = (
 )
 
 
+def _latency() -> None:
+    time.sleep(float(os.environ.get("ADS_STUB_LATENCY_SECONDS", "0") or 0))
+
+
 def _patch(module, name: str, value) -> None:
     if not hasattr(module, name):
         raise RuntimeError(
@@ -78,6 +86,7 @@ def _offline_failure(*_args, **_kwargs):
 
 
 def _fake_generate_question(provider, session, chunks, embedding_model, panelist, *_args, **_kwargs):
+    _latency()
     return ConversationTurn(
         panelist_archetype_key=panelist.archetype_key,
         panelist_name=panelist.panelist_name,
@@ -90,6 +99,7 @@ def _fake_generate_question(provider, session, chunks, embedding_model, panelist
 
 
 def _fake_score_answer(provider, turn, panelist, defense_type):
+    _latency()
     return AnswerScore(
         clarity=3, depth=3, grounding=3, difficulty_delta=0,
         primary_gap="stub gap", answer_summary="stub summary of the candidate's claim",
@@ -97,10 +107,12 @@ def _fake_score_answer(provider, turn, panelist, defense_type):
 
 
 def _fake_extract(chunks, provider):
+    _latency()
     return DocumentProfileExtraction(domain="Computer Science", topic="Offline stub capstone")
 
 
 def _fake_assess(chunks, provider):
+    _latency()
     return DocumentAssessment(is_defense_material=True, document_kind="capstone project", reason="offline stub")
 
 

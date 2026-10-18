@@ -9,7 +9,7 @@ redaction case is the one that matters — v1.0's close-out found a 3,827-charac
 verbatim document chunk inside a committed session JSON, and re-recording this
 fixture is a routine operation, so the invariant needs a test and not a habit.
 
-The copy tests are drift guards. `EXAMPLE_BANNER` and the Decision 7 strings are
+The copy tests are drift guards. The example banner and the Decision 7 strings are
 locked wording that lives in the decisions doc; asserting them verbatim here
 means a reworded first screen shows up as a failing test instead of shipping
 quietly. They are deliberately literal — the point is to notice *any* change.
@@ -90,12 +90,20 @@ def test_fixture_without_report_is_rejected(tmp_path: Path) -> None:
 # --- locked copy ----------------------------------------------------------
 
 
-def test_example_banner_is_the_locked_b3_copy() -> None:
-    """Appendix B (B3), superseding Decision 5's original banner string."""
-    assert app.EXAMPLE_BANNER == (
-        "**Recorded example session — not live.**\n\n"
-        "A complete defense against the sample capstone. The free demo is capped at "
-        "four turns; use your own API key for a full session."
+def test_example_banner_omits_the_cap_sentence_when_the_demo_covers_the_recording() -> None:
+    """v1.3a Decision 2 (supersedes v1.0.1 B3): at the deployed cap of 12 the
+    8-turn recording is within reach of the demo, so no cap sentence."""
+    assert app.example_banner(recorded_turns=8, demo_turns=12) == (
+        "**Recorded example session — not live.**" + chr(10) * 2
+        + "A complete defense against the sample capstone."
+    )
+
+
+def test_example_banner_names_the_live_cap_when_it_is_shorter_than_the_recording() -> None:
+    assert app.example_banner(recorded_turns=8, demo_turns=4) == (
+        "**Recorded example session — not live.**" + chr(10) * 2
+        + "A complete defense against the sample capstone. The free demo is capped at "
+        "4 turns; use your own API key for a full session."
     )
 
 
@@ -128,42 +136,63 @@ def test_positioning_bullets_are_locked_copy() -> None:
     )
 
 
-def test_positioning_copy_renders_above_the_mode_radio() -> None:
-    """Decision 7's placement requirement. Bare mode gives no rendered output to
-    inspect, so this asserts the call ordering in the intake block's source: the
-    positioning copy must be emitted before `_render_key_gate`, which owns the
-    mode radio and stops the script while it returns False."""
+def _intake_block_source() -> str:
     source = inspect.getsource(app)
-    intake_block = source.split('elif st.session_state.stage == "intake":', 1)[1]
-    copy_at = intake_block.index("_render_positioning_copy()")
-    gate_at = intake_block.index("if not _render_key_gate():")
-    assert copy_at < gate_at
+    return source.split('elif st.session_state.stage == "intake":', 1)[1].split(
+        'elif st.session_state.stage == "running":', 1
+    )[0]
 
 
-# --- the two entry points (Decision 5) ------------------------------------
+def test_intake_renders_in_the_locked_order() -> None:
+    """v1.3a Decision 2's order, with v1.0.1 Decision 7's copy still first:
+    positioning copy, recorded defense, mode line, then the upload step. Bare mode
+    gives no rendered output to inspect, so this asserts call order in source."""
+    intake = _intake_block_source()
+    order = [
+        intake.index("_render_positioning_copy()"),
+        intake.index("_render_example_entry("),
+        intake.index("_render_mode_line()"),
+        intake.index("st.file_uploader("),
+    ]
+    assert order == sorted(order)
 
 
-def test_demo_exhausted_gate_offers_the_example_view() -> None:
-    """Decision 5's launch-day failure case: both exhaustion paths funnel through
-    `demo_disabled_reason`, and that branch must offer the recorded session
-    rather than a disabled button and nothing else.
-
-    Source-level rather than behavioural: the branch is reached only through
-    Streamlit widget state, which bare mode cannot drive. It still pins the
-    thing that matters — that the route out exists inside that branch."""
-    gate_source = inspect.getsource(app._render_key_gate)
-    exhausted_branch = gate_source.split("if demo_disabled_reason:", 1)[1]
-    assert "goto_example_gate" in exhausted_branch
-    assert 'st.session_state.stage = "example"' in exhausted_branch
+def test_exhausted_state_promotes_the_example_and_disables_the_upload_step() -> None:
+    intake = _intake_block_source()
+    assert "_render_example_entry(primary=exhausted_reason is not None)" in intake
+    assert intake.count("disabled=exhausted_reason is not None") == 2  # uploader, sample
+    assert "uploaded_file is None or exhausted_reason is not None" in intake  # Process
+    entry = inspect.getsource(app._render_example_entry)
+    assert 'type="primary" if primary else "secondary"' in entry
 
 
-def test_intake_offers_the_example_view_subordinately() -> None:
-    """Decision 5 as amended: present on intake, but low-emphasis — a tertiary
-    (link-styled) button, so it cannot compete with the upload affordance or the
-    primary CTA."""
-    source = inspect.getsource(app)
-    assert 'key="goto_example_intake"' in source
-    assert 'type="tertiary"' in source
+def test_slot_is_spent_before_any_llm_call_on_both_document_paths() -> None:
+    """The grant check sits ahead of the upload path's relevance gate and the
+    sample path's extraction."""
+    intake = _intake_block_source()
+    grant_at = intake.index("not _ensure_session_key()")
+    assert grant_at < intake.index("_ingest_and_extract(uploaded_file)")
+    assert grant_at < intake.index("_load_sample_and_extract()")
+
+
+def test_grant_is_written_before_the_daily_counter_is_spent() -> None:
+    """The ordering that keeps a stopped run from ever double-counting: grant
+    begun (mode), grant complete (key), then the daily counter — all under the
+    session lock."""
+    source = inspect.getsource(app._ensure_session_key)
+    # The docstring names these calls too; search the body only, after the lock.
+    lock_at = source.index("with st.session_state.turn_lock:")
+    body = source[lock_at:]
+    mode_at = body.index('st.session_state.api_key_mode = "demo"')
+    key_at = body.index("st.session_state.active_api_key =")
+    spend_at = body.index("consume_demo_session()")
+    assert 0 < mode_at < key_at < spend_at
+    assert body.count("consume_demo_session()") == 1
+
+
+def test_recorded_example_path_never_touches_the_demo_counter() -> None:
+    for function in (app._render_example_entry, app._render_example_stage):
+        assert "consume_demo_session" not in inspect.getsource(function)
 
 
 def test_example_stage_has_no_answer_box_or_dev_toggle() -> None:
