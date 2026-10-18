@@ -22,10 +22,12 @@ Its delivery order supersedes the one in the [public pilot roadmap](public-pilot
 The sequence after v1.3a:
 
 1. **v1.3b** — source-passage reveal and report rebuild.
-   The rebuilt report must not present the difficulty trajectory as evidence of adaptation: on flash-lite the per-answer scorer raises difficulty after weak answers too (see the Parking Lot entry below), so the curve does not show the panel adapting to the candidate.
+   The report must explain that difficulty rises when the panel presses weak points, rather than presenting the trajectory as evidence of adaptation (see the Parking Lot's examiner-vs-tutor entry).
 2. **v1.3c** — panel-selection tightening and in-session polish.
    Also: the recorded example as a step-through replay, with a Next-turn reveal, active-panelist highlighting on the panel cards, and optional browser voice for questions.
 3. **Decision gate — FastAPI + React.** After v1.3c I decide whether to move off Streamlit (see the Parking Lot's stack-swap entry for the trigger).
+
+README refresh happens once, after all planned changes land (decided 2026-10-18); the LinkedIn post waits for it.
 
 ## Active work - public pilot (2026-09-23)
 
@@ -477,8 +479,8 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
 - **README test-count line is stale** (added 2026-10-18).
   It also carried the stale ".env isolation failure" reference that v1.0.1 B8 had already fixed.
   Trigger: the next README pass.
-- **Per-answer scorer raises difficulty after weak answers on flash-lite** (added 2026-10-18; reproduced in the v1.3a fixture, turns 2 and 5).
-  Candidate fixes: move the delta judgment to a stronger model, or derive the delta from the clarity/depth/grounding scores.
+- **Product question: examiner model (current, press on weakness) vs tutor model (ease after weak answers)** (added 2026-10-18).
+  Side effect of the current rubric: trajectories saturate at 5 quickly.
 - **Missing-session-file test** (added 2026-10-18).
   `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` reads a gitignored local session file that is no longer on disk, so it is the one known failure in every v1.3a run.
   It is [public pilot](public-pilot-roadmap.md) Phase 0 item 1 (replace it with a committed synthetic fixture), and out of v1.3a scope.
