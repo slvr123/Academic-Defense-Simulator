@@ -20,6 +20,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import date
+from enum import Enum
 from pathlib import Path
 
 DEFAULT_COUNTER_PATH = Path(__file__).parent / "data" / "demo_counter.json"
@@ -95,3 +96,52 @@ def consume_demo_session(path: Path = DEFAULT_COUNTER_PATH) -> int:
     new_count = (state.count + 1) if state.day == _today() else 1
     _write(path, _CounterState(day=_today(), count=new_count))
     return new_count
+
+
+class GrantWrite(Enum):
+    """One step of a demo grant (v1.3a Decision 2), in the order a driver must apply
+    them. Each is a separate write, and a driver run can be stopped between any two."""
+
+    MARK_DEMO = "mark_demo"  # api_key_mode = "demo": the grant has begun
+    COUNT_BROWSER = "count_browser"  # this browser session's allowance, +1
+    SET_KEY = "set_key"  # active_api_key: the grant is complete
+    COUNT_DAILY = "count_daily"  # consume_demo_session(): the worldwide daily cap, +1
+
+
+@dataclass(frozen=True)
+class GrantPlan:
+    allowed: bool
+    writes: tuple[GrantWrite, ...] = ()
+
+
+def plan_demo_grant(
+    *,
+    has_key: bool,
+    mode: str | None,
+    browser_sessions_started: int,
+    per_browser_limit: int,
+    daily_available: bool,
+) -> GrantPlan:
+    """Decides what is left to do for a demo grant from session state alone, so a
+    retry after a stopped run finishes the grant instead of starting a second one.
+
+    - A key already set: the grant (or an own key) is complete; nothing to do.
+    - Mode already "demo" with no key: a grant began and was stopped before its key
+      write. The browser count may or may not have landed, and state cannot tell
+      which, so it is not repeated (at worst one low); the key and the daily count
+      have certainly not happened, because both come after the key write.
+    - Otherwise a fresh grant: refused if either cap is reached, else all four
+      writes in order.
+
+    Under-counting by one is the accepted worst case (the caps are a speed bump,
+    v0.4a Decision 5); no stop point makes either counter go up twice."""
+    if has_key:
+        return GrantPlan(allowed=True)
+    if mode == "demo":
+        return GrantPlan(allowed=True, writes=(GrantWrite.SET_KEY, GrantWrite.COUNT_DAILY))
+    if browser_sessions_started >= per_browser_limit or not daily_available:
+        return GrantPlan(allowed=False)
+    return GrantPlan(
+        allowed=True,
+        writes=(GrantWrite.MARK_DEMO, GrantWrite.COUNT_BROWSER, GrantWrite.SET_KEY, GrantWrite.COUNT_DAILY),
+    )

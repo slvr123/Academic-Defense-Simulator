@@ -175,19 +175,23 @@ def test_slot_is_spent_before_any_llm_call_on_both_document_paths() -> None:
     assert grant_at < intake.index("_load_sample_and_extract()")
 
 
-def test_grant_is_written_before_the_daily_counter_is_spent() -> None:
-    """The ordering that keeps a stopped run from ever double-counting: grant
-    begun (mode), grant complete (key), then the daily counter — all under the
-    session lock."""
+def test_grant_follows_the_pure_plan_under_the_session_lock() -> None:
+    """The write order and its stop-point safety live in
+    `demo_counter.plan_demo_grant` (tested per stop point in test_demo_counter.py);
+    this pins that the app derives its writes from that plan, under the lock, and
+    spends the daily counter in exactly one place."""
     source = inspect.getsource(app._ensure_session_key)
-    # The docstring names these calls too; search the body only, after the lock.
     lock_at = source.index("with st.session_state.turn_lock:")
     body = source[lock_at:]
-    mode_at = body.index('st.session_state.api_key_mode = "demo"')
-    key_at = body.index("st.session_state.active_api_key =")
-    spend_at = body.index("consume_demo_session()")
-    assert 0 < mode_at < key_at < spend_at
+    assert body.index("plan_demo_grant(") > 0
     assert body.count("consume_demo_session()") == 1
+
+
+def test_example_entry_is_hidden_once_a_document_is_loaded() -> None:
+    """D2 refinement (2026-10-18): landing and exhausted states only."""
+    intake = _intake_block_source()
+    guard_at = intake.index('if "document_id" not in st.session_state:')
+    assert guard_at < intake.index("_render_example_entry(") < guard_at + 300
 
 
 def test_recorded_example_path_never_touches_the_demo_counter() -> None:

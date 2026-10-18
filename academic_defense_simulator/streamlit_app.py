@@ -48,12 +48,14 @@ from academic_defense_simulator import analytics, persistence
 from academic_defense_simulator.panel_selection_ui import render_panel_selection, panel_customization_inputs
 from academic_defense_simulator.config import TTS_PROVIDER_MIMO, load_settings
 from academic_defense_simulator.demo_counter import (
+    GrantWrite,
     consume_demo_session,
     demo_available,
     demo_daily_session_cap,
     demo_max_turns,
     demo_sessions_per_browser,
     demo_sessions_used_today,
+    plan_demo_grant,
 )
 from academic_defense_simulator.document_profile import extract_document_profile
 from academic_defense_simulator.document_relevance import assess_document
@@ -931,28 +933,31 @@ def _ensure_session_key() -> bool:
     has one (own key, or a demo grant earlier in this browser session) passes
     straight through and spends nothing, so re-processing never costs a second slot.
 
-    Runs under the session lock, and the write order is what keeps it from ever
-    double-counting. Streamlit stops a superseded run at its next session-state
-    access, so a run can die between any two lines below. `api_key_mode = "demo"`
-    goes first and marks the grant as begun; `active_api_key` goes last among the
-    grant writes and marks it complete; `consume_demo_session()` comes after both.
-    A run stopped before the mode write has done nothing. One stopped between the
-    mode write and the key write leaves a begun grant, which the next click
-    completes without incrementing the browser counter again (that counter may then
-    be one low). One stopped after the key write but before the counter call leaves
-    the daily counter one low. Under-counting by one is accepted: the caps are a
-    speed bump, not a security boundary (v0.4a Decision 5)."""
+    Runs under the session lock. What to write, and in what order, comes from
+    `demo_counter.plan_demo_grant`: grant begun (mode), browser count, grant
+    complete (key), then the daily count. Streamlit stops a superseded run at its
+    next session-state access, so a run can die between any two writes; the plan is
+    derived from state, so the next click finishes the grant rather than starting a
+    second one, and no stop point counts either counter twice (unit-tested per stop
+    point in tests/test_demo_counter.py)."""
     with st.session_state.turn_lock:
-        if "active_api_key" in st.session_state:
-            return True
-        if st.session_state.get("api_key_mode") != "demo":
-            if _demo_unavailable_reason() is not None:
-                return False
-            st.session_state.api_key_mode = "demo"
-            st.session_state.demo_sessions_started = st.session_state.get("demo_sessions_started", 0) + 1
-        st.session_state.active_api_key = load_settings().gemini_api_key.get()
-        consume_demo_session()
-        return True
+        plan = plan_demo_grant(
+            has_key="active_api_key" in st.session_state,
+            mode=st.session_state.get("api_key_mode"),
+            browser_sessions_started=st.session_state.get("demo_sessions_started", 0),
+            per_browser_limit=demo_sessions_per_browser(),
+            daily_available=demo_available(),
+        )
+        for write in plan.writes:
+            if write is GrantWrite.MARK_DEMO:
+                st.session_state.api_key_mode = "demo"
+            elif write is GrantWrite.COUNT_BROWSER:
+                st.session_state.demo_sessions_started = st.session_state.get("demo_sessions_started", 0) + 1
+            elif write is GrantWrite.SET_KEY:
+                st.session_state.active_api_key = load_settings().gemini_api_key.get()
+            elif write is GrantWrite.COUNT_DAILY:
+                consume_demo_session()
+        return plan.allowed
 
 
 def _render_example_entry(primary: bool) -> None:
@@ -2200,7 +2205,10 @@ elif st.session_state.stage == "intake":
     # capstone (`_ensure_session_key`). Once the visitor is out of demo sessions,
     # the example becomes the primary action and the upload controls disable.
     exhausted_reason = _demo_exhausted_reason()
-    _render_example_entry(primary=exhausted_reason is not None)
+    # Refinement (Sean, 2026-10-18): only before a document is loaded, as in v1.0.1 —
+    # once one is ingested the visitor is committed to a real session.
+    if "document_id" not in st.session_state:
+        _render_example_entry(primary=exhausted_reason is not None)
     _render_mode_line()
     if exhausted_reason is not None:
         st.error(exhausted_reason)
