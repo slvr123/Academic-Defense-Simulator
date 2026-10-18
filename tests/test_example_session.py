@@ -203,6 +203,20 @@ def test_example_entry_is_hidden_once_a_document_is_loaded() -> None:
     assert guard_at < intake.index("_render_example_entry(") < guard_at + 300
 
 
+def test_example_entry_says_read_not_watch() -> None:
+    """2026-10-18: "Watch" promised a video; the page is a transcript."""
+    entry = inspect.getsource(app._render_example_entry)
+    assert '"Read a recorded defense"' in entry
+    assert "Watch a recorded defense" not in inspect.getsource(app)
+
+
+def test_example_stage_opens_only_the_first_turn() -> None:
+    stage = inspect.getsource(app._render_example_stage)
+    assert "_render_exchange_history(session, expand_first=True)" in stage
+    history = inspect.getsource(app._render_exchange_history)
+    assert "expanded=expand_first and i == 1" in history
+
+
 def test_recorded_example_path_never_touches_the_demo_counter() -> None:
     for function in (app._render_example_entry, app._render_example_stage):
         assert "consume_demo_session" not in inspect.getsource(function)

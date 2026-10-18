@@ -982,7 +982,9 @@ def _render_example_entry(primary: bool) -> None:
     positioning copy, offered before any key or upload question. Secondary while a
     demo is available, primary once the visitor is out of demo sessions. This path
     never touches the demo counter."""
-    if st.button("Watch a recorded defense", key="goto_example", type="primary" if primary else "secondary"):
+    # "Read", not "Watch" (2026-10-18): the page is a transcript, and "Watch"
+    # promised a video.
+    if st.button("Read a recorded defense", key="goto_example", type="primary" if primary else "secondary"):
         st.session_state.stage = "example"
         st.rerun()
     st.caption("No key, no upload, doesn't use a demo slot.")
@@ -1523,14 +1525,17 @@ def _render_turn_content(turn) -> None:
         )
 
 
-def _render_exchange_history(session: DefenseSession) -> None:
+def _render_exchange_history(session: DefenseSession, *, expand_first: bool = False) -> None:
     """Every turn in `session.turns` is, by construction, already scored (appended
     only after scoring completes) — so every history block collapses to its header
     line via a native `st.expander` (Decision 8 item 3), making a six-turn session
-    read as a scannable docket rather than an ever-growing feed."""
+    read as a scannable docket rather than an ever-growing feed.
+
+    `expand_first` opens Turn 1 only; the recorded example uses it so a first-time
+    reader lands on an actual exchange rather than a list of closed headers."""
     for i, turn in enumerate(session.turns, start=1):
         header = _turn_header(i, turn.panelist_name, turn.panelist_archetype_key)
-        with st.expander(header, expanded=False):
+        with st.expander(header, expanded=expand_first and i == 1):
             _render_turn_content(turn)
 
 
@@ -1825,7 +1830,7 @@ def _render_example_stage() -> None:
         f"{_turn_progress_label(session)}"
     )
 
-    _render_exchange_history(session)
+    _render_exchange_history(session, expand_first=True)
 
     # Guaranteed non-None by `load_example_session`, which rejects a fixture
     # without a report rather than letting this view render half a session.

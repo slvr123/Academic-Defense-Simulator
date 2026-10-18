@@ -24,6 +24,7 @@ The sequence after v1.3a:
 1. **v1.3b** — source-passage reveal and report rebuild.
    The rebuilt report must not present the difficulty trajectory as evidence of adaptation: on flash-lite the per-answer scorer raises difficulty after weak answers too (see the Parking Lot entry below), so the curve does not show the panel adapting to the candidate.
 2. **v1.3c** — panel-selection tightening and in-session polish.
+   Also: the recorded example as a step-through replay, with a Next-turn reveal, active-panelist highlighting on the panel cards, and optional browser voice for questions.
 3. **Decision gate — FastAPI + React.** After v1.3c I decide whether to move off Streamlit (see the Parking Lot's stack-swap entry for the trigger).
 
 ## Active work - public pilot (2026-09-23)
