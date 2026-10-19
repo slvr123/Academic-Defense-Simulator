@@ -15,6 +15,12 @@ import pytest
 
 from backend.tests.conftest import make_pdf
 from scripts.measure_ingest import (
+    CONCURRENT_END,
+    CONCURRENT_START,
+    ConcurrentRunResult,
+    concurrent_markdown,
+    evaluate_concurrent,
+    measure_concurrent_run,
     DOC_END,
     DOC_START,
     Identity,
@@ -310,3 +316,76 @@ def test_phase_table_handles_failed_and_restarted_runs():
     table = phase_table([failed, restarted]).splitlines()
     assert table[2] == "| 1 | 280.0 / 286.0 | - | - | - | 281.0 / 286.0 | spooled |"
     assert table[3] == "| 2 | - | - | - | - | - | - |"
+
+
+# --- --concurrent ---
+
+
+def _concurrent(backend, clock, pdf, run=1, previous=None):
+    with _client(backend) as client:
+        return measure_concurrent_run(
+            client, run, pdf, pdf, gap_minutes=16, previous=previous,
+            sleep=clock.sleep, clock=clock, log=lambda _line: None,
+        )
+
+
+def test_concurrent_run_overlaps_and_reads_both_jobs(backend, clock, pdf):
+    result = _concurrent(backend, clock, pdf)
+    assert (result.first_status, result.second_status) == ("ready", "ready")
+    assert result.overlapped and not result.restarted
+    assert result.hwm_after_second_upload_mb == 370.0 and result.hwm_after_mb == 370.0
+    assert result.first_job["session_id"] != result.second_job["session_id"]
+    assert result.first_chunks == result.second_chunks == 92
+    assert result.first_upload_to_ready_s is not None and result.second_upload_to_ready_s is not None
+    assert backend.sessions == {}  # both deleted
+
+
+def test_concurrent_restart_mid_run_is_flagged(backend, clock, pdf):
+    backend.restart_on_poll = 2  # the poll right after the second upload
+    result = _concurrent(backend, clock, pdf)
+    assert result.restarted and result.note == "process restarted, likely OOM"
+    assert result.hwm_after_mb is None
+    assert evaluate_concurrent([result])[0] == "NO-GO"
+
+
+def test_concurrent_run_that_never_overlapped_is_inconclusive(clock, pdf):
+    fast = FakeBackend(clock, polls_to_ready=1)  # the first job is ready on its first poll
+    result = _concurrent(fast, clock, pdf)
+    assert result.first_status == "ready" and result.second_status == "not started"
+    assert not result.overlapped
+    verdict, reasons = evaluate_concurrent([result])
+    assert verdict == "INCONCLUSIVE" and any("nothing overlapped" in r for r in reasons)
+
+
+def _overlapped(run: int, **overrides) -> ConcurrentRunResult:
+    values = dict(
+        run=run, waited_min=0 if run == 1 else 16, cold_start_s=40.0, fresh_process=None if run == 1 else True,
+        first_status="ready", second_status="ready", overlapped=True, hwm_after_mb=385.0,
+    )
+    values.update(overrides)
+    return ConcurrentRunResult(**values)
+
+
+def test_concurrent_gate_go_and_no_go():
+    assert evaluate_concurrent([_overlapped(1), _overlapped(2), _overlapped(3)])[0] == "GO"
+    verdict, reasons = evaluate_concurrent([_overlapped(1), _overlapped(2, hwm_after_mb=401.0), _overlapped(3)])
+    assert verdict == "NO-GO" and any("VmHWM 401.0 MB > 400 MB" in r for r in reasons)
+    verdict, _ = evaluate_concurrent([_overlapped(1), _overlapped(2, second_status="failed"), _overlapped(3)])
+    assert verdict == "NO-GO"
+
+
+def test_concurrent_results_leave_the_m1_section_alone(tmp_path, pdf):
+    doc = tmp_path / "results.md"
+    doc.write_text(
+        f"{DOC_START}\nM1 ROUND 2\n{DOC_END}\n\n{CONCURRENT_START}\nSTALE RESULTS\n{CONCURRENT_END}\n", encoding="utf-8"
+    )
+    runs = [_overlapped(1), _overlapped(2), _overlapped(3)]
+    verdict, reasons = evaluate_concurrent(runs)
+    block = concurrent_markdown(
+        runs, verdict, reasons, first_pdf=pdf, second_pdf=pdf, base_url="https://svc",
+        debug={"commit": "abc1234"}, finished=datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc),
+    )
+    write_results(doc, block, CONCURRENT_START, CONCURRENT_END)
+    text = doc.read_text(encoding="utf-8")
+    assert "M1 ROUND 2" in text and "STALE RESULTS" not in text
+    assert "Verdict: **GO**" in text and text.count(CONCURRENT_START) == 1
