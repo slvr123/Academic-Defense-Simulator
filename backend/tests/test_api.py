@@ -258,10 +258,14 @@ def test_delete_during_embedding_drops_the_job(client_factory, tmp_path, embedde
 
 
 def test_idle_ready_session_is_evicted_by_the_sweep(client_factory, pdf):
-    with client_factory(session_ttl_seconds=0.3, sweep_interval_seconds=0.05) as client:
+    with client_factory(session_ttl_seconds=1.0, sweep_interval_seconds=0.05) as client:
         session_id = upload(client, pdf).json()["session_id"]
         wait_for(client, session_id, _ready)
-        time.sleep(0.6)
+        # Polled, not a fixed sleep: the job's gc.collect() calls hold the GIL for
+        # a while (about 0.2 s each with torch loaded by the parity test).
+        deadline = time.monotonic() + 5
+        while len(client.app.state.store) and time.monotonic() < deadline:
+            time.sleep(0.05)
         assert len(client.app.state.store) == 0  # the sweep, not a lookup, removed it
         assert client.get(f"/sessions/{session_id}").status_code == 404
 
@@ -301,6 +305,21 @@ def test_debug_memory_reports_the_process_and_the_last_job(client_factory, pdf):
         assert job["pages"] == 3 and job["chunks"] == state["chunk_count"]
         assert job["parse_s"] >= 0 and job["embed_s"] >= 0 and job["total_s"] >= job["embed_s"]
         assert job["job_peak_rss_mb"] > 0
+        assert [p["phase"] for p in job["phases"]] == ["spooled", "parsed", "released", "embedded", "job_end"]
+        highs = [p["hwm_mb"] for p in job["phases"]]
+        if None not in highs:  # VmHWM / peak working set only rises
+            assert highs == sorted(highs)
+        assert all(p["rss_mb"] > 0 for p in job["phases"])
+
+
+def test_failed_job_still_reports_the_phases_it_reached(client_factory, tmp_path):
+    scanned = make_pdf(tmp_path / "scanned.pdf", text=False)
+    with client_factory(debug_memory=True) as client:
+        session_id = upload(client, scanned).json()["session_id"]
+        wait_for(client, session_id, lambda b: b.get("status") == "failed")
+        job = client.get("/debug/memory").json()["last_job"]
+        assert job["outcome"] == "failed"
+        assert [p["phase"] for p in job["phases"]] == ["spooled", "job_end"]
 
 
 def test_production_requirements_exclude_heavy_ml_packages():

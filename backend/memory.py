@@ -3,12 +3,19 @@
 `high_water_mb()` is the number the go/no-go reads: on Linux it is the kernel's
 VmHWM, the most resident memory this process has ever had, so it can't miss a
 spike between samples. `PeakSampler` adds a per-job peak, sampled from RSS.
+`snapshot()` is one RSS + VmHWM reading at an ingest phase boundary, and
+`release_memory()` hands freed memory back to the OS between phases.
 """
 
 from __future__ import annotations
 
+import ctypes
+import functools
+import gc
 import sys
 import threading
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import psutil
@@ -27,6 +34,48 @@ def high_water_mb() -> float | None:
                 return int(line.split()[1]) / 1024
     peak = getattr(psutil.Process().memory_info(), "peak_wset", None)  # Windows
     return peak / _MB if peak is not None else None
+
+
+@dataclass(frozen=True)
+class PhaseMemory:
+    phase: str
+    rss_mb: float
+    hwm_mb: float | None
+
+
+def snapshot(phase: str) -> PhaseMemory:
+    hwm = high_water_mb()
+    return PhaseMemory(phase=phase, rss_mb=round(rss_mb(), 1), hwm_mb=None if hwm is None else round(hwm, 1))
+
+
+@functools.cache
+def _libc_malloc_trim() -> Callable[[int], int] | None:
+    if not sys.platform.startswith("linux"):
+        return None
+    try:
+        return ctypes.CDLL("libc.so.6").malloc_trim  # glibc; absent on musl
+    except (OSError, AttributeError):
+        return None
+
+
+def malloc_trim() -> bool:
+    """Ask glibc to return free heap pages to the OS. False (and nothing done)
+    where there is no glibc, e.g. on Windows and macOS."""
+    trim = _libc_malloc_trim()
+    if trim is None:
+        return False
+    trim(0)
+    return True
+
+
+def release_memory() -> tuple[float, float, bool]:
+    """gc.collect(), then malloc_trim(0). Returns (rss before, rss after, trimmed).
+    A full collection holds the GIL, about 60 ms in the production process, so
+    the ingest job calls this twice per document, not per chunk."""
+    before = rss_mb()
+    gc.collect()
+    trimmed = malloc_trim()
+    return before, rss_mb(), trimmed
 
 
 def process_started_at() -> float:

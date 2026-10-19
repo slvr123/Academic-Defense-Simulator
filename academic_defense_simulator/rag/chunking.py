@@ -77,16 +77,18 @@ def chunk_pdf_with_pages(path: str | Path) -> list[PageChunk]:
         raise RuntimeError("PyMuPDF is required for PDF chunking") from exc
 
     try:
-        document = fitz.open(str(path))
         paragraphs: list[str] = []
         paragraph_pages: list[int] = []
         total_chars = 0
-        for page_index, page in enumerate(document):
-            text = page.get_text("text")
-            total_chars += len(text)
-            page_paragraphs = _paragraphs_from_page_text(text)
-            paragraphs.extend(page_paragraphs)
-            paragraph_pages.extend([page_index] * len(page_paragraphs))
+        # Closed on exit, not left to the garbage collector: a caller that embeds
+        # next shouldn't be carrying MuPDF's page and font state.
+        with fitz.open(str(path)) as document:
+            for page_index, page in enumerate(document):
+                text = page.get_text("text")
+                total_chars += len(text)
+                page_paragraphs = _paragraphs_from_page_text(text)
+                paragraphs.extend(page_paragraphs)
+                paragraph_pages.extend([page_index] * len(page_paragraphs))
     except Exception as exc:
         # Deliberately not interpolating `exc` into the message: PyMuPDF's own exception
         # text embeds the filesystem path it was given (e.g. a temp path on the server),

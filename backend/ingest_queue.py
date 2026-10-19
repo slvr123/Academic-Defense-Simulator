@@ -34,6 +34,8 @@ class IngestJob:
     session: Session
     pdf_path: Path
     page_count: int
+    # Taken by the route once the upload is on disk and its pages counted.
+    spooled: memory.PhaseMemory | None = None
 
 
 @dataclass(frozen=True)
@@ -56,6 +58,10 @@ class JobStats:
     parse_s: float | None
     embed_s: float | None
     total_s: float
+    # RSS and VmHWM at each phase boundary, in order: spooled, parsed, released
+    # (after the parse-to-embed gc + trim), embedded, job_end (after the final trim).
+    # VmHWM only rises, so the phase where it jumps is the one that set the peak.
+    phases: list[memory.PhaseMemory]
 
 
 class QueueFullError(Exception):
@@ -112,11 +118,12 @@ class IngestQueue:
         session.status = SessionStatus.EMBEDDING
         session.page_count = job.page_count
         session.progress = 0.0
+        phases = [job.spooled] if job.spooled else []
         sampler = memory.PeakSampler().start()
         started = time.perf_counter()
         result: IngestResult | None = None
         try:
-            result = await asyncio.to_thread(self._ingest, job)
+            result = await asyncio.to_thread(self._ingest, job, phases)
         except IngestFailure as exc:
             self._fail(session, str(exc))
         except Exception:
@@ -131,16 +138,21 @@ class IngestQueue:
             session.chunks = result.chunks
             session.progress = 1.0
             session.status = SessionStatus.READY
+        result_chunks = len(result.chunks) if result else None
+        timings = (round(result.parse_s, 2), round(result.embed_s, 2)) if result else (None, None)
+        del result  # the session holds the matrix and chunks now; drop our references first
+        phases.append(_release("job_end", session.id))
         outcome = "cancelled" if session.cancelled else session.status.value
         stats = JobStats(
             session_id=session.id,
             outcome=outcome,
             pages=job.page_count,
-            chunks=len(result.chunks) if result else None,
+            chunks=result_chunks,
             job_peak_rss_mb=round(peak_mb, 1),
-            parse_s=round(result.parse_s, 2) if result else None,
-            embed_s=round(result.embed_s, 2) if result else None,
+            parse_s=timings[0],
+            embed_s=timings[1],
             total_s=round(time.perf_counter() - started, 2),
+            phases=phases,
         )
         self.last_job = stats
         logger.info(
@@ -157,20 +169,25 @@ class IngestQueue:
             memory.describe(),
         )
 
-    def _ingest(self, job: IngestJob) -> IngestResult | None:
+    def _ingest(self, job: IngestJob, phases: list[memory.PhaseMemory]) -> IngestResult | None:
         """Worker thread: parse, chunk, then embed one chunk at a time. Only
         `progress` is written to the session from here; the loop thread sets
         the result and status. Returns None if the session was deleted midway."""
         session = job.session
         started = time.perf_counter()
+        # parse_pdf closes the PDF before returning, and every per-page string it
+        # built is local to it, so only the chunk texts survive into embedding.
         page_chunks = parse_pdf(job.pdf_path)
         parsed = time.perf_counter()
+        phases.append(memory.snapshot("parsed"))
+        phases.append(_release("released", session.id))
         matrix = np.empty((len(page_chunks), EMBEDDING_DIM), dtype=np.float32)
         for index, chunk in enumerate(page_chunks):
             if session.cancelled:
                 return None
             matrix[index] = self._embedder.encode_one(chunk.text)
             session.progress = (index + 1) / len(page_chunks)
+        phases.append(memory.snapshot("embedded"))
         chunks = [
             ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end)
             for i, c in enumerate(page_chunks)
@@ -187,3 +204,12 @@ class IngestQueue:
         session.status = SessionStatus.FAILED
         session.progress = None
         session.error = error
+
+
+def _release(phase: str, session_id: str) -> memory.PhaseMemory:
+    before, after, trimmed = memory.release_memory()
+    logger.info(
+        "memory release (%s) session=%s rss_before=%.1fMB rss_after=%.1fMB malloc_trim=%s",
+        phase, session_id, before, after, "yes" if trimmed else "unavailable",
+    )
+    return memory.snapshot(phase)

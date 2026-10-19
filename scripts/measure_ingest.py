@@ -287,6 +287,34 @@ def summary_table(runs: list[RunResult]) -> str:
     return "\n".join(lines)
 
 
+PHASES = ("spooled", "parsed", "released", "embedded", "job_end")
+
+
+def phase_table(runs: list[RunResult]) -> str:
+    """RSS / VmHWM (MB) at each ingest phase boundary. VmHWM only rises, so the
+    first phase where it reaches its final value is the phase that set the peak."""
+    header = "| Run | " + " | ".join(f"{p} rss / hwm" for p in PHASES) + " | peak set in |"
+    lines = [header, "|" + "---|" * (len(PHASES) + 2)]
+    for r in runs:
+        by_phase = {p["phase"]: p for p in (r.job or {}).get("phases", [])}
+        cells = [
+            f"{_fmt(by_phase[p]['rss_mb'])} / {_fmt(by_phase[p]['hwm_mb'])}" if p in by_phase else "-"
+            for p in PHASES
+        ]
+        lines.append(f"| {r.run} | " + " | ".join(cells) + f" | {peak_phase(by_phase)} |")
+    return "\n".join(lines)
+
+
+def peak_phase(by_phase: dict[str, dict]) -> str:
+    """The phase whose boundary first shows the job's final VmHWM, i.e. the phase
+    that ended at the peak. "spooled" covers startup, model load and the upload."""
+    readings = [(p, by_phase[p]["hwm_mb"]) for p in PHASES if p in by_phase and by_phase[p]["hwm_mb"] is not None]
+    if not readings:
+        return "-"
+    final = readings[-1][1]
+    return next(phase for phase, hwm in readings if hwm >= final)
+
+
 def results_markdown(
     runs: list[RunResult], verdict: str, reasons: list[str], *, pdf: Path, size_mb: float, pages: int,
     base_url: str, debug: dict | None, finished: datetime,
@@ -305,6 +333,14 @@ def results_markdown(
         f"Limits on the service: {limits}.",
         "",
         summary_table(runs),
+        "",
+        "Memory at each ingest phase boundary (MB):",
+        "",
+        phase_table(runs),
+        "",
+        "Phases: `spooled` = upload on disk and pages counted (includes startup and model load); "
+        "`parsed` = PDF parsed and chunked; `released` = after gc.collect() and malloc_trim(0); "
+        "`embedded` = all chunks embedded; `job_end` = after the final gc.collect() and malloc_trim(0).",
         "",
         "Cold start is the first `/health` 200 after the gap; run 1 had no gap, so its time isn't a cold start.",
         "\"Fresh process\" means the pid or start time differs from the previous run's, so the instance did spin down.",
@@ -359,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
     verdict, reasons = evaluate(runs)
     print()
     print(summary_table(runs))
+    print()
+    print(phase_table(runs))
     print(f"\nVerdict: {verdict}")
     for reason in reasons:
         print(f"- {reason}")

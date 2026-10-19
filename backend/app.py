@@ -130,7 +130,12 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
                 raise HTTPException(503, BUSY_MESSAGE) from None
             try:
                 position = queue.submit(
-                    IngestJob(session=session, pdf_path=pdf_path, page_count=page_count)
+                    IngestJob(
+                        session=session,
+                        pdf_path=pdf_path,
+                        page_count=page_count,
+                        spooled=memory.snapshot("spooled"),
+                    )
                 )
             except QueueFullError:  # unreachable after has_room() with no await; a guard
                 store.delete(session.id)

@@ -52,6 +52,12 @@ class SessionState(BaseModel):
     error: str | None = None
 
 
+class PhaseMemory(BaseModel):
+    phase: Literal["spooled", "parsed", "released", "embedded", "job_end"]
+    rss_mb: float
+    hwm_mb: float | None
+
+
 class LastJob(BaseModel):
     session_id: str
     outcome: str
@@ -61,6 +67,7 @@ class LastJob(BaseModel):
     parse_s: float | None
     embed_s: float | None
     total_s: float
+    phases: list[PhaseMemory]
 
 
 class DebugMemory(BaseModel):

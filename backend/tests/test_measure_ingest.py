@@ -21,6 +21,8 @@ from scripts.measure_ingest import (
     RunResult,
     evaluate,
     measure_run,
+    peak_phase,
+    phase_table,
     restart_detected,
     results_markdown,
     write_results,
@@ -94,6 +96,13 @@ class FakeBackend:
         self.last_job = {
             "session_id": session_id, "outcome": "ready", "pages": 224, "chunks": 92,
             "job_peak_rss_mb": 306.2, "parse_s": 0.4, "embed_s": 55.0, "total_s": 55.5,
+            "phases": [
+                {"phase": "spooled", "rss_mb": 285.0, "hwm_mb": 286.5},
+                {"phase": "parsed", "rss_mb": 300.0, "hwm_mb": 302.0},
+                {"phase": "released", "rss_mb": 290.0, "hwm_mb": 302.0},
+                {"phase": "embedded", "rss_mb": 360.0, "hwm_mb": self.hwm_mb},
+                {"phase": "job_end", "rss_mb": 330.0, "hwm_mb": self.hwm_mb},
+            ],
         }
         if self.restart_after_ready:
             self.restart_after_ready = False
@@ -166,6 +175,8 @@ def test_clean_run_records_timings_memory_and_job_stats(backend, clock, pdf):
     assert result.hwm_after_mb == 370.0
     assert result.chunks == 92 and result.job["embed_s"] == 55.0
     assert result.upload_to_ready_s == pytest.approx(1.0)  # two 0.5 s polls before ready
+    table = phase_table([result])
+    assert "| 1 | 285.0 / 286.5 | 300.0 / 302.0 | 290.0 / 302.0 | 360.0 / 370.0 | 330.0 / 370.0 | embedded |" in table
     assert backend.sessions == {}  # the script deletes its session
 
 
@@ -269,3 +280,33 @@ def test_results_replace_only_the_measured_section(tmp_path, pdf):
     assert text.startswith("# Title\n\nkept above\n\n") and text.endswith("\n\nkept below\n")
     assert "STALE RESULTS" not in text and text.count(DOC_START) == 1
     assert "Verdict: **GO**" in text and "`abc1234`" in text and "`ADS_MAX_PAGES` = 250" in text
+
+
+# --- phase breakdown ---
+
+
+def _phases(*highs):
+    names = ("spooled", "parsed", "released", "embedded", "job_end")
+    return {n: {"phase": n, "rss_mb": 1.0, "hwm_mb": h} for n, h in zip(names, highs)}
+
+
+@pytest.mark.parametrize(
+    "highs, expected",
+    [
+        ((286.0, 290.0, 290.0, 414.0, 414.0), "embedded"),
+        ((286.0, 410.0, 410.0, 410.0, 410.0), "parsed"),
+        ((370.0, 370.0, 370.0, 370.0, 370.0), "spooled"),  # peaked before the job started
+        ((286.0, 290.0, 290.0, 300.0, 330.0), "job_end"),
+    ],
+)
+def test_peak_phase_is_where_vmhwm_first_reaches_its_final_value(highs, expected):
+    assert peak_phase(_phases(*highs)) == expected
+
+
+def test_phase_table_handles_failed_and_restarted_runs():
+    failed = _ready(1, status="failed", job={"phases": [{"phase": "spooled", "rss_mb": 280.0, "hwm_mb": 286.0},
+                                                        {"phase": "job_end", "rss_mb": 281.0, "hwm_mb": 286.0}]})
+    restarted = _ready(2, status="lost", restarted=True, job=None)
+    table = phase_table([failed, restarted]).splitlines()
+    assert table[2] == "| 1 | 280.0 / 286.0 | - | - | - | 281.0 / 286.0 | spooled |"
+    assert table[3] == "| 2 | - | - | - | - | - | - |"
