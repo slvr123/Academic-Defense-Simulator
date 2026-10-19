@@ -29,5 +29,12 @@ services:
       # Caps glibc malloc arenas; part of the configuration that passed hosting spike 2.
       - key: MALLOC_ARENA_MAX
         value: "2"
-      # Limits default to backend/settings.py (20 MB, 150 pages). For the M1
-      # measurement, set ADS_MAX_UPLOAD_MB and ADS_MAX_PAGES in the dashboard.
+      # M1 measurement only. Remove before merging.
+      - key: ADS_DEBUG_MEMORY
+        value: "1"
+      # M1 measurement only. Remove before merging.
+      - key: ADS_MAX_UPLOAD_MB
+        value: "30"
+      # M1 measurement only. Remove before merging.
+      - key: ADS_MAX_PAGES
+        value: "250"

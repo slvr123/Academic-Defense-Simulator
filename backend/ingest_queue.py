@@ -44,6 +44,20 @@ class IngestResult:
     embed_s: float
 
 
+@dataclass(frozen=True)
+class JobStats:
+    """The last finished job, for GET /debug/memory. Same numbers as the `ingest` log line."""
+
+    session_id: str
+    outcome: str
+    pages: int
+    chunks: int | None
+    job_peak_rss_mb: float
+    parse_s: float | None
+    embed_s: float | None
+    total_s: float
+
+
 class QueueFullError(Exception):
     """`max_waiting` jobs are already waiting."""
 
@@ -54,6 +68,7 @@ class IngestQueue:
         self._max_waiting = max_waiting
         self._queue: asyncio.Queue[IngestJob] = asyncio.Queue()
         self._waiting: list[str] = []
+        self.last_job: JobStats | None = None
 
     def has_room(self) -> bool:
         return len(self._waiting) < self._max_waiting
@@ -117,17 +132,28 @@ class IngestQueue:
             session.progress = 1.0
             session.status = SessionStatus.READY
         outcome = "cancelled" if session.cancelled else session.status.value
+        stats = JobStats(
+            session_id=session.id,
+            outcome=outcome,
+            pages=job.page_count,
+            chunks=len(result.chunks) if result else None,
+            job_peak_rss_mb=round(peak_mb, 1),
+            parse_s=round(result.parse_s, 2) if result else None,
+            embed_s=round(result.embed_s, 2) if result else None,
+            total_s=round(time.perf_counter() - started, 2),
+        )
+        self.last_job = stats
         logger.info(
             "ingest %s session=%s pages=%d chunks=%s parse_s=%s embed_s=%s total_s=%.2f "
             "job_peak_rss=%.1fMB %s",
-            outcome,
-            session.id,
-            job.page_count,
-            len(result.chunks) if result else "-",
-            f"{result.parse_s:.2f}" if result else "-",
-            f"{result.embed_s:.2f}" if result else "-",
-            time.perf_counter() - started,
-            peak_mb,
+            stats.outcome,
+            stats.session_id,
+            stats.pages,
+            "-" if stats.chunks is None else stats.chunks,
+            "-" if stats.parse_s is None else f"{stats.parse_s:.2f}",
+            "-" if stats.embed_s is None else f"{stats.embed_s:.2f}",
+            stats.total_s,
+            stats.job_peak_rss_mb,
             memory.describe(),
         )
 

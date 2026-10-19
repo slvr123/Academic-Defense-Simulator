@@ -277,6 +277,32 @@ def test_startup_clears_leftover_uploads(client_factory, tmp_path):
 # --- dependencies ---
 
 
+# --- /debug/memory ---
+
+
+def test_debug_memory_is_404_by_default(client_factory, monkeypatch):
+    monkeypatch.delenv("ADS_DEBUG_MEMORY", raising=False)
+    with client_factory() as client:
+        assert client.get("/debug/memory").status_code == 404
+
+
+def test_debug_memory_reports_the_process_and_the_last_job(client_factory, pdf):
+    with client_factory(debug_memory=True, max_pages=250) as client:
+        first = client.get("/debug/memory").json()
+        assert first["last_job"] is None and first["max_pages"] == 250
+        assert first["pid"] > 0 and first["process_started_at"] > 0 and first["rss_mb"] > 0
+
+        session_id = upload(client, pdf).json()["session_id"]
+        state = wait_for(client, session_id, _ready)
+        after = client.get("/debug/memory").json()
+        assert (after["pid"], after["process_started_at"]) == (first["pid"], first["process_started_at"])
+        job = after["last_job"]
+        assert job["session_id"] == session_id and job["outcome"] == "ready"
+        assert job["pages"] == 3 and job["chunks"] == state["chunk_count"]
+        assert job["parse_s"] >= 0 and job["embed_s"] >= 0 and job["total_s"] >= job["embed_s"]
+        assert job["job_peak_rss_mb"] > 0
+
+
 def test_production_requirements_exclude_heavy_ml_packages():
     lines = (BACKEND_DIR / "requirements.txt").read_text().splitlines()
     names = {line.split("==")[0].strip().lower() for line in lines if line.strip() and not line.startswith("#")}

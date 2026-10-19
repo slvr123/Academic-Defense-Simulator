@@ -12,7 +12,9 @@ import asyncio
 import contextlib
 import json
 import logging
+import os
 import time
+from dataclasses import asdict
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
@@ -24,7 +26,7 @@ from backend import memory
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
-from backend.schemas import HealthResponse, PanelConfig, SessionCreated, SessionState
+from backend.schemas import DebugMemory, HealthResponse, PanelConfig, SessionCreated, SessionState
 from backend.sessions import SessionCapacityError, SessionStatus, SessionStore
 from backend.settings import Settings
 
@@ -160,6 +162,23 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
             raise HTTPException(404, NOT_FOUND_MESSAGE)
         app.state.queue.withdraw(session_id)
         return Response(status_code=204)
+
+    if settings.debug_memory:
+        # Not registered at all otherwise, so the path is a plain 404.
+        @app.get("/debug/memory", response_model=DebugMemory)
+        def debug_memory() -> DebugMemory:
+            last_job = app.state.queue.last_job
+            hwm = memory.high_water_mb()
+            return DebugMemory(
+                pid=os.getpid(),
+                process_started_at=memory.process_started_at(),
+                commit=os.environ.get("RENDER_GIT_COMMIT"),  # set by Render on every deploy
+                max_upload_mb=settings.max_upload_mb,
+                max_pages=settings.max_pages,
+                rss_mb=round(memory.rss_mb(), 1),
+                hwm_mb=None if hwm is None else round(hwm, 1),
+                last_job=asdict(last_job) if last_job else None,
+            )
 
     return app
 

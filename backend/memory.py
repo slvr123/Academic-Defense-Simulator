@@ -29,6 +29,11 @@ def high_water_mb() -> float | None:
     return peak / _MB if peak is not None else None
 
 
+def process_started_at() -> float:
+    """Epoch seconds. With the pid, tells a restarted process apart from the same one."""
+    return psutil.Process().create_time()
+
+
 def describe() -> str:
     """`rss=…MB hwm=…MB` for log lines."""
     hwm = high_water_mb()

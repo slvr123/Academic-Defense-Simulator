@@ -50,3 +50,28 @@ class SessionState(BaseModel):
     progress: float | None = None
     chunk_count: int | None = None
     error: str | None = None
+
+
+class LastJob(BaseModel):
+    session_id: str
+    outcome: str
+    pages: int
+    chunks: int | None
+    job_peak_rss_mb: float
+    parse_s: float | None
+    embed_s: float | None
+    total_s: float
+
+
+class DebugMemory(BaseModel):
+    """GET /debug/memory (ADS_DEBUG_MEMORY=1 only). pid plus start time identify
+    the process, so a client can tell whether it restarted between two reads."""
+
+    pid: int
+    process_started_at: float
+    commit: str | None
+    max_upload_mb: float
+    max_pages: int
+    rss_mb: float
+    hwm_mb: float | None
+    last_job: LastJob | None

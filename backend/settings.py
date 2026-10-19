@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     max_pages: int = Field(default=150, ge=1)
     search_top_k: int = Field(default=1, ge=1)  # v1's engine retrieves top 1
     ort_threads: int = Field(default=1, ge=1)
+    # GET /debug/memory exists only when this is on (ADS_DEBUG_MEMORY=1); M1 measurement only.
+    debug_memory: bool = False
     model_dir: Path = BACKEND_DIR / "model"
     upload_dir: Path = Path(tempfile.gettempdir()) / "ads-uploads"
 
