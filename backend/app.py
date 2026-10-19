@@ -12,6 +12,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
@@ -19,6 +20,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
 from starlette.datastructures import UploadFile
 
+from backend import memory
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
@@ -51,10 +53,17 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        _configure_logging()
+        logger.info("memory at startup %s", memory.describe())
         reset_upload_dir(settings.upload_dir)
         _import_backend_runtime()
+        logger.info("memory after runtime imports %s", memory.describe())
+        started = time.perf_counter()
         embedder = embedder_factory(settings)
         app.state.embedder = embedder
+        logger.info(
+            "memory after model load %s load_s=%.2f", memory.describe(), time.perf_counter() - started
+        )
         app.state.store = SessionStore(settings.max_live_sessions, settings.session_ttl_seconds)
         app.state.queue = IngestQueue(embedder, settings.queue_max_waiting)
         tasks = [
@@ -105,7 +114,7 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
         # submitted, the worker owns it and deletes it when the job ends.
         try:
             try:
-                await asyncio.to_thread(check_pages, pdf_path, settings.max_pages)
+                page_count = await asyncio.to_thread(check_pages, pdf_path, settings.max_pages)
             except UploadRejected as exc:
                 raise HTTPException(exc.status_code, exc.message) from exc
 
@@ -118,7 +127,9 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
             except SessionCapacityError:
                 raise HTTPException(503, BUSY_MESSAGE) from None
             try:
-                position = queue.submit(IngestJob(session=session, pdf_path=pdf_path))
+                position = queue.submit(
+                    IngestJob(session=session, pdf_path=pdf_path, page_count=page_count)
+                )
             except QueueFullError:  # unreachable after has_room() with no await; a guard
                 store.delete(session.id)
                 raise HTTPException(503, BUSY_MESSAGE) from None
@@ -162,6 +173,13 @@ def _parse_panel(raw: object) -> PanelConfig:
         return PanelConfig.model_validate_json(raw)
     except ValidationError as exc:
         raise HTTPException(422, json.loads(exc.json(include_url=False, include_context=False))) from exc
+
+
+def _configure_logging() -> None:
+    # uvicorn configures only its own loggers; give backend.* a handler too.
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.getLogger("backend").setLevel(logging.INFO)
 
 
 async def _sweep_forever(store: SessionStore, interval_seconds: float) -> None:

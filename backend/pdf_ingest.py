@@ -73,7 +73,8 @@ def check_pages(path: Path, max_pages: int) -> int:
     try:
         document = fitz.open(str(path))
     except Exception as exc:
-        logger.info("upload rejected, PyMuPDF could not open it: %s", exc)
+        # str(), not exc: a log record holding the exception would keep it alive too.
+        logger.info("upload rejected, PyMuPDF could not open it: %s", str(exc))
     if document is None:
         raise UploadRejected(422, "That file couldn't be opened as a PDF. It may be damaged.")
     try:

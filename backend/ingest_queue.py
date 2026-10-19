@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
+from backend import memory
 from backend.embedder import EMBEDDING_DIM, Embedder
 from backend.pdf_ingest import IngestFailure, parse_pdf
 from backend.sessions import ChunkMeta, Session, SessionStatus
@@ -31,12 +33,15 @@ UNEXPECTED_ERROR = "Something went wrong while processing this PDF. Try again, o
 class IngestJob:
     session: Session
     pdf_path: Path
+    page_count: int
 
 
 @dataclass(frozen=True)
 class IngestResult:
     matrix: np.ndarray
     chunks: list[ChunkMeta]
+    parse_s: float
+    embed_s: float
 
 
 class QueueFullError(Exception):
@@ -86,35 +91,54 @@ class IngestQueue:
 
     async def _process(self, job: IngestJob) -> None:
         session = job.session
+        if session.cancelled:
+            job.pdf_path.unlink(missing_ok=True)
+            return
+        session.status = SessionStatus.EMBEDDING
+        session.page_count = job.page_count
+        session.progress = 0.0
+        sampler = memory.PeakSampler().start()
+        started = time.perf_counter()
+        result: IngestResult | None = None
         try:
-            if session.cancelled:
-                return
-            session.status = SessionStatus.EMBEDDING
-            session.progress = 0.0
-            try:
-                result = await asyncio.to_thread(self._ingest, job)
-            except IngestFailure as exc:
-                self._fail(session, str(exc))
-                return
-            except Exception:
-                logger.exception("ingest failed for session %s", session.id)
-                self._fail(session, UNEXPECTED_ERROR)
-                return
-            if result is None or session.cancelled:
-                return
+            result = await asyncio.to_thread(self._ingest, job)
+        except IngestFailure as exc:
+            self._fail(session, str(exc))
+        except Exception:
+            logger.exception("ingest failed for session %s", session.id)
+            self._fail(session, UNEXPECTED_ERROR)
+        finally:
+            job.pdf_path.unlink(missing_ok=True)
+            peak_mb = sampler.stop()
+
+        if result is not None and not session.cancelled:
             session.matrix = result.matrix
             session.chunks = result.chunks
             session.progress = 1.0
             session.status = SessionStatus.READY
-        finally:
-            job.pdf_path.unlink(missing_ok=True)
+        outcome = "cancelled" if session.cancelled else session.status.value
+        logger.info(
+            "ingest %s session=%s pages=%d chunks=%s parse_s=%s embed_s=%s total_s=%.2f "
+            "job_peak_rss=%.1fMB %s",
+            outcome,
+            session.id,
+            job.page_count,
+            len(result.chunks) if result else "-",
+            f"{result.parse_s:.2f}" if result else "-",
+            f"{result.embed_s:.2f}" if result else "-",
+            time.perf_counter() - started,
+            peak_mb,
+            memory.describe(),
+        )
 
     def _ingest(self, job: IngestJob) -> IngestResult | None:
         """Worker thread: parse, chunk, then embed one chunk at a time. Only
         `progress` is written to the session from here; the loop thread sets
         the result and status. Returns None if the session was deleted midway."""
         session = job.session
+        started = time.perf_counter()
         page_chunks = parse_pdf(job.pdf_path)
+        parsed = time.perf_counter()
         matrix = np.empty((len(page_chunks), EMBEDDING_DIM), dtype=np.float32)
         for index, chunk in enumerate(page_chunks):
             if session.cancelled:
@@ -125,7 +149,12 @@ class IngestQueue:
             ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end)
             for i, c in enumerate(page_chunks)
         ]
-        return IngestResult(matrix=matrix, chunks=chunks)
+        return IngestResult(
+            matrix=matrix,
+            chunks=chunks,
+            parse_s=parsed - started,
+            embed_s=time.perf_counter() - parsed,
+        )
 
     @staticmethod
     def _fail(session: Session, error: str) -> None:
