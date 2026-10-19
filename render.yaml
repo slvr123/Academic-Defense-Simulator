@@ -1,0 +1,33 @@
+# Render Blueprint for the v2.0 backend only. v1 (Streamlit) does not deploy from here.
+services:
+  - type: web
+    name: ads-backend
+    runtime: python
+    plan: free
+    branch: v2/m1-backend-skeleton
+    # Repo root, not backend/: the backend imports v1's academic_defense_simulator modules.
+    buildCommand: pip install -r backend/requirements.txt && python -m backend.fetch_model
+    # Exactly one worker: each worker would hold its own model copy and its own sessions.
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      # Rebuild on backend changes and on any v1 module the backend imports or will
+      # import (rag/, engine, panel and what they pull in, including assets/ for icons).
+      paths:
+        - backend/**
+        - academic_defense_simulator/**
+        - render.yaml
+      # v1 UI files only, plus the backend's tests.
+      ignoredPaths:
+        - academic_defense_simulator/streamlit_app.py
+        - academic_defense_simulator/panel_selection_ui.py
+        - backend/tests/**
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      # Caps glibc malloc arenas; part of the configuration that passed hosting spike 2.
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      # Limits default to backend/settings.py (20 MB, 150 pages). For the M1
+      # measurement, set ADS_MAX_UPLOAD_MB and ADS_MAX_PAGES in the dashboard.
