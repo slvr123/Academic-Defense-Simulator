@@ -1,0 +1,14 @@
+# Production dependencies for the v2.0 backend. No torch, sentence-transformers or
+# chromadb: embeddings run on onnxruntime (see backend/embedder.py).
+fastapi==0.143.5
+uvicorn==0.54.0
+python-multipart==0.0.32
+pydantic==2.13.4
+pydantic-settings==2.16.0
+onnxruntime==1.31.0
+tokenizers==0.23.3
+numpy==2.4.6
+pymupdf==1.28.0
+psutil==7.2.2
+# Imported at startup for a realistic memory baseline; used from M2 (Gemini calls).
+google-genai==2.10.0

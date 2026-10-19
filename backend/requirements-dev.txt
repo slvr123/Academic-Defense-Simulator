@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1
+# Parity test only (backend/tests/test_embedder_parity.py). Pulls in torch; on a
+# CPU-only machine install with --extra-index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==5.6.0
