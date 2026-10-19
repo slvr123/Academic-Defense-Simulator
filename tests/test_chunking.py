@@ -2,11 +2,27 @@
 
 Exercises the pure packer `_pack` directly with synthetic paragraph lists — no PDF, no
 `fitz`. `chunk_pdf` only splits page text into paragraphs and delegates here.
+The v2.0 M1 tests at the end do open PDFs: page ranges and the insufficient-text error.
 """
 
 from __future__ import annotations
 
-from academic_defense_simulator.rag.chunking import OVERLAP_CHARS, TARGET_CHARS, _pack, _paragraphs_from_page_text
+import json
+from pathlib import Path
+
+import fitz  # PyMuPDF
+import pytest
+
+from academic_defense_simulator.rag.chunking import (
+    OVERLAP_CHARS,
+    TARGET_CHARS,
+    DocumentIngestionError,
+    InsufficientTextError,
+    _pack,
+    _paragraphs_from_page_text,
+    chunk_pdf,
+    chunk_pdf_with_pages,
+)
 
 
 def _paras(count, size):
@@ -116,3 +132,51 @@ def test_real_page_number_in_running_prose_is_untouched():
     assert _paragraphs_from_page_text(page_text) == [
         "The evaluation involved 20 respondents drawn from three departments."
     ]
+
+
+# --- v2.0 M1: page ranges and the insufficient-text subclass ---
+
+SAMPLE_DIR = Path(__file__).resolve().parent.parent / "academic_defense_simulator" / "sample"
+
+
+def test_page_chunks_match_the_committed_sample_chunks():
+    # The sidecar's chunks.json was written by chunk_pdf, so this pins that adding page
+    # tracking left the chunk text byte-for-byte unchanged.
+    committed = json.loads((SAMPLE_DIR / "chunks.json").read_text(encoding="utf-8"))
+    page_chunks = chunk_pdf_with_pages(SAMPLE_DIR / "sample-capstone-anicheck.pdf")
+    assert [c.text for c in page_chunks] == committed
+    assert chunk_pdf(SAMPLE_DIR / "sample-capstone-anicheck.pdf") == committed
+
+
+def test_page_ranges_are_ordered_and_within_the_document():
+    page_chunks = chunk_pdf_with_pages(SAMPLE_DIR / "sample-capstone-anicheck.pdf")
+    assert page_chunks[0].page_start == 0
+    assert page_chunks[-1].page_end == 15  # 16-page sample, 0-based
+    for chunk in page_chunks:
+        assert 0 <= chunk.page_start <= chunk.page_end <= 15
+    starts = [c.page_start for c in page_chunks]
+    assert starts == sorted(starts)
+
+
+def test_page_range_comes_from_page_indices_not_text(tmp_path):
+    # Two pages whose text contains a misleading number; the range must be 0..1 anyway.
+    document = fitz.open()
+    for body in ("Page 42 of a report. " * 20, "Chapter 7 continues here. " * 20):
+        document.new_page().insert_textbox(fitz.Rect(36, 36, 576, 756), body)
+    path = tmp_path / "two_pages.pdf"
+    document.save(path)
+
+    [chunk] = chunk_pdf_with_pages(path)
+    assert (chunk.page_start, chunk.page_end) == (0, 1)
+
+
+def test_blank_pdf_raises_insufficient_text_error_a_document_ingestion_error(tmp_path):
+    document = fitz.open()
+    document.new_page()
+    path = tmp_path / "blank.pdf"
+    document.save(path)
+
+    with pytest.raises(InsufficientTextError) as caught:
+        chunk_pdf_with_pages(path)
+    assert isinstance(caught.value, DocumentIngestionError)
+    assert caught.value.total_chars == 0

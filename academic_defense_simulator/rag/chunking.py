@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 # Public (v1.0.1 Decision 3): the sample sidecar's staleness guard asserts its
@@ -28,6 +29,26 @@ class DocumentIngestionError(Exception):
     extractable text. Bad input, not a transient fault — no retry."""
 
 
+class InsufficientTextError(DocumentIngestionError):
+    """The document opened but yielded too little text — blank, scanned-image-only,
+    or corrupted. A subclass so v1 callers catching the base class are unaffected,
+    while the v2 backend can tell "looks scanned" apart from "not a readable PDF"."""
+
+    def __init__(self, message: str, total_chars: int) -> None:
+        super().__init__(message)
+        self.total_chars = total_chars
+
+
+@dataclass(frozen=True)
+class PageChunk:
+    """One chunk plus the 0-based PyMuPDF page indices its first and last
+    paragraphs came from (v2.0 M1). Never parsed from the text itself."""
+
+    text: str
+    page_start: int
+    page_end: int
+
+
 def _paragraphs_from_page_text(text: str) -> list[str]:
     """Split one page's raw extracted text into paragraphs, dropping page-number-footer
     artifacts (Miss 3 / Decision 8). `re.split` on a whitespace-tolerant blank-line
@@ -44,6 +65,12 @@ def _paragraphs_from_page_text(text: str) -> list[str]:
 
 
 def chunk_pdf(path: str | Path) -> list[str]:
+    return [chunk.text for chunk in chunk_pdf_with_pages(path)]
+
+
+def chunk_pdf_with_pages(path: str | Path) -> list[PageChunk]:
+    """`chunk_pdf` plus each chunk's page range. Same paragraphs, same packing:
+    `chunk_pdf` is this with the page indices dropped, so the two can't drift."""
     try:
         import fitz  # PyMuPDF
     except ImportError as exc:
@@ -52,11 +79,14 @@ def chunk_pdf(path: str | Path) -> list[str]:
     try:
         document = fitz.open(str(path))
         paragraphs: list[str] = []
+        paragraph_pages: list[int] = []
         total_chars = 0
-        for page in document:
+        for page_index, page in enumerate(document):
             text = page.get_text("text")
             total_chars += len(text)
-            paragraphs.extend(_paragraphs_from_page_text(text))
+            page_paragraphs = _paragraphs_from_page_text(text)
+            paragraphs.extend(page_paragraphs)
+            paragraph_pages.extend([page_index] * len(page_paragraphs))
     except Exception as exc:
         # Deliberately not interpolating `exc` into the message: PyMuPDF's own exception
         # text embeds the filesystem path it was given (e.g. a temp path on the server),
@@ -67,38 +97,53 @@ def chunk_pdf(path: str | Path) -> list[str]:
         ) from exc
 
     if total_chars < _MIN_EXTRACTED_CHARS:
-        raise DocumentIngestionError(
+        raise InsufficientTextError(
             f"The uploaded document yielded only {total_chars} characters of extractable "
             f"text (minimum {_MIN_EXTRACTED_CHARS}) — it may be blank, scanned-image-only, "
-            "or corrupted."
+            "or corrupted.",
+            total_chars=total_chars,
         )
 
-    return _pack(paragraphs)
+    return [
+        PageChunk(
+            text="\n\n".join(paragraphs[start:end]),
+            page_start=paragraph_pages[start],
+            page_end=paragraph_pages[end - 1],
+        )
+        for start, end in _pack_spans([len(p) for p in paragraphs])
+    ]
 
 
 def _pack(paragraphs: list[str]) -> list[str]:
-    chunks: list[str] = []
-    current: list[str] = []
+    return [
+        "\n\n".join(paragraphs[start:end])
+        for start, end in _pack_spans([len(p) for p in paragraphs])
+    ]
+
+
+def _pack_spans(lengths: list[int]) -> list[tuple[int, int]]:
+    """Greedy packing over paragraph lengths, returned as half-open index spans
+    into the paragraph list. Spans overlap when tail paragraphs carry back."""
+    spans: list[tuple[int, int]] = []
+    start = 0
     current_len = 0
 
-    for para in paragraphs:
-        para_len = len(para)
-        if current and current_len + para_len > TARGET_CHARS:
-            chunks.append("\n\n".join(current))
+    for index, para_len in enumerate(lengths):
+        if index > start and current_len + para_len > TARGET_CHARS:
+            spans.append((start, index))
             # carry back overlap paragraphs from the tail
-            overlap: list[str] = []
+            new_start = index
             overlap_len = 0
-            for p in reversed(current):
-                if overlap_len + len(p) > OVERLAP_CHARS:
+            for tail in range(index - 1, start - 1, -1):
+                if overlap_len + lengths[tail] > OVERLAP_CHARS:
                     break
-                overlap.insert(0, p)
-                overlap_len += len(p)
-            current = overlap
+                new_start = tail
+                overlap_len += lengths[tail]
+            start = new_start
             current_len = overlap_len
-        current.append(para)
         current_len += para_len
 
-    if current:
-        chunks.append("\n\n".join(current))
+    if start < len(lengths):
+        spans.append((start, len(lengths)))
 
-    return chunks
+    return spans
