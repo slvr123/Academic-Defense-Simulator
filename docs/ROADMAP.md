@@ -14,7 +14,12 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ## Active work - v2.0 M1 backend skeleton (2026-10-19)
 
-Brief: [`briefs/v2.0-m1-backend-skeleton-brief.md`](briefs/v2.0-m1-backend-skeleton-brief.md), on `v2/m1-backend-skeleton`.
+Closed 2026-10-19: GO, merged into `main`.
+Round 1 on Render free was NO-GO (VmHWM 414.2 MB against the 400 MB gate); round 2, after releasing memory between parse and embed, passed every gate with a worst VmHWM of 346.6 MB.
+Production upload limits are 30 MB and 250 pages.
+Before M2 serves more than one user, I need to measure an upload arriving while another document is embedding; I estimate about 385 MB, which is untested and close to the gate (see the results doc's caveats).
+
+Brief: [`briefs/v2.0-m1-backend-skeleton-brief.md`](briefs/v2.0-m1-backend-skeleton-brief.md), built on `v2/m1-backend-skeleton`.
 M1 builds the FastAPI backend skeleton (upload, single-worker embedding queue, in-memory sessions, memory measurement) for a go/no-go on Render free with the largest PDF; results go in [`v2.0-m1-memory-results.md`](v2.0-m1-memory-results.md).
 It starts ahead of the v1.3b-c sequence and the FastAPI decision gate below, on the strength of the [hosting spike](v2.0-hosting-spike-results.md) (GO with ONNX at batch size 1, pending its OOM-event and cold-start checks).
 The brief is the more recent document, so it wins where the order below disagrees.

@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from academic_defense_simulator.rag.chunking import chunk_pdf_with_pages
+from backend.settings import Settings
 from backend.tests.conftest import make_pdf, upload, wait_for
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -326,3 +327,11 @@ def test_production_requirements_exclude_heavy_ml_packages():
     lines = (BACKEND_DIR / "requirements.txt").read_text().splitlines()
     names = {line.split("==")[0].strip().lower() for line in lines if line.strip() and not line.startswith("#")}
     assert not names & {"torch", "sentence-transformers", "chromadb", "transformers"}
+
+
+def test_production_defaults_need_no_env_vars(monkeypatch):
+    for name in ("ADS_MAX_UPLOAD_MB", "ADS_MAX_PAGES", "ADS_DEBUG_MEMORY"):
+        monkeypatch.delenv(name, raising=False)
+    settings = Settings()
+    assert (settings.max_upload_mb, settings.max_pages) == (30, 250)  # M1 measurement, approved 2026-10-19
+    assert settings.debug_memory is False

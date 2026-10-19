@@ -4,7 +4,7 @@ services:
     name: ads-backend
     runtime: python
     plan: free
-    branch: v2/m1-backend-skeleton
+    branch: main
     # Repo root, not backend/: the backend imports v1's academic_defense_simulator modules.
     buildCommand: pip install -r backend/requirements.txt && python -m backend.fetch_model
     # Exactly one worker: each worker would hold its own model copy and its own sessions.
@@ -29,12 +29,4 @@ services:
       # Caps glibc malloc arenas; part of the configuration that passed hosting spike 2.
       - key: MALLOC_ARENA_MAX
         value: "2"
-      # M1 measurement only. Remove before merging.
-      - key: ADS_DEBUG_MEMORY
-        value: "1"
-      # M1 measurement only. Remove before merging.
-      - key: ADS_MAX_UPLOAD_MB
-        value: "30"
-      # M1 measurement only. Remove before merging.
-      - key: ADS_MAX_PAGES
-        value: "250"
+      # Upload limits (30 MB, 250 pages) are defaults in backend/settings.py, not set here.
