@@ -15,6 +15,7 @@ the score from that chunk's first retrieval.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -47,9 +48,18 @@ class RecordingEncoder:
         return query
 
 
+def chunk_copy_bytes(chunks: list[Chunk]) -> int:
+    """What engine_chunks adds per defense: the Chunk objects, their embedding lists
+    and the float objects in them. Texts aren't counted; they're the ChunkMeta's own
+    strings, shared rather than copied."""
+    return sum(
+        sys.getsizeof(c) + sys.getsizeof(c.embedding) + sum(sys.getsizeof(x) for x in c.embedding) for c in chunks
+    ) + sys.getsizeof(chunks)
+
+
 def engine_chunks(matrix: np.ndarray, chunks: list[ChunkMeta]) -> list[Chunk]:
     """v1 Chunks in matrix row order, so the engine's chunk_index is the row.
-    Built once per defense: about 1 MB for a 92-chunk document."""
+    Built once per defense; chunk_copy_bytes says what it costs."""
     if len(chunks) != matrix.shape[0]:
         raise ValueError(f"{len(chunks)} chunks for a matrix of {matrix.shape[0]} rows")
     return [Chunk(text=c.text, embedding=row.tolist()) for c, row in zip(chunks, matrix)]

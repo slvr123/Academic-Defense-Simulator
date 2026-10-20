@@ -35,7 +35,7 @@ from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
-from backend.engine_adapter import RecordingEncoder, SourceTracker, engine_chunks
+from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.schemas import Evaluation, PanelistOut, PanelConfig, QuestionOut, Source
 from backend.sessions import Session
 
@@ -92,13 +92,15 @@ def setup_defense(
         topic = topic or extracted.topic.strip() or PurePath(session.filename).stem
     profile = config.to_profile(domain=domain, topic=topic, document_id=session.id)
     panel, fallback_used = generate_panel(profile, compose_full_roster(profile), providers.defense)
+    chunks = engine_chunks(session.matrix, session.chunks)
     logger.info(
-        "defense setup session=%s panel=%s persona_fallback=%s calls=%d",
-        session.id, [p.archetype_key for p in panel], fallback_used, calls.total,
+        "defense setup session=%s panel=%s persona_fallback=%s calls=%d chunks=%d chunk_copy_mb=%.2f",
+        session.id, [p.archetype_key for p in panel], fallback_used, calls.total, len(chunks),
+        chunk_copy_bytes(chunks) / 2**20,
     )
     return Defense(
         session=DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start),
-        chunks=engine_chunks(session.matrix, session.chunks),
+        chunks=chunks,
         encoder=RecordingEncoder(embedder),
         tracker=SourceTracker(session.matrix, session.chunks),
         providers=providers,

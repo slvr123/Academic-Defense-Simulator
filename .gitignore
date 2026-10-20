@@ -55,3 +55,6 @@ e2e_driver.py
 # Raw Gemini 429 bodies from scripts/capture_429.py (M2): local evidence for the
 # 429 classifier, may carry project ids
 captures/
+
+# Transcripts written by scripts/e2e_defense.py
+e2e-defense-*.json
