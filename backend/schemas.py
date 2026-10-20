@@ -223,3 +223,12 @@ class DebugMemory(BaseModel):
     rss_mb: float
     hwm_mb: float | None
     last_job: LastJob | None
+
+
+class DebugClient(BaseModel):
+    """GET /debug/client (ADS_DEBUG_CLIENT=1 only): how the per-IP limit sees a request."""
+
+    peer: str | None  # the TCP peer; on Render, its proxy
+    x_forwarded_for: list[str]  # every entry, left to right
+    trusted_proxy_hops: int
+    resolved_ip: str  # what the per-IP limit counts

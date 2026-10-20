@@ -16,10 +16,11 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
+from backend.client_ip import StartLimiter, client_ip
 from backend.defense import (
     Defense,
     Providers,
@@ -47,6 +48,11 @@ REPORT_NOT_READY_MESSAGE = "The report is ready once the last answer is scored."
 TURN_IN_PROGRESS_MESSAGE = "The panel is still working on this session's last request. Wait for it to finish."
 PANEL_ERROR_MESSAGE = "The panel hit a problem with that turn. Nothing was recorded; send the same request again."
 QUOTA_DOWN_MESSAGE = "The demo's usage counter can't be reached right now, so no defense can start. Try again shortly."
+
+
+def per_ip_message(limit: int) -> str:
+    plural = "s" if limit != 1 else ""
+    return f"This network has already started {limit} demo defense{plural} today. More open at midnight Pacific time."
 
 Clock = Callable[[], datetime]
 
@@ -94,7 +100,7 @@ def register_defense_routes(
     quota_plan: QuotaPlan,
     clock: Clock,
     not_found: Callable[[], HTTPException],
-    quota_used_up: Callable[[datetime], HTTPException],
+    quota_used_up: Callable[..., HTTPException],
 ) -> None:
     def ready_session(session_id: str) -> Session:
         store: SessionStore = app.state.store
@@ -107,19 +113,29 @@ def register_defense_routes(
             raise HTTPException(409, NOT_READY_MESSAGE)
         return session
 
-    def reserve_quota() -> None:
+    limiter = StartLimiter(settings.per_ip_daily_starts)
+
+    def reserve_quota(ip: str) -> None:
+        """The per-IP limit first, then today's slot. A start the quota refuses
+        doesn't count against the IP."""
         now = clock()
+        day = pacific_day(now)
+        if not limiter.take(day, ip):
+            logger.info("per-ip limit reached ip=%s", ip)
+            raise quota_used_up(now, per_ip_message(settings.per_ip_daily_starts))
         try:
-            reserved = app.state.quota.reserve(pacific_day(now), quota_plan.cap)
+            reserved = app.state.quota.reserve(day, quota_plan.cap)
         except QuotaUnavailable as exc:
+            limiter.give_back(day, ip)
             logger.warning("defense start refused, quota store unreachable: %s", exc)
             raise HTTPException(503, QUOTA_DOWN_MESSAGE) from exc
         if reserved is None:
+            limiter.give_back(day, ip)
             raise quota_used_up(now)
-        logger.info("quota reserved %d/%d for %s", reserved, quota_plan.cap, pacific_day(now))
+        logger.info("quota reserved %d/%d for %s", reserved, quota_plan.cap, day)
 
     @app.post("/sessions/{session_id}/start", response_model=StartResponse)
-    def start_defense(session_id: str) -> StartResponse:
+    def start_defense(session_id: str, request: Request) -> StartResponse:
         session = ready_session(session_id)
         with _turn(session):
             defense = session.defense
@@ -133,7 +149,7 @@ def register_defense_routes(
                         f"This document has {len(session.chunks)} passage(s), too few for {domain_count} "
                         "panelists to each open a topic. Choose fewer panelists or upload a longer document.",
                     )
-                reserve_quota()
+                reserve_quota(client_ip(request, settings.trusted_proxy_hops))
                 calls = CallCounter()
                 defense = setup_defense(
                     session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model

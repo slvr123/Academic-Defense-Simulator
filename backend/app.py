@@ -25,6 +25,7 @@ from starlette.datastructures import UploadFile
 
 from backend import memory
 from backend.defense import ProvidersFactory
+from backend.client_ip import client_ip, forwarded_for
 from backend.defense_routes import defense_status, gemini_providers_factory, register_defense_routes
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
@@ -39,7 +40,15 @@ from backend.quota import (
     resets_at,
     warm_up,
 )
-from backend.schemas import DebugMemory, HealthResponse, PanelConfig, QuotaStatus, SessionCreated, SessionState
+from backend.schemas import (
+    DebugClient,
+    DebugMemory,
+    HealthResponse,
+    PanelConfig,
+    QuotaStatus,
+    SessionCreated,
+    SessionState,
+)
 from backend.sessions import SessionCapacityError, SessionStatus, SessionStore
 from backend.settings import Settings
 
@@ -66,10 +75,10 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def quota_used_up(now: datetime) -> HTTPException:
-    """429 for a day whose defenses are used up, with Retry-After to midnight Pacific."""
+def quota_used_up(now: datetime, message: str | None = None) -> HTTPException:
+    """429 until midnight Pacific: today's defenses are used up, or `message`'s reason."""
     retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
-    return HTTPException(429, quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
+    return HTTPException(429, message or quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
 
 
 def quota_used_up_message(now: datetime) -> str:
@@ -252,6 +261,17 @@ def create_app(
         app, settings=settings, quota_plan=quota_plan, clock=clock,
         not_found=lambda: HTTPException(404, NOT_FOUND_MESSAGE), quota_used_up=quota_used_up,
     )
+
+    if settings.debug_client:
+        # For checking, once on Render, which X-Forwarded-For entry is the real client.
+        @app.get("/debug/client", response_model=DebugClient)
+        def debug_client(request: Request) -> DebugClient:
+            return DebugClient(
+                peer=request.client.host if request.client else None,
+                x_forwarded_for=forwarded_for(request),
+                trusted_proxy_hops=settings.trusted_proxy_hops,
+                resolved_ip=client_ip(request, settings.trusted_proxy_hops),
+            )
 
     if settings.debug_memory:
         # Not registered at all otherwise, so the path is a plain 404.

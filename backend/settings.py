@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     ort_threads: int = Field(default=1, ge=1)
     # GET /debug/memory exists only when this is on (ADS_DEBUG_MEMORY=1); M1 measurement only.
     debug_memory: bool = False
+    # GET /debug/client exists only when this is on (ADS_DEBUG_CLIENT=1): the X-Forwarded-For check.
+    debug_client: bool = False
+    # Defense starts per client IP per Pacific day (in memory, resets on restart).
+    per_ip_daily_starts: int = Field(default=3, ge=1)
+    # X-Forwarded-For entries appended by our own proxies; the client is this many from
+    # the right. 1 on Render. 0 ignores the header and uses the TCP peer.
+    trusted_proxy_hops: int = Field(default=1, ge=0)
     model_dir: Path = BACKEND_DIR / "model"
     upload_dir: Path = Path(tempfile.gettempdir()) / "ads-uploads"
 
