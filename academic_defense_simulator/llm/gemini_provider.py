@@ -15,6 +15,7 @@ from academic_defense_simulator.llm.provider import (
     LLMProvider,
     LLMProviderError,
     LLMQuotaExhaustedError,
+    LLMServiceUnavailableError,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -184,10 +185,20 @@ class GeminiProvider(LLMProvider):
         try:
             return call()
         except Exception as retry_exc:
-            raise LLMProviderError(
+            raise self._retry_failure(
                 f"{label} — retried once and failed again. Session aborted. "
-                f"(first: {first_exc!r}, retry: {retry_exc!r})"
+                f"(first: {first_exc!r}, retry: {retry_exc!r})",
+                retry_exc,
             ) from retry_exc
+
+    def _retry_failure(self, message: str, retry_exc: Exception) -> LLMProviderError:
+        """v2.0 M2: a retry that also got 503 UNAVAILABLE becomes the subclass the
+        backend maps to "busy"; anything else stays a plain LLMProviderError."""
+        from google.genai import errors as genai_errors
+
+        if isinstance(retry_exc, genai_errors.APIError) and retry_exc.code == 503:
+            return LLMServiceUnavailableError(message, model=self._model)
+        return LLMProviderError(message)
 
     def generate_text(self, prompt: str) -> str:
         """Plain-text call (v0.3c report narrative — Decision 3/4). Same retry-once
@@ -228,8 +239,9 @@ class GeminiProvider(LLMProvider):
         try:
             return call()
         except Exception as retry_exc:
-            raise LLMProviderError(
-                f"{label} — retried once and failed again. (first: {first_exc!r}, retry: {retry_exc!r})"
+            raise self._retry_failure(
+                f"{label} — retried once and failed again. (first: {first_exc!r}, retry: {retry_exc!r})",
+                retry_exc,
             ) from retry_exc
 
 

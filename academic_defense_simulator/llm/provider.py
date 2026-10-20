@@ -27,6 +27,15 @@ class LLMQuotaExhaustedError(LLMProviderError):
         self.model = model
 
 
+class LLMServiceUnavailableError(LLMProviderError):
+    """Gemini answered 503 UNAVAILABLE (overloaded) on the retry as well. A subclass,
+    like LLMQuotaExhaustedError, so existing handlers still catch it."""
+
+    def __init__(self, message: str, *, model: str) -> None:
+        super().__init__(message)
+        self.model = model
+
+
 @dataclass
 class CallCounter:
     """Per-session LLM call tally (v0.3h Brief). Provider-agnostic, no streamlit
