@@ -12,6 +12,15 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M2 defense API and daily quota guard (2026-10-20)
+
+Built on `v2/m2-defense-api`, not yet merged or deployed.
+M2 puts a whole defense behind the API (`POST /sessions/{id}/start`, `POST /sessions/{id}/answers`, `GET /sessions/{id}/report`, `GET /quota`), driving v1's engine unchanged, with every question carrying its source passage, pages and retrieval score.
+A daily cap of defenses, stored in Neon Postgres, keeps the public demo inside the Gemini free tier: 11 a day with the default models, set by the defense model's 500 requests a day at 40 worst-case calls per defense.
+Decisions, including the two places the brief is overridden: [`v2.0-m2-defense-api-decisions.md`](v2.0-m2-defense-api-decisions.md).
+Still to do before merging: one real end-to-end defense with `scripts/e2e_defense.py` (local uvicorn, a real PDF, the dev key), with its transcript, timings and memory recorded.
+Shipping then needs the Render steps (the env vars, and one live `X-Forwarded-For` check through `/debug/client`) before the per-IP limit can be relied on.
+
 ## Active work - v2.0 M1 backend skeleton (2026-10-19)
 
 Closed 2026-10-19: GO, merged into `main`.
