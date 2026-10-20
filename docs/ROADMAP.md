@@ -17,7 +17,8 @@ pre-publish rename pass; interim `dayN`-style names until then).
 Closed 2026-10-19: GO, merged into `main`.
 Round 1 on Render free was NO-GO (VmHWM 414.2 MB against the 400 MB gate); round 2, after releasing memory between parse and embed, passed every gate with a worst VmHWM of 346.6 MB.
 Production upload limits are 30 MB and 250 pages.
-Before M2 serves more than one user, I need to measure an upload arriving while another document is embedding; I estimate about 385 MB, which is untested and close to the gate (see the results doc's caveats).
+Before M2 serves more than one user, I needed to measure an upload arriving while another document is embedding, which I had estimated at about 385 MB.
+Measured 2026-10-20: GO, peak VmHWM 333.8 MB with the two overlapping, no more than a single upload (see [`v2.0-m2-concurrency-results.md`](v2.0-m2-concurrency-results.md)).
 
 Brief: [`briefs/v2.0-m1-backend-skeleton-brief.md`](briefs/v2.0-m1-backend-skeleton-brief.md), built on `v2/m1-backend-skeleton`.
 M1 builds the FastAPI backend skeleton (upload, single-worker embedding queue, in-memory sessions, memory measurement) for a go/no-go on Render free with the largest PDF; results go in [`v2.0-m1-memory-results.md`](v2.0-m1-memory-results.md).
