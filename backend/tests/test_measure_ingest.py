@@ -19,7 +19,10 @@ from scripts.measure_ingest import (
     CONCURRENT_START,
     ConcurrentRunResult,
     concurrent_markdown,
+    errored_concurrent_run,
+    errored_run,
     evaluate_concurrent,
+    main,
     measure_concurrent_run,
     DOC_END,
     DOC_START,
@@ -389,3 +392,49 @@ def test_concurrent_results_leave_the_m1_section_alone(tmp_path, pdf):
     text = doc.read_text(encoding="utf-8")
     assert "M1 ROUND 2" in text and "STALE RESULTS" not in text
     assert "Verdict: **GO**" in text and text.count(CONCURRENT_START) == 1
+
+
+# --- run-level errors (health timeout, network error) ---
+
+
+def test_errored_run_is_reported_but_not_gated():
+    errored = errored_concurrent_run(3, 16, "errored client-side, not measured: TimeoutError('/health not ready after 600s')")
+    verdict, reasons = evaluate_concurrent([_overlapped(1), _overlapped(2), errored])
+    assert verdict == "GO", reasons
+    assert reasons[0].startswith("all 2 measured runs") and "run 3: errored client-side" in reasons[1]
+    verdict, reasons = evaluate([_ready(1), _ready(2), errored_run(3, 16, "errored client-side, not measured")])
+    assert verdict == "GO" and reasons[0].startswith("all 2 measured runs")
+
+
+def test_only_errored_runs_are_inconclusive():
+    verdict, reasons = evaluate_concurrent([errored_concurrent_run(1, 0, "errored client-side, not measured")])
+    assert verdict == "INCONCLUSIVE" and reasons == ["run 1: errored client-side, not measured"]
+
+
+def test_health_timeout_mid_series_still_writes_the_doc(clock, pdf, tmp_path):
+    """The run that hit the M2 concurrency measurement: run 3's /health timed out on
+    the client side. Here run 2's does; runs 1 and 3 must still reach the doc."""
+    backend = FakeBackend(clock)
+    health_calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal health_calls
+        if request.url.path == "/health":
+            health_calls += 1
+            if health_calls == 2:  # run 2's only /health; a zero timeout gives up at once
+                return httpx.Response(502)
+        return backend.handler(request)
+
+    doc = tmp_path / "results.md"
+    doc.write_text(f"{CONCURRENT_START}\nNot measured yet.\n{CONCURRENT_END}\n", encoding="utf-8")
+    exit_code = main(
+        [str(pdf), "--base-url", "http://fake", "--concurrent", "--runs", "3", "--gap-minutes", "0",
+         "--poll-seconds", "0", "--health-timeout-seconds", "0", "--results-doc", str(doc)],
+        transport=httpx.MockTransport(handler),
+    )
+    text = doc.read_text(encoding="utf-8")
+    assert "Not measured yet." not in text
+    assert "| 1 | 0 |" in text and "| 3 | 0 |" in text  # both completed runs are in the table
+    assert "| 2 | 0 | - | - | errored / not started |" in text
+    assert "- run 2: errored client-side, not measured: TimeoutError('/health not ready after 0s')" in text
+    assert exit_code == 1  # no spin-down gap here, so INCONCLUSIVE rather than GO

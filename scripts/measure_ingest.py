@@ -18,6 +18,10 @@ section of docs/v2.0-m1-memory-results.md (between the `measured:` markers).
 document is embedding. Each run uploads the PDF, waits until it is embedding,
 uploads `--second-pdf` (default: the same PDF), and waits for both. Its results go
 to docs/v2.0-m2-concurrency-results.md (between the `concurrent:` markers).
+
+A run that stops on the client side (/health not answering within
+`--health-timeout-seconds`, a network error) is recorded as errored, listed under
+the verdict, and left out of the gates; the remaining runs still go ahead.
 """
 
 from __future__ import annotations
@@ -76,6 +80,7 @@ class RunResult:
     hwm_after_mb: float | None = None
     job: dict | None = None
     restarted: bool = False
+    errored: bool = False  # the run stopped client-side (health timeout, network error); measured nothing
     note: str = ""
     before: Identity | None = field(default=None, repr=False)
     after: Identity | None = field(default=None, repr=False)
@@ -279,6 +284,7 @@ class ConcurrentRunResult:
     first_job: dict | None = None
     second_job: dict | None = None
     restarted: bool = False
+    errored: bool = False  # the run stopped client-side (health timeout, network error); measured nothing
     note: str = ""
     before: Identity | None = field(default=None, repr=False)
     after: Identity | None = field(default=None, repr=False)
@@ -412,6 +418,50 @@ def measure_concurrent_run(
     return result
 
 
+# What can stop a run on the client side: /health never answering in time (laptop
+# asleep, network down) or a request failing outside the retry loops.
+RUN_ERRORS = (TimeoutError, httpx.HTTPError)
+
+
+def measure_runs(
+    count: int,
+    measure: Callable[[int, RunResult | ConcurrentRunResult | None], RunResult | ConcurrentRunResult],
+    errored: Callable[[int, float, str], RunResult | ConcurrentRunResult],
+    *,
+    gap_minutes: float,
+    log: Callable[[str], None] = print,
+) -> list:
+    """Run `measure(run, previous)` `count` times. A run-level error becomes an errored
+    run, built by `errored(run, waited_min, note)`, and the next run still goes ahead,
+    so the runs that did complete still reach the summary and the doc."""
+    runs: list = []
+    for run in range(1, count + 1):
+        previous = runs[-1] if runs else None
+        try:
+            result = measure(run, previous)
+        except RUN_ERRORS as exc:
+            note = f"errored client-side, not measured: {exc!r}"[:200]
+            log(f"run {run}: {note}")
+            result = errored(run, gap_minutes if previous is not None else 0.0, note)
+        runs.append(result)
+        log(json.dumps({k: v for k, v in asdict(result).items() if k not in ("before", "after")}))
+    return runs
+
+
+def errored_run(run: int, waited_min: float, note: str) -> RunResult:
+    return RunResult(run=run, waited_min=waited_min, status="errored", errored=True, note=note)
+
+
+def errored_concurrent_run(run: int, waited_min: float, note: str) -> ConcurrentRunResult:
+    return ConcurrentRunResult(run=run, waited_min=waited_min, first_status="errored", errored=True, note=note)
+
+
+def _split_errored(runs: list) -> tuple[list, list[str]]:
+    """(runs that measured something, a reason line per errored run). Errored runs
+    stopped on my side, so they say nothing about the service and aren't gated."""
+    return [r for r in runs if not r.errored], [f"run {r.run}: {r.note}" for r in runs if r.errored]
+
+
 def _cold_start_findings(runs: list) -> tuple[list[str], list[str], list]:
     """(failures, gaps, runs that followed a gap), shared by both modes' gates."""
     failures: list[str] = []
@@ -430,6 +480,9 @@ def _cold_start_findings(runs: list) -> tuple[list[str], list[str], list]:
 def evaluate_concurrent(runs: list[ConcurrentRunResult]) -> tuple[str, list[str]]:
     """M1's 400 MB VmHWM gate, on a process that received the second upload while
     embedding the first. INCONCLUSIVE when a run didn't actually overlap the two."""
+    runs, errored = _split_errored(runs)
+    if not runs:
+        return "INCONCLUSIVE", errored
     failures, gaps, _ = _cold_start_findings(runs)
     for r in runs:
         if r.restarted:
@@ -443,12 +496,13 @@ def evaluate_concurrent(runs: list[ConcurrentRunResult]) -> tuple[str, list[str]
         elif r.hwm_after_mb > MAX_HWM_MB:
             failures.append(f"run {r.run}: VmHWM {r.hwm_after_mb:.1f} MB > {MAX_HWM_MB:g} MB")
     if failures:
-        return "NO-GO", failures + gaps
+        return "NO-GO", failures + gaps + errored
     if gaps:
-        return "INCONCLUSIVE", gaps
+        return "INCONCLUSIVE", gaps + errored
     return "GO", [
-        f"all {len(runs)} runs overlapped, both uploads ready, no restart; highest VmHWM "
-        f"{max(r.hwm_after_mb for r in runs):.1f} MB (<= {MAX_HWM_MB:g})"
+        f"all {len(runs)} measured runs overlapped, both uploads ready, no restart; highest VmHWM "
+        f"{max(r.hwm_after_mb for r in runs):.1f} MB (<= {MAX_HWM_MB:g})",
+        *errored,
     ]
 
 
@@ -511,6 +565,9 @@ def concurrent_markdown(
 def evaluate(runs: list[RunResult]) -> tuple[str, list[str]]:
     """GO only if every run passes every gate. INCONCLUSIVE if the runs couldn't
     measure what the gates ask (no cold start, or the instance never spun down)."""
+    runs, errored = _split_errored(runs)
+    if not runs:
+        return "INCONCLUSIVE", errored
     failures, gaps, cold = _cold_start_findings(runs)
     for r in runs:
         if r.restarted:
@@ -528,14 +585,15 @@ def evaluate(runs: list[RunResult]) -> tuple[str, list[str]]:
                 )
 
     if failures:
-        return "NO-GO", failures + gaps
+        return "NO-GO", failures + gaps + errored
     if gaps:
-        return "INCONCLUSIVE", gaps
+        return "INCONCLUSIVE", gaps + errored
     return "GO", [
-        f"all {len(runs)} runs ready with no restart; highest VmHWM "
+        f"all {len(runs)} measured runs ready with no restart; highest VmHWM "
         f"{max(r.hwm_after_mb for r in runs):.1f} MB (<= {MAX_HWM_MB:g}), slowest upload-to-ready "
         f"{max(r.upload_to_ready_s for r in runs):.1f} s (<= {MAX_UPLOAD_TO_READY_S:g}), slowest cold start "
-        f"{max(r.cold_start_s for r in cold):.1f} s (<= {MAX_COLD_START_S:g})"
+        f"{max(r.cold_start_s for r in cold):.1f} s (<= {MAX_COLD_START_S:g})",
+        *errored,
     ]
 
 
@@ -634,7 +692,7 @@ def write_results(doc: Path, block: str, start_marker: str = DOC_START, end_mark
     doc.write_text(text[:start] + block + text[end:], encoding="utf-8")
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, transport: httpx.BaseTransport | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("pdf", type=Path)
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
@@ -645,6 +703,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--panel", default=None, help="panel JSON; omitted = defaults")
     parser.add_argument("--poll-seconds", type=float, default=0.5)
     parser.add_argument("--timeout-seconds", type=float, default=1800, help="per upload")
+    parser.add_argument("--health-timeout-seconds", type=float, default=600, help="per run, for /health")
     parser.add_argument("--results-doc", type=Path, default=None, help="default depends on the mode")
     parser.add_argument("--no-doc", action="store_true", help="print only; don't touch the results doc")
     args = parser.parse_args(argv)
@@ -662,22 +721,27 @@ def main(argv: list[str] | None = None) -> int:
     mode = "concurrent " if args.concurrent else ""
     print(f"{args.runs} {mode}run(s), {args.gap_minutes:g} min apart: about {total_wait:g} min of waiting")
 
-    runs: list = []
     last_debug: dict | None = None
     # Generous per-request timeout: a cold Render instance can hold the first request a while.
-    with httpx.Client(base_url=args.base_url, timeout=httpx.Timeout(300)) as client:
-        for run in range(1, args.runs + 1):
+    with httpx.Client(base_url=args.base_url, timeout=httpx.Timeout(300), transport=transport) as client:
+
+        def measure(run: int, previous):
+            nonlocal last_debug
             common = dict(
-                gap_minutes=args.gap_minutes, previous=runs[-1] if runs else None,
-                panel=args.panel, poll_s=args.poll_seconds, timeout_s=args.timeout_seconds,
+                gap_minutes=args.gap_minutes, previous=previous, panel=args.panel, poll_s=args.poll_seconds,
+                timeout_s=args.timeout_seconds, health_timeout_s=args.health_timeout_seconds,
             )
             if args.concurrent:
                 result = measure_concurrent_run(client, run, args.pdf, second_pdf, **common)
             else:
                 result = measure_run(client, run, args.pdf, **common)
-            runs.append(result)
-            print(json.dumps({k: v for k, v in asdict(result).items() if k not in ("before", "after")}))
             last_debug = read_debug(client) or last_debug
+            return result
+
+        runs = measure_runs(
+            args.runs, measure, errored_concurrent_run if args.concurrent else errored_run,
+            gap_minutes=args.gap_minutes,
+        )
 
     finished = datetime.now(timezone.utc)
     print()
