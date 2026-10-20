@@ -12,3 +12,8 @@ pymupdf==1.28.0
 psutil==7.2.2
 # Imported at startup for a realistic memory baseline; used from M2 (Gemini calls).
 google-genai==2.10.0
+# The daily quota guard in Neon Postgres (backend/quota.py).
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+# The quota day is America/Los_Angeles; Windows has no system time zone database.
+tzdata==2026.5

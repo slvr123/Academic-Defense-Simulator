@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -50,6 +51,15 @@ class SessionState(BaseModel):
     progress: float | None = None
     chunk_count: int | None = None
     error: str | None = None
+
+
+class QuotaStatus(BaseModel):
+    """GET /quota. A day is a Pacific calendar day; `resets_at` is its closing midnight."""
+
+    used: int
+    cap: int
+    remaining: int
+    resets_at: datetime
 
 
 class PhaseMemory(BaseModel):

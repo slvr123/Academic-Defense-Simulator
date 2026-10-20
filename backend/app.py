@@ -17,6 +17,7 @@ import time
 from dataclasses import asdict
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
@@ -26,7 +27,17 @@ from backend import memory
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
-from backend.schemas import DebugMemory, HealthResponse, PanelConfig, SessionCreated, SessionState
+from backend.quota import (
+    PostgresQuotaStore,
+    QuotaStore,
+    QuotaUnavailable,
+    log_plan,
+    pacific_day,
+    plan_quota,
+    resets_at,
+    warm_up,
+)
+from backend.schemas import DebugMemory, HealthResponse, PanelConfig, QuotaStatus, SessionCreated, SessionState
 from backend.sessions import SessionCapacityError, SessionStatus, SessionStore
 from backend.settings import Settings
 
@@ -34,10 +45,31 @@ logger = logging.getLogger("backend")
 
 BUSY_MESSAGE = "The panel is busy with other documents right now. Please try again in a few minutes."
 NOT_FOUND_MESSAGE = "Session not found. It may have expired after 30 idle minutes, or been deleted."
+QUOTA_UNAVAILABLE_MESSAGE = "The demo's usage counter is waking up. Please try again in a few seconds."
 # Multipart framing and the panel field ride on top of the file itself.
 _MULTIPART_OVERHEAD_BYTES = 64 * 1024
 
 EmbedderFactory = Callable[[Settings], Embedder]
+QuotaStoreFactory = Callable[[Settings], QuotaStore]
+Clock = Callable[[], datetime]
+
+
+def _postgres_store(settings: Settings) -> QuotaStore:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not set; the daily quota guard needs Postgres")
+    return PostgresQuotaStore(settings.database_url.get_secret_value())
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def quota_used_up_message(now: datetime) -> str:
+    hours = max(1, round((resets_at(pacific_day(now)) - now).total_seconds() / 3600))
+    return (
+        "Today's demo defenses are all used up. "
+        f"They reset at midnight Pacific time, in about {hours} hour{'s' if hours != 1 else ''}."
+    )
 
 
 def _load_onnx(settings: Settings) -> Embedder:
@@ -50,13 +82,21 @@ def _import_backend_runtime() -> None:
     import google.genai  # noqa: F401
 
 
-def create_app(settings: Settings | None = None, embedder_factory: EmbedderFactory = _load_onnx) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    embedder_factory: EmbedderFactory = _load_onnx,
+    quota_store_factory: QuotaStoreFactory = _postgres_store,
+    clock: Clock = _utc_now,
+) -> FastAPI:
     settings = settings or Settings()
+    quota_plan = plan_quota(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         _configure_logging()
         logger.info("memory at startup %s", memory.describe())
+        log_plan(quota_plan)
+        app.state.quota = quota_store_factory(settings)
         reset_upload_dir(settings.upload_dir)
         _import_backend_runtime()
         logger.info("memory after runtime imports %s", memory.describe())
@@ -71,6 +111,8 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
         tasks = [
             asyncio.create_task(app.state.queue.run(), name="ingest-worker"),
             asyncio.create_task(_sweep_forever(app.state.store, settings.sweep_interval_seconds), name="ttl-sweep"),
+            # Off the startup path: a cold Neon must not hold up /health.
+            asyncio.create_task(asyncio.to_thread(warm_up, app.state.quota), name="quota-warm-up"),
         ]
         try:
             yield
@@ -80,10 +122,12 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
             for task in tasks:
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
+            app.state.quota.close()
 
     app = FastAPI(title="Academic Defense Simulator backend", lifespan=lifespan)
     app.state.embedder = None
     app.state.settings = settings
+    app.state.quota_plan = quota_plan
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -97,6 +141,7 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
         queue: IngestQueue = app.state.queue
         if not (store.has_capacity() and queue.has_room()):
             raise HTTPException(503, BUSY_MESSAGE)
+        await _refuse_if_quota_used_up()
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > settings.max_upload_bytes + _MULTIPART_OVERHEAD_BYTES:
             raise HTTPException(413, f"That PDF is larger than the {settings.max_upload_mb:g} MB limit.")
@@ -144,6 +189,31 @@ def create_app(settings: Settings | None = None, embedder_factory: EmbedderFacto
             pdf_path.unlink(missing_ok=True)
             raise
         return SessionCreated(session_id=session.id, queue_position=position)
+
+    async def _refuse_if_quota_used_up() -> None:
+        """The upload's non-reserving check: spare the user an upload and an embed
+        when no defense could start today anyway. Fails open, because an upload
+        spends no Gemini calls and starting the defense checks again."""
+        now = clock()
+        try:
+            used = await asyncio.to_thread(app.state.quota.used, pacific_day(now))
+        except QuotaUnavailable as exc:
+            logger.warning("quota check skipped for an upload, store unreachable: %s", exc)
+            return
+        if used >= quota_plan.cap:
+            retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
+            raise HTTPException(429, quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
+
+    @app.get("/quota", response_model=QuotaStatus)
+    def quota() -> QuotaStatus:
+        day = pacific_day(clock())
+        try:
+            used = app.state.quota.used(day)
+        except QuotaUnavailable as exc:
+            raise HTTPException(503, QUOTA_UNAVAILABLE_MESSAGE) from exc
+        return QuotaStatus(
+            used=used, cap=quota_plan.cap, remaining=max(0, quota_plan.cap - used), resets_at=resets_at(day)
+        )
 
     @app.get("/sessions/{session_id}", response_model=SessionState, response_model_exclude_none=True)
     def get_session(session_id: str) -> SessionState:

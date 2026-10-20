@@ -1,4 +1,5 @@
-"""Shared fixtures: synthetic PDFs, a controllable fake embedder, an app client."""
+"""Shared fixtures: synthetic PDFs, a controllable fake embedder, an in-memory
+quota store, a settable clock, an app client."""
 
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ import threading
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 import fitz  # PyMuPDF
@@ -16,6 +18,7 @@ from fastapi.testclient import TestClient
 
 from backend.app import create_app
 from backend.embedder import EMBEDDING_DIM
+from backend.quota import InMemoryQuotaStore
 from backend.settings import Settings
 
 PARAGRAPH = (
@@ -78,12 +81,42 @@ def embedder() -> Iterator[FakeEmbedder]:
     fake.release()  # never leave a worker thread blocked at teardown
 
 
+class FakeClock:
+    """A settable UTC now. Starts at noon Pacific (19:00 UTC, PDT) on 2026-10-20."""
+
+    def __init__(self) -> None:
+        self.now = datetime(2026, 10, 20, 19, 0, tzinfo=timezone.utc)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+
 @pytest.fixture
-def client_factory(tmp_path: Path, embedder: FakeEmbedder) -> Callable[..., object]:
+def quota_store() -> InMemoryQuotaStore:
+    return InMemoryQuotaStore()
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
+
+
+def make_settings(**overrides: object) -> Settings:
+    """Settings that never read backend/.env, so tests can't reach a real database."""
+    return Settings(_env_file=None, **overrides)
+
+
+@pytest.fixture
+def client_factory(
+    tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock
+) -> Callable[..., object]:
     @contextmanager
     def factory(**overrides: object) -> Iterator[TestClient]:
-        settings = Settings(upload_dir=tmp_path / "uploads", **overrides)
-        app = create_app(settings, embedder_factory=lambda _settings: embedder)
+        settings = make_settings(upload_dir=tmp_path / "uploads", **overrides)
+        app = create_app(
+            settings, embedder_factory=lambda _settings: embedder,
+            quota_store_factory=lambda _settings: quota_store, clock=clock,
+        )
         with TestClient(app) as client:
             try:
                 yield client

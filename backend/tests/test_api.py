@@ -330,8 +330,17 @@ def test_production_requirements_exclude_heavy_ml_packages():
 
 
 def test_production_defaults_need_no_env_vars(monkeypatch):
-    for name in ("ADS_MAX_UPLOAD_MB", "ADS_MAX_PAGES", "ADS_DEBUG_MEMORY"):
+    for name in (
+        "ADS_MAX_UPLOAD_MB", "ADS_MAX_PAGES", "ADS_DEBUG_MEMORY",
+        "ADS_GEMINI_MODEL", "ADS_GEMINI_SUGGESTIONS_MODEL", "ADS_GEMINI_LIMITS", "ADS_QUOTA_MARGIN",
+    ):
         monkeypatch.delenv(name, raising=False)
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert (settings.max_upload_mb, settings.max_pages) == (30, 250)  # M1 measurement, approved 2026-10-19
     assert settings.debug_memory is False
+    # The v1 model split and AI Studio's free-tier numbers, approved 2026-10-20.
+    assert (settings.gemini_model, settings.gemini_suggestions_model) == ("gemini-3.1-flash-lite", "gemini-2.5-flash")
+    assert {m: (l.rpd, l.rpm) for m, l in settings.gemini_limits.items()} == {
+        "gemini-3.1-flash-lite": (500, 15), "gemini-2.5-flash": (20, 5),
+    }
+    assert settings.quota_margin == 1
