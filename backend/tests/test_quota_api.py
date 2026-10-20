@@ -72,7 +72,7 @@ class DownStore:
         pass
 
 
-def test_store_down_upload_fails_open_and_quota_is_503(tmp_path, embedder, clock, pdf):
+def test_store_down_upload_fails_open_and_quota_is_503(tmp_path, embedder, clock, gemini, pdf):
     from fastapi.testclient import TestClient
 
     from backend.app import QUOTA_UNAVAILABLE_MESSAGE, create_app
@@ -80,7 +80,7 @@ def test_store_down_upload_fails_open_and_quota_is_503(tmp_path, embedder, clock
 
     app = create_app(
         make_settings(upload_dir=tmp_path / "uploads"), embedder_factory=lambda _s: embedder,
-        quota_store_factory=lambda _s: DownStore(), clock=clock,
+        quota_store_factory=lambda _s: DownStore(), clock=clock, providers_factory=lambda _s: gemini.providers,
     )
     with TestClient(app) as client:
         assert upload(client, pdf).status_code == 202

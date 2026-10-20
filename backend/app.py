@@ -1,4 +1,4 @@
-"""FastAPI app for the v2.0 backend (M1). Run with exactly one worker:
+"""FastAPI app for the v2.0 backend. Run with exactly one worker:
 
     uvicorn backend.app:app --host 0.0.0.0 --port $PORT --workers 1
 
@@ -24,6 +24,8 @@ from pydantic import ValidationError
 from starlette.datastructures import UploadFile
 
 from backend import memory
+from backend.defense import ProvidersFactory
+from backend.defense_routes import defense_status, gemini_providers_factory, register_defense_routes
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
@@ -64,6 +66,12 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def quota_used_up(now: datetime) -> HTTPException:
+    """429 for a day whose defenses are used up, with Retry-After to midnight Pacific."""
+    retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
+    return HTTPException(429, quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
+
+
 def quota_used_up_message(now: datetime) -> str:
     hours = max(1, round((resets_at(pacific_day(now)) - now).total_seconds() / 3600))
     return (
@@ -77,8 +85,8 @@ def _load_onnx(settings: Settings) -> Embedder:
 
 
 def _import_backend_runtime() -> None:
-    # google-genai is imported here so startup memory matches the real backend;
-    # nothing calls it until M2 (Gemini question generation and scoring).
+    # Imported at startup, not on the first defense, so the memory measured at
+    # startup already includes it.
     import google.genai  # noqa: F401
 
 
@@ -87,6 +95,7 @@ def create_app(
     embedder_factory: EmbedderFactory = _load_onnx,
     quota_store_factory: QuotaStoreFactory = _postgres_store,
     clock: Clock = _utc_now,
+    providers_factory: Callable[[Settings], ProvidersFactory] = gemini_providers_factory,
 ) -> FastAPI:
     settings = settings or Settings()
     quota_plan = plan_quota(settings)
@@ -97,6 +106,7 @@ def create_app(
         logger.info("memory at startup %s", memory.describe())
         log_plan(quota_plan)
         app.state.quota = quota_store_factory(settings)
+        app.state.providers_factory = providers_factory(settings)
         reset_upload_dir(settings.upload_dir)
         _import_backend_runtime()
         logger.info("memory after runtime imports %s", memory.describe())
@@ -201,8 +211,7 @@ def create_app(
             logger.warning("quota check skipped for an upload, store unreachable: %s", exc)
             return
         if used >= quota_plan.cap:
-            retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
-            raise HTTPException(429, quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
+            raise quota_used_up(now)
 
     @app.get("/quota", response_model=QuotaStatus)
     def quota() -> QuotaStatus:
@@ -228,6 +237,7 @@ def create_app(
             progress=session.progress,
             chunk_count=session.chunk_count,
             error=session.error,
+            defense=defense_status(session),
         )
 
     @app.delete("/sessions/{session_id}", status_code=204)
@@ -237,6 +247,11 @@ def create_app(
             raise HTTPException(404, NOT_FOUND_MESSAGE)
         app.state.queue.withdraw(session_id)
         return Response(status_code=204)
+
+    register_defense_routes(
+        app, settings=settings, quota_plan=quota_plan, clock=clock,
+        not_found=lambda: HTTPException(404, NOT_FOUND_MESSAGE), quota_used_up=quota_used_up,
+    )
 
     if settings.debug_memory:
         # Not registered at all otherwise, so the path is a plain 404.

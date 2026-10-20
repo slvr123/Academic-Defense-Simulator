@@ -9,6 +9,7 @@ from annotated_types import MaxLen
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
+from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION
 
 
@@ -93,6 +94,76 @@ class Source(BaseModel):
     origin: Literal["new_topic", "follow_up", "devils_advocate"]
 
 
+class PanelistOut(BaseModel):
+    archetype_key: str
+    name: str  # surname; the client adds "Dr."
+    title: str  # the archetype's role, e.g. "Methodology Expert"
+    icon: str
+
+
+class QuestionOut(BaseModel):
+    turn: int  # 1-based
+    panelist: PanelistOut
+    question: str
+    difficulty: int  # 1-5
+    sources: list[Source]  # top-1 retrieval, as in v1
+
+
+class StartResponse(BaseModel):
+    domain: str
+    topic: str
+    panel: list[PanelistOut]  # Devil's Advocate last
+    question: QuestionOut
+
+
+class AnswerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1, max_length=8000)
+
+    @field_validator("text")
+    @classmethod
+    def _not_blank(cls, text: str) -> str:
+        if not text.strip():
+            raise ValueError("the answer is blank")
+        return text.strip()
+
+
+class Evaluation(BaseModel):
+    """v1's AnswerScore on its own 1-5 scale; any 0-100 rescale is presentation."""
+
+    clarity: int
+    depth: int
+    grounding: int
+    total: int  # 3-15
+    difficulty_delta: int  # -1, 0 or 1, applied to the next question
+    primary_gap: str | None
+    answer_summary: str
+
+
+class AnswerResponse(BaseModel):
+    evaluation: Evaluation
+    next_question: QuestionOut | None
+    done: bool
+
+
+class TranscriptTurn(BaseModel):
+    turn: int
+    panelist: PanelistOut
+    question: str
+    difficulty: int
+    sources: list[Source]
+    answer: str
+    evaluation: Evaluation
+
+
+class ReportResponse(BaseModel):
+    domain: str
+    topic: str
+    report: DefenseReport  # v1's report: averages, per-panelist sections, pushback, narrative, suggestions
+    transcript: list[TranscriptTurn]
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     model_loaded: bool
@@ -106,6 +177,7 @@ class SessionCreated(BaseModel):
 
 class SessionState(BaseModel):
     status: Literal["queued", "embedding", "ready", "failed"]
+    defense: Literal["not_started", "in_progress", "done"] | None = None  # once ready
     queue_position: int | None = None
     progress: float | None = None
     chunk_count: int | None = None

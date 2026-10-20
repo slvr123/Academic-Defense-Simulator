@@ -38,7 +38,7 @@ def test_pdf_goes_from_queued_to_ready_with_page_ranges(client_factory, pdf):
 
         state = wait_for(client, created["session_id"], _ready)
         expected = chunk_pdf_with_pages(pdf)
-        assert state == {"status": "ready", "progress": 1.0, "chunk_count": len(expected)}
+        assert state == {"status": "ready", "progress": 1.0, "chunk_count": len(expected), "defense": "not_started"}
 
         session = client.app.state.store.get(created["session_id"])
         assert session.matrix.shape == (len(expected), 384)

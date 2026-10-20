@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     # Sessions held back from the computed daily cap, for retries after errors.
     quota_margin: int = Field(default=1, ge=0)
     database_url: SecretStr | None = Field(default=None, validation_alias="DATABASE_URL")
+    # Never logged or returned: SecretStr keeps it out of reprs, and only the provider reads it.
+    gemini_api_key: SecretStr | None = Field(default=None, validation_alias="GEMINI_API_KEY")
 
     @model_validator(mode="after")
     def _limits_cover_the_models(self) -> Settings:

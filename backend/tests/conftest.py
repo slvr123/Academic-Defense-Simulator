@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 from backend.app import create_app
 from backend.embedder import EMBEDDING_DIM
 from backend.quota import InMemoryQuotaStore
+from backend.tests.fake_gemini import FakeGemini
 from backend.settings import Settings
 
 PARAGRAPH = (
@@ -101,6 +102,11 @@ def clock() -> FakeClock:
     return FakeClock()
 
 
+@pytest.fixture
+def gemini() -> FakeGemini:
+    return FakeGemini()
+
+
 def make_settings(**overrides: object) -> Settings:
     """Settings that never read backend/.env, so tests can't reach a real database."""
     return Settings(_env_file=None, **overrides)
@@ -108,7 +114,7 @@ def make_settings(**overrides: object) -> Settings:
 
 @pytest.fixture
 def client_factory(
-    tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock
+    tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock, gemini: FakeGemini
 ) -> Callable[..., object]:
     @contextmanager
     def factory(**overrides: object) -> Iterator[TestClient]:
@@ -116,6 +122,7 @@ def client_factory(
         app = create_app(
             settings, embedder_factory=lambda _settings: embedder,
             quota_store_factory=lambda _settings: quota_store, clock=clock,
+            providers_factory=lambda _settings: gemini.providers,
         )
         with TestClient(app) as client:
             try:

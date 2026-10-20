@@ -13,15 +13,20 @@ a session past its TTL is never served between sweeps.
 
 from __future__ import annotations
 
+import threading
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from backend.schemas import PanelConfig
+
+if TYPE_CHECKING:
+    from backend.defense import Defense
 
 
 class SessionStatus(str, Enum):
@@ -58,6 +63,9 @@ class Session:
     matrix: np.ndarray | None = None  # (chunk_count, 384) float32, unit rows
     chunks: list[ChunkMeta] = field(default_factory=list)
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk
+    defense: Defense | None = None  # from POST /start
+    # One defense request at a time per session; a second one gets 409 rather than queueing.
+    turn_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
     def chunk_count(self) -> int | None:
@@ -113,6 +121,7 @@ class SessionStore:
             session.cancelled = True
             session.matrix = None
             session.chunks = []
+            session.defense = None
         return session
 
     def sweep(self) -> list[str]:
