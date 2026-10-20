@@ -4,8 +4,9 @@ defense starts.
 X-Forwarded-For is a list the client can start: anything it sends arrives first,
 and each proxy appends the address it received the connection from. Only the
 entries our own proxies appended can be trusted, so the client is the entry
-`trusted_proxy_hops` from the right (1 on Render: the address its proxy saw).
-Entries further left are whatever the client chose to send and are ignored.
+`trusted_proxy_hops` from the right (3 on Render: Cloudflare, then Render's own
+proxy, append theirs after the client's). Entries further left are whatever the
+client chose to send and are ignored.
 uvicorn runs with --no-proxy-headers so `request.client` stays the TCP peer, and
 this module is the only place the header is read.
 
@@ -17,10 +18,13 @@ in Postgres is the real guard.
 from __future__ import annotations
 
 import ipaddress
+import logging
 import threading
 from datetime import date
 
 from starlette.requests import Request
+
+logger = logging.getLogger("backend.client_ip")
 
 
 def forwarded_for(request: Request) -> list[str]:
@@ -34,7 +38,16 @@ def client_ip(request: Request, trusted_proxy_hops: int) -> str:
     is an IP address; otherwise the TCP peer. 0 hops never reads the header."""
     peer = request.client.host if request.client else "unknown"
     entries = forwarded_for(request)
-    if trusted_proxy_hops == 0 or len(entries) < trusted_proxy_hops:
+    if trusted_proxy_hops == 0 or not entries:  # no header: a local run, or proxies stopped sending it
+        return peer
+    if len(entries) < trusted_proxy_hops:
+        # Every request through the expected chain has at least this many, so the chain
+        # got shorter: every visitor would now share the peer's bucket, and a spoofed
+        # entry could land in the trusted position. ADS_TRUSTED_PROXY_HOPS needs checking.
+        logger.warning(
+            "X-Forwarded-For has %d entries, fewer than ADS_TRUSTED_PROXY_HOPS=%d; using the peer %s",
+            len(entries), trusted_proxy_hops, peer,
+        )
         return peer
     candidate = entries[-trusted_proxy_hops]
     try:

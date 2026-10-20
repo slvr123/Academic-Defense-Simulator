@@ -32,6 +32,8 @@ import httpx
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUSY_RETRIES = 3
+# /quota's 503 ("waking up") has no Retry-After: the store reconnects in seconds.
+QUOTA_RETRY_WAIT_S = 3.0
 
 
 def auto_answer(question: dict) -> str:
@@ -54,18 +56,23 @@ class Run:
         self.memory: list[dict] = []
         self.chunk_copy: dict | None = None
 
-    def call(self, method: str, path: str, **kwargs) -> tuple[httpx.Response, float]:
-        """One request, retried after Retry-After on a busy 503."""
+    def call(
+        self, method: str, path: str, *, default_wait_s: float = 60.0, **kwargs
+    ) -> tuple[httpx.Response, float]:
+        """One request, retried on a 503 after its Retry-After (or `default_wait_s`)."""
         for attempt in range(BUSY_RETRIES + 1):
             started = time.perf_counter()
             response = self.client.request(method, path, **kwargs)
             elapsed = time.perf_counter() - started
             if response.status_code != 503 or attempt == BUSY_RETRIES:
                 return response, elapsed
-            wait = float(response.headers.get("retry-after", "60"))
+            wait = float(response.headers.get("retry-after", default_wait_s))
             self.log(f"  503 {response.json().get('detail')!r}; waiting {wait:g} s")
             time.sleep(wait)
         raise AssertionError("unreachable")
+
+    def quota(self) -> dict:
+        return expect(self.call("GET", "/quota", default_wait_s=QUOTA_RETRY_WAIT_S)[0], 200, "GET /quota")
 
     def snapshot(self, label: str, session_id: str | None = None) -> None:
         """Reads /debug/memory; with `session_id`, also that defense's chunk copy."""
@@ -93,7 +100,7 @@ def run_defense(
 ) -> dict:
     run = Run(client, log)
     record: dict = {"pdf": pdf.name, "started_at": datetime.now(timezone.utc).isoformat(), "turns": []}
-    record["quota_before"] = expect(client.get("/quota"), 200, "GET /quota")
+    record["quota_before"] = run.quota()
     log(f"quota before: {record['quota_before']}")
 
     started = time.perf_counter()
@@ -145,7 +152,7 @@ def run_defense(
     report = expect(client.get(f"/sessions/{session_id}/report"), 200, "report")
     record["report"] = report
     record["total_s"] = round(time.perf_counter() - started, 2)
-    record["quota_after"] = expect(client.get("/quota"), 200, "GET /quota")
+    record["quota_after"] = run.quota()
     record["memory"] = run.memory
     record["chunk_copy"] = run.chunk_copy
     summary = report["report"]

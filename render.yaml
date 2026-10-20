@@ -9,7 +9,7 @@ services:
     buildCommand: pip install -r backend/requirements.txt && python -m backend.fetch_model
     # Exactly one worker: each worker would hold its own model copy and its own sessions.
     # --no-proxy-headers: request.client stays the TCP peer; backend/client_ip.py alone
-    # reads X-Forwarded-For, trusting only the entry Render's proxy appended.
+    # reads X-Forwarded-For, trusting only what Cloudflare and Render's proxy appended.
     startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT --workers 1 --no-proxy-headers
     healthCheckPath: /health
     autoDeploy: true

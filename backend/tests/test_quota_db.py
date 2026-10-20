@@ -10,6 +10,7 @@ search_path, because Neon's pooled endpoint (PgBouncer) drops startup options.
 from __future__ import annotations
 
 import os
+import socket
 import threading
 import uuid
 from collections.abc import Iterator
@@ -108,6 +109,39 @@ def test_two_concurrent_starts_for_the_last_slot_have_exactly_one_winner(schema,
     finally:
         for s in stores:
             s.close()
+
+
+@needs_db
+def test_a_dead_pooled_connection_is_replaced_without_an_error(schema):
+    """What Neon suspending after 5 idle minutes leaves: a pooled connection whose
+    socket is gone while the pool still thinks it's idle and fine. The socket is
+    shut down underneath libpq here; without the pool's check this read raised
+    QuotaUnavailable (the 503 the first live e2e run hit)."""
+    store = PostgresQuotaStore(_test_database_url(), schema=schema, max_size=1)
+    try:
+        store.ensure_schema()
+        with store._pool.connection() as conn:
+            dead = conn
+            sock = socket.socket(fileno=conn.pgconn.socket)
+            sock.shutdown(socket.SHUT_RDWR)
+            sock.detach()  # libpq keeps the handle; nothing tells the pool
+        assert store.used(_day(20)) == 0
+        assert store.reserve(_day(20), 1) == 1
+        with store._pool.connection() as conn:
+            assert conn is not dead  # the dead one was discarded, a new one opened
+    finally:
+        store.close()
+
+
+def test_the_pool_checks_connections_on_checkout():
+    """The fix above as configuration, checked without a database."""
+    from psycopg_pool import ConnectionPool
+
+    store = PostgresQuotaStore("postgresql://nobody@127.0.0.1:1/none", timeout_s=1.0)
+    try:
+        assert store._pool._check == ConnectionPool.check_connection
+    finally:
+        store.close()
 
 
 def test_an_unreachable_database_raises_quota_unavailable():

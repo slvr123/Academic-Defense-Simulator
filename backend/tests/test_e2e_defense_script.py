@@ -17,6 +17,27 @@ def test_the_script_runs_a_whole_defense(client_factory, tmp_path):
     assert record["memory"] == [] and record["chunk_copy"] is None  # /debug/memory is off here
 
 
+def test_the_script_retries_quota_while_the_store_wakes(client_factory, quota_store, tmp_path, monkeypatch):
+    import scripts.e2e_defense as script
+    from backend.quota import QuotaUnavailable
+
+    monkeypatch.setattr(script.time, "sleep", lambda _s: None)
+    real_used, failures = quota_store.used, iter([True, False])
+
+    def waking(day):
+        if next(failures, False):
+            raise QuotaUnavailable("server closed the connection unexpectedly")
+        return real_used(day)
+
+    quota_store.used = waking
+    lines: list[str] = []
+    with client_factory() as client:
+        record = run_defense(client, make_pdf(tmp_path / "t.pdf", pages=16), panel=None,
+                             answer_for=auto_answer, log=lines.append, poll_s=0.01)
+    assert record["quota_before"]["used"] == 0
+    assert any("waking up" in line and "waiting 3 s" in line for line in lines)
+
+
 def test_the_script_records_the_live_chunk_copy(client_factory, tmp_path):
     pdf = make_pdf(tmp_path / "thesis.pdf", pages=16)
     lines: list[str] = []

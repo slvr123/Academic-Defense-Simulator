@@ -60,9 +60,11 @@ class Settings(BaseSettings):
     debug_client: bool = False
     # Defense starts per client IP per Pacific day (in memory, resets on restart).
     per_ip_daily_starts: int = Field(default=3, ge=1)
-    # X-Forwarded-For entries appended by our own proxies; the client is this many from
-    # the right. 1 on Render. 0 ignores the header and uses the TCP peer.
-    trusted_proxy_hops: int = Field(default=1, ge=0)
+    # X-Forwarded-For entries appended by proxies in front of us; the client is this many
+    # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
+    # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as
+    # checked live on 2026-10-20 (decisions doc, item 12). 0 ignores the header.
+    trusted_proxy_hops: int = Field(default=3, ge=0)
     model_dir: Path = BACKEND_DIR / "model"
     upload_dir: Path = Path(tempfile.gettempdir()) / "ads-uploads"
 

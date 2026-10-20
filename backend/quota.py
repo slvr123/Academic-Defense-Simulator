@@ -164,8 +164,12 @@ class PostgresQuotaStore:
         self._schema_lock = threading.Lock()
         # Neon's pooled URL is PgBouncer in transaction mode, where server-side
         # prepared statements break; prepare_threshold=None turns them off.
+        # check: Neon suspends after 5 idle minutes and the pool's connections go
+        # dead without the pool knowing, so every checkout first tests the connection
+        # and, if it's dead, replaces it before handing one out.
         self._pool = ConnectionPool(
             conninfo, min_size=1, max_size=max_size, open=False, timeout=timeout_s,
+            check=ConnectionPool.check_connection,
             kwargs={"autocommit": True, "prepare_threshold": None, "connect_timeout": int(timeout_s)},
         )
         self._pool.open(wait=False)
