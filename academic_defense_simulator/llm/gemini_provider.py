@@ -10,7 +10,12 @@ from typing import Callable, Type, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from academic_defense_simulator.llm.provider import CallCounter, LLMProvider, LLMProviderError
+from academic_defense_simulator.llm.provider import (
+    CallCounter,
+    LLMProvider,
+    LLMProviderError,
+    LLMQuotaExhaustedError,
+)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -138,10 +143,11 @@ class GeminiProvider(LLMProvider):
             return call()
         except genai_errors.APIError as exc:
             if exc.code == 429:
-                raise LLMProviderError(
+                raise LLMQuotaExhaustedError(
                     "Gemini API returned 429 despite confirmed request pacing — this is "
                     "real quota exhaustion, not a pacing bug. Check quota or wait for "
-                    "reset. Session aborted, no retry."
+                    "reset. Session aborted, no retry.",
+                    model=self._model,
                 ) from exc
             return self._retry_or_fail(call, "Gemini API error", exc)
         except httpx.TimeoutException as exc:
@@ -190,9 +196,10 @@ class GeminiProvider(LLMProvider):
             return call()
         except genai_errors.APIError as exc:
             if exc.code == 429:
-                raise LLMProviderError(
+                raise LLMQuotaExhaustedError(
                     "Gemini API returned 429 despite confirmed request pacing — this is "
-                    "real quota exhaustion, not a pacing bug."
+                    "real quota exhaustion, not a pacing bug.",
+                    model=self._model,
                 ) from exc
             return self._retry_text_or_fail(call, "Gemini API error", exc)
         except httpx.TimeoutException as exc:

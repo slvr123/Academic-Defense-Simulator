@@ -519,6 +519,11 @@ def _validate_and_reorder(
     return [by_key[key] for key in archetype_keys]
 
 
+# The first persona call plus one retry; a malformed roster is a successful call, so
+# both attempts can reach the API. `call_budget` reads this.
+PERSONA_GENERATION_ATTEMPTS = 2
+
+
 def generate_panel(
     profile: DefenseProfile, archetype_keys: list[str], provider: LLMProvider
 ) -> tuple[list[Panelist], bool]:
@@ -537,7 +542,7 @@ def generate_panel(
         archetype_roster=_render_archetype_roster(archetype_keys),
     )
 
-    for attempt in (1, 2):
+    for attempt in range(1, PERSONA_GENERATION_ATTEMPTS + 1):
         try:
             generation = provider.generate_structured(prompt, PanelGeneration)
         except LLMProviderError as exc:

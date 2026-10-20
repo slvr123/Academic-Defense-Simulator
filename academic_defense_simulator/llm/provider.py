@@ -18,6 +18,15 @@ class LLMProviderError(Exception):
     a valid transcript."""
 
 
+class LLMQuotaExhaustedError(LLMProviderError):
+    """Gemini answered 429: this model's quota is used up. A subclass, so every
+    existing `except LLMProviderError` still catches it unchanged."""
+
+    def __init__(self, message: str, *, model: str) -> None:
+        super().__init__(message)
+        self.model = model
+
+
 @dataclass
 class CallCounter:
     """Per-session LLM call tally (v0.3h Brief). Provider-agnostic, no streamlit

@@ -156,3 +156,56 @@ def test_call_once_invokes_the_rpm_throttle_before_every_attempt():
         provider._call_once("prompt", PanelistQuestion)
 
     mock_throttle.assert_called_once_with("gemini-2.5-flash")
+
+
+# M2 change B: a 429 raises LLMQuotaExhaustedError, a subclass, with the model on it.
+
+
+def _provider_whose_calls_429(model):
+    from google.genai import errors as genai_errors
+
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = genai_errors.ClientError(
+        429, {"error": {"code": 429, "message": "Resource has been exhausted", "status": "RESOURCE_EXHAUSTED"}}
+    )
+    with patch("google.genai.Client", return_value=mock_client):
+        provider = GeminiProvider(api_key="k", model=model)
+    return provider, mock_client
+
+
+@pytest.mark.parametrize("call", ["structured", "text"])
+def test_429_raises_quota_exhausted_with_the_model_and_no_retry(call, monkeypatch):
+    from pydantic import BaseModel
+
+    from academic_defense_simulator.llm.provider import LLMProviderError, LLMQuotaExhaustedError
+
+    class Out(BaseModel):
+        x: int
+
+    monkeypatch.setattr(provider_module.time, "sleep", lambda s: None)
+    provider, client = _provider_whose_calls_429(f"test-model-429-{call}")
+    with pytest.raises(LLMQuotaExhaustedError) as info:
+        provider.generate_structured("p", Out) if call == "structured" else provider.generate_text("p")
+    assert info.value.model == f"test-model-429-{call}"
+    assert isinstance(info.value, LLMProviderError)
+    assert "real quota exhaustion, not a pacing bug" in str(info.value)  # v1's message, unchanged
+    assert client.models.generate_content.call_count == 1  # still no retry on a 429
+
+
+def test_existing_llmprovidererror_handlers_still_catch_a_429():
+    """v1 call sites catch LLMProviderError; the subclass must not escape them.
+    generate_panel's retry-then-fallback is one such handler."""
+    from academic_defense_simulator.llm.provider import LLMQuotaExhaustedError
+    from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType
+    from academic_defense_simulator.panel import PANEL_COMPOSITION, generate_panel
+
+    class QuotaProvider:
+        def generate_structured(self, prompt, response_model):
+            raise LLMQuotaExhaustedError("429", model="m")
+
+    keys = PANEL_COMPOSITION["thesis"][:3]
+    profile = DefenseProfile(
+        defense_type=DefenseType.THESIS, domain="d", topic="t", selected_archetypes=keys, document_id="doc"
+    )
+    panel, fallback_used = generate_panel(profile, keys, QuotaProvider())
+    assert fallback_used and len(panel) == 3

@@ -179,13 +179,20 @@ def record_scored_turn(session: DefenseSession, turn: ConversationTurn) -> bool:
     return True
 
 
+def turn_cap(panel_size: int) -> int:
+    """1 initial question + MAX_FOLLOW_UPS_PER_TOPIC follow-ups per panelist: the most
+    turns a session with `panel_size` panelists can reach. `t_max` is this for a live
+    session; `call_budget` uses it to size a session's worst case before one exists."""
+    return (1 + MAX_FOLLOW_UPS_PER_TOPIC) * panel_size
+
+
 def t_max(session: DefenseSession) -> int:
     """v0.3f Decision 6: a computed backstop, not a chosen number — 1 initial question
     + MAX_FOLLOW_UPS_PER_TOPIC(2) follow-ups per panelist, worst case. A defensive
     circuit-breaker against a bug or genuine infinite loop, not the primary
     termination condition (that's `session_is_complete`'s Decision 5 check). With
     v0.3e's uniform 4-total panel cap this is 12 for every session."""
-    return 3 * len(session.panel)
+    return turn_cap(len(session.panel))
 
 
 def session_is_complete(session: DefenseSession) -> bool:
@@ -241,6 +248,9 @@ def reconcile_actions(
 # Difficulty floor for is_grounded() enforcement escalation (v0.3 hardening, Decision 2).
 # Below this, behavior is unchanged from v0.2.5: warn-and-log only, no retry.
 GROUNDING_ENFORCEMENT_DIFFICULTY_FLOOR = 4
+# Generation calls `_generate_with_grounding_enforcement` makes at most: the first, plus
+# one retry at or above the floor. Declared for `call_budget`; tests pin it to the code.
+GROUNDING_ATTEMPTS_MAX = 2
 
 
 def _generate_with_grounding_enforcement(
