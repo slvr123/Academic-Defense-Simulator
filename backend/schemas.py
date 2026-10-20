@@ -211,6 +211,14 @@ class LastJob(BaseModel):
     phases: list[PhaseMemory]
 
 
+class ChunkCopy(BaseModel):
+    """The engine's copy of one defense's chunks (backend/engine_adapter.py)."""
+
+    session_id: str
+    chunks: int
+    mb: float
+
+
 class DebugMemory(BaseModel):
     """GET /debug/memory (ADS_DEBUG_MEMORY=1 only). pid plus start time identify
     the process, so a client can tell whether it restarted between two reads."""
@@ -223,6 +231,7 @@ class DebugMemory(BaseModel):
     rss_mb: float
     hwm_mb: float | None
     last_job: LastJob | None
+    last_chunk_copy: ChunkCopy | None = None  # the most recently started defense's
 
 
 class DebugClient(BaseModel):

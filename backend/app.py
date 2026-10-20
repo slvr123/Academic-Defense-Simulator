@@ -147,6 +147,7 @@ def create_app(
     app.state.embedder = None
     app.state.settings = settings
     app.state.quota_plan = quota_plan
+    app.state.last_chunk_copy = None  # set by /start, read by /debug/memory
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -288,6 +289,7 @@ def create_app(
                 rss_mb=round(memory.rss_mb(), 1),
                 hwm_mb=None if hwm is None else round(hwm, 1),
                 last_job=asdict(last_job) if last_job else None,
+                last_chunk_copy=app.state.last_chunk_copy,
             )
 
     return app

@@ -33,7 +33,14 @@ from backend.defense import (
 )
 from backend.llm_errors import PANEL_BUSY_MESSAGE, PANEL_BUSY_RETRY_AFTER_S, is_panel_busy
 from backend.quota import QuotaPlan, QuotaUnavailable, pacific_day
-from backend.schemas import AnswerRequest, AnswerResponse, ReportResponse, StartResponse, TranscriptTurn
+from backend.schemas import (
+    AnswerRequest,
+    AnswerResponse,
+    ChunkCopy,
+    ReportResponse,
+    StartResponse,
+    TranscriptTurn,
+)
 from backend.sessions import Session, SessionStatus, SessionStore
 from backend.settings import Settings
 
@@ -155,6 +162,9 @@ def register_defense_routes(
                     session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model
                 )
                 session.defense = defense
+                app.state.last_chunk_copy = ChunkCopy(
+                    session_id=session.id, chunks=len(defense.chunks), mb=round(defense.chunk_copy_bytes / 2**20, 3)
+                )
             # A defense whose first question failed resumes here, without a new reservation.
             try:
                 question = ask(defense)

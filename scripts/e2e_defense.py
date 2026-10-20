@@ -12,7 +12,9 @@ slots. Without --interactive, each answer is built from the question's own sourc
 passage, so the run needs no typing; with it, you type the answers.
 
 If the server has ADS_DEBUG_MEMORY=1, it also reads RSS and VmHWM before and
-after /start, before and after the last answer.
+after /start and after the last answer, and the size of this defense's chunk
+copy (the engine's per-defense copy of the document's chunks) as the server
+measured it.
 """
 
 from __future__ import annotations
@@ -50,6 +52,7 @@ class Run:
         self.client = client
         self.log = log
         self.memory: list[dict] = []
+        self.chunk_copy: dict | None = None
 
     def call(self, method: str, path: str, **kwargs) -> tuple[httpx.Response, float]:
         """One request, retried after Retry-After on a busy 503."""
@@ -64,12 +67,18 @@ class Run:
             time.sleep(wait)
         raise AssertionError("unreachable")
 
-    def snapshot(self, label: str) -> None:
+    def snapshot(self, label: str, session_id: str | None = None) -> None:
+        """Reads /debug/memory; with `session_id`, also that defense's chunk copy."""
         response = self.client.get("/debug/memory")
-        if response.status_code == 200:
-            body = response.json()
-            self.memory.append({"at": label, "rss_mb": body["rss_mb"], "hwm_mb": body["hwm_mb"]})
-            self.log(f"  memory {label}: rss {body['rss_mb']} MB, hwm {body['hwm_mb']} MB")
+        if response.status_code != 200:
+            return
+        body = response.json()
+        self.memory.append({"at": label, "rss_mb": body["rss_mb"], "hwm_mb": body["hwm_mb"]})
+        self.log(f"  memory {label}: rss {body['rss_mb']} MB, hwm {body['hwm_mb']} MB")
+        copy = body.get("last_chunk_copy")
+        if session_id is not None and copy and copy["session_id"] == session_id:
+            self.chunk_copy = copy
+            self.log(f"  chunk copy for this defense: {copy['mb']} MB for {copy['chunks']} chunks")
 
 
 def expect(response: httpx.Response, status: int, what: str) -> dict:
@@ -105,7 +114,7 @@ def run_defense(
     run.snapshot("before start")
     response, elapsed = run.call("POST", f"/sessions/{session_id}/start")
     start = expect(response, 200, "start")
-    run.snapshot("after start")
+    run.snapshot("after start", session_id)
     record.update(start_s=round(elapsed, 2), domain=start["domain"], topic=start["topic"], panel=start["panel"])
     log(f"start in {elapsed:.1f} s; domain {start['domain']!r}, topic {start['topic']!r}")
     log("panel: " + ", ".join(f"Dr. {p['name']} ({p['title']})" for p in start["panel"]))
@@ -138,6 +147,7 @@ def run_defense(
     record["total_s"] = round(time.perf_counter() - started, 2)
     record["quota_after"] = expect(client.get("/quota"), 200, "GET /quota")
     record["memory"] = run.memory
+    record["chunk_copy"] = run.chunk_copy
     summary = report["report"]
     log(
         f"\nreport: {len(report['transcript'])} turns, averages clarity {summary['overall_avg_clarity']:.2f}, "

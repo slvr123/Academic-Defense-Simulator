@@ -68,6 +68,7 @@ class Defense:
     calls: CallCounter
     model: str  # the defense model's name, which v1's engine passes to its grounding check
     other_subtype_line: str
+    chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
     pending_source: Source | None = None
     sources: list[Source] = field(default_factory=list)  # one per recorded turn
@@ -93,14 +94,16 @@ def setup_defense(
     profile = config.to_profile(domain=domain, topic=topic, document_id=session.id)
     panel, fallback_used = generate_panel(profile, compose_full_roster(profile), providers.defense)
     chunks = engine_chunks(session.matrix, session.chunks)
+    copy_bytes = chunk_copy_bytes(chunks)
     logger.info(
         "defense setup session=%s panel=%s persona_fallback=%s calls=%d chunks=%d chunk_copy_mb=%.2f",
         session.id, [p.archetype_key for p in panel], fallback_used, calls.total, len(chunks),
-        chunk_copy_bytes(chunks) / 2**20,
+        copy_bytes / 2**20,
     )
     return Defense(
         session=DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start),
         chunks=chunks,
+        chunk_copy_bytes=copy_bytes,
         encoder=RecordingEncoder(embedder),
         tracker=SourceTracker(session.matrix, session.chunks),
         providers=providers,
