@@ -38,7 +38,7 @@ from academic_defense_simulator.prompts.panelist_prompts import (
     RESPONSE_FORMAT_WITH_ACK,
     SCORING_SYSTEM_PROMPT,
 )
-from academic_defense_simulator.rag.embeddings import EmbeddingModel
+from academic_defense_simulator.rag.embeddings import TextEncoder
 from academic_defense_simulator.rag.retrieval import Chunk, retrieve
 
 logger = logging.getLogger(__name__)
@@ -359,7 +359,7 @@ def _generate_question(
     provider: LLMProvider,
     session: DefenseSession,
     chunks: list[Chunk],
-    embedding_model: EmbeddingModel,
+    embedding_model: TextEncoder,
     panelist: Panelist,
     other_subtype_line: str,
     model: str,

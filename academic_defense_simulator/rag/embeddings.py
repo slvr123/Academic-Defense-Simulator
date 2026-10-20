@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
+
+
+class TextEncoder(Protocol):
+    """What retrieval needs from an embedding model: one unit-length vector per text.
+    EmbeddingModel satisfies it; so does the v2.0 backend's ONNX encoder."""
+
+    def encode(self, texts: list[str]) -> list[list[float]]: ...
 
 
 @dataclass

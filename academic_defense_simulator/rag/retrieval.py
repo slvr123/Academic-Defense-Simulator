@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from academic_defense_simulator.rag.embeddings import EmbeddingModel
+from academic_defense_simulator.rag.embeddings import EmbeddingModel, TextEncoder
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ def retrieve(
     chunks: list[Chunk],
     top_k: int = 1,
     *,
-    embedding_model: EmbeddingModel | None = None,
+    embedding_model: TextEncoder | None = None,
     exclude_indices: frozenset[int] = frozenset(),
 ) -> list[tuple[int, Chunk]]:
     """Embed query, cosine-match against chunk embeddings (skipping any index
