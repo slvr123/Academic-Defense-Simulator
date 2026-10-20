@@ -25,12 +25,11 @@ from typing import Protocol
 from zoneinfo import ZoneInfo
 
 import psycopg
-from annotated_types import MaxLen
 from psycopg import sql
 from psycopg_pool import ConnectionPool
 
 from academic_defense_simulator.call_budget import CallRole, calls_per_model, worst_case_calls
-from academic_defense_simulator.models.defense_profile import DefenseProfile
+from backend.schemas import MAX_DOMAIN_PANELISTS
 from backend.settings import Settings
 
 logger = logging.getLogger("backend.quota")
@@ -38,11 +37,7 @@ logger = logging.getLogger("backend.quota")
 PACIFIC = ZoneInfo("America/Los_Angeles")
 LOW_CAP_WARNING = 3
 
-# v1's intake allows this many domain panelists; Devil's Advocate always joins them.
-MAX_DOMAIN_PANELISTS = next(
-    m.max_length for m in DefenseProfile.model_fields["selected_archetypes"].metadata if isinstance(m, MaxLen)
-)
-MAX_PANEL_SIZE = MAX_DOMAIN_PANELISTS + 1
+MAX_PANEL_SIZE = MAX_DOMAIN_PANELISTS + 1  # Devil's Advocate joins the domain panelists
 
 
 def pacific_day(now: datetime) -> date:

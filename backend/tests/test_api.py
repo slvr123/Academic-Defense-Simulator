@@ -126,16 +126,22 @@ def test_invalid_panel_is_422(client_factory, pdf):
             '{"archetype_keys": ["methodology_expert", "methodology_expert"]}',
             '{"unexpected": true}',
             "not json",
+            '{"archetype_keys": ["devils_advocate"]}',  # always on the panel, never chosen
+            '{"defense_type": "other"}',  # needs other_subtype
+            '{"defense_type": "capstone", "archetype_keys": ["not_a_panelist"]}',
         ):
             assert upload(client, pdf, panel=panel).status_code == 422, panel
 
 
 def test_valid_panel_is_stored(client_factory, pdf):
-    panel = {"archetype_keys": ["methodology_expert", "devils_advocate"], "starting_difficulty": 4}
+    panel = {
+        "defense_type": "capstone", "domain": "Library science", "topic": "A library system",
+        "archetype_keys": ["methodology_expert", "industry_practice_reviewer"], "starting_difficulty": 4,
+    }
     with client_factory() as client:
         session_id = upload(client, pdf, panel=json.dumps(panel)).json()["session_id"]
         stored = client.app.state.store.get(session_id).panel
-    assert stored.model_dump() == panel
+    assert stored.model_dump(mode="json") == panel | {"other_subtype": None}
 
 
 # --- failures and the worker ---

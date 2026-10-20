@@ -53,7 +53,6 @@ class Settings(BaseSettings):
     sweep_interval_seconds: float = Field(default=60, gt=0)
     max_upload_mb: float = Field(default=30, gt=0)
     max_pages: int = Field(default=250, ge=1)
-    search_top_k: int = Field(default=1, ge=1)  # v1's engine retrieves top 1
     ort_threads: int = Field(default=1, ge=1)
     # GET /debug/memory exists only when this is on (ADS_DEBUG_MEMORY=1); M1 measurement only.
     debug_memory: bool = False

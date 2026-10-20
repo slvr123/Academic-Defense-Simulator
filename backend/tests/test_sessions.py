@@ -1,11 +1,10 @@
-"""Session store (cap, TTL, delete) and top-k search, without the app or the model."""
+"""Session store (cap, TTL, delete), without the app or the model."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from backend.retrieval import search
 from backend.schemas import PanelConfig
 from backend.sessions import ChunkMeta, SessionCapacityError, SessionStatus, SessionStore
 
@@ -16,16 +15,6 @@ class FakeClock:
 
     def __call__(self) -> float:
         return self.now
-
-
-class MappedEmbedder:
-    """Returns a fixed vector per known query."""
-
-    def __init__(self, vectors: dict[str, np.ndarray]) -> None:
-        self._vectors = vectors
-
-    def encode_one(self, text: str) -> np.ndarray:
-        return self._vectors[text]
 
 
 def _store(max_live: int = 5, ttl: float = 1800) -> tuple[SessionStore, FakeClock]:
@@ -103,32 +92,3 @@ def test_delete_frees_the_session_and_flags_it_cancelled():
     assert session.cancelled and session.matrix is None
     assert store.get(session.id) is None
     assert store.delete(session.id) is None
-
-
-# --- search ---
-
-
-def test_search_returns_top_k_best_first():
-    store, _ = _store()
-    session = _ready(store, [[1, 0, 0], [0, 1, 0], [0.8, 0.6, 0], [0, 0, 1]])
-    embedder = MappedEmbedder({"q": np.array([1.0, 0.1, 0.0], dtype=np.float32)})
-
-    hits = search(session, "q", 2, embedder=embedder)
-
-    assert [h.chunk.chunk_id for h in hits] == [0, 2]
-    assert hits[0].score > hits[1].score
-    assert hits[0].score == pytest.approx(1 / np.sqrt(1.01), rel=1e-5)  # query gets normalised
-
-
-def test_search_k_larger_than_the_document_returns_everything():
-    store, _ = _store()
-    session = _ready(store, [[1, 0], [0, 1]])
-    embedder = MappedEmbedder({"q": np.array([0.0, 1.0], dtype=np.float32)})
-    assert [h.chunk.chunk_id for h in search(session, "q", 10, embedder=embedder)] == [1, 0]
-
-
-def test_search_rejects_a_session_that_is_not_ready():
-    store, _ = _store()
-    session = store.create(PanelConfig(), "q.pdf")
-    with pytest.raises(ValueError, match="not ready"):
-        search(session, "q", 1, embedder=MappedEmbedder({}))
