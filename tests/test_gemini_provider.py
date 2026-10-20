@@ -155,7 +155,44 @@ def test_call_once_invokes_the_rpm_throttle_before_every_attempt():
     with patch.object(provider_module, "_throttle_for_rpm") as mock_throttle:
         provider._call_once("prompt", PanelistQuestion)
 
-    mock_throttle.assert_called_once_with("gemini-2.5-flash")
+    mock_throttle.assert_called_once_with("gemini-2.5-flash", None)  # None: v1's _RPM_CEILING table
+
+
+# M2 change C: an optional per-provider RPM ceiling, for the backend's per-model settings.
+
+
+def test_an_explicit_ceiling_overrides_the_table(monkeypatch):
+    model = "test-model-explicit-ceiling"
+    monkeypatch.setitem(provider_module._RPM_CEILING, model, 10)
+    now = [4000.0]
+    monkeypatch.setattr(provider_module.time, "monotonic", lambda: now[0])
+    sleep_calls = []
+    monkeypatch.setattr(provider_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    for _ in range(3):
+        provider_module._throttle_for_rpm(model, 3)
+    assert sleep_calls == []
+    provider_module._throttle_for_rpm(model, 3)  # the 4th inside a minute waits, though the table says 10
+    assert len(sleep_calls) == 1
+
+
+def test_provider_passes_its_ceiling_to_the_throttle():
+    from academic_defense_simulator.models.panelist_output import PanelistQuestion
+
+    with patch("google.genai.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = MagicMock(
+            text='{"question": "q", "grounding_reference": "g", "difficulty_level": 1}'
+        )
+        mock_client_cls.return_value = mock_client
+        provider = GeminiProvider(api_key="k", model="gemini-2.5-flash", rpm_ceiling=3)
+
+    with patch.object(provider_module, "_throttle_for_rpm") as mock_throttle:
+        provider._call_once("prompt", PanelistQuestion)
+        mock_client.models.generate_content.return_value = MagicMock(text="narrative")
+        provider._call_once_text("prompt")
+
+    assert [c.args for c in mock_throttle.call_args_list] == [("gemini-2.5-flash", 3)] * 2
 
 
 # M2 change B: a 429 raises LLMQuotaExhaustedError, a subclass, with the model on it.

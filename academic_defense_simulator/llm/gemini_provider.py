@@ -59,16 +59,18 @@ _DEFAULT_RPM_CEILING = 13  # unrecognized model: stay conservative, not permissi
 _call_timestamps: dict[str, "collections.deque[float]"] = collections.defaultdict(collections.deque)
 
 
-def _throttle_for_rpm(model: str) -> None:
+def _throttle_for_rpm(model: str, ceiling: int | None = None) -> None:
     """Sleeps zero whenever the rolling 60s window still has room for this model;
     once it's genuinely full, sleeps only the exact deficit until the oldest call in
-    the window ages out, then proceeds -- never a flat unconditional delay."""
+    the window ages out, then proceeds -- never a flat unconditional delay.
+    `ceiling` overrides `_RPM_CEILING` for this call (see GeminiProvider)."""
     now = time.monotonic()
     window = _call_timestamps[model]
     while window and now - window[0] >= _RPM_WINDOW_SECONDS:
         window.popleft()
 
-    ceiling = _RPM_CEILING.get(model, _DEFAULT_RPM_CEILING)
+    if ceiling is None:
+        ceiling = _RPM_CEILING.get(model, _DEFAULT_RPM_CEILING)
     if len(window) >= ceiling:
         sleep_for = _RPM_WINDOW_SECONDS - (now - window[0])
         if sleep_for > 0:
@@ -105,6 +107,7 @@ class GeminiProvider(LLMProvider):
         *,
         call_counter: CallCounter | None = None,
         label: str = "unlabeled",
+        rpm_ceiling: int | None = None,
     ) -> None:
         from google import genai
         from google.genai import types
@@ -124,6 +127,10 @@ class GeminiProvider(LLMProvider):
         # required dependency of the provider.
         self._call_counter = call_counter
         self._label = label
+        # v2.0 M2: the backend passes a ceiling from its per-model settings. None keeps
+        # the verified _RPM_CEILING table, so every v1 construction site is unchanged.
+        # The window stays per model, shared by every provider in the process.
+        self._rpm_ceiling = rpm_ceiling
 
     def _record_call(self) -> None:
         """Called once per actual network attempt (see `_call_once`/`_call_once_text`),
@@ -160,7 +167,7 @@ class GeminiProvider(LLMProvider):
     def _call_once(self, prompt: str, response_model: Type[T]) -> T:
         from google.genai import types
 
-        _throttle_for_rpm(self._model)
+        _throttle_for_rpm(self._model, self._rpm_ceiling)
         self._record_call()
         response = self._client.models.generate_content(
             model=self._model,
@@ -208,7 +215,7 @@ class GeminiProvider(LLMProvider):
             return self._retry_text_or_fail(call, "Gemini returned an empty narrative response", exc)
 
     def _call_once_text(self, prompt: str) -> str:
-        _throttle_for_rpm(self._model)
+        _throttle_for_rpm(self._model, self._rpm_ceiling)
         self._record_call()
         response = self._client.models.generate_content(model=self._model, contents=prompt)
         text = (response.text or "").strip()
