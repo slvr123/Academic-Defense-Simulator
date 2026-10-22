@@ -37,6 +37,7 @@ from backend.schemas import (
     AnswerRequest,
     AnswerResponse,
     ChunkCopy,
+    ErrorBody,
     ReportResponse,
     StartResponse,
     TranscriptTurn,
@@ -129,7 +130,7 @@ def register_defense_routes(
         day = pacific_day(now)
         if not limiter.take(day, ip):
             logger.info("per-ip limit reached ip=%s", ip)
-            raise quota_used_up(now, per_ip_message(settings.per_ip_daily_starts))
+            raise quota_used_up(now, per_ip_message(settings.per_ip_daily_starts), "per_ip_limit")
         try:
             reserved = app.state.quota.reserve(day, quota_plan.cap)
         except QuotaUnavailable as exc:
@@ -141,7 +142,7 @@ def register_defense_routes(
             raise quota_used_up(now)
         logger.info("quota reserved %d/%d for %s", reserved, quota_plan.cap, day)
 
-    @app.post("/sessions/{session_id}/start", response_model=StartResponse)
+    @app.post("/sessions/{session_id}/start", response_model=StartResponse, responses={429: {"model": ErrorBody}})
     def start_defense(session_id: str, request: Request) -> StartResponse:
         session = ready_session(session_id)
         with _turn(session):

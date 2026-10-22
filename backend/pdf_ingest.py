@@ -19,6 +19,7 @@ from academic_defense_simulator.rag.chunking import (
     PageChunk,
     chunk_pdf_with_pages,
 )
+from backend.schemas import IngestErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -91,18 +92,23 @@ def check_pages(path: Path, max_pages: int) -> int:
 
 
 class IngestFailure(Exception):
-    """A job failed for a reason the user should see; `str()` is the readable error."""
+    """A job failed for a reason the user should see; `str()` is the readable error,
+    `code` the machine-readable one where a client branches on it."""
+
+    def __init__(self, message: str, code: IngestErrorCode | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def parse_pdf(path: Path) -> list[PageChunk]:
     try:
         chunks = chunk_pdf_with_pages(path)
     except InsufficientTextError as exc:
-        raise IngestFailure(_scanned_message(exc.total_chars)) from exc
+        raise IngestFailure(_scanned_message(exc.total_chars), code="scanned_pdf") from exc
     except DocumentIngestionError as exc:
         raise IngestFailure(str(exc)) from exc
     if not chunks:
-        raise IngestFailure(_scanned_message(0))
+        raise IngestFailure(_scanned_message(0), code="scanned_pdf")
     return chunks
 
 

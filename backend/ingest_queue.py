@@ -22,6 +22,7 @@ import numpy as np
 from backend import memory
 from backend.embedder import EMBEDDING_DIM, Embedder
 from backend.pdf_ingest import IngestFailure, parse_pdf
+from backend.schemas import IngestErrorCode
 from backend.sessions import ChunkMeta, Session, SessionStatus
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ class IngestQueue:
         try:
             result = await asyncio.to_thread(self._ingest, job, phases)
         except IngestFailure as exc:
-            self._fail(session, str(exc))
+            self._fail(session, str(exc), exc.code)
         except Exception:
             logger.exception("ingest failed for session %s", session.id)
             self._fail(session, UNEXPECTED_ERROR)
@@ -200,10 +201,11 @@ class IngestQueue:
         )
 
     @staticmethod
-    def _fail(session: Session, error: str) -> None:
+    def _fail(session: Session, error: str, code: IngestErrorCode | None = None) -> None:
         session.status = SessionStatus.FAILED
         session.progress = None
         session.error = error
+        session.error_code = code
 
 
 def _release(phase: str, session_id: str) -> memory.PhaseMemory:

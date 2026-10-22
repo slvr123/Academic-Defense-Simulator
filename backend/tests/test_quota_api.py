@@ -42,6 +42,7 @@ def test_upload_is_refused_once_the_day_is_used_up(client_factory, quota_store, 
     assert response.json()["detail"] == (
         "Today's demo defenses are all used up. They reset at midnight Pacific time, in about 12 hours."
     )
+    assert response.json()["code"] == "daily_cap"
     assert response.headers["retry-after"] == str(12 * 3600)
     assert embedder.calls == 0  # refused before any work
 

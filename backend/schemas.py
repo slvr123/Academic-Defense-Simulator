@@ -175,6 +175,11 @@ class SessionCreated(BaseModel):
     queue_position: int
 
 
+# Machine-readable reasons a client branches on; `detail` / `error` stay the readable text.
+LimitCode = Literal["per_ip_limit", "daily_cap"]
+IngestErrorCode = Literal["scanned_pdf"]
+
+
 class SessionState(BaseModel):
     status: Literal["queued", "embedding", "ready", "failed"]
     defense: Literal["not_started", "in_progress", "done"] | None = None  # once ready
@@ -182,6 +187,16 @@ class SessionState(BaseModel):
     progress: float | None = None
     chunk_count: int | None = None
     error: str | None = None
+    error_code: IngestErrorCode | None = None  # with error, when the reason has a code
+
+
+class ErrorBody(BaseModel):
+    """Every error response. `detail` is FastAPI's: readable text, or a list of
+    validation errors on a 422. `code` is set where a client needs to tell causes
+    apart without reading the text (a 429's limit)."""
+
+    detail: str | list[dict[str, object]]
+    code: LimitCode | None = None
 
 
 class QuotaStatus(BaseModel):
@@ -191,6 +206,29 @@ class QuotaStatus(BaseModel):
     cap: int
     remaining: int
     resets_at: datetime
+
+
+class ArchetypeOption(BaseModel):
+    archetype_key: str
+    title: str  # e.g. "Methodology Expert"
+    icon: str  # the icon a panelist of this archetype gets, as in PanelistOut
+
+
+class PanelRoster(BaseModel):
+    """The archetypes a panel of this type can seat, in v1's priority order; the
+    first `max_domain_panelists` are the recommended panel."""
+
+    defense_type: DefenseType
+    other_subtype: OtherSubtype | None
+    archetypes: list[ArchetypeOption]
+
+
+class PanelOptions(BaseModel):
+    """GET /panel-options: what PanelConfig's archetype_keys can hold, per defense type."""
+
+    max_domain_panelists: int
+    devils_advocate: ArchetypeOption  # always seated last, never chosen
+    rosters: list[PanelRoster]
 
 
 class PhaseMemory(BaseModel):

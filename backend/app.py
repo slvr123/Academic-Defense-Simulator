@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 from starlette.datastructures import UploadFile
 
@@ -28,7 +29,9 @@ from backend.defense import ProvidersFactory
 from backend.client_ip import client_ip, forwarded_for
 from backend.defense_routes import defense_status, gemini_providers_factory, register_defense_routes
 from backend.embedder import Embedder, OnnxEmbedder
+from backend.errors import CodedHTTPException, coded_http_exception_handler
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
+from backend.panel_options import panel_options
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
 from backend.quota import (
     PostgresQuotaStore,
@@ -43,8 +46,11 @@ from backend.quota import (
 from backend.schemas import (
     DebugClient,
     DebugMemory,
+    ErrorBody,
     HealthResponse,
+    LimitCode,
     PanelConfig,
+    PanelOptions,
     QuotaStatus,
     SessionCreated,
     SessionState,
@@ -75,10 +81,13 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def quota_used_up(now: datetime, message: str | None = None) -> HTTPException:
-    """429 until midnight Pacific: today's defenses are used up, or `message`'s reason."""
+def quota_used_up(now: datetime, message: str | None = None, code: LimitCode = "daily_cap") -> HTTPException:
+    """429 until midnight Pacific: today's defenses are used up, or `message`'s reason.
+    `code` tells the client which limit it hit without reading the message."""
     retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
-    return HTTPException(429, message or quota_used_up_message(now), headers={"Retry-After": str(retry_after)})
+    return CodedHTTPException(
+        429, message or quota_used_up_message(now), code, headers={"Retry-After": str(retry_after)}
+    )
 
 
 def quota_used_up_message(now: datetime) -> str:
@@ -144,6 +153,16 @@ def create_app(
             app.state.quota.close()
 
     app = FastAPI(title="Academic Defense Simulator backend", lifespan=lifespan)
+    app.add_exception_handler(CodedHTTPException, coded_http_exception_handler)
+    # Only the browser frontend needs this. Exactly the methods and headers it uses;
+    # Retry-After is exposed so the frontend can read it on a cross-origin 429 or 503.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+        expose_headers=["Retry-After"],
+    )
     app.state.embedder = None
     app.state.settings = settings
     app.state.quota_plan = quota_plan
@@ -153,7 +172,11 @@ def create_app(
     def health() -> HealthResponse:
         return HealthResponse(model_loaded=app.state.embedder is not None)
 
-    @app.post("/sessions", status_code=202, response_model=SessionCreated)
+    @app.get("/panel-options", response_model=PanelOptions)
+    def get_panel_options() -> PanelOptions:
+        return panel_options()
+
+    @app.post("/sessions", status_code=202, response_model=SessionCreated, responses={429: {"model": ErrorBody}})
     async def create_session(request: Request) -> SessionCreated:
         # The route reads the form itself, rather than declaring File/Form
         # parameters, so these cheap checks run before the body is received.
@@ -247,6 +270,7 @@ def create_app(
             progress=session.progress,
             chunk_count=session.chunk_count,
             error=session.error,
+            error_code=session.error_code,
             defense=defense_status(session),
         )
 

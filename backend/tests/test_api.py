@@ -153,6 +153,7 @@ def test_scanned_pdf_fails_with_a_looks_scanned_error(client_factory, tmp_path):
         session_id = upload(client, scanned).json()["session_id"]
         state = wait_for(client, session_id, lambda b: b.get("status") == "failed")
     assert "looks scanned" in state["error"]
+    assert state["error_code"] == "scanned_pdf"
     assert "chunk_count" not in state
 
 

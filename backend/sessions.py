@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from backend.schemas import PanelConfig
+from backend.schemas import IngestErrorCode, PanelConfig
 
 if TYPE_CHECKING:
     from backend.defense import Defense
@@ -60,6 +60,7 @@ class Session:
     progress: float | None = None
     page_count: int | None = None
     error: str | None = None
+    error_code: IngestErrorCode | None = None
     matrix: np.ndarray | None = None  # (chunk_count, 384) float32, unit rows
     chunks: list[ChunkMeta] = field(default_factory=list)
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk

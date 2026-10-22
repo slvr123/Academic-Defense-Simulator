@@ -229,6 +229,7 @@ def test_start_is_429_once_the_day_is_used_up(client_factory, gemini, quota_stor
             quota_store.reserve(TODAY, 11)
         response = _start(client, session_id)
     assert response.status_code == 429 and "all used up" in response.json()["detail"]
+    assert response.json()["code"] == "daily_cap"
     assert "retry-after" in response.headers
     assert sum(gemini.calls_by_role.values()) == 0  # refused before any Gemini call
 

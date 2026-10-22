@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as
     # checked live on 2026-10-20 (decisions doc, item 12). 0 ignores the header.
     trusted_proxy_hops: int = Field(default=3, ge=0)
+    # ADS_CORS_ORIGINS: comma-separated origins allowed to call the API from a browser,
+    # e.g. "https://<static site>.onrender.com,http://localhost:5173". Empty allows none.
+    cors_origins: str = ""
     model_dir: Path = BACKEND_DIR / "model"
     upload_dir: Path = Path(tempfile.gettempdir()) / "ads-uploads"
 
@@ -86,6 +89,10 @@ class Settings(BaseSettings):
         if missing:
             raise ValueError(f"ADS_GEMINI_LIMITS has no rpd/rpm for {missing}; the daily cap can't be computed")
         return self
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @property
     def max_upload_bytes(self) -> int:
