@@ -2,7 +2,7 @@
 // screen gets exactly the fields that variant carries.
 import { ConfigScreen } from './components/ConfigScreen'
 import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
-import { Card } from './components/ui'
+import { ReportScreen } from './components/ReportScreen'
 import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen } from './components/WaitScreens'
 import { seatedPanel } from './lib/panel'
 import { useFlow } from './state/useFlow'
@@ -83,7 +83,7 @@ export default function App() {
       screen = <FinishingScreen notice={phase.notice} onRetry={() => void flow.retryReport()} />
       break
     case 'report':
-      screen = <Card>The report arrives in the next slice.</Card>
+      screen = <ReportScreen result={phase.report} options={state.options} onRestart={flow.restart} />
       break
   }
 

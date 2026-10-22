@@ -1,6 +1,6 @@
 // What users see for each enum value (D22). Records over the generated unions, so the
 // build fails if the backend adds a defense type or subtype without a label here.
-import type { DefenseType, OtherSubtype, Source } from '../api/types'
+import type { DefenseType, OtherSubtype, PushbackOutcome, Source } from '../api/types'
 
 export const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
   thesis: 'Thesis',
@@ -32,4 +32,10 @@ export const SOURCE_ORIGIN_LABELS: Record<Source['origin'], string> = {
 /** Pages as a PDF viewer numbers them (1-based, as the API sends them). */
 export function pageRange(start: number, end: number): string {
   return start === end ? `Page ${start}` : `Pages ${start}-${end}`
+}
+
+export const PUSHBACK_OUTCOME_LABELS: Record<PushbackOutcome, string> = {
+  recovered: 'recovered',
+  held: 'held',
+  deteriorated: 'deteriorated',
 }

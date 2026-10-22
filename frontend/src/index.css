@@ -33,5 +33,6 @@
 }
 
 body {
-  @apply bg-paper font-sans text-ink antialiased;
+  /* wrap-anywhere: a long URL or file name in a passage wraps instead of widening the page (D8). */
+  @apply bg-paper font-sans text-ink antialiased wrap-anywhere;
 }
