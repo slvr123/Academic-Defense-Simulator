@@ -5,10 +5,10 @@ import type { PanelOptions } from '../api/types'
 import { DEFENSE_TYPE_LABELS, DEFENSE_TYPES, OTHER_SUBTYPE_LABELS, OTHER_SUBTYPES } from '../lib/labels'
 import { rosterFor, seatedKeys, toggleArchetype, withDefenseType, withSubtype } from '../lib/panel'
 import { MAX_UPLOAD_MB } from '../lib/upload'
-import type { Draft, Notice, QuotaView } from '../state/flow'
+import { type Draft, type Notice, type QuotaView, quotaUsedUp } from '../state/flow'
 import { Avatar } from './Avatar'
 import { NoticeBanner } from './NoticeBanner'
-import { QuotaLine, quotaUsedUp } from './QuotaLine'
+import { QuotaLine } from './QuotaLine'
 import { Button, Card } from './ui'
 
 const PANEL = limits.PanelConfig

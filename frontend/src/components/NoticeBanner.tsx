@@ -5,7 +5,7 @@ import { moreAt } from '../lib/manilaTime'
 import type { Notice } from '../state/flow'
 import { Button } from './ui'
 
-export function limitedText(code: LimitCode | null, resetsAt: number | null): string {
+function limitedText(code: LimitCode | null, resetsAt: number | null): string {
   const reason =
     code === 'per_ip_limit'
       ? "You've used your 3 defenses for today."

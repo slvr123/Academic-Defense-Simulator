@@ -3,10 +3,6 @@
 import { moreAt } from '../lib/manilaTime'
 import type { QuotaView } from '../state/flow'
 
-export function quotaUsedUp(quota: QuotaView): boolean {
-  return quota.kind === 'known' && quota.quota.remaining === 0
-}
-
 export function QuotaLine({ quota }: { quota: QuotaView }) {
   if (quota.kind !== 'known') return null
   const { remaining, cap, resets_at } = quota.quota

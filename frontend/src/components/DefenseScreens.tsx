@@ -13,13 +13,13 @@ import { Sources } from './Sources'
 import { Button, Card, Heading, Working } from './ui'
 
 // /start measured 30.6 s: three Gemini calls in a row. New copy about every 8 s.
-export const PREPARING_STAGES = [
+const PREPARING_STAGES = [
   'The panel is preparing. They are reading your document.',
   'The panel is preparing. Each panelist is choosing what to press you on.',
   'The panel is preparing. They are agreeing who asks first.',
   'The panel is preparing. The first question is being written.',
 ]
-export const STAGE_MS = 8000
+const STAGE_MS = 8000
 
 /** Panelists are known by archetype before /start returns; names come with the response. */
 export function PreparingScreen({ seats }: { seats: ArchetypeOption[] }) {

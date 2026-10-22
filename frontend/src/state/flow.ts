@@ -87,6 +87,11 @@ export type Action =
   | { type: 'reportFinished'; sessionId: string; result: ApiResult<ReportResponse>; now: number }
   | { type: 'restart' }
 
+/** No defenses left today, so Start is disabled (D15). */
+export function quotaUsedUp(quota: QuotaView): boolean {
+  return quota.kind === 'known' && quota.quota.remaining === 0
+}
+
 export function initialState(): State {
   return {
     serverAwake: false,
