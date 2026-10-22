@@ -8,10 +8,9 @@ current version, don't make choices that box in later versions either.
 Full plan: `academic-defense-simulator-plan.md`
 Versioned roadmap: `docs/ROADMAP.md` — standing source of truth for version
 sequencing and sub-version scope
-Current locked design decisions: `docs/v0.2-scoring-model-swap-decisions.md` (most
-recent; supersedes `docs/v0.1-foundations-decisions.md` and
-`docs/v0.2-agent-loop-decisions.md` on overlapping points — see that file's Context
-section for what's superseded)
+Current locked design decisions: `docs/v2.0-m3-frontend-decisions.md` (frontend, most
+recent) and `docs/v2.0-m2-defense-api-decisions.md` (the backend API it builds against);
+the M3 doc's Part 1 states which earlier decisions still stand
 Current build scope: `docs/briefs/` (see `docs/ROADMAP.md` for the active brief)
 
 ## Tech Stack
@@ -24,6 +23,14 @@ Current build scope: `docs/briefs/` (see `docs/ROADMAP.md` for the active brief)
 - Vector store: numpy cosine similarity, no ChromaDB — MVP scale doesn't need it
 - PDF ingestion: PyMuPDF
 - UI: Streamlit, minimal until v0.3+
+
+## Frontend commands (`frontend/`)
+Run from `frontend/`. The backend must be running for `gen:api`.
+- `npm run dev` - Vite dev server on http://localhost:5173 (reads `VITE_API_BASE_URL`)
+- `npm test` - Vitest, once (`npm run test:watch` to keep it running)
+- `npm run build` - type-check, then the production build into `frontend/dist/`
+- `npm run gen:api` - regenerate `src/api/schema.gen.ts` from the backend's `/openapi.json`
+  (`API_URL` overrides the default `http://localhost:8000`); re-run after any `backend/schemas.py` change
 
 ## Architecture Rules
 - Separate business logic from UI, RAG from LLM logic, prompt templates from Python code
