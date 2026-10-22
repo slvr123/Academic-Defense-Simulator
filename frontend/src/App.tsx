@@ -1,8 +1,10 @@
 // One screen per phase: the `switch` narrows `phase` to one variant per case, so each
 // screen gets exactly the fields that variant carries.
 import { ConfigScreen } from './components/ConfigScreen'
+import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
 import { Card } from './components/ui'
 import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen } from './components/WaitScreens'
+import { seatedPanel } from './lib/panel'
 import { useFlow } from './state/useFlow'
 
 export default function App() {
@@ -58,11 +60,30 @@ export default function App() {
       )
       break
     case 'preparing':
+      screen = <PreparingScreen seats={state.options ? seatedPanel(state.options, state.draft.panel) : []} />
+      break
     case 'question':
     case 'submitting':
+      screen = (
+        <QuestionScreen
+          topic={phase.topic}
+          panel={phase.panel}
+          question={phase.question}
+          draft={phase.draft}
+          last={phase.last}
+          submitting={phase.kind === 'submitting'}
+          notice={phase.kind === 'question' ? phase.notice : null}
+          onChange={flow.editAnswer}
+          onSend={() => void flow.sendAnswer()}
+          onAutoRetry={() => void flow.sendAnswer(true)}
+        />
+      )
+      break
     case 'finishing':
+      screen = <FinishingScreen notice={phase.notice} onRetry={() => void flow.retryReport()} />
+      break
     case 'report':
-      screen = <Card>The defense screens arrive in the next slice.</Card>
+      screen = <Card>The report arrives in the next slice.</Card>
       break
   }
 
