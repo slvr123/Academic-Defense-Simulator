@@ -1,4 +1,5 @@
-# Render Blueprint for the v2.0 backend only. v1 (Streamlit) does not deploy from here.
+# Render Blueprint for v2.0: the backend and the frontend static site. v1 (Streamlit)
+# does not deploy from here. Each service's build filter keeps the other from redeploying it.
 services:
   - type: web
     name: ads-backend
@@ -25,6 +26,7 @@ services:
         - academic_defense_simulator/streamlit_app.py
         - academic_defense_simulator/panel_selection_ui.py
         - backend/tests/**
+        - frontend/**
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.7
@@ -32,3 +34,27 @@ services:
       - key: MALLOC_ARENA_MAX
         value: "2"
       # Upload limits (30 MB, 250 pages) are defaults in backend/settings.py, not set here.
+      # Browser origins allowed to call the API: the static site's URL (and
+      # http://localhost:5173 for local dev), comma-separated. Set in the dashboard once
+      # the static site exists and its URL is known.
+      - key: ADS_CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: ads-frontend
+    runtime: static
+    branch: main
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - frontend/**
+    envVars:
+      # Vite 8 needs Node 20.19+; this is the version the build was tested with.
+      - key: NODE_VERSION
+        value: 24.19.0
+      # Baked into the public JavaScript at build time: never a secret.
+      - key: VITE_API_BASE_URL
+        value: https://ads-backend-bv63.onrender.com

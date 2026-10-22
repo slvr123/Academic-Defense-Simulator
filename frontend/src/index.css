@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/* Design tokens (D7). Each --color-* here becomes utilities such as bg-ink or
+   text-accent-methodology; components use these, never one-off hex values. */
+@theme {
+  /* System fonts only: nothing to download on a slow connection. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: ui-serif, Georgia, "Times New Roman", serif;
+
+  --color-paper: #f7f5f0;
+  --color-card: #ffffff;
+  --color-ink: #1d1b18;
+  --color-muted: #6b665e;
+  --color-line: #e2ddd3;
+  --color-brand: #7a1f2b;
+  --color-brand-soft: #f3e4e6;
+  --color-warn: #8a5a00;
+  --color-warn-soft: #fbf1dc;
+  --color-danger: #a12c2c;
+  --color-danger-soft: #fbe6e6;
+  --color-ok: #2f6b3a;
+
+  /* One accent per archetype (panel presence). */
+  --color-accent-methodology: #2f5d8a;
+  --color-accent-literature: #6b4c9a;
+  --color-accent-technical: #2f7a6d;
+  --color-accent-ethics: #9a6b2f;
+  --color-accent-problem: #3f6f2f;
+  --color-accent-statistics: #8a3f6b;
+  --color-accent-results: #2f6f8a;
+  --color-accent-industry: #5c5c2f;
+  --color-accent-devil: #a12c2c;
+}
+
+body {
+  @apply bg-paper font-sans text-ink antialiased;
+}
