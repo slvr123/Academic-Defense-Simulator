@@ -18,9 +18,11 @@ from dataclasses import asdict
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from pydantic import ValidationError
 from starlette.datastructures import UploadFile
 
@@ -65,6 +67,32 @@ NOT_FOUND_MESSAGE = "Session not found. It may have expired after 30 idle minute
 QUOTA_UNAVAILABLE_MESSAGE = "The demo's usage counter is waking up. Please try again in a few seconds."
 # Multipart framing and the panel field ride on top of the file itself.
 _MULTIPART_OVERHEAD_BYTES = 64 * 1024
+
+# POST /sessions reads its form by hand (see the route), so FastAPI can't describe the
+# body itself. This documents it, and registers PanelConfig with the schema, so the
+# frontend's generated types include it.
+_UPLOAD_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["file"],
+                    "properties": {
+                        "file": {"type": "string", "format": "binary"},
+                        "panel": {
+                            "type": "string",
+                            "description": "PanelConfig as JSON text; omitted gives its defaults.",
+                            "contentMediaType": "application/json",
+                            "contentSchema": {"$ref": "#/components/schemas/PanelConfig"},
+                        },
+                    },
+                }
+            }
+        },
+    }
+}
 
 EmbedderFactory = Callable[[Settings], Embedder]
 QuotaStoreFactory = Callable[[Settings], QuotaStore]
@@ -176,7 +204,10 @@ def create_app(
     def get_panel_options() -> PanelOptions:
         return panel_options()
 
-    @app.post("/sessions", status_code=202, response_model=SessionCreated, responses={429: {"model": ErrorBody}})
+    @app.post(
+        "/sessions", status_code=202, response_model=SessionCreated,
+        responses={429: {"model": ErrorBody}}, openapi_extra=_UPLOAD_BODY,
+    )
     async def create_session(request: Request) -> SessionCreated:
         # The route reads the form itself, rather than declaring File/Form
         # parameters, so these cheap checks run before the body is received.
@@ -282,6 +313,8 @@ def create_app(
         app.state.queue.withdraw(session_id)
         return Response(status_code=204)
 
+    app.openapi = lambda: _openapi_with_panel_config(app)  # type: ignore[method-assign]
+
     register_defense_routes(
         app, settings=settings, quota_plan=quota_plan, clock=clock,
         not_found=lambda: HTTPException(404, NOT_FOUND_MESSAGE), quota_used_up=quota_used_up,
@@ -317,6 +350,20 @@ def create_app(
             )
 
     return app
+
+
+def _openapi_with_panel_config(app: FastAPI) -> dict[str, Any]:
+    """FastAPI's schema, plus PanelConfig, which no route declares as a parameter."""
+    if app.openapi_schema is None:
+        schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+        components = schema["components"]["schemas"]
+        panel = PanelConfig.model_json_schema(ref_template="#/components/schemas/{model}")
+        nested = panel.pop("$defs", {})
+        missing = set(nested) - set(components)
+        assert not missing, f"PanelConfig refers to schemas no route registered: {missing}"
+        components["PanelConfig"] = panel
+        app.openapi_schema = schema
+    return app.openapi_schema
 
 
 def _parse_panel(raw: object) -> PanelConfig:

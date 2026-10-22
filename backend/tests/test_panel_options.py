@@ -38,3 +38,16 @@ def test_the_other_type_is_split_by_subtype_and_the_rest_have_none(client_factor
     assert {s for t, s in pairs if t == "other"} == {
         "oral_comps", "scholarship_panel", "grant_defense", "certification_interview"
     }
+
+
+def test_the_openapi_schema_carries_panel_config_and_the_upload_body(client_factory):
+    """The frontend generates its types from /openapi.json; POST /sessions reads its form
+    by hand, so PanelConfig and the multipart body are added to the schema explicitly."""
+    with client_factory() as client:
+        schema = client.get("/openapi.json").json()
+    panel = schema["components"]["schemas"]["PanelConfig"]
+    assert set(panel["properties"]) == set(PanelConfig.model_fields)
+    assert panel["properties"]["domain"]["anyOf"][0]["maxLength"] == 200
+    body = schema["paths"]["/sessions"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
+    assert body["properties"]["panel"]["contentSchema"] == {"$ref": "#/components/schemas/PanelConfig"}
+    assert body["required"] == ["file"]
