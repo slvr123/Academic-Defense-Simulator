@@ -23,6 +23,7 @@ import { isTooLarge, TOO_LARGE_MESSAGE } from '../lib/upload'
 export type Notice =
   | { kind: 'network' }
   | { kind: 'turnFailed' }
+  | { kind: 'stillWorking' } // an answer's resends kept getting 409 while the first was running (E13)
   // retryAt: when the one automatic retry fires (epoch ms); null means a "Try again" button only.
   | { kind: 'busy'; message: string; retryAt: number | null }
   | { kind: 'limited'; code: LimitCode | null; resetsAt: number | null }
@@ -31,6 +32,9 @@ export type Notice =
 export type Draft = { file: File | null; panel: PanelConfig }
 
 export type QuotaView = { kind: 'loading' } | { kind: 'hidden' } | { kind: 'known'; quota: QuotaStatus }
+
+/** How the panel speaks, chosen before the first question (M3b E9). */
+export type VoiceChoice = 'panel' | 'browser' | 'none'
 
 /** An answered question, shown with its evaluation and, now that it's answered, its sources (D18). */
 export type Turn = { question: QuestionOut; answer: string; evaluation: Evaluation }
@@ -61,6 +65,8 @@ export type Phase =
 
 export type State = {
   serverAwake: boolean // a flag beside the phase, not a phase (D25)
+  ttsAvailable: boolean // the server can make panel voices (/status, M3b E6)
+  voice: VoiceChoice | null // null until chosen for this defense; never persisted (E9)
   options: PanelOptions | null
   quota: QuotaView
   draft: Draft
@@ -68,7 +74,8 @@ export type State = {
 }
 
 export type Action =
-  | { type: 'serverAwake' }
+  | { type: 'serverAwake'; ttsAvailable: boolean }
+  | { type: 'voiceChosen'; voice: VoiceChoice }
   | { type: 'optionsLoaded'; options: PanelOptions }
   | { type: 'quotaLoaded'; quota: QuotaStatus }
   | { type: 'quotaHidden' }
@@ -95,6 +102,8 @@ export function quotaUsedUp(quota: QuotaView): boolean {
 export function initialState(): State {
   return {
     serverAwake: false,
+    ttsAvailable: false,
+    voice: null,
     options: null,
     quota: { kind: 'loading' },
     draft: { file: null, panel: { ...defaults.PanelConfig } },
@@ -110,6 +119,8 @@ export function noticeFor(error: ApiError, now: number, autoRetryAllowed: boolea
       return { kind: 'network' }
     case 'turnFailed':
       return { kind: 'turnFailed' }
+    case 'conflict':
+      return { kind: 'stillWorking' }
     case 'busy':
       return {
         kind: 'busy',
@@ -123,7 +134,8 @@ export function noticeFor(error: ApiError, now: number, autoRetryAllowed: boolea
         resetsAt: error.retryAfterS !== null ? now + error.retryAfterS * 1000 : null,
       }
     case 'notFound': // callers send a 404 to the expired phase before asking for a notice
-    case 'conflict':
+    case 'stale':
+    case 'tts': // /tts errors never reach the flow; the voice falls back on its own (E8)
     case 'tooLarge':
     case 'invalid':
     case 'unexpected':
@@ -184,7 +196,8 @@ function answered(state: State, sessionId: string, result: ApiResult<AnswerRespo
   if (!inFlight(phase, 'submitting', sessionId)) return state
   const { auto, ...defense } = phase
   if (!result.ok) {
-    if (result.error.kind === 'conflict') return state
+    // A 409 here means useFlow's resends ran out while the first request was still
+    // running (E13; this replaces D16's "swallowed" for answers).
     if (result.error.kind === 'notFound') return expired(state)
     return { ...state, phase: { ...defense, kind: 'question', notice: noticeFor(result.error, now, !auto) } }
   }
@@ -212,7 +225,12 @@ export function reducer(state: State, action: Action): State {
   const { phase } = state
   switch (action.type) {
     case 'serverAwake':
-      return { ...state, serverAwake: true }
+      return { ...state, serverAwake: true, ttsAvailable: action.ttsAvailable }
+    case 'voiceChosen':
+      if (phase.kind !== 'ready') return state
+      // Panel voices send question text to MiMo, so they're only offered when the server has them.
+      if (action.voice === 'panel' && !state.ttsAvailable) return state
+      return { ...state, voice: action.voice }
     case 'optionsLoaded':
       return { ...state, options: action.options }
     case 'quotaLoaded':
@@ -269,7 +287,7 @@ export function reducer(state: State, action: Action): State {
     case 'reportFinished':
       return reported(state, action.sessionId, action.result, action.now)
 
-    case 'restart':
-      return { ...state, draft: { ...state.draft, file: null }, phase: { kind: 'configuring', notice: null } }
+    case 'restart': // a new document is a new defense: the voice is chosen again
+      return { ...state, voice: null, draft: { ...state.draft, file: null }, phase: { kind: 'configuring', notice: null } }
   }
 }

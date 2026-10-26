@@ -81,6 +81,14 @@ export function NoticeBanner({
         </>
       )
       break
+    case 'stillWorking':
+      body = (
+        <>
+          <p>The panel is still working on your answer.</p>
+          {retry}
+        </>
+      )
+      break
     case 'busy':
       body =
         notice.retryAt !== null && onAutoRetry ? (

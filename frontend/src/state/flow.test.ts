@@ -49,8 +49,9 @@ describe('initial state', () => {
 
 describe('page load', () => {
   it('records the server awake, the quota, the rosters, and hides the quota on failure', () => {
-    let state = run(initialState(), { type: 'serverAwake' }, { type: 'optionsLoaded', options: panelOptions })
+    let state = run(initialState(), { type: 'serverAwake', ttsAvailable: true }, { type: 'optionsLoaded', options: panelOptions })
     expect(state.serverAwake).toBe(true)
+    expect(state.ttsAvailable).toBe(true)
     expect(state.options).toBe(panelOptions)
     expect(run(state, { type: 'quotaLoaded', quota: quota(7) }).quota).toEqual({ kind: 'known', quota: quota(7) })
     state = run(state, { type: 'quotaHidden' })
@@ -247,8 +248,13 @@ describe('answering', () => {
     expect(finish(fail({ kind: 'turnFailed', message: 'm' })).phase).toEqual({ ...question, notice: { kind: 'turnFailed' } })
   })
 
-  it('swallows a 409 and stays submitting', () => {
-    expect(finish(fail({ kind: 'conflict', message: 'm' })).phase).toEqual(submitting)
+  it('offers Try again once the resends of a 409 ran out, keeping the answer (E13, replaces D16 "swallowed")', () => {
+    expect(finish(fail({ kind: 'conflict', message: 'm' })).phase).toEqual({ ...question, notice: { kind: 'stillWorking' } })
+  })
+
+  it('shows a stale_question 409 verbatim, keeping the answer (E13)', () => {
+    const text = "That answer is for a question that isn't open any more."
+    expect(finish(fail({ kind: 'stale', message: text })).phase).toEqual({ ...question, notice: { kind: 'message', text } })
   })
 
   it('schedules one automatic retry for a busy 503, none after the retry itself', () => {
@@ -264,6 +270,34 @@ describe('answering', () => {
 
   it('sends a 404 to expired', () => {
     expect(finish(fail({ kind: 'notFound', message: 'gone' })).phase).toEqual({ kind: 'expired' })
+  })
+})
+
+describe('the voice choice (M3b E9)', () => {
+  const ready = (ttsAvailable: boolean) => at({ kind: 'ready', sessionId: S, chunkCount: 8, notice: null }, { ttsAvailable })
+  const choose = (voice: 'panel' | 'browser' | 'none'): Action => ({ type: 'voiceChosen', voice })
+
+  it('is made on the ready screen and kept in state', () => {
+    expect(initialState().voice).toBeNull()
+    expect(run(ready(true), choose('panel')).voice).toBe('panel')
+    expect(run(ready(false), choose('browser')).voice).toBe('browser')
+    expect(run(ready(false), choose('none')).voice).toBe('none')
+  })
+
+  it('refuses panel voices when the server has none (E6)', () => {
+    const state = ready(false)
+    expect(run(state, choose('panel'))).toBe(state)
+  })
+
+  it('can only be made before the defense starts', () => {
+    const state = at(question, { ttsAvailable: true })
+    expect(run(state, choose('panel'))).toBe(state)
+  })
+
+  it('lasts through the defense and is asked again for the next document', () => {
+    const chosen = run(ready(true), choose('browser'), { type: 'startRequested', auto: false })
+    expect(chosen.voice).toBe('browser')
+    expect(run(chosen, { type: 'restart' }).voice).toBeNull()
   })
 })
 

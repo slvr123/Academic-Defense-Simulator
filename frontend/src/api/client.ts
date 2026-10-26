@@ -2,6 +2,7 @@
 // or a typed ApiError; status codes stop here (M3 decisions D5).
 import type {
   AnswerResponse,
+  ErrorCode,
   HealthResponse,
   LimitCode,
   PanelConfig,
@@ -11,26 +12,50 @@ import type {
   SessionCreated,
   SessionState,
   StartResponse,
+  TtsErrorCode,
 } from './types'
 
 export type ApiError =
   | { kind: 'network' }
   | { kind: 'notFound'; message: string } // 404: the session expired or never existed
   | { kind: 'conflict'; message: string } // 409: a request for this session is already running
+  | { kind: 'stale'; message: string } // 409 stale_question: that question isn't open any more (E13)
   | { kind: 'turnFailed'; message: string } // 502: nothing was recorded, send the same request again
   | { kind: 'busy'; message: string; retryAfterS: number | null } // 503
   | { kind: 'tooLarge'; message: string } // 413: too many bytes or too many pages
   | { kind: 'invalid'; message: string } // 422
   | { kind: 'limited'; code: LimitCode | null; message: string; retryAfterS: number | null } // 429
+  | { kind: 'tts'; code: TtsErrorCode; message: string } // /tts's coded 429, 502 and 503 (E3)
   | { kind: 'unexpected'; message: string }
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError }
 
-// A Record over the generated union: the build fails if the backend adds a code.
-const LIMIT_CODES: Record<LimitCode, true> = { per_ip_limit: true, daily_cap: true }
+// A Record over the generated union: the build fails if the backend adds a code
+// this client hasn't placed.
+const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale'> = {
+  per_ip_limit: 'limit',
+  daily_cap: 'limit',
+  tts_limit: 'tts',
+  tts_failed: 'tts',
+  tts_unavailable: 'tts',
+  stale_question: 'stale',
+}
 
-function isLimitCode(value: unknown): value is LimitCode {
-  return typeof value === 'string' && Object.hasOwn(LIMIT_CODES, value)
+function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && Object.hasOwn(ERROR_CODES, value)
+}
+
+function errorCode(body: unknown): ErrorCode | null {
+  const code = field(body, 'code')
+  return isErrorCode(code) ? code : null
+}
+
+function isLimitCode(code: ErrorCode | null): code is LimitCode {
+  return code !== null && ERROR_CODES[code] === 'limit'
+}
+
+function isTtsCode(code: ErrorCode | null): code is TtsErrorCode {
+  return code !== null && ERROR_CODES[code] === 'tts'
 }
 
 function baseUrl(): string {
@@ -59,19 +84,19 @@ export function parseRetryAfter(header: string | null): number | null {
 
 export function toApiError(status: number, body: unknown, retryAfter: string | null): ApiError {
   const message = readDetail(body, `The server answered with an unexpected error (${status}).`)
+  const code = errorCode(body)
+  if (isTtsCode(code)) return { kind: 'tts', code, message }
   switch (status) {
     case 404:
       return { kind: 'notFound', message }
     case 409:
-      return { kind: 'conflict', message }
+      return code === 'stale_question' ? { kind: 'stale', message } : { kind: 'conflict', message }
     case 413:
       return { kind: 'tooLarge', message }
     case 422:
       return { kind: 'invalid', message }
-    case 429: {
-      const code = field(body, 'code')
+    case 429:
       return { kind: 'limited', code: isLimitCode(code) ? code : null, message, retryAfterS: parseRetryAfter(retryAfter) }
-    }
     case 502:
       return { kind: 'turnFailed', message }
     case 503:
@@ -113,14 +138,44 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown):
 
 const sessionPath = (sessionId: string) => `/sessions/${encodeURIComponent(sessionId)}`
 
-export const getHealth = () => request<HealthResponse>('GET', '/health')
+// /status, not /health: EasyPrivacy blocks `||onrender.com/health` (M3b E2).
+export const getStatus = () => request<HealthResponse>('GET', '/status')
 export const getQuota = () => request<QuotaStatus>('GET', '/quota')
 export const getPanelOptions = () => request<PanelOptions>('GET', '/panel-options')
 export const getSession = (sessionId: string) => request<SessionState>('GET', sessionPath(sessionId))
 export const startDefense = (sessionId: string) => request<StartResponse>('POST', `${sessionPath(sessionId)}/start`)
-export const submitAnswer = (sessionId: string, text: string) =>
-  request<AnswerResponse>('POST', `${sessionPath(sessionId)}/answers`, { text })
+/** `turn` is the question being answered, so a resend after a lost response replays it (E13). */
+export const submitAnswer = (sessionId: string, text: string, turn: number) =>
+  request<AnswerResponse>('POST', `${sessionPath(sessionId)}/answers`, { text, turn })
 export const getReport = (sessionId: string) => request<ReportResponse>('GET', `${sessionPath(sessionId)}/report`)
+
+/**
+ * POST /tts: one question's audio, read as a Blob of WAV bytes rather than text.
+ * `signal` cancels it when the turn moves on (E7); a cancelled request resolves to a
+ * network error, and callers check `signal.aborted` before acting on any result.
+ */
+export async function fetchTts(sessionId: string, turn: number, signal: AbortSignal): Promise<ApiResult<Blob>> {
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl()}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, turn }),
+      signal,
+    })
+  } catch {
+    return { ok: false, error: { kind: 'network' } }
+  }
+  if (!response.ok) {
+    const parsed = parseJson(await response.text().catch(() => ''))
+    return { ok: false, error: toApiError(response.status, parsed, response.headers.get('Retry-After')) }
+  }
+  try {
+    return { ok: true, data: await response.blob() }
+  } catch {
+    return { ok: false, error: { kind: 'network' } } // the body stopped arriving, or was cancelled
+  }
+}
 
 /**
  * POST /sessions. XMLHttpRequest, not fetch, because only XHR reports upload progress,

@@ -114,7 +114,7 @@ describe('the answer loop', () => {
     expect(screen.getByLabelText('Your answer')).toHaveValue('')
   })
 
-  it('disables sending from the click until the response, and swallows a 409 (D16)', async () => {
+  it('disables sending from the click until the response, and waits out a 409 by resending (E13)', async () => {
     const server = defenseServer()
     const reply = deferred<Reply>()
     server.on(ANSWERS, () => reply.promise)
@@ -126,10 +126,67 @@ describe('the answer loop', () => {
     expect(screen.queryByRole('button', { name: 'Send answer' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Your answer')).toHaveAttribute('readonly')
 
+    server.on(ANSWERS, { status: 200, body: nextQuestion })
     await act(async () => reply.resolve({ status: 409, body: { detail: 'The panel is still working on this session.' } }))
     expect(screen.getByText('The panel is weighing your answer.')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(server.count(ANSWERS)).toBe(1)
+    await advance(3000)
+    expect(await screen.findByText(Q2)).toBeInTheDocument()
+    expect(server.count(ANSWERS)).toBe(2)
+  })
+
+  it('gives up waiting after 10 resends of a 409 and offers Try again (E13)', async () => {
+    const server = defenseServer()
+    server.on(ANSWERS, { status: 409, body: { detail: 'The panel is still working on this session.' } })
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answer(user, 'My answer')
+    for (let resend = 1; resend <= 10; resend++) await advance(3000)
+    expect(await screen.findByText('The panel is still working on your answer.')).toBeInTheDocument()
+    expect(server.count(ANSWERS)).toBe(11) // the first send and 10 resends
+    expect(screen.getByLabelText('Your answer')).toHaveValue('My answer')
+    await advance(60_000)
+    expect(server.count(ANSWERS)).toBe(11)
+
+    server.on(ANSWERS, { status: 200, body: nextQuestion })
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText(Q2)).toBeInTheDocument()
+  })
+
+  it('recovers a lost response: Try again resends the same turn and the server replays it (E13)', async () => {
+    const server = defenseServer()
+    const sent: unknown[] = []
+    server.on(ANSWERS, (body) => {
+      sent.push(body)
+      return 'network' // the server recorded the turn, but the response never arrived
+    })
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answer(user, 'My answer')
+    expect(await screen.findByText("Can't reach the server.")).toBeInTheDocument()
+    server.on(ANSWERS, (body) => {
+      sent.push(body)
+      return { status: 200, body: nextQuestion } // the stored response, replayed
+    })
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText(Q2)).toBeInTheDocument()
+    expect(sent).toEqual([
+      { text: 'My answer', turn: 1 },
+      { text: 'My answer', turn: 1 },
+    ])
+  })
+
+  it('shows a stale_question 409 as the server words it (E13)', async () => {
+    const server = defenseServer()
+    const text = "That answer is for a question that isn't open any more. The defense has moved on without it."
+    server.on(ANSWERS, { status: 409, body: { detail: text, code: 'stale_question' } })
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answer(user)
+    expect(await screen.findByText(text)).toBeInTheDocument()
+    await advance(30_000)
+    expect(server.count(ANSWERS)).toBe(1) // never resent
   })
 
   it('keeps the answer after a 502 and resends the same text (D16)', async () => {
@@ -151,7 +208,7 @@ describe('the answer loop', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Send it again' }))
     expect(await screen.findByText(Q2)).toBeInTheDocument()
-    expect(sent).toEqual([{ text: 'My first answer' }, { text: 'My first answer' }])
+    expect(sent).toEqual([{ text: 'My first answer', turn: 1 }, { text: 'My first answer', turn: 1 }])
   })
 
   it('counts down a busy 503, retries once by itself, then offers Try again only (D16)', async () => {
@@ -205,9 +262,9 @@ describe('the answer loop', () => {
 })
 
 describe('keep-alive (D10)', () => {
-  const healthCalls = (server: FakeServer) => server.count('GET /health')
+  const healthCalls = (server: FakeServer) => server.count('GET /status')
 
-  it('pings /health every 10 minutes while a question is open, and not before', async () => {
+  it('pings /status every 10 minutes while a question is open, and not before', async () => {
     const server = defenseServer()
     const user = renderApp()
     await toReady(server, user)

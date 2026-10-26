@@ -1,4 +1,4 @@
-// Wakes a spun-down Render instance with GET /health (up to 42.7 s measured) and lets
+// Wakes a spun-down Render instance with GET /status (up to 42.7 s measured) and lets
 // anyone wait for it. Every caller shares one attempt; once awake it stays resolved.
 // If every try fails, the next wake() starts over, so "Try again" can recover.
 

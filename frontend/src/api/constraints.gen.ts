@@ -5,6 +5,18 @@ export const limits = {
     "text": {
       "minLength": 1,
       "maxLength": 8000
+    },
+    "turn": {
+      "minimum": 1
+    }
+  },
+  "TtsRequest": {
+    "session_id": {
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "turn": {
+      "minimum": 1
     }
   },
   "PanelConfig": {

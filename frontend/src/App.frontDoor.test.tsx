@@ -9,7 +9,7 @@ describe('page load and quota (D15, D25)', () => {
   it('shows the config screen at once and the waking message only after an early submit', async () => {
     const server = defaultServer()
     const health = deferred<Reply>()
-    server.on('GET /health', () => health.promise)
+    server.on('GET /status', () => health.promise)
     const user = renderApp()
 
     expect(screen.getByLabelText(/your document/i)).toBeEnabled()

@@ -7,16 +7,22 @@ import * as api from '../api/client'
 import { useKeepAlive } from '../hooks/useKeepAlive'
 import { createServerWaker } from '../lib/serverWaker'
 import { isTooLarge } from '../lib/upload'
-import { type Draft, initialState, reducer, type State } from './flow'
+import { type Draft, initialState, reducer, type State, type VoiceChoice } from './flow'
 
 // M2 doesn't specify a poll interval; 2 s is D16's fallback.
 export const POLL_INTERVAL_MS = 2000
+// A resent answer that meets the first one still running gets 409: wait, resend (E13).
+export const CONFLICT_RETRY_MS = 3000
+export const CONFLICT_RETRIES = 10
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 export type Flow = {
   state: State
   editDraft: (draft: Partial<Draft>) => void
   upload: () => Promise<void>
   resumePolling: () => void
+  chooseVoice: (voice: VoiceChoice) => void
   start: (auto?: boolean) => Promise<void>
   editAnswer: (text: string) => void
   sendAnswer: (auto?: boolean) => Promise<void>
@@ -24,20 +30,21 @@ export type Flow = {
   restart: () => void
 }
 
-const isUp = async () => (await api.getHealth()).ok
-
 export function useFlow(): Flow {
   const [state, dispatch] = useReducer(reducer, undefined, initialState)
-  const [waker] = useState(() => createServerWaker(isUp))
+  // The probe that finds the server up also records whether it can make voices (E6).
+  const [waker] = useState(() =>
+    createServerWaker(async () => {
+      const result = await api.getStatus()
+      if (result.ok) dispatch({ type: 'serverAwake', ttsAvailable: result.data.tts_available })
+      return result.ok
+    }),
+  )
   // Guards a second click landing before the first one's re-render disables the button.
   const requesting = useRef(false)
   const { phase } = state
 
-  const wake = useCallback(async () => {
-    const up = await waker.wake()
-    if (up) dispatch({ type: 'serverAwake' })
-    return up
-  }, [waker])
+  const wake = useCallback(() => waker.wake(), [waker])
 
   // Page load: wake the server, then read the quota and the panel rosters (D15, D21).
   useEffect(() => {
@@ -73,7 +80,7 @@ export function useFlow(): Flow {
     }
   }, [pollingId])
 
-  const ping = useCallback(() => void api.getHealth(), [])
+  const ping = useCallback(() => void api.getStatus(), [])
   useKeepAlive(phase.kind === 'question' || phase.kind === 'submitting', ping)
 
   async function once(run: () => Promise<void>): Promise<void> {
@@ -119,9 +126,16 @@ export function useFlow(): Flow {
   const sendAnswer = (auto = false) =>
     once(async () => {
       if (phase.kind !== 'question' || phase.draft.trim() === '') return
-      const { sessionId, draft } = phase
+      const { sessionId, draft, question } = phase
       dispatch({ type: 'answerRequested', auto })
-      const result = await api.submitAnswer(sessionId, draft)
+      let result = await api.submitAnswer(sessionId, draft, question.turn)
+      // A plain 409: a request for this session is still running, most likely this same
+      // answer sent before a lost response. Resending with the same turn either meets
+      // it again or, once it's done, gets its stored response back (E13).
+      for (let tries = 0; !result.ok && result.error.kind === 'conflict' && tries < CONFLICT_RETRIES; tries++) {
+        await sleep(CONFLICT_RETRY_MS)
+        result = await api.submitAnswer(sessionId, draft, question.turn)
+      }
       dispatch({ type: 'answerFinished', sessionId, result, now: Date.now() })
       if (result.ok && result.data.done) await fetchReport(sessionId)
     })
@@ -138,6 +152,7 @@ export function useFlow(): Flow {
     editDraft: (draft) => dispatch({ type: 'draftChanged', draft }),
     upload,
     resumePolling: () => dispatch({ type: 'pollResumed' }),
+    chooseVoice: (voice) => dispatch({ type: 'voiceChosen', voice }),
     start,
     editAnswer: (text) => dispatch({ type: 'answerChanged', text }),
     sendAnswer,

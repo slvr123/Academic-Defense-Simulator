@@ -7,7 +7,7 @@ import App from '../App'
 import { fakeServer, type FakeServer, type Reply } from './fakeServer'
 import { panelOptions, pdf, quota } from './fixtures'
 
-export const HEALTHY: Reply = { status: 200, body: { status: 'ok', model_loaded: true } }
+export const HEALTHY: Reply = { status: 200, body: { status: 'ok', model_loaded: true, tts_available: true } }
 
 export function deferred<T>() {
   let resolve: (value: T) => void = () => {}
@@ -20,7 +20,7 @@ export function deferred<T>() {
 /** A server that is awake, with 7 of 11 defenses left and the fixture rosters. */
 export function defaultServer(): FakeServer {
   const server = fakeServer()
-  server.on('GET /health', HEALTHY)
+  server.on('GET /status', HEALTHY)
   server.on('GET /quota', { status: 200, body: quota(7) })
   server.on('GET /panel-options', { status: 200, body: panelOptions })
   return server

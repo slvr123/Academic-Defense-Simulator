@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fakeServer } from '../test/fakeServer'
 import { quota } from '../test/fixtures'
-import { createSession, getQuota, parseRetryAfter, submitAnswer, toApiError } from './client'
+import { createSession, fetchTts, getQuota, getStatus, parseRetryAfter, submitAnswer, toApiError } from './client'
 import type { PanelConfig } from './types'
 
 const panel: PanelConfig = {
@@ -60,6 +60,19 @@ describe('toApiError maps each status to the error the UI branches on', () => {
     expect(error).toEqual({ kind: 'limited', code: expected, message: 'used up', retryAfterS: 3600 })
   })
 
+  it('tells a stale_question 409 from a plain one (E13)', () => {
+    expect(toApiError(409, { detail: 'moved on', code: 'stale_question' }, null)).toEqual({ kind: 'stale', message: 'moved on' })
+    expect(toApiError(409, { detail: 'still running' }, null)).toEqual({ kind: 'conflict', message: 'still running' })
+  })
+
+  it.each([
+    [429, 'tts_limit'],
+    [502, 'tts_failed'],
+    [503, 'tts_unavailable'],
+  ] as const)('reads a %i with code %s as a tts error, not as a limit, a turn or busy (E3)', (status, code) => {
+    expect(toApiError(status, { detail: 'no voice', code }, '60')).toEqual({ kind: 'tts', code, message: 'no voice' })
+  })
+
   it('reads Retry-After on a 503, and null without it', () => {
     expect(toApiError(503, { detail: 'busy' }, '60')).toEqual({ kind: 'busy', message: 'busy', retryAfterS: 60 })
     expect(toApiError(503, { detail: 'busy' }, null)).toEqual({ kind: 'busy', message: 'busy', retryAfterS: null })
@@ -99,9 +112,55 @@ describe('fetch requests', () => {
       sent = body
       return { status: 503, body: { detail: 'The panel is busy right now.' }, headers: { 'Retry-After': '60' } }
     })
-    const result = await submitAnswer('s 1', 'My answer')
-    expect(sent).toEqual({ text: 'My answer' })
+    const result = await submitAnswer('s 1', 'My answer', 1)
+    expect(sent).toEqual({ text: 'My answer', turn: 1 })
     expect(result).toEqual({ ok: false, error: { kind: 'busy', message: 'The panel is busy right now.', retryAfterS: 60 } })
+  })
+})
+
+describe('/status (E2: EasyPrivacy blocks /health on onrender.com)', () => {
+  it('asks /status, never /health', async () => {
+    const server = fakeServer()
+    const body = { status: 'ok', model_loaded: true, tts_available: false }
+    server.on('GET /status', { status: 200, body })
+    expect(await getStatus()).toEqual({ ok: true, data: body })
+    expect(server.calls).toEqual(['GET /status'])
+  })
+})
+
+describe('fetchTts reads binary audio and can be cancelled (E3, E7)', () => {
+  const wav = new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4]) // "RIFF" + 4 bytes
+
+  it('sends the session and turn, never text, and returns the bytes as a Blob', async () => {
+    const server = fakeServer()
+    let sent: unknown
+    server.on('POST /tts', (body) => {
+      sent = body
+      return { status: 200, bytes: wav, headers: { 'Content-Type': 'audio/wav' } }
+    })
+    const result = await fetchTts('abc', 2, new AbortController().signal)
+    expect(sent).toEqual({ session_id: 'abc', turn: 2 })
+    if (!result.ok) throw new Error('expected audio')
+    expect(result.data.type).toBe('audio/wav')
+    expect(new Uint8Array(await result.data.arrayBuffer())).toEqual(wav)
+  })
+
+  it('maps a coded failure', async () => {
+    fakeServer().on('POST /tts', { status: 502, body: { detail: 'no voice', code: 'tts_failed' } })
+    expect(await fetchTts('abc', 1, new AbortController().signal)).toEqual({
+      ok: false,
+      error: { kind: 'tts', code: 'tts_failed', message: 'no voice' },
+    })
+  })
+
+  it('resolves a cancelled request as a network error with the signal aborted', async () => {
+    const server = fakeServer()
+    server.on('POST /tts', () => new Promise<never>(() => {})) // never answers
+    const controller = new AbortController()
+    const pending = fetchTts('abc', 1, controller.signal)
+    controller.abort()
+    expect(await pending).toEqual({ ok: false, error: { kind: 'network' } })
+    expect(controller.signal.aborted).toBe(true)
   })
 })
 

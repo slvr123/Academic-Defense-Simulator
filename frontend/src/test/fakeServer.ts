@@ -2,7 +2,8 @@
 // answer from per-route handlers, so tests drive the real client and the real UI.
 import { vi } from 'vitest'
 
-export type Reply = { status: number; body?: unknown; headers?: Record<string, string> } | 'network'
+// `bytes` sends a binary body as is (the /tts audio); `body` is sent as JSON.
+export type Reply = { status: number; body?: unknown; bytes?: Uint8Array<ArrayBuffer>; headers?: Record<string, string> } | 'network'
 type Handler = (body: unknown) => Reply | Promise<Reply>
 
 export const API = 'http://api.test'
@@ -69,6 +70,17 @@ export class FakeXhr {
   }
 }
 
+/** Rejects as fetch does once `signal` aborts, whether or not the handler has answered. */
+function abortable<T>(reply: Promise<T>, signal: AbortSignal | null | undefined): Promise<T> {
+  if (!signal) return reply
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(new DOMException('The operation was aborted.', 'AbortError'))
+    if (signal.aborted) return abort()
+    signal.addEventListener('abort', abort, { once: true })
+    reply.then(resolve, reject)
+  })
+}
+
 export function fakeServer(): FakeServer {
   const handlers = new Map<string, Handler>()
   const calls: string[] = []
@@ -81,12 +93,10 @@ export function fakeServer(): FakeServer {
     const handler = handlers.get(route)
     if (handler === undefined) throw new Error(`no fake handler for ${route}`)
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
-    const reply = await handler(body)
+    const reply = await abortable(Promise.resolve(handler(body)), init?.signal)
     if (reply === 'network') throw new TypeError('Failed to fetch')
-    return new Response(reply.body === undefined ? '' : JSON.stringify(reply.body), {
-      status: reply.status,
-      headers: reply.headers,
-    })
+    const sent = reply.bytes ?? (reply.body === undefined ? '' : JSON.stringify(reply.body))
+    return new Response(sent, { status: reply.status, headers: reply.headers })
   })
 
   vi.stubGlobal('fetch', fetchFake)

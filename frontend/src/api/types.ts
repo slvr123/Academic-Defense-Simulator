@@ -27,6 +27,9 @@ export type Source = Schemas['Source']
 export type StartResponse = Schemas['StartResponse']
 export type TranscriptTurn = Schemas['TranscriptTurn']
 
-// Which limit a 429 hit, and why an upload failed, as the backend codes them.
-export type LimitCode = NonNullable<ErrorBody['code']>
+// Machine-readable error codes, as the backend sends them: which limit a 429 hit,
+// why /tts failed, a stale answer (M3b E3, E13), and why an upload failed.
+export type ErrorCode = NonNullable<ErrorBody['code']>
+export type LimitCode = Extract<ErrorCode, 'per_ip_limit' | 'daily_cap'>
+export type TtsErrorCode = Extract<ErrorCode, 'tts_limit' | 'tts_failed' | 'tts_unavailable'>
 export type IngestErrorCode = NonNullable<SessionState['error_code']>
