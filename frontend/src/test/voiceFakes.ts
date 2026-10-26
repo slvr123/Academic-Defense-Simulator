@@ -46,12 +46,10 @@ export function fakeSpeech(voiceNames: string[] = CHROME_VOICES) {
 
 export function fakeAudio() {
   const plays: string[] = []
-  let element: HTMLMediaElement | null = null
   let refuse = false
-  vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (this: HTMLMediaElement) {
+  const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (this: HTMLMediaElement) {
     if (this.src.startsWith('data:')) return Promise.resolve() // the unlocking silence
     plays.push(this.src)
-    element = this
     if (refuse) return Promise.reject(new DOMException('play() needs a user gesture', 'NotAllowedError'))
     return Promise.resolve()
   })
@@ -74,7 +72,8 @@ export function fakeAudio() {
     },
     /** Fires a media event (playing, ended, error) on the element that last played. */
     fire: (type: 'playing' | 'ended' | 'error') => {
-      if (element === null) throw new Error('nothing has played')
+      const element = play.mock.contexts.at(-1) // `this` of the last play() call
+      if (!(element instanceof HTMLMediaElement)) throw new Error('nothing has played')
       element.dispatchEvent(new Event(type))
     },
   }
