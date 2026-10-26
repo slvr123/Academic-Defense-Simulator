@@ -25,8 +25,8 @@ def _embedding(body: dict) -> bool:
 
 
 def test_health_reports_model_loaded(client_factory):
-    with client_factory() as client:
-        assert client.get("/health").json() == {"status": "ok", "model_loaded": True}
+    with client_factory(mimo_api_key=None) as client:
+        assert client.get("/health").json() == {"status": "ok", "model_loaded": True, "tts_available": False}
 
 
 def test_pdf_goes_from_queued_to_ready_with_page_ranges(client_factory, pdf):

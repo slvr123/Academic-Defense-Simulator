@@ -120,6 +120,10 @@ class AnswerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     text: str = Field(min_length=1, max_length=8000)
+    # The question being answered (QuestionOut.turn). Optional, so older callers keep
+    # working; when sent, a resend of the last answered turn replays its response and
+    # any other turn but the open one is refused (M3b E13).
+    turn: int | None = Field(default=None, ge=1)
 
     @field_validator("text")
     @classmethod
@@ -167,6 +171,17 @@ class ReportResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     model_loaded: bool
+    tts_available: bool  # MIMO_API_KEY is set, so POST /tts can synthesize
+
+
+class TtsRequest(BaseModel):
+    """POST /tts. Names a question the backend generated; never carries text, so the
+    endpoint can't be used to synthesize anything else (M3b E3)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1, max_length=64)
+    turn: int = Field(ge=1)  # QuestionOut.turn
 
 
 class SessionCreated(BaseModel):
@@ -177,6 +192,9 @@ class SessionCreated(BaseModel):
 
 # Machine-readable reasons a client branches on; `detail` / `error` stay the readable text.
 LimitCode = Literal["per_ip_limit", "daily_cap"]
+TtsErrorCode = Literal["tts_limit", "tts_failed", "tts_unavailable"]
+AnswerErrorCode = Literal["stale_question"]
+ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode]
 IngestErrorCode = Literal["scanned_pdf"]
 
 
@@ -193,10 +211,10 @@ class SessionState(BaseModel):
 class ErrorBody(BaseModel):
     """Every error response. `detail` is FastAPI's: readable text, or a list of
     validation errors on a 422. `code` is set where a client needs to tell causes
-    apart without reading the text (a 429's limit)."""
+    apart without reading the text (a 429's limit, a /tts failure, a stale answer)."""
 
     detail: str | list[dict[str, object]]
-    code: LimitCode | None = None
+    code: ErrorCode | None = None
 
 
 class QuotaStatus(BaseModel):

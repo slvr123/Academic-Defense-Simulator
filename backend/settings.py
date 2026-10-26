@@ -7,8 +7,8 @@ The upload limits come from the M1 Render memory measurement
 The Gemini limits are the free tier of my project as AI Studio showed them on
 2026-10-20. They size the daily session cap (backend/quota.py) and the per-minute
 pacing of v1's provider, so they must match the project the key belongs to.
-DATABASE_URL and GEMINI_API_KEY have no ADS_ prefix: they are the names Render
-and Neon use. Locally they can come from backend/.env (gitignored).
+DATABASE_URL, GEMINI_API_KEY and MIMO_API_KEY have no ADS_ prefix: they are the
+names Render, Neon and v1 use. Locally they can come from backend/.env (gitignored).
 """
 
 from __future__ import annotations
@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = Field(default=None, validation_alias="DATABASE_URL")
     # Never logged or returned: SecretStr keeps it out of reprs, and only the provider reads it.
     gemini_api_key: SecretStr | None = Field(default=None, validation_alias="GEMINI_API_KEY")
+    # Panelist voices (POST /tts). Optional: without it /tts answers 503 and /status
+    # says tts_available is false. Never logged or returned, like the Gemini key.
+    mimo_api_key: SecretStr | None = Field(default=None, validation_alias="MIMO_API_KEY")
 
     @model_validator(mode="after")
     def _limits_cover_the_models(self) -> Settings:
@@ -93,6 +96,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def mimo_key(self) -> str | None:
+        """The MiMo key, or None when unset or blank."""
+        key = self.mimo_api_key.get_secret_value().strip() if self.mimo_api_key else ""
+        return key or None
 
     @property
     def max_upload_bytes(self) -> int:

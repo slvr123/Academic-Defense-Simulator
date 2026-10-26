@@ -59,6 +59,7 @@ from backend.schemas import (
 )
 from backend.sessions import SessionCapacityError, SessionStatus, SessionStore
 from backend.settings import Settings
+from backend.tts import Synthesize, default_synthesize
 
 logger = logging.getLogger("backend")
 
@@ -142,6 +143,7 @@ def create_app(
     quota_store_factory: QuotaStoreFactory = _postgres_store,
     clock: Clock = _utc_now,
     providers_factory: Callable[[Settings], ProvidersFactory] = gemini_providers_factory,
+    synthesize: Synthesize = default_synthesize,
 ) -> FastAPI:
     settings = settings or Settings()
     quota_plan = plan_quota(settings)
@@ -196,9 +198,13 @@ def create_app(
     app.state.quota_plan = quota_plan
     app.state.last_chunk_copy = None  # set by /start, read by /debug/memory
 
-    @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
-        return HealthResponse(model_loaded=app.state.embedder is not None)
+        return HealthResponse(model_loaded=app.state.embedder is not None, tts_available=settings.mimo_key is not None)
+
+    # EasyPrivacy blocks `||onrender.com/health` (M3b E2), so browsers call /status.
+    # /health stays for Render's health check and anything already deployed.
+    app.get("/status", response_model=HealthResponse)(health)
+    app.get("/health", response_model=HealthResponse, deprecated=True)(health)
 
     @app.get("/panel-options", response_model=PanelOptions)
     def get_panel_options() -> PanelOptions:
@@ -318,6 +324,7 @@ def create_app(
     register_defense_routes(
         app, settings=settings, quota_plan=quota_plan, clock=clock,
         not_found=lambda: HTTPException(404, NOT_FOUND_MESSAGE), quota_used_up=quota_used_up,
+        synthesize=synthesize,
     )
 
     if settings.debug_client:

@@ -16,6 +16,7 @@ the same answer again.
 from __future__ import annotations
 
 import logging
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import PurePath
@@ -36,7 +37,7 @@ from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
-from backend.schemas import Evaluation, PanelistOut, PanelConfig, QuestionOut, Source
+from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source
 from backend.sessions import Session
 
 logger = logging.getLogger("backend.defense")
@@ -57,6 +58,26 @@ class Providers:
 # Built per defense, so the counter tallies that defense's calls alone.
 ProvidersFactory = Callable[[CallCounter], Providers]
 
+# One synthesis and one retry per question (M3b E3).
+TTS_CALLS_PER_QUESTION = 2
+
+
+@dataclass(frozen=True)
+class AskedQuestion:
+    """What /tts speaks for a turn: the question as sent, and who asked it."""
+
+    text: str
+    archetype_key: str
+
+
+@dataclass(frozen=True)
+class AnsweredTurn:
+    """The last answer's turn and the response it got, replayed if the client
+    resends that turn because the response never reached it (M3b E13)."""
+
+    turn: int
+    response: AnswerResponse
+
 
 @dataclass
 class Defense:
@@ -72,10 +93,31 @@ class Defense:
     pending: ConversationTurn | None = None  # asked, not yet answered
     pending_source: Source | None = None
     sources: list[Source] = field(default_factory=list)  # one per recorded turn
+    # Every question the client has been sent, by turn. Written when a question
+    # becomes pending, never changed after, so /tts reads it without the turn lock.
+    asked: dict[int, AskedQuestion] = field(default_factory=dict)
+    last_answer: AnsweredTurn | None = None  # only the last; set under the turn lock
+    tts_calls: dict[int, int] = field(default_factory=dict)  # turn -> synth calls made
+    tts_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
     def done(self) -> bool:
         return self.session.report is not None
+
+    @property
+    def open_turn(self) -> int | None:
+        """The pending question's turn, or None when none is pending."""
+        return len(self.session.turns) + 1 if self.pending is not None else None
+
+    def take_tts_call(self, turn: int) -> bool:
+        """Counts one synth call for `turn`; False once its calls are used up. Under
+        its own lock, so two /tts requests can't both take the last one."""
+        with self.tts_lock:
+            made = self.tts_calls.get(turn, 0)
+            if made >= TTS_CALLS_PER_QUESTION:
+                return False
+            self.tts_calls[turn] = made + 1
+            return True
 
 
 def setup_defense(
@@ -120,7 +162,9 @@ def ask(defense: Defense) -> QuestionOut:
     with the defense unchanged."""
     turn, source = _next_question(defense, defense.session, defense.tracker)
     defense.pending, defense.pending_source = turn, source
-    return question_out(defense.session, turn, source)
+    question = question_out(defense.session, turn, source)
+    _record_asked(defense, question, turn)
+    return question
 
 
 @dataclass(frozen=True)
@@ -158,10 +202,14 @@ def answer(defense: Defense, text: str) -> AnswerResult:
             "defense done session=%s turns=%d calls=%d by_role=%s",
             working.profile.document_id, len(working.turns), defense.calls.total, defense.calls.by_stage,
         )
-    return AnswerResult(
-        evaluation=evaluation_out(turn),
-        next_question=question_out(working, next_turn, next_source) if next_turn and next_source else None,
-    )
+    next_question = question_out(working, next_turn, next_source) if next_turn and next_source else None
+    if next_question is not None and next_turn is not None:
+        _record_asked(defense, next_question, next_turn)
+    return AnswerResult(evaluation=evaluation_out(turn), next_question=next_question)
+
+
+def _record_asked(defense: Defense, question: QuestionOut, turn: ConversationTurn) -> None:
+    defense.asked[question.turn] = AskedQuestion(text=turn.question, archetype_key=turn.panelist_archetype_key)
 
 
 def _next_question(

@@ -58,3 +58,9 @@ captures/
 
 # Transcripts written by scripts/e2e_defense.py
 e2e-defense-*.json
+
+# M3b by-ear check: one WAV per archetype from the MiMo kickoff check (local only)
+voice-check/
+
+# M3b E2: throwaway ad-block filter-matching tool and its downloaded lists (never an app dependency)
+scratch/

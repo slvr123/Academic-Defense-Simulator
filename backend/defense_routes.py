@@ -1,8 +1,15 @@
-"""POST /sessions/{id}/start, POST /sessions/{id}/answers, GET /sessions/{id}/report.
+"""POST /sessions/{id}/start, POST /sessions/{id}/answers, GET /sessions/{id}/report,
+and POST /tts.
 
-Plain `def` routes: v1's engine is synchronous, so FastAPI runs each in its
-threadpool. Each takes the session's turn lock without waiting; a second request
-for the same session while one is running gets 409, not a queue.
+Plain `def` routes: v1's engine and v1's MiMo client are synchronous, so FastAPI
+runs each in its threadpool and the event loop stays free for every other request.
+Start, answers and report take the session's turn lock without waiting; a second
+request for the same session while one is running gets 409, not a queue. /tts never
+takes it, so a voice playing never blocks an answer (M3b E5).
+
+Answers are idempotent when the client says which turn it answers (M3b E13): a
+resend of the turn just answered gets that turn's stored response again, with no
+re-scoring, and any other turn but the open one gets 409 `stale_question`.
 
 Quota: /start reserves one slot for today (Pacific) before any Gemini call, and
 fails closed (503) if the store can't be reached. Nothing else touches it. A
@@ -12,16 +19,18 @@ Gemini 429 or surviving 503 anywhere is "busy" (decisions doc, item 3).
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
 from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
 from backend.client_ip import StartLimiter, client_ip
 from backend.defense import (
+    AnsweredTurn,
     Defense,
     Providers,
     ProvidersFactory,
@@ -31,6 +40,7 @@ from backend.defense import (
     panelist_out,
     setup_defense,
 )
+from backend.errors import CodedHTTPException
 from backend.llm_errors import PANEL_BUSY_MESSAGE, PANEL_BUSY_RETRY_AFTER_S, is_panel_busy
 from backend.quota import QuotaPlan, QuotaUnavailable, pacific_day
 from backend.schemas import (
@@ -41,9 +51,11 @@ from backend.schemas import (
     ReportResponse,
     StartResponse,
     TranscriptTurn,
+    TtsRequest,
 )
 from backend.sessions import Session, SessionStatus, SessionStore
 from backend.settings import Settings
+from backend.tts import Synthesize, TtsFailed, synthesize_wav
 
 logger = logging.getLogger("backend.defense")
 
@@ -56,6 +68,13 @@ REPORT_NOT_READY_MESSAGE = "The report is ready once the last answer is scored."
 TURN_IN_PROGRESS_MESSAGE = "The panel is still working on this session's last request. Wait for it to finish."
 PANEL_ERROR_MESSAGE = "The panel hit a problem with that turn. Nothing was recorded; send the same request again."
 QUOTA_DOWN_MESSAGE = "The demo's usage counter can't be reached right now, so no defense can start. Try again shortly."
+STALE_QUESTION_MESSAGE = (
+    "That answer is for a question that isn't open any more. The defense has moved on without it."
+)
+QUESTION_NOT_FOUND_MESSAGE = "That question isn't part of this session."
+TTS_UNAVAILABLE_MESSAGE = "Panel voices aren't set up on this server."
+TTS_LIMIT_MESSAGE = "This question has already been voiced as often as it can be."
+TTS_FAILED_MESSAGE = "The panel voice couldn't be made for this question."
 
 
 def per_ip_message(limit: int) -> str:
@@ -109,6 +128,7 @@ def register_defense_routes(
     clock: Clock,
     not_found: Callable[[], HTTPException],
     quota_used_up: Callable[..., HTTPException],
+    synthesize: Synthesize,
 ) -> None:
     def ready_session(session_id: str) -> Session:
         store: SessionStore = app.state.store
@@ -180,21 +200,74 @@ def register_defense_routes(
             question=question,
         )
 
-    @app.post("/sessions/{session_id}/answers", response_model=AnswerResponse)
+    @app.post("/sessions/{session_id}/answers", response_model=AnswerResponse, responses={409: {"model": ErrorBody}})
     def submit_answer(session_id: str, body: AnswerRequest) -> AnswerResponse:
         session = ready_session(session_id)
         with _turn(session):
             defense = _started(session)
+            # Before the done check, so a lost response to the final answer replays too.
+            last = defense.last_answer
+            if body.turn is not None and last is not None and body.turn == last.turn:
+                logger.info("answer replayed session=%s turn=%d", session_id, body.turn)
+                return last.response
             if defense.done:
                 raise HTTPException(409, DEFENSE_DONE_MESSAGE)
             if defense.pending is None:  # the first question failed; /start asks it again
                 raise HTTPException(409, NOT_STARTED_MESSAGE)
+            turn = defense.open_turn
+            assert turn is not None  # pending is set
+            if body.turn is not None and body.turn != turn:
+                raise CodedHTTPException(409, STALE_QUESTION_MESSAGE, "stale_question")
             try:
                 result = answer(defense, body.text)
             except LLMProviderError as exc:
                 logger.warning("turn failed session=%s busy=%s: %s", session_id, is_panel_busy(exc), exc)
                 raise llm_failure(exc) from exc
-        return AnswerResponse(evaluation=result.evaluation, next_question=result.next_question, done=defense.done)
+            response = AnswerResponse(evaluation=result.evaluation, next_question=result.next_question, done=defense.done)
+            defense.last_answer = AnsweredTurn(turn=turn, response=response)
+        return response
+
+    @app.post(
+        "/tts",
+        response_class=Response,
+        responses={
+            200: {"content": {"audio/wav": {"schema": {"type": "string", "format": "binary"}}}},
+            404: {"model": ErrorBody},
+            429: {"model": ErrorBody},
+            502: {"model": ErrorBody},
+            503: {"model": ErrorBody},
+        },
+    )
+    def tts(body: TtsRequest) -> Response:
+        """One question's audio as WAV bytes, in the asking panelist's voice. The
+        server keeps none of it once the response is sent."""
+        key = settings.mimo_key
+        if key is None:
+            raise CodedHTTPException(503, TTS_UNAVAILABLE_MESSAGE, "tts_unavailable")
+        store: SessionStore = app.state.store
+        session = store.get(body.session_id)
+        if session is None:
+            raise not_found()
+        defense = session.defense
+        asked = defense.asked.get(body.turn) if defense is not None else None
+        if defense is None or asked is None:
+            raise HTTPException(404, QUESTION_NOT_FOUND_MESSAGE)
+        if not defense.take_tts_call(body.turn):
+            raise CodedHTTPException(429, TTS_LIMIT_MESSAGE, "tts_limit")
+        started = time.perf_counter()
+        try:
+            audio = synthesize_wav(synthesize, asked.text, asked.archetype_key, key)
+        except TtsFailed as exc:
+            logger.warning(
+                "tts failed session=%s turn=%d after %.2fs: %s", body.session_id, body.turn,
+                time.perf_counter() - started, exc,
+            )
+            raise CodedHTTPException(502, TTS_FAILED_MESSAGE, "tts_failed") from exc
+        logger.info(
+            "tts session=%s turn=%d archetype=%s bytes=%d s=%.2f", body.session_id, body.turn,
+            asked.archetype_key, len(audio), time.perf_counter() - started,
+        )
+        return Response(audio, media_type="audio/wav")
 
     @app.get("/sessions/{session_id}/report", response_model=ReportResponse)
     def get_report(session_id: str) -> ReportResponse:

@@ -20,6 +20,7 @@ from backend.app import create_app
 from backend.embedder import EMBEDDING_DIM
 from backend.quota import InMemoryQuotaStore
 from backend.tests.fake_gemini import FakeGemini
+from backend.tests.fake_mimo import FakeMimo
 from backend.settings import Settings
 
 PARAGRAPH = (
@@ -107,6 +108,14 @@ def gemini() -> FakeGemini:
     return FakeGemini()
 
 
+@pytest.fixture
+def mimo() -> Iterator[FakeMimo]:
+    fake = FakeMimo()
+    yield fake
+    if fake.block is not None:
+        fake.block.set()  # never leave a /tts thread waiting at teardown
+
+
 def make_settings(**overrides: object) -> Settings:
     """Settings that never read backend/.env, so tests can't reach a real database."""
     return Settings(_env_file=None, **overrides)
@@ -114,7 +123,8 @@ def make_settings(**overrides: object) -> Settings:
 
 @pytest.fixture
 def client_factory(
-    tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock, gemini: FakeGemini
+    tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock, gemini: FakeGemini,
+    mimo: FakeMimo,
 ) -> Callable[..., object]:
     @contextmanager
     def factory(**overrides: object) -> Iterator[TestClient]:
@@ -122,7 +132,7 @@ def client_factory(
         app = create_app(
             settings, embedder_factory=lambda _settings: embedder,
             quota_store_factory=lambda _settings: quota_store, clock=clock,
-            providers_factory=lambda _settings: gemini.providers,
+            providers_factory=lambda _settings: gemini.providers, synthesize=mimo,
         )
         with TestClient(app) as client:
             try:
