@@ -39,6 +39,10 @@ services:
       # the static site exists and its URL is known.
       - key: ADS_CORS_ORIGINS
         sync: false
+      # Panelist voices (POST /tts, M3b). Optional: without it /status reports
+      # tts_available false and the frontend offers only the browser voice.
+      - key: MIMO_API_KEY
+        sync: false
 
   - type: web
     name: ads-frontend
