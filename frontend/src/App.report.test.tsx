@@ -2,7 +2,7 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { lastAnswer, report, startResponse } from './test/fixtures'
-import { advance, defaultServer, renderApp, uploadAccepted } from './test/renderApp'
+import { advance, defaultServer, renderApp, startDefense, uploadAccepted } from './test/renderApp'
 
 async function toReport(body = report) {
   const server = defaultServer()
@@ -13,7 +13,7 @@ async function toReport(body = report) {
   const user = renderApp()
   await uploadAccepted(server, user)
   await advance(2000)
-  await user.click(await screen.findByRole('button', { name: 'Start the defense' }))
+  await startDefense(user)
   await user.type(await screen.findByLabelText('Your answer'), 'We adapted ISO 25010.')
   await user.click(screen.getByRole('button', { name: 'Send answer' }))
   await screen.findByText('Your defense report')

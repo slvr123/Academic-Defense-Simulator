@@ -4,7 +4,7 @@ import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { FakeServer, Reply } from './test/fakeServer'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
-import { advance, defaultServer, deferred, renderApp, uploadAccepted } from './test/renderApp'
+import { advance, defaultServer, deferred, renderApp, startDefense, uploadAccepted } from './test/renderApp'
 
 type User = ReturnType<typeof renderApp>
 
@@ -32,7 +32,7 @@ async function toReady(server: FakeServer, user: User) {
 
 async function toQuestion(server: FakeServer, user: User) {
   await toReady(server, user)
-  await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+  await startDefense(user)
   await screen.findByText(Q1)
 }
 
@@ -48,7 +48,7 @@ describe('preparing (D16, /start in flight)', () => {
     server.on(START, () => start.promise)
     const user = renderApp()
     await toReady(server, user)
-    await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+    await startDefense(user)
 
     expect(screen.getByText('The panel is preparing. They are reading your document.')).toBeInTheDocument()
     const seats = screen.getByRole('list', { name: 'Seated panel' })
@@ -72,7 +72,7 @@ describe('preparing (D16, /start in flight)', () => {
     server.on(START, { status: 429, body: { detail: 'x', code }, headers: { 'Retry-After': '3600' } })
     const user = renderApp()
     await toReady(server, user)
-    await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+    await startDefense(user)
     expect(await screen.findByText(new RegExp(`^${text.replace(/[.']/g, '.')} More at .+, Manila time\\.$`))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument()
   })
@@ -82,7 +82,7 @@ describe('preparing (D16, /start in flight)', () => {
     server.on(START, { status: 503, body: { detail: 'The panel is busy right now.' }, headers: { 'Retry-After': '60' } })
     const user = renderApp()
     await toReady(server, user)
-    await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+    await startDefense(user)
     expect(await screen.findByText('The panel is busy - retrying in 60 s.')).toBeInTheDocument()
     server.on(START, { status: 200, body: startResponse })
     await advance(60_000)
@@ -272,7 +272,7 @@ describe('keep-alive (D10)', () => {
     await advance(25 * 60_000)
     expect(healthCalls(server)).toBe(atLoad) // ready: no pings
 
-    await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+    await startDefense(user)
     await screen.findByText(Q1)
     await advance(10 * 60_000)
     expect(healthCalls(server)).toBe(atLoad + 1)

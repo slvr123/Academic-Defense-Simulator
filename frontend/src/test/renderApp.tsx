@@ -51,6 +51,12 @@ export async function submitDocument(user: ReturnType<typeof userEvent.setup>, f
   await user.click(screen.getByRole('button', { name: /upload and convene/i }))
 }
 
+/** The ready screen's voice choice (E9), then Start. Tests that aren't about voice choose none. */
+export async function startDefense(user: ReturnType<typeof userEvent.setup>, voice: RegExp = /^No voice/) {
+  await user.click(await screen.findByRole('radio', { name: voice }))
+  await user.click(screen.getByRole('button', { name: 'Start the defense' }))
+}
+
 /** Sends a document and answers the upload with 202, leaving the session queued. */
 export async function uploadAccepted(server: FakeServer, user: ReturnType<typeof userEvent.setup>, position = 1) {
   await screen.findByText(/defenses left today/)

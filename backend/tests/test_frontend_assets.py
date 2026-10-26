@@ -34,3 +34,14 @@ def test_every_archetype_has_an_accent_in_the_frontend():
     accents = (FRONTEND / "src" / "lib" / "accents.ts").read_text(encoding="utf-8")
     missing = [key for key in ARCHETYPE_CONFIG if f"  {key}: {{" not in accents]
     assert missing == []
+
+
+def test_the_frontend_voice_map_is_v1s_voice_profiles_exactly():
+    # M3b E12: the browser voice is v1's, unchanged. The frontend's copy is JSON so
+    # this compares values, not text; any edit on either side fails here.
+    import json
+
+    from academic_defense_simulator.panel import VOICE_PROFILES
+
+    copy = json.loads((FRONTEND / "src" / "voice" / "voiceProfiles.json").read_text(encoding="utf-8"))
+    assert copy == VOICE_PROFILES

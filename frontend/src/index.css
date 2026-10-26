@@ -30,6 +30,19 @@
   --color-accent-results: #2f6f8a;
   --color-accent-industry: #5c5c2f;
   --color-accent-devil: #a12c2c;
+
+  /* The asking panelist's portrait while their voice plays (M3b E11). */
+  --animate-speaking: speaking 1.4s ease-in-out infinite;
+
+  @keyframes speaking {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 45%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-brand) 0%, transparent);
+    }
+  }
 }
 
 body {

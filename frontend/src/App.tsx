@@ -4,13 +4,27 @@ import { ConfigScreen } from './components/ConfigScreen'
 import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
 import { ReportScreen } from './components/ReportScreen'
 import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen } from './components/WaitScreens'
+import { useState } from 'react'
 import { seatedPanel } from './lib/panel'
+import type { VoiceChoice } from './state/flow'
 import { useFlow } from './state/useFlow'
+import { createPlayer } from './voice/player'
 
 export default function App() {
   const flow = useFlow()
+  const [player] = useState(createPlayer)
   const { state } = flow
   const { phase } = state
+
+  // Both clicks unlock audio, so the first question's voice can play when it arrives (E10).
+  const chooseVoice = (voice: VoiceChoice) => {
+    if (voice !== 'none') player.unlock()
+    flow.chooseVoice(voice)
+  }
+  const start = () => {
+    if (state.voice !== 'none') player.unlock()
+    void flow.start()
+  }
 
   let screen
   switch (phase.kind) {
@@ -53,7 +67,10 @@ export default function App() {
         <ReadyScreen
           chunkCount={phase.chunkCount}
           notice={phase.notice}
-          onStart={() => void flow.start()}
+          voice={state.voice}
+          ttsAvailable={state.ttsAvailable}
+          onChooseVoice={chooseVoice}
+          onStart={start}
           onAutoRetry={() => void flow.start(true)}
           onStartOver={flow.restart}
         />
@@ -66,6 +83,9 @@ export default function App() {
     case 'submitting':
       screen = (
         <QuestionScreen
+          sessionId={phase.sessionId}
+          voiceChoice={state.voice}
+          player={player}
           topic={phase.topic}
           panel={phase.panel}
           question={phase.question}

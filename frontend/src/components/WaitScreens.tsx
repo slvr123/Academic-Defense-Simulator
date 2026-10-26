@@ -1,7 +1,8 @@
 // Each wait between "upload" and "first question" is its own named state, never a bare
 // spinner (D16). Copy uses measured times: cold start up to 42.7 s, 224 pages in 63.6 s.
-import type { Notice } from '../state/flow'
+import type { Notice, VoiceChoice } from '../state/flow'
 import { NoticeBanner } from './NoticeBanner'
+import { VoiceGate } from './VoiceGate'
 import { Button, Card, Heading, ProgressBar, Working } from './ui'
 
 export function UploadingScreen({ serverAwake, fileName, loaded, total }: { serverAwake: boolean; fileName: string; loaded: number; total: number }) {
@@ -67,9 +68,12 @@ export function ExpiredScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
-export function ReadyScreen({ chunkCount, notice, onStart, onAutoRetry, onStartOver }: {
+export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseVoice, onStart, onAutoRetry, onStartOver }: {
   chunkCount: number | null
   notice: Notice | null
+  voice: VoiceChoice | null
+  ttsAvailable: boolean
+  onChooseVoice: (voice: VoiceChoice) => void
   onStart: () => void
   onAutoRetry: () => void
   onStartOver: () => void
@@ -91,12 +95,17 @@ export function ReadyScreen({ chunkCount, notice, onStart, onAutoRetry, onStartO
           retryLabel="Start again"
         />
       )}
+      {!stuck && <VoiceGate voice={voice} ttsAvailable={ttsAvailable} onChoose={onChooseVoice} />}
       {stuck ? (
         <Button variant="secondary" onClick={onStartOver}>
           Start over
         </Button>
       ) : (
-        !notice && <Button onClick={onStart}>Start the defense</Button>
+        !notice && (
+          <Button onClick={onStart} disabled={voice === null}>
+            Start the defense
+          </Button>
+        )
       )}
     </Card>
   )

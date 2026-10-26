@@ -5,7 +5,9 @@ import type { ArchetypeOption, PanelistOut, QuestionOut } from '../api/types'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { accentFor } from '../lib/accents'
 import { panelistName } from '../lib/labels'
-import type { Notice, Turn } from '../state/flow'
+import type { Notice, Turn, VoiceChoice } from '../state/flow'
+import type { Player } from '../voice/player'
+import { type QuestionVoice, useQuestionVoice } from '../voice/useQuestionVoice'
 import { Avatar } from './Avatar'
 import { NoticeBanner } from './NoticeBanner'
 import { EvaluationScores, ScaleCaption } from './Scores'
@@ -49,14 +51,14 @@ export function PreparingScreen({ seats }: { seats: ArchetypeOption[] }) {
   )
 }
 
-function PanelStrip({ panel, asking }: { panel: PanelistOut[]; asking: string }) {
+function PanelStrip({ panel, asking, speaking }: { panel: PanelistOut[]; asking: string; speaking: boolean }) {
   return (
     <ul className="flex gap-3 overflow-x-auto pb-1" aria-label="Panel">
       {panel.map((p) => {
         const active = p.archetype_key === asking
         return (
           <li key={p.archetype_key} className={`flex min-w-0 shrink-0 flex-col items-center gap-1 text-center transition-opacity ${active ? '' : 'opacity-50'}`}>
-            <Avatar icon={p.icon} archetypeKey={p.archetype_key} size={active ? 'lg' : 'md'} />
+            <Avatar icon={p.icon} archetypeKey={p.archetype_key} size={active ? 'lg' : 'md'} speaking={active && speaking} />
             <span className="max-w-24 truncate text-xs font-medium">{panelistName(p.name)}</span>
           </li>
         )
@@ -79,13 +81,41 @@ function QuestionText({ text }: { text: string }) {
   )
 }
 
-function QuestionCard({ question }: { question: QuestionOut }) {
+/** What the voice is doing, and the one control that fits: Replay, or Play when the browser blocked autoplay (E10). */
+function VoiceControls({ voice, submitting }: { voice: QuestionVoice; submitting: boolean }) {
+  switch (voice.status) {
+    case 'off':
+      return null
+    case 'loading':
+      return (
+        <p className="flex items-center gap-2 text-xs text-muted">
+          <Working /> Voice loading
+        </p>
+      )
+    case 'blocked':
+      return <Button onClick={voice.replay}>&#9654; Play the question</Button>
+    case 'idle':
+    case 'speaking':
+      return (
+        <div className="flex items-center gap-3">
+          {!submitting && (
+            <Button variant="secondary" onClick={voice.replay} className="py-1.5">
+              &#9654; Replay
+            </Button>
+          )}
+          {voice.status === 'speaking' && <span className="text-xs text-muted">Speaking</span>}
+        </div>
+      )
+  }
+}
+
+function QuestionCard({ question, voice, submitting }: { question: QuestionOut; voice: QuestionVoice; submitting: boolean }) {
   const { panelist } = question
   const accent = accentFor(panelist.archetype_key)
   return (
     <Card className={`space-y-3 border-l-4 ${accent.border}`}>
       <div className="flex items-center gap-3">
-        <Avatar icon={panelist.icon} archetypeKey={panelist.archetype_key} />
+        <Avatar icon={panelist.icon} archetypeKey={panelist.archetype_key} speaking={voice.status === 'speaking'} />
         <div className="min-w-0">
           <p className="font-medium">{panelistName(panelist.name)}</p>
           <p className={`text-sm ${accent.text}`}>{panelist.title}</p>
@@ -93,6 +123,7 @@ function QuestionCard({ question }: { question: QuestionOut }) {
         <span className="ml-auto shrink-0 text-xs text-muted">Question {question.turn}</span>
       </div>
       <QuestionText key={question.turn} text={question.question} />
+      <VoiceControls voice={voice} submitting={submitting} />
     </Card>
   )
 }
@@ -124,6 +155,9 @@ export function LastTurn({ turn }: { turn: Turn }) {
 }
 
 type QuestionScreenProps = {
+  sessionId: string
+  voiceChoice: VoiceChoice | null
+  player: Player
   topic: string
   panel: PanelistOut[]
   question: QuestionOut
@@ -136,17 +170,18 @@ type QuestionScreenProps = {
   onAutoRetry: () => void
 }
 
-export function QuestionScreen({ topic, panel, question, draft, last, submitting, notice, onChange, onSend, onAutoRetry }: QuestionScreenProps) {
+export function QuestionScreen({ sessionId, voiceChoice, player, topic, panel, question, draft, last, submitting, notice, onChange, onSend, onAutoRetry }: QuestionScreenProps) {
   const answerId = useId()
+  const voice = useQuestionVoice({ player, choice: voiceChoice, sessionId, question, submitting })
   const counting = notice?.kind === 'busy' && notice.retryAt !== null
   return (
     <div className="space-y-4">
       <div className="space-y-3">
         <p className="truncate text-sm text-muted">{topic}</p>
-        <PanelStrip panel={panel} asking={question.panelist.archetype_key} />
+        <PanelStrip panel={panel} asking={question.panelist.archetype_key} speaking={voice.status === 'speaking'} />
       </div>
       {last && <LastTurn turn={last} />}
-      <QuestionCard question={question} />
+      <QuestionCard question={question} voice={voice} submitting={submitting} />
       <form
         className="space-y-3"
         onSubmit={(event) => {
