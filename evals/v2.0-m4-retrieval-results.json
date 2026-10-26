@@ -1,0 +1,2900 @@
+{
+ "milestone": "v2.0 M4",
+ "embedder": "backend.embedder.OnnxEmbedder (backend/model/model.onnx)",
+ "max_seq_length": 256,
+ "near_tie_gap": 0.02,
+ "overlap_k": 5,
+ "retrieving_archetypes": [
+  "methodology_expert",
+  "literature_theory_specialist",
+  "technical_implementation_reviewer",
+  "ethics_practicality_reviewer",
+  "problem_objectives_reviewer",
+  "statistical_analysis_reviewer",
+  "results_conclusions_reviewer",
+  "industry_practice_reviewer"
+ ],
+ "documents": [
+  {
+   "file": "corrupt_sample.pdf",
+   "in_verdict": true,
+   "sha256": "e70ae8a1be5240d52318438e0e5cbcc30f56cb8ab0638238abe40fca337dae7f",
+   "usable": false,
+   "reason": "parse_pdf: error"
+  },
+  {
+   "file": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+   "in_verdict": true,
+   "sha256": "b342cdf4bebecaf589a55e51779e1459cb844a4d7848f41fb49ae624432d1331",
+   "matches_september_hash": true,
+   "usable": true,
+   "pages": 224,
+   "chunks": 92
+  },
+  {
+   "file": "non_defense_sample.pdf",
+   "in_verdict": true,
+   "sha256": "4fb70178cb632c35dd504296b76a62d846132d9a5ce80cb761317a944965513c",
+   "usable": true,
+   "pages": 1,
+   "chunks": 1
+  },
+  {
+   "file": "sample3.pdf",
+   "in_verdict": true,
+   "sha256": "eb81a4d20ea830bc708b7ae47378f935098fbc71646502a60eac1e5263c0e534",
+   "matches_september_hash": true,
+   "usable": true,
+   "pages": 82,
+   "chunks": 49
+  },
+  {
+   "file": "sample-capstone-anicheck.pdf",
+   "in_verdict": false,
+   "sha256": "6d7ff649bc48a9f8cfd37d82533fee4ccaef1a086b143bc749f8bc78e7c9a761",
+   "usable": true,
+   "pages": 16,
+   "chunks": 14
+  }
+ ],
+ "validation": {
+  "document": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+  "defense_type": "capstone",
+  "panel": [
+   "technical_implementation_reviewer",
+   "methodology_expert",
+   "results_conclusions_reviewer"
+  ],
+  "turns": [
+   {
+    "turn": 1,
+    "archetype": "technical_implementation_reviewer",
+    "simulated_pages": [
+     28,
+     28
+    ],
+    "simulated_score": 0.4966,
+    "live_pages": [
+     28,
+     28
+    ],
+    "live_score": 0.4966,
+    "match": true
+   },
+   {
+    "turn": 2,
+    "archetype": "methodology_expert",
+    "simulated_pages": [
+     121,
+     123
+    ],
+    "simulated_score": 0.3899,
+    "live_pages": [
+     121,
+     123
+    ],
+    "live_score": 0.3899,
+    "match": true
+   },
+   {
+    "turn": 3,
+    "archetype": "results_conclusions_reviewer",
+    "simulated_pages": [
+     172,
+     174
+    ],
+    "simulated_score": 0.2708,
+    "live_pages": [
+     172,
+     174
+    ],
+    "live_score": 0.2708,
+    "match": true
+   }
+  ],
+  "turn_4_devils_advocate": {
+   "live_pages": [
+    121,
+    123
+   ],
+   "reuses_a_simulated_chunk": true
+  }
+ },
+ "summary": {
+  "halted": {
+   "Group2_Library Management System for DAZSMA Documentation (1).pdf": [],
+   "non_defense_sample.pdf": [
+    "check_a",
+    "check_b",
+    "check_c",
+    "check_e"
+   ],
+   "sample3.pdf": []
+  },
+  "check_a": {
+   "documents": [
+    "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+    "sample3.pdf"
+   ],
+   "pooled_median_shared_top5": 1.0,
+   "per_document": {
+    "Group2_Library Management System for DAZSMA Documentation (1).pdf": "differentiated",
+    "sample3.pdf": "partial"
+   },
+   "verdict": "differentiated"
+  },
+  "check_b": {
+   "documents": [
+    "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+    "sample3.pdf"
+   ],
+   "pooled_near_tie_rate": 0.4375,
+   "verdict": "top_k=1 defensible"
+  },
+  "check_c": {
+   "Group2_Library Management System for DAZSMA Documentation (1).pdf": false,
+   "sample3.pdf": true
+  },
+  "check_d": {
+   "Group2_Library Management System for DAZSMA Documentation (1).pdf": {
+    "over_limit": 87,
+    "chunks": 92,
+    "mean_seen_share": 0.657
+   },
+   "non_defense_sample.pdf": {
+    "over_limit": 1,
+    "chunks": 1,
+    "mean_seen_share": 0.701
+   },
+   "sample3.pdf": {
+    "over_limit": 48,
+    "chunks": 49,
+    "mean_seen_share": 0.481
+   }
+  },
+  "check_e": {
+   "Group2_Library Management System for DAZSMA Documentation (1).pdf": {
+    "max_displacement_rank": 2,
+    "turns_over_5": 0
+   },
+   "sample3.pdf": {
+    "max_displacement_rank": 3,
+    "turns_over_5": 0
+   }
+  }
+ },
+ "per_document": [
+  {
+   "file": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+   "sha256": "b342cdf4bebecaf589a55e51779e1459cb844a4d7848f41fb49ae624432d1331",
+   "in_verdict": true,
+   "pages": 224,
+   "chunks": 92,
+   "chunk_pages": [
+    [
+     1,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     6,
+     6
+    ],
+    [
+     7,
+     7
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     9,
+     9
+    ],
+    [
+     10,
+     10
+    ],
+    [
+     11,
+     11
+    ],
+    [
+     12,
+     12
+    ],
+    [
+     13,
+     13
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     16,
+     16
+    ],
+    [
+     17,
+     17
+    ],
+    [
+     18,
+     18
+    ],
+    [
+     19,
+     19
+    ],
+    [
+     20,
+     20
+    ],
+    [
+     21,
+     21
+    ],
+    [
+     22,
+     22
+    ],
+    [
+     23,
+     23
+    ],
+    [
+     24,
+     24
+    ],
+    [
+     25,
+     25
+    ],
+    [
+     26,
+     27
+    ],
+    [
+     28,
+     28
+    ],
+    [
+     29,
+     29
+    ],
+    [
+     30,
+     30
+    ],
+    [
+     31,
+     31
+    ],
+    [
+     32,
+     32
+    ],
+    [
+     33,
+     33
+    ],
+    [
+     34,
+     34
+    ],
+    [
+     35,
+     39
+    ],
+    [
+     39,
+     44
+    ],
+    [
+     45,
+     51
+    ],
+    [
+     51,
+     57
+    ],
+    [
+     57,
+     64
+    ],
+    [
+     64,
+     88
+    ],
+    [
+     88,
+     94
+    ],
+    [
+     95,
+     97
+    ],
+    [
+     98,
+     100
+    ],
+    [
+     101,
+     102
+    ],
+    [
+     103,
+     104
+    ],
+    [
+     104,
+     105
+    ],
+    [
+     106,
+     106
+    ],
+    [
+     107,
+     107
+    ],
+    [
+     108,
+     108
+    ],
+    [
+     109,
+     113
+    ],
+    [
+     112,
+     116
+    ],
+    [
+     117,
+     117
+    ],
+    [
+     118,
+     118
+    ],
+    [
+     119,
+     120
+    ],
+    [
+     121,
+     123
+    ],
+    [
+     123,
+     126
+    ],
+    [
+     126,
+     130
+    ],
+    [
+     131,
+     133
+    ],
+    [
+     134,
+     134
+    ],
+    [
+     135,
+     135
+    ],
+    [
+     136,
+     137
+    ],
+    [
+     137,
+     141
+    ],
+    [
+     141,
+     142
+    ],
+    [
+     143,
+     145
+    ],
+    [
+     146,
+     149
+    ],
+    [
+     150,
+     153
+    ],
+    [
+     154,
+     157
+    ],
+    [
+     158,
+     161
+    ],
+    [
+     162,
+     163
+    ],
+    [
+     164,
+     164
+    ],
+    [
+     165,
+     165
+    ],
+    [
+     166,
+     167
+    ],
+    [
+     167,
+     169
+    ],
+    [
+     170,
+     172
+    ],
+    [
+     172,
+     174
+    ],
+    [
+     174,
+     176
+    ],
+    [
+     177,
+     177
+    ],
+    [
+     178,
+     178
+    ],
+    [
+     179,
+     179
+    ],
+    [
+     180,
+     180
+    ],
+    [
+     181,
+     181
+    ],
+    [
+     182,
+     182
+    ],
+    [
+     183,
+     191
+    ],
+    [
+     192,
+     192
+    ],
+    [
+     193,
+     193
+    ],
+    [
+     194,
+     195
+    ],
+    [
+     196,
+     198
+    ],
+    [
+     198,
+     201
+    ],
+    [
+     202,
+     204
+    ],
+    [
+     205,
+     207
+    ],
+    [
+     208,
+     210
+    ],
+    [
+     211,
+     213
+    ],
+    [
+     214,
+     216
+    ],
+    [
+     217,
+     220
+    ],
+    [
+     220,
+     224
+    ]
+   ],
+   "rankings_top10": {
+    "methodology_expert": [
+     51,
+     69,
+     43,
+     72,
+     8,
+     83,
+     77,
+     1,
+     50,
+     80
+    ],
+    "literature_theory_specialist": [
+     80,
+     43,
+     24,
+     56,
+     12,
+     89,
+     51,
+     81,
+     1,
+     71
+    ],
+    "technical_implementation_reviewer": [
+     24,
+     9,
+     41,
+     56,
+     42,
+     78,
+     25,
+     40,
+     77,
+     69
+    ],
+    "ethics_practicality_reviewer": [
+     25,
+     41,
+     83,
+     56,
+     78,
+     48,
+     4,
+     77,
+     24,
+     81
+    ],
+    "problem_objectives_reviewer": [
+     51,
+     8,
+     72,
+     69,
+     1,
+     89,
+     70,
+     77,
+     43,
+     90
+    ],
+    "statistical_analysis_reviewer": [
+     71,
+     43,
+     70,
+     67,
+     20,
+     30,
+     84,
+     51,
+     72,
+     64
+    ],
+    "results_conclusions_reviewer": [
+     71,
+     72,
+     70,
+     4,
+     8,
+     90,
+     49,
+     84,
+     1,
+     67
+    ],
+    "industry_practice_reviewer": [
+     72,
+     56,
+     50,
+     69,
+     91,
+     77,
+     9,
+     51,
+     40,
+     41
+    ]
+   },
+   "check_a": {
+    "pairs": [
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "literature_theory_specialist",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 2,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "results_conclusions_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     }
+    ],
+    "median_shared_top5": 1.0,
+    "mean_shared_top5": 0.9285714285714286,
+    "same_top1_pairs": 2,
+    "pair_count": 28,
+    "random_baseline_shared_top5": 0.2717391304347826,
+    "distinct_top1_chunks": 6,
+    "distinct_top5_chunks": 23,
+    "verdict": "differentiated"
+   },
+   "check_b": {
+    "per_archetype": {
+     "methodology_expert": {
+      "top5_scores": [
+       0.3899,
+       0.2921,
+       0.2902,
+       0.2762,
+       0.2543
+      ],
+      "gap_1_2": 0.0978,
+      "near_tie": false
+     },
+     "literature_theory_specialist": {
+      "top5_scores": [
+       0.2113,
+       0.2018,
+       0.1818,
+       0.1784,
+       0.1589
+      ],
+      "gap_1_2": 0.0095,
+      "near_tie": true
+     },
+     "technical_implementation_reviewer": {
+      "top5_scores": [
+       0.4966,
+       0.455,
+       0.411,
+       0.3855,
+       0.3741
+      ],
+      "gap_1_2": 0.0416,
+      "near_tie": false
+     },
+     "ethics_practicality_reviewer": {
+      "top5_scores": [
+       0.3133,
+       0.3104,
+       0.3005,
+       0.2903,
+       0.2686
+      ],
+      "gap_1_2": 0.0029,
+      "near_tie": true
+     },
+     "problem_objectives_reviewer": {
+      "top5_scores": [
+       0.2808,
+       0.2562,
+       0.2515,
+       0.2447,
+       0.2443
+      ],
+      "gap_1_2": 0.0247,
+      "near_tie": false
+     },
+     "statistical_analysis_reviewer": {
+      "top5_scores": [
+       0.4086,
+       0.3889,
+       0.3684,
+       0.3498,
+       0.3449
+      ],
+      "gap_1_2": 0.0198,
+      "near_tie": true
+     },
+     "results_conclusions_reviewer": {
+      "top5_scores": [
+       0.2708,
+       0.252,
+       0.2351,
+       0.2113,
+       0.2072
+      ],
+      "gap_1_2": 0.0188,
+      "near_tie": true
+     },
+     "industry_practice_reviewer": {
+      "top5_scores": [
+       0.4246,
+       0.4008,
+       0.3765,
+       0.3678,
+       0.3486
+      ],
+      "gap_1_2": 0.0239,
+      "near_tie": false
+     }
+    },
+    "near_tie_rate": 0.5,
+    "gap_distribution": {
+     "min": 0.0028701424598693848,
+     "q1": 0.016476616263389587,
+     "median": 0.021819978952407837,
+     "q3": 0.028910286724567413,
+     "max": 0.09778457880020142,
+     "mean": 0.029864657670259476
+    }
+   },
+   "check_c": {
+    "boundary_page": 11,
+    "navigation_pages": [
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "front_matter_chunks": 9,
+    "base_rate": 0.09782608695652174,
+    "top1_pick_rate": 0.0,
+    "ratio": 0.0,
+    "top1_navigation_picks": [],
+    "session_pick_rate": 0.1111111111111111,
+    "session_navigation_picks": [
+     {
+      "chunk": 8,
+      "pages": [
+       10,
+       10
+      ]
+     },
+     {
+      "chunk": 8,
+      "pages": [
+       10,
+       10
+      ]
+     }
+    ],
+    "over_retrieved": false
+   },
+   "check_d": {
+    "chunks": 92,
+    "over_limit": 87,
+    "mean_seen_share": 0.6571168234205735,
+    "token_distribution": {
+     "min": 128.0,
+     "q1": 308.0,
+     "median": 383.5,
+     "q3": 486.0,
+     "max": 3388.0,
+     "mean": 533.0760869565217
+    }
+   },
+   "check_e": {
+    "sessions": {
+     "thesis": [
+      {
+       "turn": 1,
+       "archetype": "methodology_expert",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.3899
+      },
+      {
+       "turn": 2,
+       "archetype": "literature_theory_specialist",
+       "chunk": 80,
+       "displacement_rank": 1,
+       "pages": [
+        192,
+        192
+       ],
+       "score": 0.2113
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 8,
+       "displacement_rank": 2,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.2562
+      }
+     ],
+     "capstone": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 24,
+       "displacement_rank": 1,
+       "pages": [
+        28,
+        28
+       ],
+       "score": 0.4966
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.3899
+      },
+      {
+       "turn": 3,
+       "archetype": "results_conclusions_reviewer",
+       "chunk": 71,
+       "displacement_rank": 1,
+       "pages": [
+        172,
+        174
+       ],
+       "score": 0.2708
+      }
+     ],
+     "other/oral_comps": [
+      {
+       "turn": 1,
+       "archetype": "literature_theory_specialist",
+       "chunk": 80,
+       "displacement_rank": 1,
+       "pages": [
+        192,
+        192
+       ],
+       "score": 0.2113
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.3899
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 8,
+       "displacement_rank": 2,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.2562
+      }
+     ],
+     "other/scholarship_panel": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.2808
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 25,
+       "displacement_rank": 1,
+       "pages": [
+        29,
+        29
+       ],
+       "score": 0.3133
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 69,
+       "displacement_rank": 2,
+       "pages": [
+        167,
+        169
+       ],
+       "score": 0.2921
+      }
+     ],
+     "other/grant_defense": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.2808
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 25,
+       "displacement_rank": 1,
+       "pages": [
+        29,
+        29
+       ],
+       "score": 0.3133
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 69,
+       "displacement_rank": 2,
+       "pages": [
+        167,
+        169
+       ],
+       "score": 0.2921
+      }
+     ],
+     "other/certification_interview": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 24,
+       "displacement_rank": 1,
+       "pages": [
+        28,
+        28
+       ],
+       "score": 0.4966
+      },
+      {
+       "turn": 2,
+       "archetype": "industry_practice_reviewer",
+       "chunk": 72,
+       "displacement_rank": 1,
+       "pages": [
+        174,
+        176
+       ],
+       "score": 0.4246
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 51,
+       "displacement_rank": 1,
+       "pages": [
+        121,
+        123
+       ],
+       "score": 0.3899
+      }
+     ]
+    },
+    "max_displacement_rank": 2,
+    "turns_displaced": 4,
+    "turns_over_5": 0,
+    "turn_count": 18
+   }
+  },
+  {
+   "file": "non_defense_sample.pdf",
+   "sha256": "4fb70178cb632c35dd504296b76a62d846132d9a5ce80cb761317a944965513c",
+   "in_verdict": true,
+   "pages": 1,
+   "chunks": 1,
+   "chunk_pages": [
+    [
+     1,
+     1
+    ]
+   ],
+   "rankings_top10": {
+    "methodology_expert": [
+     0
+    ],
+    "literature_theory_specialist": [
+     0
+    ],
+    "technical_implementation_reviewer": [
+     0
+    ],
+    "ethics_practicality_reviewer": [
+     0
+    ],
+    "problem_objectives_reviewer": [
+     0
+    ],
+    "statistical_analysis_reviewer": [
+     0
+    ],
+    "results_conclusions_reviewer": [
+     0
+    ],
+    "industry_practice_reviewer": [
+     0
+    ]
+   },
+   "check_a": {
+    "halted": "1 chunks; checks A, B and E need 5"
+   },
+   "check_b": {
+    "halted": "1 chunks; checks A, B and E need 5"
+   },
+   "check_c": {
+    "boundary_page": null,
+    "navigation_pages": [],
+    "halted": "no Chapter 1 / Introduction heading found, so front matter is undefined"
+   },
+   "check_d": {
+    "chunks": 1,
+    "over_limit": 1,
+    "mean_seen_share": 0.7013698630136986,
+    "token_distribution": {
+     "min": 365.0,
+     "q1": 365.0,
+     "median": 365.0,
+     "q3": 365.0,
+     "max": 365.0,
+     "mean": 365.0
+    }
+   },
+   "check_e": {
+    "halted": "1 chunks; checks A, B and E need 5"
+   }
+  },
+  {
+   "file": "sample3.pdf",
+   "sha256": "eb81a4d20ea830bc708b7ae47378f935098fbc71646502a60eac1e5263c0e534",
+   "in_verdict": true,
+   "pages": 82,
+   "chunks": 49,
+   "chunk_pages": [
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     18
+    ],
+    [
+     18,
+     21
+    ],
+    [
+     20,
+     22
+    ],
+    [
+     22,
+     25
+    ],
+    [
+     25,
+     26
+    ],
+    [
+     27,
+     29
+    ],
+    [
+     28,
+     30
+    ],
+    [
+     30,
+     32
+    ],
+    [
+     32,
+     35
+    ],
+    [
+     35,
+     37
+    ],
+    [
+     37,
+     39
+    ],
+    [
+     39,
+     41
+    ],
+    [
+     41,
+     43
+    ],
+    [
+     43,
+     45
+    ],
+    [
+     45,
+     46
+    ],
+    [
+     47,
+     49
+    ],
+    [
+     49,
+     50
+    ],
+    [
+     51,
+     52
+    ],
+    [
+     52,
+     53
+    ],
+    [
+     53,
+     55
+    ],
+    [
+     56,
+     56
+    ],
+    [
+     56,
+     59
+    ],
+    [
+     58,
+     60
+    ],
+    [
+     61,
+     62
+    ],
+    [
+     62,
+     64
+    ],
+    [
+     64,
+     67
+    ],
+    [
+     66,
+     68
+    ],
+    [
+     68,
+     70
+    ],
+    [
+     70,
+     72
+    ],
+    [
+     73,
+     75
+    ],
+    [
+     74,
+     77
+    ],
+    [
+     77,
+     78
+    ],
+    [
+     77,
+     78
+    ],
+    [
+     78,
+     79
+    ],
+    [
+     79,
+     80
+    ],
+    [
+     80,
+     81
+    ],
+    [
+     81,
+     82
+    ],
+    [
+     82,
+     82
+    ]
+   ],
+   "rankings_top10": {
+    "methodology_expert": [
+     2,
+     9,
+     14,
+     4,
+     24,
+     39,
+     31,
+     46,
+     1,
+     8
+    ],
+    "literature_theory_specialist": [
+     1,
+     9,
+     4,
+     8,
+     31,
+     38,
+     11,
+     37,
+     29,
+     47
+    ],
+    "technical_implementation_reviewer": [
+     11,
+     14,
+     15,
+     35,
+     25,
+     26,
+     8,
+     41,
+     33,
+     10
+    ],
+    "ethics_practicality_reviewer": [
+     15,
+     14,
+     10,
+     16,
+     5,
+     3,
+     4,
+     0,
+     33,
+     8
+    ],
+    "problem_objectives_reviewer": [
+     2,
+     1,
+     9,
+     46,
+     3,
+     4,
+     47,
+     8,
+     31,
+     24
+    ],
+    "statistical_analysis_reviewer": [
+     2,
+     46,
+     9,
+     1,
+     33,
+     47,
+     8,
+     4,
+     31,
+     39
+    ],
+    "results_conclusions_reviewer": [
+     1,
+     2,
+     4,
+     46,
+     9,
+     3,
+     31,
+     47,
+     24,
+     43
+    ],
+    "industry_practice_reviewer": [
+     2,
+     33,
+     14,
+     15,
+     10,
+     8,
+     4,
+     9,
+     37,
+     34
+    ]
+   },
+   "check_a": {
+    "pairs": [
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "literature_theory_specialist",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 2,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 2,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 2,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 0,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 2,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "results_conclusions_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 1,
+      "same_top1": false
+     }
+    ],
+    "median_shared_top5": 2.0,
+    "mean_shared_top5": 1.5357142857142858,
+    "same_top1_pairs": 7,
+    "pair_count": 28,
+    "random_baseline_shared_top5": 0.5102040816326531,
+    "distinct_top1_chunks": 4,
+    "distinct_top5_chunks": 18,
+    "verdict": "partial"
+   },
+   "check_b": {
+    "per_archetype": {
+     "methodology_expert": {
+      "top5_scores": [
+       0.2045,
+       0.1189,
+       0.1077,
+       0.1041,
+       0.102
+      ],
+      "gap_1_2": 0.0857,
+      "near_tie": false
+     },
+     "literature_theory_specialist": {
+      "top5_scores": [
+       0.1575,
+       0.0969,
+       0.0906,
+       0.085,
+       0.0508
+      ],
+      "gap_1_2": 0.0606,
+      "near_tie": false
+     },
+     "technical_implementation_reviewer": {
+      "top5_scores": [
+       0.2742,
+       0.2629,
+       0.2472,
+       0.226,
+       0.2182
+      ],
+      "gap_1_2": 0.0113,
+      "near_tie": true
+     },
+     "ethics_practicality_reviewer": {
+      "top5_scores": [
+       0.2362,
+       0.2231,
+       0.2185,
+       0.1839,
+       0.1835
+      ],
+      "gap_1_2": 0.013,
+      "near_tie": true
+     },
+     "problem_objectives_reviewer": {
+      "top5_scores": [
+       0.2476,
+       0.1721,
+       0.1316,
+       0.1109,
+       0.1093
+      ],
+      "gap_1_2": 0.0755,
+      "near_tie": false
+     },
+     "statistical_analysis_reviewer": {
+      "top5_scores": [
+       0.2991,
+       0.1583,
+       0.1217,
+       0.1135,
+       0.11
+      ],
+      "gap_1_2": 0.1408,
+      "near_tie": false
+     },
+     "results_conclusions_reviewer": {
+      "top5_scores": [
+       0.241,
+       0.1624,
+       0.1429,
+       0.1386,
+       0.1274
+      ],
+      "gap_1_2": 0.0786,
+      "near_tie": false
+     },
+     "industry_practice_reviewer": {
+      "top5_scores": [
+       0.1957,
+       0.1864,
+       0.1826,
+       0.1739,
+       0.1711
+      ],
+      "gap_1_2": 0.0093,
+      "near_tie": true
+     }
+    },
+    "near_tie_rate": 0.375,
+    "gap_distribution": {
+     "min": 0.009287521243095398,
+     "q1": 0.012618809938430786,
+     "median": 0.06805715337395668,
+     "q3": 0.08038793131709099,
+     "max": 0.14078985154628754,
+     "mean": 0.05935794394463301
+    }
+   },
+   "check_c": {
+    "boundary_page": 5,
+    "navigation_pages": [
+     3,
+     4
+    ],
+    "front_matter_chunks": 4,
+    "base_rate": 0.08163265306122448,
+    "top1_pick_rate": 0.75,
+    "ratio": 9.1875,
+    "top1_navigation_picks": [
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 1,
+      "pages": [
+       2,
+       3
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 1,
+      "pages": [
+       2,
+       3
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     }
+    ],
+    "session_pick_rate": 0.5,
+    "session_navigation_picks": [
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 1,
+      "pages": [
+       2,
+       3
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 1,
+      "pages": [
+       2,
+       3
+      ]
+     },
+     {
+      "chunk": 1,
+      "pages": [
+       2,
+       3
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     },
+     {
+      "chunk": 2,
+      "pages": [
+       4,
+       4
+      ]
+     }
+    ],
+    "over_retrieved": true
+   },
+   "check_d": {
+    "chunks": 49,
+    "over_limit": 48,
+    "mean_seen_share": 0.4810497740604443,
+    "token_distribution": {
+     "min": 192.0,
+     "q1": 488.0,
+     "median": 557.0,
+     "q3": 619.0,
+     "max": 3522.0,
+     "mean": 657.8163265306123
+    }
+   },
+   "check_e": {
+    "sessions": {
+     "thesis": [
+      {
+       "turn": 1,
+       "archetype": "methodology_expert",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.2045
+      },
+      {
+       "turn": 2,
+       "archetype": "literature_theory_specialist",
+       "chunk": 1,
+       "displacement_rank": 1,
+       "pages": [
+        2,
+        3
+       ],
+       "score": 0.1575
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 9,
+       "displacement_rank": 3,
+       "pages": [
+        13,
+        14
+       ],
+       "score": 0.1316
+      }
+     ],
+     "capstone": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 11,
+       "displacement_rank": 1,
+       "pages": [
+        16,
+        18
+       ],
+       "score": 0.2742
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.2045
+      },
+      {
+       "turn": 3,
+       "archetype": "results_conclusions_reviewer",
+       "chunk": 1,
+       "displacement_rank": 1,
+       "pages": [
+        2,
+        3
+       ],
+       "score": 0.241
+      }
+     ],
+     "other/oral_comps": [
+      {
+       "turn": 1,
+       "archetype": "literature_theory_specialist",
+       "chunk": 1,
+       "displacement_rank": 1,
+       "pages": [
+        2,
+        3
+       ],
+       "score": 0.1575
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.2045
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 9,
+       "displacement_rank": 3,
+       "pages": [
+        13,
+        14
+       ],
+       "score": 0.1316
+      }
+     ],
+     "other/scholarship_panel": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.2476
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 15,
+       "displacement_rank": 1,
+       "pages": [
+        25,
+        26
+       ],
+       "score": 0.2362
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 9,
+       "displacement_rank": 2,
+       "pages": [
+        13,
+        14
+       ],
+       "score": 0.1189
+      }
+     ],
+     "other/grant_defense": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.2476
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 15,
+       "displacement_rank": 1,
+       "pages": [
+        25,
+        26
+       ],
+       "score": 0.2362
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 9,
+       "displacement_rank": 2,
+       "pages": [
+        13,
+        14
+       ],
+       "score": 0.1189
+      }
+     ],
+     "other/certification_interview": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 11,
+       "displacement_rank": 1,
+       "pages": [
+        16,
+        18
+       ],
+       "score": 0.2742
+      },
+      {
+       "turn": 2,
+       "archetype": "industry_practice_reviewer",
+       "chunk": 2,
+       "displacement_rank": 1,
+       "pages": [
+        4,
+        4
+       ],
+       "score": 0.1957
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 9,
+       "displacement_rank": 2,
+       "pages": [
+        13,
+        14
+       ],
+       "score": 0.1189
+      }
+     ]
+    },
+    "max_displacement_rank": 3,
+    "turns_displaced": 5,
+    "turns_over_5": 0,
+    "turn_count": 18
+   }
+  },
+  {
+   "file": "sample-capstone-anicheck.pdf",
+   "sha256": "6d7ff649bc48a9f8cfd37d82533fee4ccaef1a086b143bc749f8bc78e7c9a761",
+   "in_verdict": false,
+   "pages": 16,
+   "chunks": 14,
+   "chunk_pages": [
+    [
+     1,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     6,
+     6
+    ],
+    [
+     7,
+     7
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     9,
+     9
+    ],
+    [
+     10,
+     10
+    ],
+    [
+     11,
+     11
+    ],
+    [
+     12,
+     12
+    ],
+    [
+     13,
+     13
+    ],
+    [
+     14,
+     14
+    ],
+    [
+     15,
+     15
+    ],
+    [
+     16,
+     16
+    ]
+   ],
+   "rankings_top10": {
+    "methodology_expert": [
+     7,
+     10,
+     12,
+     5,
+     8,
+     9,
+     11,
+     2,
+     4,
+     13
+    ],
+    "literature_theory_specialist": [
+     12,
+     10,
+     9,
+     5,
+     7,
+     0,
+     11,
+     4,
+     1,
+     8
+    ],
+    "technical_implementation_reviewer": [
+     7,
+     9,
+     10,
+     5,
+     12,
+     13,
+     4,
+     6,
+     11,
+     8
+    ],
+    "ethics_practicality_reviewer": [
+     12,
+     7,
+     10,
+     13,
+     5,
+     4,
+     11,
+     2,
+     0,
+     3
+    ],
+    "problem_objectives_reviewer": [
+     10,
+     12,
+     7,
+     5,
+     8,
+     2,
+     11,
+     9,
+     0,
+     13
+    ],
+    "statistical_analysis_reviewer": [
+     12,
+     10,
+     7,
+     9,
+     8,
+     11,
+     5,
+     0,
+     4,
+     2
+    ],
+    "results_conclusions_reviewer": [
+     10,
+     12,
+     9,
+     8,
+     11,
+     7,
+     0,
+     5,
+     4,
+     13
+    ],
+    "industry_practice_reviewer": [
+     12,
+     10,
+     7,
+     8,
+     5,
+     2,
+     13,
+     3,
+     0,
+     9
+    ]
+   },
+   "check_a": {
+    "pairs": [
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "literature_theory_specialist",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 5,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "methodology_expert",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 5,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "technical_implementation_reviewer",
+      "shared_top_k": 5,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "literature_theory_specialist",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "ethics_practicality_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "technical_implementation_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "problem_objectives_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 3,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 2,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "ethics_practicality_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "statistical_analysis_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 3,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "problem_objectives_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 5,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "results_conclusions_reviewer",
+      "shared_top_k": 4,
+      "same_top1": false
+     },
+     {
+      "archetype_a": "statistical_analysis_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 4,
+      "same_top1": true
+     },
+     {
+      "archetype_a": "results_conclusions_reviewer",
+      "archetype_b": "industry_practice_reviewer",
+      "shared_top_k": 3,
+      "same_top1": false
+     }
+    ],
+    "median_shared_top5": 4.0,
+    "mean_shared_top5": 3.857142857142857,
+    "same_top1_pairs": 8,
+    "pair_count": 28,
+    "random_baseline_shared_top5": 1.7857142857142858,
+    "distinct_top1_chunks": 3,
+    "distinct_top5_chunks": 8,
+    "verdict": "collapsed"
+   },
+   "check_b": {
+    "per_archetype": {
+     "methodology_expert": {
+      "top5_scores": [
+       0.3055,
+       0.2868,
+       0.2865,
+       0.2106,
+       0.1613
+      ],
+      "gap_1_2": 0.0187,
+      "near_tie": true
+     },
+     "literature_theory_specialist": {
+      "top5_scores": [
+       0.1386,
+       0.1355,
+       0.0868,
+       0.0766,
+       0.0716
+      ],
+      "gap_1_2": 0.0031,
+      "near_tie": true
+     },
+     "technical_implementation_reviewer": {
+      "top5_scores": [
+       0.2351,
+       0.2299,
+       0.1992,
+       0.1703,
+       0.1663
+      ],
+      "gap_1_2": 0.0052,
+      "near_tie": true
+     },
+     "ethics_practicality_reviewer": {
+      "top5_scores": [
+       0.2826,
+       0.2336,
+       0.224,
+       0.1793,
+       0.1563
+      ],
+      "gap_1_2": 0.0491,
+      "near_tie": false
+     },
+     "problem_objectives_reviewer": {
+      "top5_scores": [
+       0.2494,
+       0.2474,
+       0.2275,
+       0.2089,
+       0.1523
+      ],
+      "gap_1_2": 0.002,
+      "near_tie": true
+     },
+     "statistical_analysis_reviewer": {
+      "top5_scores": [
+       0.3552,
+       0.3176,
+       0.2834,
+       0.2232,
+       0.1847
+      ],
+      "gap_1_2": 0.0376,
+      "near_tie": false
+     },
+     "results_conclusions_reviewer": {
+      "top5_scores": [
+       0.3338,
+       0.3094,
+       0.2211,
+       0.2141,
+       0.1751
+      ],
+      "gap_1_2": 0.0244,
+      "near_tie": false
+     },
+     "industry_practice_reviewer": {
+      "top5_scores": [
+       0.3013,
+       0.2798,
+       0.2755,
+       0.2213,
+       0.1916
+      ],
+      "gap_1_2": 0.0215,
+      "near_tie": false
+     }
+    },
+    "near_tie_rate": 0.5,
+    "gap_distribution": {
+     "min": 0.0019719749689102173,
+     "q1": 0.004681579768657684,
+     "median": 0.020120441913604736,
+     "q3": 0.02769310027360916,
+     "max": 0.04907017946243286,
+     "mean": 0.020195284858345985
+    }
+   },
+   "check_c": {
+    "boundary_page": 4,
+    "navigation_pages": [],
+    "front_matter_chunks": 1,
+    "base_rate": 0.07142857142857142,
+    "top1_pick_rate": 0.0,
+    "ratio": 0.0,
+    "top1_navigation_picks": [],
+    "session_pick_rate": 0.0,
+    "session_navigation_picks": [],
+    "over_retrieved": false
+   },
+   "check_d": {
+    "chunks": 14,
+    "over_limit": 12,
+    "mean_seen_share": 0.6554698385911751,
+    "token_distribution": {
+     "min": 186.0,
+     "q1": 359.25,
+     "median": 409.5,
+     "q3": 513.75,
+     "max": 588.0,
+     "mean": 411.35714285714283
+    }
+   },
+   "check_e": {
+    "sessions": {
+     "thesis": [
+      {
+       "turn": 1,
+       "archetype": "methodology_expert",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.3055
+      },
+      {
+       "turn": 2,
+       "archetype": "literature_theory_specialist",
+       "chunk": 12,
+       "displacement_rank": 1,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.1386
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 10,
+       "displacement_rank": 1,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2494
+      }
+     ],
+     "capstone": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.2351
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 10,
+       "displacement_rank": 2,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2868
+      },
+      {
+       "turn": 3,
+       "archetype": "results_conclusions_reviewer",
+       "chunk": 12,
+       "displacement_rank": 2,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.3094
+      }
+     ],
+     "other/oral_comps": [
+      {
+       "turn": 1,
+       "archetype": "literature_theory_specialist",
+       "chunk": 12,
+       "displacement_rank": 1,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.1386
+      },
+      {
+       "turn": 2,
+       "archetype": "methodology_expert",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.3055
+      },
+      {
+       "turn": 3,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 10,
+       "displacement_rank": 1,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2494
+      }
+     ],
+     "other/scholarship_panel": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 10,
+       "displacement_rank": 1,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2494
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 12,
+       "displacement_rank": 1,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.2826
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.3055
+      }
+     ],
+     "other/grant_defense": [
+      {
+       "turn": 1,
+       "archetype": "problem_objectives_reviewer",
+       "chunk": 10,
+       "displacement_rank": 1,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2494
+      },
+      {
+       "turn": 2,
+       "archetype": "ethics_practicality_reviewer",
+       "chunk": 12,
+       "displacement_rank": 1,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.2826
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.3055
+      }
+     ],
+     "other/certification_interview": [
+      {
+       "turn": 1,
+       "archetype": "technical_implementation_reviewer",
+       "chunk": 7,
+       "displacement_rank": 1,
+       "pages": [
+        10,
+        10
+       ],
+       "score": 0.2351
+      },
+      {
+       "turn": 2,
+       "archetype": "industry_practice_reviewer",
+       "chunk": 12,
+       "displacement_rank": 1,
+       "pages": [
+        15,
+        15
+       ],
+       "score": 0.3013
+      },
+      {
+       "turn": 3,
+       "archetype": "methodology_expert",
+       "chunk": 10,
+       "displacement_rank": 2,
+       "pages": [
+        13,
+        13
+       ],
+       "score": 0.2868
+      }
+     ]
+    },
+    "max_displacement_rank": 2,
+    "turns_displaced": 3,
+    "turns_over_5": 0,
+    "turn_count": 18
+   }
+  }
+ ]
+}
