@@ -118,3 +118,22 @@ def test_no_qualifying_document_stops(available):
 def test_one_qualifying_document_with_fewer_than_ten_stops():
     with pytest.raises(SystemExit, match="items from"):
         probe.review_counts([7, 0])
+
+
+@pytest.mark.parametrize(
+    ("picks", "forced", "expected"),
+    [
+        ([7, 8, 10, 11, 13, 14, 16, 17, 19, 20], 9, [7, 9, 10, 11, 13, 14, 16, 17, 19, 20]),  # tie: the earlier goes
+        ([7, 8, 10, 11], 12, [7, 8, 10, 12]),
+        ([7, 9, 10], 9, [7, 9, 10]),  # already picked
+        ([7, 8, 10], None, [7, 8, 10]),
+        ([], 9, []),  # a document giving no literature items
+    ],
+)
+def test_the_forced_chunk_replaces_the_nearest_pick(picks, forced, expected):
+    assert probe.with_forced(picks, list(range(7, 21)), forced) == expected
+
+
+def test_a_forced_chunk_that_isnt_tagged_stops():
+    with pytest.raises(SystemExit, match="isn't a tagged"):
+        probe.with_forced([7, 8], [7, 8, 10], 9)

@@ -8,7 +8,8 @@ On sample3 and DAZSMA, through the production ingest and question path:
 - 10 literature-review chunks (tagged by J2 as revised, so each cites a study),
   evenly spaced over a document's tagged chunks. Only documents with at least 5
   tagged chunks give items, 5 each, or all 10 when only one qualifies (Sean's
-  decision of 2026-10-27; with J2 revised, DAZSMA has none);
+  decision of 2026-10-27; with J2 revised, DAZSMA has none). sample3's pages 16-18,
+  the passage behind M7's live defect, is always one of them (FORCED_REVIEW_PAGES);
 - per document, 3 of the candidate's own chunks from Chapter 3 (untagged, from the
   Chapter 3 heading to the next chapter heading, or to the reference list);
 each asked by the Technical Implementation Reviewer and the Methodology Expert at
@@ -89,6 +90,10 @@ MODEL = "gemini-3.1-flash-lite"
 ARCHETYPES = ["technical_implementation_reviewer", "methodology_expert"]
 DIFFICULTY = 3
 REVIEW_ITEMS, REVIEW_ITEMS_PER_DOCUMENT, CONTROL_ITEMS = 10, 5, 3
+# Sean's deliberate deviation (2026-10-27): the probe must include the case that
+# motivated M7, sample3's PDF pages 16-18 (the live check's question 1). That chunk
+# replaces the evenly spaced pick nearest to it.
+FORCED_REVIEW_PAGES = {"sample3.pdf": (16, 18)}
 PACE_S = 9.0
 ATTEMPTS_PER_CALL = 2  # GeminiProvider retries a failed call once
 BACKOFF_S = (30.0, 60.0, 120.0, 240.0)  # waits before tries 2-5 of a failed call
@@ -241,6 +246,28 @@ def review_counts(available: list[int]) -> list[int]:
     return counts
 
 
+def with_forced(picks: list[int], pool: list[int], forced: int | None) -> list[int]:
+    """`picks` with `forced` in place of the pick nearest to it (on a tie, the earlier
+    one), so the count stays the same. Unchanged if `forced` is None or already picked."""
+    if forced is None or not picks or forced in picks:
+        return picks
+    if forced not in pool:
+        raise SystemExit(f"STOP: the forced chunk {forced} isn't a tagged literature-review chunk")
+    nearest = min(picks, key=lambda i: (abs(i - forced), i))
+    return sorted([i for i in picks if i != nearest] + [forced])
+
+
+def forced_chunk(document: Document, filtered: FilteredChunks) -> int | None:
+    """The chunk at FORCED_REVIEW_PAGES for this document (1-based pages), if any."""
+    pages = FORCED_REVIEW_PAGES.get(document.path.name)
+    if pages is None:
+        return None
+    matches = [i for i, c in enumerate(filtered.chunks) if (c.page_start + 1, c.page_end + 1) == pages]
+    if len(matches) != 1:
+        raise SystemExit(f"STOP: {len(matches)} chunks span pages {pages[0]}-{pages[1]} of {document.path.name}")
+    return matches[0]
+
+
 class _NoEncoder:
     """The fixed retriever never embeds; this fails loudly if anything tries."""
 
@@ -276,7 +303,8 @@ def main() -> None:
     for document, filtered, (review_pool, control_pool), count in zip(DOCUMENTS, parsed, pools, counts):
         metas = [ChunkMeta(i, c.text, c.page_start, c.page_end, a)
                  for i, (c, a) in enumerate(zip(filtered.chunks, filtered.attributions))]
-        review, control = evenly_spaced(review_pool, count), evenly_spaced(control_pool, CONTROL_ITEMS)
+        review = with_forced(evenly_spaced(review_pool, count), review_pool, forced_chunk(document, filtered))
+        control = evenly_spaced(control_pool, CONTROL_ITEMS)
         print(f"{document.path.name}: {len(review_pool)} tagged chunks; review chunks {review}, control chunks {control}")
         extracted = extract_document_profile([m.text for m in metas], provider)
         profile = DefenseProfile(
