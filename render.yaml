@@ -21,12 +21,14 @@ services:
         - backend/**
         - academic_defense_simulator/**
         - render.yaml
-      # v1 UI files only, plus the backend's tests.
+      # v1 UI files only, plus the backend's tests, the docs and the eval harness.
       ignoredPaths:
         - academic_defense_simulator/streamlit_app.py
         - academic_defense_simulator/panel_selection_ui.py
         - backend/tests/**
         - frontend/**
+        - docs/**
+        - evals/**
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.7
