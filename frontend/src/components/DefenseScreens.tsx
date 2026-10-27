@@ -36,7 +36,7 @@ export function PreparingScreen({ seats }: { seats: ArchetypeOption[] }) {
       <Heading>
         <Working /> {PREPARING_STAGES[stage]}
       </Heading>
-      <p className="text-sm text-muted">This usually takes about 30 seconds.</p>
+      <p className="text-sm text-muted">This usually takes 30–60 seconds.</p>
       {seats.length > 0 && (
         <ul className="flex flex-wrap gap-3" aria-label="Seated panel">
           {seats.map((seat) => (

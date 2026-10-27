@@ -44,7 +44,7 @@ describe('the report', () => {
     expect(within(transcript).getByText('How did you validate your survey instrument?')).toBeInTheDocument()
     expect(within(transcript).getByText('We adapted ISO 25010.')).toBeInTheDocument()
     expect(within(transcript).getByText(/Source passage for turn 1/)).toBeInTheDocument()
-    expect(within(transcript).getByText('Pages 12-13')).toBeInTheDocument()
+    expect(within(transcript).getByText('PDF pages 12–13')).toBeInTheDocument()
   })
 
   it('says so when the narrative or suggestions fell back', async () => {

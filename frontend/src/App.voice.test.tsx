@@ -60,6 +60,8 @@ describe('the gate (E9)', () => {
     const user = renderApp()
     await toReady(server, user)
     expect(screen.getByRole('radio', { name: /^Panel voices/ })).toHaveAccessibleName(/Xiaomi's Mimo API/)
+    // Measured in production on 2026-10-27 (M7 J6).
+    expect(screen.getByRole('radio', { name: /^Panel voices/ })).toHaveAccessibleName(/slower, about 7–15 seconds per question/)
     expect(screen.getByRole('radio', { name: /^Browser voice/ })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /^No voice/ })).toBeInTheDocument()
     expect(screen.getByText('This choice is not saved between sessions.')).toBeInTheDocument()

@@ -11,7 +11,7 @@ const PANEL: Option = {
   value: 'panel',
   label: 'Panel voices',
   detail:
-    "Higher-quality AI voices send each question's text, which is drawn from your document, to Xiaomi's Mimo API for speech synthesis (slower, ~6s per question). Falls back to your browser's voice automatically if it fails.",
+    "Higher-quality AI voices send each question's text, which is drawn from your document, to Xiaomi's Mimo API for speech synthesis (slower, about 7–15 seconds per question). Falls back to your browser's voice automatically if it fails.",
 }
 const BROWSER: Option = { value: 'browser', label: 'Browser voice', detail: "Your browser's own speech engine reads each question." }
 const NONE: Option = { value: 'none', label: 'No voice', detail: 'Questions appear as text only.' }

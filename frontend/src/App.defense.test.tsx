@@ -55,6 +55,7 @@ describe('preparing (D16, /start in flight)', () => {
     await startDefense(user)
 
     expect(screen.getByText('The panel is preparing. They are reading your document.')).toBeInTheDocument()
+    expect(screen.getByText('This usually takes 30–60 seconds.')).toBeInTheDocument() // measured (M7 J6)
     const seats = screen.getByRole('list', { name: 'Seated panel' })
     expect(within(seats).getByText('Methodology Expert')).toBeInTheDocument()
     expect(within(seats).getByText("Devil's Advocate")).toBeInTheDocument()
@@ -138,7 +139,7 @@ describe('the answer loop', () => {
     await answer(user)
     expect(await screen.findByText(Q2)).toBeInTheDocument()
     expect(screen.getByText(SOURCE_1)).toBeInTheDocument()
-    expect(screen.getByText('Pages 12-13')).toBeInTheDocument()
+    expect(screen.getByText('PDF pages 12–13')).toBeInTheDocument()
     expect(screen.queryByText(SOURCE_2)).not.toBeInTheDocument()
 
     // clarity 4, depth 3, grounding 4 -> 80, 60, 80; overall 11 / 3 -> 73

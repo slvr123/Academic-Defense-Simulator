@@ -29,9 +29,10 @@ export const SOURCE_ORIGIN_LABELS: Record<Source['origin'], string> = {
   devils_advocate: "Devil's Advocate, contesting an earlier passage",
 }
 
-/** Pages as a PDF viewer numbers them (1-based, as the API sends them). */
+/** Pages as a PDF viewer numbers them (1-based, as the API sends them), labelled "PDF" because
+ * printed page numbers differ: sample3's printed "page 3" is PDF page 5 (M7 J6). */
 export function pageRange(start: number, end: number): string {
-  return start === end ? `Page ${start}` : `Pages ${start}-${end}`
+  return start === end ? `PDF page ${start}` : `PDF pages ${start}–${end}`
 }
 
 export const PUSHBACK_OUTCOME_LABELS: Record<PushbackOutcome, string> = {
