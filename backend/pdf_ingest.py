@@ -15,12 +15,8 @@ import uuid
 from pathlib import Path
 from typing import BinaryIO
 
-from academic_defense_simulator.rag.chunking import (
-    DocumentIngestionError,
-    InsufficientTextError,
-    PageChunk,
-)
-from backend.page_filter import chunk_pdf_filtered
+from academic_defense_simulator.rag.chunking import DocumentIngestionError, InsufficientTextError
+from backend.page_filter import FilteredChunks, chunk_pdf_filtered
 from backend.schemas import IngestErrorCode
 
 logger = logging.getLogger(__name__)
@@ -102,7 +98,8 @@ class IngestFailure(Exception):
         self.code = code
 
 
-def parse_pdf(path: Path) -> list[PageChunk]:
+def parse_pdf(path: Path) -> FilteredChunks:
+    """The document's chunks, with the M5/M6 filters applied and M7's literature-review tags."""
     try:
         filtered = chunk_pdf_filtered(path)
     except InsufficientTextError as exc:
@@ -116,9 +113,15 @@ def parse_pdf(path: Path) -> list[PageChunk]:
     if filtered.references is not None:
         end = "the end" if filtered.references.end is None else filtered.references.end[0] + 1
         logger.info("reference list left out of chunking: page %s to %s", filtered.references.start[0] + 1, end)
+    if filtered.literature_review is not None:
+        review = filtered.literature_review
+        logger.info(
+            "literature review found: page %s to %s, %d chunk(s) tagged",
+            review.start[0] + 1, review.end[0] + 1, sum(a is not None for a in filtered.attributions),
+        )
     if not chunks:
         raise IngestFailure(_scanned_message(0), code="scanned_pdf")
-    return chunks
+    return filtered
 
 
 def _scanned_message(total_chars: int) -> str:

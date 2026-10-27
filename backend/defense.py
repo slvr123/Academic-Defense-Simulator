@@ -127,11 +127,18 @@ class Defense:
 
 
 def setup_defense(
-    session: Session, providers: Providers, calls: CallCounter, embedder: Embedder, model: str
+    session: Session,
+    providers: Providers,
+    calls: CallCounter,
+    embedder: Embedder,
+    model: str,
+    *,
+    attribution_notes: bool = False,
 ) -> Defense:
     """Extraction (only when the client sent no domain or topic) and persona
     generation. Neither raises on a Gemini failure: v1 falls back to blank
-    fields and to the static panel, and so does this."""
+    fields and to the static panel, and so does this. `attribution_notes` is
+    settings.attribution_notes (M7 J3)."""
     assert session.matrix is not None
     config: PanelConfig = session.panel
     domain, topic = config.domain, config.topic
@@ -141,12 +148,13 @@ def setup_defense(
         topic = topic or extracted.topic.strip() or PurePath(session.filename).stem
     profile = config.to_profile(domain=domain, topic=topic, document_id=session.id)
     panel, fallback_used = generate_panel(profile, compose_full_roster(profile), providers.defense)
-    chunks = engine_chunks(session.matrix, session.chunks)
-    copy_bytes = chunk_copy_bytes(chunks)
+    chunks = engine_chunks(session.matrix, session.chunks, attribution_notes=attribution_notes)
+    copy_bytes = chunk_copy_bytes(chunks, session.chunks)
     logger.info(
-        "defense setup session=%s panel=%s persona_fallback=%s calls=%d chunks=%d chunk_copy_mb=%.2f",
+        "defense setup session=%s panel=%s persona_fallback=%s calls=%d chunks=%d chunk_copy_mb=%.2f "
+        "attribution_notes=%d",
         session.id, [p.archetype_key for p in panel], fallback_used, calls.total, len(chunks),
-        copy_bytes / 2**20,
+        copy_bytes / 2**20, sum(c.text is not m.text for c, m in zip(chunks, session.chunks)),
     )
     return Defense(
         session=DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start),

@@ -178,7 +178,8 @@ class IngestQueue:
         started = time.perf_counter()
         # parse_pdf closes the PDF before returning, and every per-page string it
         # built is local to it, so only the chunk texts survive into embedding.
-        page_chunks = parse_pdf(job.pdf_path)
+        filtered = parse_pdf(job.pdf_path)
+        page_chunks = filtered.chunks
         parsed = time.perf_counter()
         phases.append(memory.snapshot("parsed"))
         phases.append(_release("released", session.id))
@@ -190,8 +191,8 @@ class IngestQueue:
             session.progress = (index + 1) / len(page_chunks)
         phases.append(memory.snapshot("embedded"))
         chunks = [
-            ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end)
-            for i, c in enumerate(page_chunks)
+            ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end, attribution=a)
+            for i, (c, a) in enumerate(zip(page_chunks, filtered.attributions))
         ]
         return IngestResult(
             matrix=matrix,

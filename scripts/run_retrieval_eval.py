@@ -133,7 +133,7 @@ def _parse_with(chunker, path: Path) -> list[PageChunk]:
 
 
 PARSERS = {
-    "production": parse_pdf,
+    "production": lambda path: parse_pdf(path).chunks,
     "m5": lambda path: _parse_with(lambda p: chunk_pdf_filtered(p, trim_reference_list=False).chunks, path),
     "v1": lambda path: _parse_with(chunk_pdf_with_pages, path),
 }

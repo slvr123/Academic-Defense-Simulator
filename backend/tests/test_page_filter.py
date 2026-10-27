@@ -1,5 +1,5 @@
-"""v2.0 M5 and M6 H1: navigation pages and the reference list are left out of chunking
-(backend/page_filter.py)."""
+"""v2.0 M5 and M6 H1: navigation pages and the reference list are left out of chunking;
+M7 J2: literature-review chunks are tagged (backend/page_filter.py)."""
 
 from __future__ import annotations
 
@@ -8,11 +8,14 @@ from pathlib import Path
 import fitz  # PyMuPDF
 import pytest
 
-from academic_defense_simulator.rag.chunking import InsufficientTextError, chunk_pdf_with_pages
+from academic_defense_simulator.rag.chunking import InsufficientTextError, _paragraphs_from_page_text, chunk_pdf_with_pages
 from backend.page_filter import (
+    LiteratureReviewRange,
     ReferenceRange,
+    _paragraph_lines,
     chunk_pdf_filtered,
     is_navigation_page,
+    literature_review_range,
     reference_range,
     removable_pages,
     trim_references,
@@ -20,10 +23,16 @@ from backend.page_filter import (
 from backend.tests.conftest import (
     APPENDIX_MARKER,
     CHAPTER_FIVE_MARKER,
+    CITED_MARKER,
     CONTENTS_MARKER,
+    OWN_MARKER,
     REFERENCE_MARKER,
+    THESIS_WITH_REVIEW,
+    cited_text,
     make_navigation_pdf,
+    make_page_pdf,
     make_pdf,
+    own_text,
 )
 
 SAMPLE_PDF = Path(__file__).resolve().parents[2] / "academic_defense_simulator" / "sample" / "sample-capstone-anicheck.pdf"
@@ -235,3 +244,109 @@ def test_trim_keeps_text_above_the_start_and_from_the_end_heading_on():
 def test_trim_on_a_single_page():
     pages = ["Ch5\nReferences\nRef\nGlossary\nTerm"]
     assert trim_references(pages, ReferenceRange(start=(0, 1), end=(0, 3))) == ["Ch5\nGlossary\nTerm"]
+
+
+# --- M7 J2: the literature review is tagged, never changed ----------------------
+
+
+def test_chunks_in_the_review_are_tagged_and_straddling_ones_are_partly(tmp_path):
+    path = make_page_pdf(tmp_path / "thesis.pdf", THESIS_WITH_REVIEW)
+    filtered = chunk_pdf_filtered(path)
+    assert filtered.literature_review == LiteratureReviewRange(start=(2, 0), end=(6, 0))
+    assert [(c.page_start, c.page_end) for c in filtered.chunks] == [(0, 2), (3, 4), (5, 6), (7, 7)]
+    assert filtered.attributions == [
+        "partly_literature_review",  # Chapter 1, then the review's first page
+        "literature_review",
+        "partly_literature_review",  # the review's last page, then Chapter 3
+        None,
+    ]
+    texts = [c.text for c in filtered.chunks]
+    assert [(OWN_MARKER in t, CITED_MARKER in t) for t in texts] == [(True, True), (False, True), (True, True), (True, False)]
+
+
+def test_tagging_never_changes_a_chunk(tmp_path):
+    path = make_page_pdf(tmp_path / "thesis.pdf", THESIS_WITH_REVIEW)
+    assert _as_tuples(chunk_pdf_filtered(path).chunks) == _as_tuples(chunk_pdf_with_pages(path))
+
+
+def test_no_literature_review_heading_means_no_tags(tmp_path):
+    pages = ["CHAPTER 1: INTRODUCTION\n" + own_text(1), cited_text(1), cited_text(2), "CHAPTER 3\n" + own_text(2)]
+    filtered = chunk_pdf_filtered(make_page_pdf(tmp_path / "thesis.pdf", pages))
+    assert filtered.literature_review is None
+    assert filtered.attributions == [None] * len(filtered.chunks)
+
+
+def test_a_start_with_no_end_tags_nothing(tmp_path):
+    filtered = chunk_pdf_filtered(make_page_pdf(tmp_path / "thesis.pdf", THESIS_WITH_REVIEW[:6]))
+    assert filtered.literature_review is None
+    assert filtered.attributions == [None] * len(filtered.chunks)
+
+
+def test_no_front_matter_boundary_means_no_tags(tmp_path):
+    pages = ["CHAPTER 2: REVIEW OF RELATED LITERATURE\n" + cited_text(1), "CHAPTER 3\n" + own_text(1)]
+    filtered = chunk_pdf_filtered(make_page_pdf(tmp_path / "report.pdf", pages))
+    assert filtered.literature_review is None and set(filtered.attributions) == {None}
+
+
+def test_the_bundled_sample_tags_its_chapter_two():
+    filtered = chunk_pdf_filtered(SAMPLE_PDF)
+    # Each page is one paragraph that opens with its page number, above any heading:
+    # CHAPTER 2 is line 1 of page 6 (0-based 5) and CHAPTER 3 line 1 of page 8. A
+    # paragraph belongs where it ends, so pages 6 and 7 are tagged and page 8 isn't.
+    assert filtered.literature_review == LiteratureReviewRange(start=(5, 1), end=(7, 1))
+    tagged = [(c.page_start, c.page_end, a) for c, a in zip(filtered.chunks, filtered.attributions) if a]
+    assert tagged == [(5, 5, "literature_review"), (6, 6, "literature_review")]
+
+
+def _review_pages(start_line: str, end_line: str = "CHAPTER 3") -> list[str]:
+    return ["CHAPTER 1\nIntroduction", f"Our own background.\n{start_line}\nCited work.", f"More cited work.\n{end_line}\nOur design."]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "CHAPTER 2", "Chapter II", "CHAPTER TWO", "Chapter 2.", "CHAPTER 2: REVIEW OF RELATED LITERATURE",
+        "Chapter 2 - Review of Related Literature", "CHAPTER II REVIEW OF RELATED LITERATURE AND STUDIES",
+        "Review of Related Literature", "LITERATURE REVIEW", "2.1 Related Works", "Related Literature:",
+    ],
+)
+def test_literature_review_start_headings(line):
+    assert literature_review_range(_review_pages(line)) == LiteratureReviewRange(start=(1, 1), end=(2, 1))
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Chapter 2 presents the review of related literature",  # a sentence, not a heading
+        "CHAPTER 2 REVIEW OF RELATED LITERATURE ........ 13",
+        "CHAPTER 2 REVIEW OF RELATED LITERATURE 13",
+        "Chapter 20", "Chapter III", "Review of Related Literature and Studies", "A literature review of kiosks",
+    ],
+)
+def test_not_literature_review_start_headings(line):
+    assert literature_review_range(_review_pages(line)) is None
+
+
+@pytest.mark.parametrize("line", ["CHAPTER 3", "Chapter III", "CHAPTER 3: METHODOLOGY", "Methodology", "3. METHODOLOGY"])
+def test_literature_review_end_headings(line):
+    assert literature_review_range(_review_pages("CHAPTER 2", line)) == LiteratureReviewRange(start=(1, 1), end=(2, 1))
+
+
+@pytest.mark.parametrize(
+    "line", ["Chapter 3 describes the methodology", "methodology that emphasizes iterative development", "Chapter 30"]
+)
+def test_not_literature_review_end_headings(line):
+    assert literature_review_range(_review_pages("CHAPTER 2", line)) is None
+
+
+def test_a_chapter_two_line_in_the_contents_is_not_the_start():
+    pages = ["Contents\nCHAPTER 2\nCHAPTER 3", "CHAPTER 1\nIntroduction", "CHAPTER 2\nCited work.", "CHAPTER 3\nOurs."]
+    assert literature_review_range(pages) == LiteratureReviewRange(start=(2, 0), end=(3, 0))
+
+
+def test_paragraph_lines_follow_v1s_paragraphs():
+    # A blank line carrying a space still splits, and a lone page number is dropped (v1).
+    text = "First line\nstill first\n \nSecond\n\n12\n\nThird"
+    paragraphs = _paragraphs_from_page_text(text)
+    assert paragraphs == ["First line\nstill first", "Second", "Third"]
+    assert _paragraph_lines(text, paragraphs) == [1, 3, 7]  # the line each one ends on

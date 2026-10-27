@@ -195,7 +195,8 @@ def register_defense_routes(
                 reserve_quota(client_ip(request, settings.trusted_proxy_hops))
                 calls = CallCounter()
                 defense = setup_defense(
-                    session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model
+                    session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
+                    attribution_notes=settings.attribution_notes,
                 )
                 session.defense = defense
                 app.state.last_chunk_copy = ChunkCopy(

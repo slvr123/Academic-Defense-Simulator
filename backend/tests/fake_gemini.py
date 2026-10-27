@@ -37,6 +37,7 @@ class FakeGemini:
         self.block: dict[str, threading.Event] = {}  # role -> wait for this before answering
         self.entered: dict[str, threading.Event] = defaultdict(threading.Event)
         self.questions_asked = 0
+        self.question_prompts: list[str] = []  # every question prompt, in call order
 
     def fail_next(self, role: str, *errors: Exception) -> None:
         self.failures[role].extend(errors)
@@ -61,6 +62,7 @@ class FakeGemini:
             )
         if role == "question":
             self.questions_asked += 1
+            self.question_prompts.append(prompt)
             return PanelistQuestion(
                 question=f"Question {self.questions_asked}?", grounding_reference=GROUNDING, difficulty_level=2
             )

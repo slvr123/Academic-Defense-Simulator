@@ -11,6 +11,11 @@ vector it produced, so `source_for` can compute the same cosine `retrieve` ranke
 by, with no second embedding. When the engine didn't retrieve (a follow-up stays on
 the previous chunk; Devil's Advocate contests an earlier one), the source carries
 the score from that chunk's first retrieval.
+
+M7 J2: with attribution notes on, a literature-review chunk's text in the engine
+carries a note saying it describes cited work. Only the text the engine's prompts see
+changes. Retrieval ranks the session matrix, embedded at ingest from the original
+text, and the source reveal reads ChunkMeta, so neither sees the note.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from academic_defense_simulator.models.session import ConversationTurn
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
 from academic_defense_simulator.rag.retrieval import Chunk
 from backend.embedder import Embedder
+from backend.page_filter import Attribution
 from backend.schemas import Source
 from backend.sessions import ChunkMeta
 
@@ -48,21 +54,46 @@ class RecordingEncoder:
         return query
 
 
-def chunk_copy_bytes(chunks: list[Chunk]) -> int:
+# M7 J2. No page numbers: the panelist would quote them back as if they were evidence.
+ATTRIBUTION_NOTES: dict[Attribution, str] = {
+    "literature_review": (
+        "[Note to the panelist: this excerpt is from the candidate's review of related literature. "
+        "It describes other researchers' work that the candidate cites, not the candidate's own study or system. "
+        "Ask about how the candidate used, compared against, or departed from this work.]"
+    ),
+    "partly_literature_review": (
+        "[Note to the panelist: part of this excerpt is from the candidate's review of related literature. "
+        "Where it describes other researchers' work that the candidate cites, that work is not the candidate's "
+        "own study or system: ask about how the candidate used, compared against, or departed from it.]"
+    ),
+}
+
+
+def engine_text(meta: ChunkMeta, attribution_notes: bool) -> str:
+    """The chunk's text as the engine's prompts see it: with its note when notes are on."""
+    if not attribution_notes or meta.attribution is None:
+        return meta.text
+    return f"{ATTRIBUTION_NOTES[meta.attribution]}\n\n{meta.text}"
+
+
+def chunk_copy_bytes(chunks: list[Chunk], metas: list[ChunkMeta]) -> int:
     """What engine_chunks adds per defense: the Chunk objects, their embedding lists
-    and the float objects in them. Texts aren't counted; they're the ChunkMeta's own
-    strings, shared rather than copied."""
+    and the float objects in them, plus any annotated text. A plain text isn't
+    counted; it's the ChunkMeta's own string, shared rather than copied."""
     return sum(
-        sys.getsizeof(c) + sys.getsizeof(c.embedding) + sum(sys.getsizeof(x) for x in c.embedding) for c in chunks
+        sys.getsizeof(c) + sys.getsizeof(c.embedding) + sum(sys.getsizeof(x) for x in c.embedding)
+        + (0 if c.text is m.text else sys.getsizeof(c.text))
+        for c, m in zip(chunks, metas)
     ) + sys.getsizeof(chunks)
 
 
-def engine_chunks(matrix: np.ndarray, chunks: list[ChunkMeta]) -> list[Chunk]:
+def engine_chunks(matrix: np.ndarray, chunks: list[ChunkMeta], *, attribution_notes: bool = False) -> list[Chunk]:
     """v1 Chunks in matrix row order, so the engine's chunk_index is the row.
-    Built once per defense; chunk_copy_bytes says what it costs."""
+    Built once per defense; chunk_copy_bytes says what it costs. `attribution_notes`
+    is M7's flag (settings.attribution_notes)."""
     if len(chunks) != matrix.shape[0]:
         raise ValueError(f"{len(chunks)} chunks for a matrix of {matrix.shape[0]} rows")
-    return [Chunk(text=c.text, embedding=row.tolist()) for c, row in zip(chunks, matrix)]
+    return [Chunk(text=engine_text(c, attribution_notes), embedding=row.tolist()) for c, row in zip(chunks, matrix)]
 
 
 @dataclass

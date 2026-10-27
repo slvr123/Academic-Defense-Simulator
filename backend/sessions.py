@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from backend.page_filter import Attribution
 from backend.schemas import IngestErrorCode, PanelConfig
 
 if TYPE_CHECKING:
@@ -48,6 +49,8 @@ class ChunkMeta:
     text: str
     page_start: int
     page_end: int
+    # M7 J2: set when the chunk comes, wholly or partly, from the literature review.
+    attribution: Attribution | None = None
 
 
 @dataclass

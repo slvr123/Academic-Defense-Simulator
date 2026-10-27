@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # M6 H9: POST /tts with `part` voices one sentence at a time. Off by default; turning
     # it on is an env var on Render (ADS_TTS_SPLIT_SENTENCES=true), no deploy needed.
     tts_split_sentences: bool = False
+    # M7 J3: literature-review chunks reach the question prompt with a note that they
+    # describe cited work. Off by default; ADS_ATTRIBUTION_NOTES=true on Render turns it on.
+    attribution_notes: bool = False
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

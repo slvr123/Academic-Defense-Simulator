@@ -96,6 +96,44 @@ def make_navigation_pdf(path: Path, pages: list[str]) -> Path:
     return path
 
 
+OWN_MARKER = "The proponents built the kiosk on a microcontroller board"
+CITED_MARKER = "Santos and Lim (2021) built their prototype on a DSP board"
+
+
+def own_text(n: int) -> str:
+    """About 1,150 characters of the candidate's own work."""
+    return f"{OWN_MARKER} ({n}). " + " ".join([PARAGRAPH] * 5)
+
+
+def cited_text(n: int) -> str:
+    """About 1,150 characters describing a study the candidate cites."""
+    return f"{CITED_MARKER} ({n}). " + " ".join([PARAGRAPH] * 5)
+
+
+def make_page_pdf(path: Path, pages: list[str]) -> Path:
+    """One PDF page per string, each page one paragraph (the text box keeps no blank
+    lines). A text page is about 1,150 characters, so v1 packs two to a chunk."""
+    document = fitz.open()
+    for text in pages:
+        page = document.new_page()
+        page.insert_textbox(fitz.Rect(36, 36, 576, 756), text, fontsize=8)
+    document.save(path)
+    return path
+
+
+# M7 J2: a thesis whose Chapter 2 (pages 2-5) is its literature review.
+THESIS_WITH_REVIEW = [
+    "A Study of Library Systems",
+    "CHAPTER 1: INTRODUCTION\n" + own_text(1),
+    "CHAPTER 2: REVIEW OF RELATED LITERATURE\n" + cited_text(1),
+    cited_text(2),
+    cited_text(3),
+    cited_text(4),
+    "CHAPTER 3\nMETHODOLOGY\n" + own_text(2),
+    own_text(3),
+]
+
+
 class FakeEmbedder:
     """Deterministic unit vectors. `hold()` makes every encode wait until
     `release()`; `step()` lets exactly one encode through."""

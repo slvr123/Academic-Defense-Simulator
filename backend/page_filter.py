@@ -1,5 +1,6 @@
 """Pages and passages left out of chunking: front-matter navigation pages (v2.0 M5)
-and the reference list (M6 H1).
+and the reference list (M6 H1). Plus one thing ingest marks rather than removes:
+which chunks come from the literature review (M7 J2).
 
 A table of contents or list of figures names every topic in the paper, so it
 out-scores real content for nearly every panelist's focus query (M4 Check C); a
@@ -7,15 +8,19 @@ reference list of paper titles does the same from the back (M5's finding).
 The navigation detector is the one M4 measured, moved here unchanged from
 evals/retrieval_checks.py, which imports it. See
 docs/v2.0-m5-navigation-filter-decisions.md and
-docs/v2.0-m6-retrieval-reliability-voice-decisions.md.
+docs/v2.0-m6-retrieval-reliability-voice-decisions.md and
+docs/v2.0-m7-question-attribution-decisions.md.
 """
 
 from __future__ import annotations
 
+import bisect
+import itertools
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 # v1's own splitting, packing and errors, imported rather than copied, so the two
 # chunkers can only differ in which pages they read (G4).
@@ -52,6 +57,21 @@ _BACK_MATTER_END_HEADING = re.compile(
 # Dotted leaders, or a title ending in a page number, make it a contents line, not a heading.
 _DOTTED_LEADERS = re.compile(r"\.{3,}|…")
 _TRAILING_PAGE_NUMBER = re.compile(r"\s\d{1,3}$")
+
+# M7 J2. A Chapter 2 or Chapter 3 heading, bare or titled. A title must follow a
+# separator or be in capitals, so a line that starts a sentence ("Chapter 2 presents
+# the related literature") isn't taken for the heading.
+_CHAPTER_HEADING = r"^(?i:chapter)\s+(?i:{numbers})(?:[.:]|(?P<title>\s*[-–:.]\s*\S.*|\s+[^a-z]*[A-Z][^a-z]*))?$"
+_CHAPTER_TWO_HEADING = re.compile(_CHAPTER_HEADING.format(numbers="2|ii|two"))
+_CHAPTER_THREE_HEADING = re.compile(_CHAPTER_HEADING.format(numbers="3|iii|three"))
+# A line that is only a literature-review heading, or only "Methodology".
+_LITERATURE_REVIEW_HEADING = re.compile(
+    rf"(?i)^{_SECTION_NUMBER}(?:review\s+of\s+related\s+literature|literature\s+review|related\s+works|related\s+literature)[.:]?$"
+)
+_METHODOLOGY_HEADING = re.compile(rf"(?i)^{_SECTION_NUMBER}methodology[.:]?$")
+
+# Which note a chunk's text gets in the engine's prompt (backend/engine_adapter.py).
+Attribution = Literal["literature_review", "partly_literature_review"]
 
 
 def _lines(page_text: str) -> list[str]:
@@ -139,6 +159,72 @@ def trim_references(page_texts: list[str], references: ReferenceRange | None) ->
     return trimmed
 
 
+def _is_chapter_heading(pattern: re.Pattern[str], line: str) -> bool:
+    match = pattern.match(line)
+    if match is None or _DOTTED_LEADERS.search(line):
+        return False
+    # "CHAPTER 2 REVIEW OF RELATED LITERATURE 13" is a contents line.
+    return not (match.group("title") and _TRAILING_PAGE_NUMBER.search(line))
+
+
+def _is_literature_review_start(line: str) -> bool:
+    return _is_chapter_heading(_CHAPTER_TWO_HEADING, line) or bool(_LITERATURE_REVIEW_HEADING.match(line))
+
+
+def _is_literature_review_end(line: str) -> bool:
+    return _is_chapter_heading(_CHAPTER_THREE_HEADING, line) or bool(_METHODOLOGY_HEADING.match(line))
+
+
+@dataclass(frozen=True)
+class LiteratureReviewRange:
+    """J2: the literature review, as 0-based (page, line) positions with lines those of
+    `page_text.splitlines()`: from the start heading up to, not including, the end heading."""
+
+    start: tuple[int, int]
+    end: tuple[int, int]
+
+    def __contains__(self, position: tuple[int, int]) -> bool:
+        return self.start <= position < self.end
+
+
+def literature_review_range(page_texts: list[str]) -> LiteratureReviewRange | None:
+    """The first Chapter 2 or literature-review heading after the front-matter boundary,
+    up to the next Chapter 3 or Methodology heading. None with no boundary, no start, or
+    a start with no end: then nothing is tagged (fail-open)."""
+    boundary = front_matter_boundary(page_texts)
+    if boundary is None:
+        return None
+    start = _first_line(page_texts, (boundary, 0), _is_literature_review_start)
+    if start is None:
+        return None
+    end = _first_line(page_texts, (start[0], start[1] + 1), _is_literature_review_end)
+    return None if end is None else LiteratureReviewRange(start=start, end=end)
+
+
+def _paragraph_lines(text: str, paragraphs: list[str]) -> list[int]:
+    """The line of `text.splitlines()` that each of `paragraphs` ends on. `paragraphs`
+    is v1's `_paragraphs_from_page_text(text)`: stripped slices of the text, in order,
+    so each is found by searching on from where the one before ended."""
+    line_starts = list(itertools.accumulate((len(line) for line in text.splitlines(keepends=True)), initial=0))
+    lines, cursor = [], 0
+    for paragraph in paragraphs:
+        cursor = text.index(paragraph, cursor) + len(paragraph)
+        lines.append(bisect.bisect_right(line_starts, cursor - 1) - 1)
+    return lines
+
+
+def _attribution(first: tuple[int, int], last: tuple[int, int], review: LiteratureReviewRange | None) -> Attribution | None:
+    """J2's tag for a chunk whose first and last paragraphs end at `first` and `last`.
+    A paragraph belongs to the section it ends in: a page's paragraph often opens with
+    the page number or a running header, above the chapter heading it carries."""
+    if review is None:
+        return None
+    inside = (first in review) + (last in review)
+    if inside == 2:
+        return "literature_review"
+    return "partly_literature_review" if inside == 1 else None
+
+
 def removable_pages(page_texts: list[str]) -> set[int]:
     """0-based indices of navigation pages before the front-matter boundary. With no
     boundary, nothing: the filter fails open and the document chunks as before. Pages
@@ -154,6 +240,8 @@ class FilteredChunks:
     chunks: list[PageChunk]
     removed_pages: list[int]  # 0-based navigation pages, ascending
     references: ReferenceRange | None
+    literature_review: LiteratureReviewRange | None
+    attributions: list[Attribution | None]  # parallel to chunks
 
 
 def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) -> FilteredChunks:
@@ -161,7 +249,8 @@ def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) ->
     the reference list trimmed from the page text before v1's paragraph splitter runs
     (`trim_reference_list=False` is M5's chunker, kept for the eval's before run).
     Page indices stay those of the original PDF, and the scanned-PDF check counts all
-    the original text. With nothing removed, the chunks are v1's."""
+    the original text. With nothing removed, the chunks are v1's. The literature review
+    (M7 J2) is found in the text as chunked, and only tags chunks: it never changes one."""
     import fitz  # PyMuPDF
 
     try:
@@ -183,21 +272,32 @@ def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) ->
 
     removed = removable_pages(page_texts)
     references = reference_range(page_texts) if trim_reference_list else None
+    chunked_texts = trim_references(page_texts, references)
+    review = literature_review_range(chunked_texts)
     paragraphs: list[str] = []
     paragraph_pages: list[int] = []
-    for page_index, text in enumerate(trim_references(page_texts, references)):
+    paragraph_positions: list[tuple[int, int]] = []
+    for page_index, text in enumerate(chunked_texts):
         if page_index in removed:
             continue
         page_paragraphs = _paragraphs_from_page_text(text)
         paragraphs.extend(page_paragraphs)
         paragraph_pages.extend([page_index] * len(page_paragraphs))
+        paragraph_positions.extend((page_index, line) for line in _paragraph_lines(text, page_paragraphs))
 
+    spans = _pack_spans([len(p) for p in paragraphs])
     chunks = [
         PageChunk(
             text="\n\n".join(paragraphs[start:end]),
             page_start=paragraph_pages[start],
             page_end=paragraph_pages[end - 1],
         )
-        for start, end in _pack_spans([len(p) for p in paragraphs])
+        for start, end in spans
     ]
-    return FilteredChunks(chunks=chunks, removed_pages=sorted(removed), references=references)
+    return FilteredChunks(
+        chunks=chunks,
+        removed_pages=sorted(removed),
+        references=references,
+        literature_review=review,
+        attributions=[_attribution(paragraph_positions[start], paragraph_positions[end - 1], review) for start, end in spans],
+    )

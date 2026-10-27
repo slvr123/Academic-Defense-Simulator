@@ -4,6 +4,9 @@ question returns. The LLM is a stub; the embedder is the deterministic fake."""
 
 from __future__ import annotations
 
+import re
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -13,7 +16,8 @@ from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.session import DefenseSession
 from academic_defense_simulator.panel import FALLBACK_PANELISTS, apply_customizations, compose_full_roster
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
-from backend.engine_adapter import RecordingEncoder, SourceTracker, engine_chunks
+from academic_defense_simulator.rag.retrieval import retrieve
+from backend.engine_adapter import ATTRIBUTION_NOTES, RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.schemas import PanelConfig
 from backend.sessions import ChunkMeta
 from backend.tests.conftest import FakeEmbedder
@@ -25,6 +29,15 @@ class StubProvider:
     def generate_structured(self, prompt, response_model):
         assert response_model is PanelistQuestion
         return PanelistQuestion(question="Why that instrument?", grounding_reference=GROUNDING, difficulty_level=2)
+
+
+class RecordingProvider(StubProvider):
+    def __init__(self) -> None:
+        self.prompts: list[str] = []
+
+    def generate_structured(self, prompt, response_model):
+        self.prompts.append(prompt)
+        return super().generate_structured(prompt, response_model)
 
 
 def _document(embedder: FakeEmbedder, n: int = 8) -> tuple[np.ndarray, list[ChunkMeta]]:
@@ -136,3 +149,64 @@ def test_recording_encoder_hands_over_the_query_once():
     [vector] = encoder.encode(["a query"])
     assert np.allclose(encoder.take_query(), vector)
     assert encoder.take_query() is None
+
+
+# --- M7 J2/J3: attribution notes ------------------------------------------------
+
+
+def _tagged_document(embedder: FakeEmbedder) -> tuple[np.ndarray, list[ChunkMeta]]:
+    matrix, metas = _document(embedder, n=4)
+    tags = [None, "literature_review", "partly_literature_review", None]
+    return matrix, [replace(m, attribution=t) for m, t in zip(metas, tags)]
+
+
+def test_with_notes_off_the_engine_sees_exactly_todays_text():
+    matrix, metas = _tagged_document(FakeEmbedder())
+    for chunks in (engine_chunks(matrix, metas), engine_chunks(matrix, metas, attribution_notes=False)):
+        assert all(c.text is m.text for c, m in zip(chunks, metas))  # the same strings, not copies
+    assert chunk_copy_bytes(engine_chunks(matrix, metas), metas) == chunk_copy_bytes(
+        engine_chunks(matrix, [replace(m, attribution=None) for m in metas]), metas
+    )
+
+
+def test_with_notes_on_only_tagged_chunks_get_their_note():
+    matrix, metas = _tagged_document(FakeEmbedder())
+    chunks = engine_chunks(matrix, metas, attribution_notes=True)
+    assert chunks[0].text is metas[0].text and chunks[3].text is metas[3].text
+    assert chunks[1].text == f"{ATTRIBUTION_NOTES['literature_review']}\n\n{metas[1].text}"
+    assert chunks[2].text == f"{ATTRIBUTION_NOTES['partly_literature_review']}\n\n{metas[2].text}"
+    off = engine_chunks(matrix, metas)
+    assert chunk_copy_bytes(chunks, metas) > chunk_copy_bytes(off, metas)  # the two annotated texts
+
+
+def test_the_notes_name_no_page_numbers():
+    assert set(ATTRIBUTION_NOTES) == {"literature_review", "partly_literature_review"}
+    assert not any(re.search(r"\d", note) for note in ATTRIBUTION_NOTES.values())
+
+
+def test_notes_cannot_move_retrieval():
+    # The embeddings are the matrix rows either way, so retrieve ranks identically.
+    embedder = FakeEmbedder()
+    matrix, metas = _tagged_document(embedder)
+    off, on = engine_chunks(matrix, metas), engine_chunks(matrix, metas, attribution_notes=True)
+    assert [c.embedding for c in on] == [c.embedding for c in off]
+    encoder = RecordingEncoder(embedder)
+    for archetype in ARCHETYPE_CONFIG:
+        query = ARCHETYPE_CONFIG[archetype]["archetype_focus"]
+        ranked = [[i for i, _ in retrieve(query, chunks, top_k=4, embedding_model=encoder)] for chunks in (off, on)]
+        assert ranked[0] == ranked[1]
+
+
+def test_the_prompt_sees_the_note_and_the_source_reveal_does_not():
+    embedder = FakeEmbedder()
+    matrix, metas = _tagged_document(embedder)
+    metas = [replace(m, attribution="literature_review") for m in metas]  # whichever chunk is picked
+    chunks = engine_chunks(matrix, metas, attribution_notes=True)
+    encoder, tracker = RecordingEncoder(embedder), SourceTracker(matrix, metas)
+    session = _session(PanelConfig(archetype_keys=["methodology_expert"]))
+    provider = RecordingProvider()
+    turn = _generate_question(provider, session, chunks, encoder, select_active_panelist(session), "", "m")
+    source = tracker.source_for(turn, encoder.take_query())
+    note = ATTRIBUTION_NOTES["literature_review"]
+    assert note in provider.prompts[0] and turn.chunk_text.startswith(note)
+    assert source.text == metas[turn.chunk_index].text and note not in source.text
