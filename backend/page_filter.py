@@ -58,17 +58,27 @@ _BACK_MATTER_END_HEADING = re.compile(
 _DOTTED_LEADERS = re.compile(r"\.{3,}|…")
 _TRAILING_PAGE_NUMBER = re.compile(r"\s\d{1,3}$")
 
-# M7 J2. A Chapter 2 or Chapter 3 heading, bare or titled. A title must follow a
-# separator or be in capitals, so a line that starts a sentence ("Chapter 2 presents
-# the related literature") isn't taken for the heading.
-_CHAPTER_HEADING = r"^(?i:chapter)\s+(?i:{numbers})(?:[.:]|(?P<title>\s*[-–:.]\s*\S.*|\s+[^a-z]*[A-Z][^a-z]*))?$"
-_CHAPTER_TWO_HEADING = re.compile(_CHAPTER_HEADING.format(numbers="2|ii|two"))
-_CHAPTER_THREE_HEADING = re.compile(_CHAPTER_HEADING.format(numbers="3|iii|three"))
-# A line that is only a literature-review heading, or only "Methodology".
-_LITERATURE_REVIEW_HEADING = re.compile(
-    rf"(?i)^{_SECTION_NUMBER}(?:review\s+of\s+related\s+literature|literature\s+review|related\s+works|related\s+literature)[.:]?$"
+# M7 J2, as revised on 2026-10-27: the range starts only at a heading that names the
+# literature. A bare "CHAPTER 2" no longer does: DAZSMA's Chapter 2 is its own system
+# design. The name may stand alone ("2.1 Related Works") or be a chapter's title
+# ("CHAPTER 2: REVIEW OF RELATED LITERATURE"), and may go on with "and" and up to three
+# words ("Review of Related Literature and Studies") if the line is set as a heading.
+_LITERATURE_NAME = (
+    r"(?P<name>review\s+of\s+related\s+literature|literature\s+review|related\s+works|related\s+literature)"
+    r"(?P<more>\s+and(?:\s+\S+){1,3})?[.:]?$"
+)
+_STANDALONE_LITERATURE_HEADING = re.compile(rf"(?i)^{_SECTION_NUMBER}{_LITERATURE_NAME}")
+_CHAPTER_LITERATURE_HEADING = re.compile(rf"(?i)^chapter\s+[a-z0-9]{{1,6}}\s*[-–:.]?\s*{_LITERATURE_NAME}")
+# The end, unchanged: a Chapter 3 heading, bare or titled (a title must follow a
+# separator or be in capitals, so "Chapter 3 describes the methodology" isn't one),
+# or a line that is only "Methodology".
+_CHAPTER_THREE_HEADING = re.compile(
+    r"^(?i:chapter)\s+(?i:3|iii|three)(?:[.:]|(?P<title>\s*[-–:.]\s*\S.*|\s+[^a-z]*[A-Z][^a-z]*))?$"
 )
 _METHODOLOGY_HEADING = re.compile(rf"(?i)^{_SECTION_NUMBER}methodology[.:]?$")
+# What makes a chunk cite a specific study: "Reyes et al.", "(Reyes, 2021)",
+# "(Reyes & Cruz, 2021a; Lim, 2019)", or a numbered reference like "[12]" or "[3, 7]".
+_CITATION = re.compile(r"\bet al\.|\([A-Z][^()]{0,80}?,\s*(?:19|20)\d{2}[a-z]?\)|\[\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]")
 
 # Which note a chunk's text gets in the engine's prompt (backend/engine_adapter.py).
 Attribution = Literal["literature_review", "partly_literature_review"]
@@ -159,20 +169,33 @@ def trim_references(page_texts: list[str], references: ReferenceRange | None) ->
     return trimmed
 
 
-def _is_chapter_heading(pattern: re.Pattern[str], line: str) -> bool:
-    match = pattern.match(line)
-    if match is None or _DOTTED_LEADERS.search(line):
-        return False
-    # "CHAPTER 2 REVIEW OF RELATED LITERATURE 13" is a contents line.
-    return not (match.group("title") and _TRAILING_PAGE_NUMBER.search(line))
+def cites_a_study(text: str) -> bool:
+    """J2 (b): the text cites a specific study (see _CITATION)."""
+    return _CITATION.search(text) is not None
+
+
+def _set_as_heading(line: str) -> bool:
+    """All capitals, or every word of four letters or more capitalised."""
+    words = re.findall(r"[A-Za-z]+", line)
+    return line == line.upper() or all(w[0].isupper() for w in words if len(w) >= 4)
 
 
 def _is_literature_review_start(line: str) -> bool:
-    return _is_chapter_heading(_CHAPTER_TWO_HEADING, line) or bool(_LITERATURE_REVIEW_HEADING.match(line))
+    if _DOTTED_LEADERS.search(line) or _TRAILING_PAGE_NUMBER.search(line):
+        return False  # a contents line
+    match = _STANDALONE_LITERATURE_HEADING.match(line) or _CHAPTER_LITERATURE_HEADING.match(line)
+    # "Review of related literature and studies shows ..." starts a sentence, not a section.
+    return match is not None and (match.group("more") is None or _set_as_heading(line))
 
 
 def _is_literature_review_end(line: str) -> bool:
-    return _is_chapter_heading(_CHAPTER_THREE_HEADING, line) or bool(_METHODOLOGY_HEADING.match(line))
+    if _METHODOLOGY_HEADING.match(line):
+        return True
+    match = _CHAPTER_THREE_HEADING.match(line)
+    if match is None or _DOTTED_LEADERS.search(line):
+        return False
+    # "CHAPTER 3 METHODOLOGY 43" is a contents line.
+    return not (match.group("title") and _TRAILING_PAGE_NUMBER.search(line))
 
 
 @dataclass(frozen=True)
@@ -188,9 +211,9 @@ class LiteratureReviewRange:
 
 
 def literature_review_range(page_texts: list[str]) -> LiteratureReviewRange | None:
-    """The first Chapter 2 or literature-review heading after the front-matter boundary,
-    up to the next Chapter 3 or Methodology heading. None with no boundary, no start, or
-    a start with no end: then nothing is tagged (fail-open)."""
+    """The first heading naming the literature after the front-matter boundary, up to
+    the next Chapter 3 or Methodology heading. None with no boundary, no start, or a
+    start with no end: then nothing is tagged (fail-open)."""
     boundary = front_matter_boundary(page_texts)
     if boundary is None:
         return None
@@ -213,11 +236,14 @@ def _paragraph_lines(text: str, paragraphs: list[str]) -> list[int]:
     return lines
 
 
-def _attribution(first: tuple[int, int], last: tuple[int, int], review: LiteratureReviewRange | None) -> Attribution | None:
-    """J2's tag for a chunk whose first and last paragraphs end at `first` and `last`.
-    A paragraph belongs to the section it ends in: a page's paragraph often opens with
-    the page number or a running header, above the chapter heading it carries."""
-    if review is None:
+def _attribution(
+    first: tuple[int, int], last: tuple[int, int], review: LiteratureReviewRange | None, text: str
+) -> Attribution | None:
+    """J2's tag for a chunk whose first and last paragraphs end at `first` and `last`:
+    only if it's in the range (a) and its own `text` cites a study (b). A paragraph
+    belongs to the section it ends in: a page's paragraph often opens with the page
+    number or a running header, above the chapter heading it carries."""
+    if review is None or not cites_a_study(text):
         return None
     inside = (first in review) + (last in review)
     if inside == 2:
@@ -299,5 +325,8 @@ def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) ->
         removed_pages=sorted(removed),
         references=references,
         literature_review=review,
-        attributions=[_attribution(paragraph_positions[start], paragraph_positions[end - 1], review) for start, end in spans],
+        attributions=[
+            _attribution(paragraph_positions[start], paragraph_positions[end - 1], review, chunk.text)
+            for (start, end), chunk in zip(spans, chunks)
+        ],
     )

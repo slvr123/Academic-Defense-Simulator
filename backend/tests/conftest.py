@@ -97,7 +97,7 @@ def make_navigation_pdf(path: Path, pages: list[str]) -> Path:
 
 
 OWN_MARKER = "The proponents built the kiosk on a microcontroller board"
-CITED_MARKER = "Santos and Lim (2021) built their prototype on a DSP board"
+CITED_MARKER = "Santos et al. (2021) built their prototype on a DSP board"
 
 
 def own_text(n: int) -> str:

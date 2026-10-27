@@ -13,6 +13,7 @@ from backend.page_filter import (
     LiteratureReviewRange,
     ReferenceRange,
     _paragraph_lines,
+    cites_a_study,
     chunk_pdf_filtered,
     is_navigation_page,
     literature_review_range,
@@ -288,14 +289,32 @@ def test_no_front_matter_boundary_means_no_tags(tmp_path):
     assert filtered.literature_review is None and set(filtered.attributions) == {None}
 
 
-def test_the_bundled_sample_tags_its_chapter_two():
+def test_a_review_chunk_that_cites_nothing_is_not_tagged(tmp_path):
+    # J2 (b): pages 3-4 sit inside the range but cite no study, so their chunk isn't tagged.
+    pages = list(THESIS_WITH_REVIEW)
+    pages[3:5] = [own_text(8), own_text(9)]
+    filtered = chunk_pdf_filtered(make_page_pdf(tmp_path / "thesis.pdf", pages))
+    assert filtered.literature_review == LiteratureReviewRange(start=(2, 0), end=(6, 0))
+    assert [(c.page_start, c.page_end) for c in filtered.chunks][1] == (3, 4)
+    assert filtered.attributions == ["partly_literature_review", None, "partly_literature_review", None]
+
+
+def test_a_bare_chapter_two_starts_nothing_even_over_cited_text(tmp_path):
+    # DAZSMA's Chapter 2 is the team's own system design under a bare "CHAPTER 2" (M7 finding).
+    pages = list(THESIS_WITH_REVIEW)
+    pages[2] = "CHAPTER 2\nSYSTEM DESIGN\n" + cited_text(1)
+    filtered = chunk_pdf_filtered(make_page_pdf(tmp_path / "capstone.pdf", pages))
+    assert filtered.literature_review is None and set(filtered.attributions) == {None}
+
+
+def test_the_bundled_sample_tags_its_review_where_it_cites():
     filtered = chunk_pdf_filtered(SAMPLE_PDF)
-    # Each page is one paragraph that opens with its page number, above any heading:
-    # CHAPTER 2 is line 1 of page 6 (0-based 5) and CHAPTER 3 line 1 of page 8. A
-    # paragraph belongs where it ends, so pages 6 and 7 are tagged and page 8 isn't.
-    assert filtered.literature_review == LiteratureReviewRange(start=(5, 1), end=(7, 1))
+    # "CHAPTER 2" is line 1 of page 6 (0-based 5) and its title, "REVIEW OF RELATED
+    # LITERATURE AND STUDIES", line 2; CHAPTER 3 is line 1 of page 8. Each page is one
+    # paragraph, placed where it ends: pages 6 and 7 are in the range, and only page 6 cites.
+    assert filtered.literature_review == LiteratureReviewRange(start=(5, 2), end=(7, 1))
     tagged = [(c.page_start, c.page_end, a) for c, a in zip(filtered.chunks, filtered.attributions) if a]
-    assert tagged == [(5, 5, "literature_review"), (6, 6, "literature_review")]
+    assert tagged == [(5, 5, "literature_review")]
 
 
 def _review_pages(start_line: str, end_line: str = "CHAPTER 3") -> list[str]:
@@ -305,9 +324,10 @@ def _review_pages(start_line: str, end_line: str = "CHAPTER 3") -> list[str]:
 @pytest.mark.parametrize(
     "line",
     [
-        "CHAPTER 2", "Chapter II", "CHAPTER TWO", "Chapter 2.", "CHAPTER 2: REVIEW OF RELATED LITERATURE",
-        "Chapter 2 - Review of Related Literature", "CHAPTER II REVIEW OF RELATED LITERATURE AND STUDIES",
         "Review of Related Literature", "LITERATURE REVIEW", "2.1 Related Works", "Related Literature:",
+        "REVIEW OF RELATED LITERATURE AND STUDIES", "Review of Related Literature and Studies",
+        "CHAPTER 2: REVIEW OF RELATED LITERATURE", "Chapter 2 - Review of Related Literature",
+        "CHAPTER II REVIEW OF RELATED LITERATURE AND STUDIES", "Chapter Two: Related Works",
     ],
 )
 def test_literature_review_start_headings(line):
@@ -317,31 +337,56 @@ def test_literature_review_start_headings(line):
 @pytest.mark.parametrize(
     "line",
     [
+        "CHAPTER 2", "Chapter II", "CHAPTER 2: SYSTEM DESIGN",  # a chapter that doesn't name the literature
         "Chapter 2 presents the review of related literature",  # a sentence, not a heading
+        "Review of related literature and studies shows that",
         "CHAPTER 2 REVIEW OF RELATED LITERATURE ........ 13",
         "CHAPTER 2 REVIEW OF RELATED LITERATURE 13",
-        "Chapter 20", "Chapter III", "Review of Related Literature and Studies", "A literature review of kiosks",
+        "Review of Related Literature 13",
+        "Related Studies", "A literature review of kiosks",
     ],
 )
 def test_not_literature_review_start_headings(line):
     assert literature_review_range(_review_pages(line)) is None
 
 
+START = "Review of Related Literature"
+
+
 @pytest.mark.parametrize("line", ["CHAPTER 3", "Chapter III", "CHAPTER 3: METHODOLOGY", "Methodology", "3. METHODOLOGY"])
 def test_literature_review_end_headings(line):
-    assert literature_review_range(_review_pages("CHAPTER 2", line)) == LiteratureReviewRange(start=(1, 1), end=(2, 1))
+    assert literature_review_range(_review_pages(START, line)) == LiteratureReviewRange(start=(1, 1), end=(2, 1))
 
 
 @pytest.mark.parametrize(
     "line", ["Chapter 3 describes the methodology", "methodology that emphasizes iterative development", "Chapter 30"]
 )
 def test_not_literature_review_end_headings(line):
-    assert literature_review_range(_review_pages("CHAPTER 2", line)) is None
+    assert literature_review_range(_review_pages(START, line)) is None
 
 
-def test_a_chapter_two_line_in_the_contents_is_not_the_start():
-    pages = ["Contents\nCHAPTER 2\nCHAPTER 3", "CHAPTER 1\nIntroduction", "CHAPTER 2\nCited work.", "CHAPTER 3\nOurs."]
+def test_a_literature_line_in_the_contents_is_not_the_start():
+    pages = ["Contents\nReview of Related Literature\nCHAPTER 3", "CHAPTER 1\nIntroduction", f"{START}\nCited work.", "CHAPTER 3\nOurs."]
     assert literature_review_range(pages) == LiteratureReviewRange(start=(2, 0), end=(3, 0))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Reyes et al. (2020) found", "as noted (Reyes, 2021).", "(Reyes & Cruz, 2021a; Lim, 2019)",
+        "as shown in [12]", "two studies [3, 7]", "several [4–6]",
+    ],
+)
+def test_citations(text):
+    assert cites_a_study(text)
+
+
+@pytest.mark.parametrize(
+    "text", ["the ISO/IEC 25010 model", "in 2021 the school", "Reyes (2021) found", "(see Figure 3)", "option [a]"]
+)
+def test_not_citations(text):
+    # "Reyes (2021)" alone isn't in J2's list: et al., (Author, YYYY), or a numbered reference.
+    assert not cites_a_study(text)
 
 
 def test_paragraph_lines_follow_v1s_paragraphs():
