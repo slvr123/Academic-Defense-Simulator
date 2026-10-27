@@ -2,30 +2,38 @@
 
 Usage (repo root, backend/.venv; GEMINI_API_KEY via backend.settings):
 
-    python scripts/probe_attribution.py --max-calls 80
+    python scripts/probe_attribution.py --max-calls 150
 
 On sample3 and DAZSMA, through the production ingest and question path:
-- 10 literature-review chunks that cite a specific study (an "et al." or an
-  "(Author, YYYY)" citation), evenly spaced over each document's candidates. J4 asks
-  for 5 per document, but DAZSMA's tagged Chapter 2 has only one such chunk, so its
-  shortfall moves to sample3 (a deviation recorded in docs/v2.0-m7-results.md);
+- 10 literature-review chunks (tagged by J2 as revised, so each cites a study),
+  evenly spaced over a document's tagged chunks. Only documents with at least 5
+  tagged chunks give items, 5 each, or all 10 when only one qualifies (Sean's
+  decision of 2026-10-27; with J2 revised, DAZSMA has none);
 - per document, 3 of the candidate's own chunks from Chapter 3 (untagged, from the
   Chapter 3 heading to the next chapter heading, or to the reference list);
 each asked by the Technical Implementation Reviewer and the Methodology Expert at
 difficulty 3. Literature-review items run twice, notes off (before) and on (after);
-control items once, notes on. That's 20 + 20 + 12 = 52 question calls, plus one
-extraction and one persona call per document, as a real defense makes them.
+control items once, notes on: 20 + 20 + 12 = 52 question calls, plus one extraction
+and one persona call per document, as a real defense makes them.
 
 The chunk is fixed through `_generate_question`'s `retriever` (M6 H3), so the
 template, model, settings and grounding check are production's and only retrieval
-is bypassed. Calls are paced 9 s apart: a question call is at most two attempts
-(GeminiProvider retries once), and two per 9 s stays under 15 a minute. Stops
-before any call whose worst case could take the total past --max-calls.
+is bypassed. Every Gemini call goes through CachedProvider:
+- a response whose full prompt (and response model) was answered before, in any run,
+  comes from attribution-judging/cache.jsonl instead of a new call;
+- real calls start 9 s apart; GeminiProvider retries a call once, so at most two
+  attempts per 9 s, under 15 a minute;
+- a call that fails (503 overload, 504 timeout) is tried again after 30, 60, 120 and
+  240 s; a 429 (real quota exhaustion) stops the run;
+- attribution-judging/ledger.json counts every attempt across runs, and no call is
+  made that could take the total past --max-calls.
+A failed run can be started again: cached prompts cost nothing, and the persona is
+cached too, so the question prompts come out the same.
 
 Writes, all under attribution-judging/ (gitignored, they carry passage text):
 - sheet.md: the shuffled items with no arm labels, a blank label each;
 - key.json: item -> arm, document, chunk, grounding;
-- generations.jsonl: every raw generation.
+- generations.jsonl: every generation of this run; cache.jsonl; ledger.json.
 And evals/v2.0-m7-attribution-probe.json: counts and chunk choices, no text.
 Score the labels with scripts/score_attribution_judging.py.
 """
@@ -33,27 +41,36 @@ Score the labels with scripts/score_attribution_judging.py.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import re
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Type, TypeVar
 
 if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import fitz  # noqa: E402  PyMuPDF
 import numpy as np  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 
 from academic_defense_simulator.document_profile import extract_document_profile  # noqa: E402
 from academic_defense_simulator.engine import _generate_question  # noqa: E402
 from academic_defense_simulator.grounding import is_grounded  # noqa: E402
-from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError  # noqa: E402
+from academic_defense_simulator.llm.provider import (  # noqa: E402
+    CallCounter,
+    LLMProvider,
+    LLMProviderError,
+    LLMQuotaExhaustedError,
+)
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType  # noqa: E402
 from academic_defense_simulator.models.session import DefenseSession  # noqa: E402
 from academic_defense_simulator.panel import generate_panel  # noqa: E402
@@ -61,24 +78,24 @@ from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.retrieval import Chunk  # noqa: E402
 from backend.defense_routes import gemini_providers_factory  # noqa: E402
 from backend.engine_adapter import engine_chunks  # noqa: E402
-from backend.page_filter import FilteredChunks  # noqa: E402
+from backend.page_filter import FilteredChunks, front_matter_boundary  # noqa: E402
 from backend.pdf_ingest import parse_pdf  # noqa: E402
 from backend.sessions import ChunkMeta  # noqa: E402
 from backend.settings import Settings  # noqa: E402
+
+T = TypeVar("T", bound=BaseModel)
 
 MODEL = "gemini-3.1-flash-lite"
 ARCHETYPES = ["technical_implementation_reviewer", "methodology_expert"]
 DIFFICULTY = 3
 REVIEW_ITEMS, REVIEW_ITEMS_PER_DOCUMENT, CONTROL_ITEMS = 10, 5, 3
 PACE_S = 9.0
-# Gemini answered 503 "high demand" on the first run (2026-10-27): an item that fails
-# after the provider's own retry waits a minute and is tried again, twice at most.
-ITEM_TRIES, BUSY_WAIT_S = 3, 60.0
-# GeminiProvider retries a failed call once; extraction and persona generation retry
-# that whole call once more on top.
-QUESTION_ATTEMPTS, SETUP_ATTEMPTS = 2, 4
+ATTEMPTS_PER_CALL = 2  # GeminiProvider retries a failed call once
+BACKOFF_S = (30.0, 60.0, 120.0, 240.0)  # waits before tries 2-5 of a failed call
 SHUFFLE_SEED = "v2.0-m7-j4"
 OUT_DIR = ROOT / "attribution-judging"
+CACHE = OUT_DIR / "cache.jsonl"
+LEDGER = OUT_DIR / "ledger.json"
 SUMMARY = ROOT / "evals" / "v2.0-m7-attribution-probe.json"
 
 
@@ -93,39 +110,116 @@ DOCUMENTS = [
     Document(ROOT / "Group2_Library Management System for DAZSMA Documentation (1).pdf", DefenseType.CAPSTONE),
 ]
 
-# A specific study: "Reyes et al." or "(Reyes, 2021)", "(Reyes & Cruz, 2021a)".
-_CITATION = re.compile(r"\bet al\.|\([A-Z][^()]{0,80}?,\s*(?:19|20)\d{2}[a-z]?\)")
+_CHAPTER_THREE = re.compile(r"(?i)^chapter\s+(?:3|iii|three)\b")
 _NEXT_CHAPTER = re.compile(r"(?i)^chapter\s+(?:4|iv|four)\b")
+# Dotted leaders, or a chapter title ending in a page number ("CHAPTER 3 METHODOLOGY 43").
+_CONTENTS_LINE = re.compile(r"\.{3,}|…|^\S+\s+\S+\s+.*\s\d{1,3}$")
+
+
+class CachedProvider(LLMProvider):
+    """The defense provider behind the prompt-hash cache, the pacing, the backoff and
+    the cross-run call ledger (see the module docstring)."""
+
+    def __init__(self, inner: LLMProvider, calls: CallCounter, max_calls: int) -> None:
+        self._inner, self._calls, self._max = inner, calls, max_calls
+        self._cache = {}
+        if CACHE.exists():
+            for line in CACHE.read_text(encoding="utf-8").splitlines():
+                entry = json.loads(line)
+                self._cache[entry["key"]] = entry["response"]
+        self._spent_before = json.loads(LEDGER.read_text(encoding="utf-8"))["calls"] if LEDGER.exists() else 0
+        self._last_call = 0.0
+        self.hits = 0
+
+    @property
+    def spent(self) -> int:
+        """Attempts across every run, this one included."""
+        return self._spent_before + self._calls.total
+
+    def generate_structured(self, prompt: str, response_model: Type[T]) -> T:
+        key = _key(response_model.__name__, prompt)
+        if key in self._cache:
+            self.hits += 1
+            return response_model.model_validate_json(self._cache[key])
+        result = self._call(lambda: self._inner.generate_structured(prompt, response_model))
+        self._store(key, result.model_dump_json())
+        return result
+
+    def generate_text(self, prompt: str) -> str:
+        key = _key("text", prompt)
+        if key in self._cache:
+            self.hits += 1
+            return self._cache[key]
+        result = self._call(lambda: self._inner.generate_text(prompt))
+        self._store(key, result)
+        return result
+
+    def _call(self, fn: Callable[[], T]) -> T:
+        for attempt in range(len(BACKOFF_S) + 1):
+            if self.spent + ATTEMPTS_PER_CALL > self._max:
+                raise SystemExit(f"STOP: the next call could take the total past --max-calls {self._max} "
+                                 f"({self.spent} made across runs)")
+            time.sleep(max(0.0, self._last_call + PACE_S - time.monotonic()))
+            try:
+                return fn()
+            except LLMQuotaExhaustedError:
+                raise
+            except LLMProviderError as exc:
+                if attempt == len(BACKOFF_S):
+                    raise
+                print(f"    call failed ({type(exc).__name__}); waiting {BACKOFF_S[attempt]:.0f} s, "
+                      f"{self.spent} calls made across runs")
+                time.sleep(BACKOFF_S[attempt])
+            finally:
+                self._last_call = time.monotonic()
+                LEDGER.write_text(json.dumps({"calls": self.spent}) + "\n", encoding="utf-8")
+        raise AssertionError("unreachable")
+
+    def _store(self, key: str, response: str) -> None:
+        self._cache[key] = response
+        with CACHE.open("a", encoding="utf-8") as cache:
+            cache.write(json.dumps({"key": key, "response": response}) + "\n")
+
+
+def _key(kind: str, prompt: str) -> str:
+    return hashlib.sha256(f"{MODEL}\n{kind}\n{prompt}".encode()).hexdigest()
 
 
 def evenly_spaced(candidates: list[int], n: int) -> list[int]:
     """n of `candidates` (ascending) at even spacing, first and last included."""
     if len(candidates) < n:
         raise SystemExit(f"STOP: only {len(candidates)} candidates for {n} items")
+    if n == 0:
+        return []
     if n == 1:
         return [candidates[0]]
     return [candidates[round(i * (len(candidates) - 1) / (n - 1))] for i in range(n)]
 
 
 def chapter_three_pages(path: Path, filtered: FilteredChunks) -> range:
-    """0-based pages from the Chapter 3 heading (the review's end) to the next chapter
-    heading, or to the reference list, or to the end of the document."""
-    assert filtered.literature_review is not None
-    start = filtered.literature_review.end[0]
+    """0-based pages from the first Chapter 3 heading after the front matter to the
+    next chapter heading, or to the reference list, or to the end of the document."""
     with fitz.open(str(path)) as pdf:
         texts = [page.get_text("text") for page in pdf]
+    boundary = front_matter_boundary(texts)
+    if boundary is None:
+        raise SystemExit(f"STOP: no Chapter 1 in {path.name}")
+
+    def heads(index: int, pattern: re.Pattern[str]) -> bool:
+        return any(pattern.match(line.strip()) and not _CONTENTS_LINE.search(line.strip())
+                   for line in texts[index].splitlines())
+
+    start = next((i for i in range(boundary, len(texts)) if heads(i, _CHAPTER_THREE)), None)
+    if start is None:
+        raise SystemExit(f"STOP: no Chapter 3 heading in {path.name}")
     end = filtered.references.start[0] if filtered.references else len(texts)
-    for index in range(start + 1, end):
-        if any(_NEXT_CHAPTER.match(line.strip()) for line in texts[index].splitlines()):
-            end = index
-            break
+    end = next((i for i in range(start + 1, end) if heads(i, _NEXT_CHAPTER)), end)
     return range(start, end)
 
 
 def candidates(path: Path, filtered: FilteredChunks) -> tuple[list[int], list[int]]:
-    """(literature-review chunks citing a study, the control's own Chapter 3 chunks)."""
-    review = [i for i, (c, a) in enumerate(zip(filtered.chunks, filtered.attributions))
-              if a == "literature_review" and _CITATION.search(c.text)]
+    """(the literature-review chunks J2 tags whole, the control's own Chapter 3 chunks)."""
+    review = [i for i, a in enumerate(filtered.attributions) if a == "literature_review"]
     pages = chapter_three_pages(path, filtered)
     own = [i for i, (c, a) in enumerate(zip(filtered.chunks, filtered.attributions))
            if a is None and c.page_start in pages and c.page_end in pages]
@@ -133,14 +227,17 @@ def candidates(path: Path, filtered: FilteredChunks) -> tuple[list[int], list[in
 
 
 def review_counts(available: list[int]) -> list[int]:
-    """How many literature-review chunks each document gives: REVIEW_ITEMS_PER_DOCUMENT
-    where it has them, any shortfall taken from the first document with spare."""
-    counts = [min(REVIEW_ITEMS_PER_DOCUMENT, n) for n in available]
-    while sum(counts) < REVIEW_ITEMS:
-        spare = [i for i, n in enumerate(available) if counts[i] < n]
-        if not spare:
-            raise SystemExit(f"STOP: only {sum(available)} literature-review candidates for {REVIEW_ITEMS} items")
-        counts[spare[0]] += 1
+    """Literature-review items per document: only documents with at least
+    REVIEW_ITEMS_PER_DOCUMENT tagged chunks give any, splitting REVIEW_ITEMS evenly
+    (the first takes any remainder): 5 and 5, or 10 when only one qualifies."""
+    eligible = [i for i, n in enumerate(available) if n >= REVIEW_ITEMS_PER_DOCUMENT]
+    if not eligible:
+        raise SystemExit(f"STOP: no document has {REVIEW_ITEMS_PER_DOCUMENT} tagged literature-review chunks")
+    counts = [0] * len(available)
+    for position, index in enumerate(eligible):
+        counts[index] = REVIEW_ITEMS // len(eligible) + (REVIEW_ITEMS % len(eligible) if position == 0 else 0)
+    if any(counts[i] > available[i] for i in eligible):
+        raise SystemExit(f"STOP: {counts} items from {available} tagged chunks")
     return counts
 
 
@@ -159,48 +256,35 @@ def fixed(index: int):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--max-calls", type=int, required=True)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--max-calls", type=int, required=True, help="the cap on attempts across every run")
     args = parser.parse_args()
     settings = Settings()
     if settings.gemini_model != MODEL:
         raise SystemExit(f"STOP: the defense model is {settings.gemini_model}, not {MODEL}")
+    OUT_DIR.mkdir(exist_ok=True)
     calls = CallCounter()
-    provider = gemini_providers_factory(settings)(calls).defense
-    last_call = [0.0]
-
-    def paced(fn, attempts: int = QUESTION_ATTEMPTS):
-        """Runs one call 9 s after the last, if the budget allows its worst case of attempts."""
-        if calls.total + attempts > args.max_calls:
-            raise SystemExit(f"STOP: the next call could take the total past --max-calls {args.max_calls} "
-                             f"({calls.total} made)")
-        time.sleep(max(0.0, last_call[0] + PACE_S - time.monotonic()))
-        try:
-            return fn()
-        finally:
-            last_call[0] = time.monotonic()
+    provider = CachedProvider(gemini_providers_factory(settings)(calls).defense, calls, args.max_calls)
+    print(f"{provider.spent} calls made in earlier runs; cap {args.max_calls}")
 
     parsed = [parse_pdf(document.path) for document in DOCUMENTS]
     pools = [candidates(document.path, filtered) for document, filtered in zip(DOCUMENTS, parsed)]
     counts = review_counts([len(review) for review, _ in pools])
 
-    OUT_DIR.mkdir(exist_ok=True)
     items, summary_docs = [], []
     generations = (OUT_DIR / "generations.jsonl").open("w", encoding="utf-8")
     for document, filtered, (review_pool, control_pool), count in zip(DOCUMENTS, parsed, pools, counts):
         metas = [ChunkMeta(i, c.text, c.page_start, c.page_end, a)
                  for i, (c, a) in enumerate(zip(filtered.chunks, filtered.attributions))]
-        tagged = sum(a == "literature_review" for a in filtered.attributions)
         review, control = evenly_spaced(review_pool, count), evenly_spaced(control_pool, CONTROL_ITEMS)
-        print(f"{document.path.name}: {len(review_pool)} of {tagged} tagged chunks cite a study; "
-              f"review chunks {review}, control chunks {control}")
-        extracted = paced(lambda: extract_document_profile([m.text for m in metas], provider), SETUP_ATTEMPTS)
+        print(f"{document.path.name}: {len(review_pool)} tagged chunks; review chunks {review}, control chunks {control}")
+        extracted = extract_document_profile([m.text for m in metas], provider)
         profile = DefenseProfile(
             defense_type=document.defense_type, domain=extracted.domain.strip() or "unspecified",
             topic=extracted.topic.strip() or document.path.stem, selected_archetypes=ARCHETYPES,
             document_id=f"m7-probe-{document.path.stem}",
         )
-        panel, persona_fallback = paced(lambda: generate_panel(profile, ARCHETYPES, provider), SETUP_ATTEMPTS)
+        panel, persona_fallback = generate_panel(profile, ARCHETYPES, provider)
         # The session matrix only feeds retrieval, which the probe bypasses.
         matrix = np.zeros((len(metas), 1), dtype=np.float32)
         arms = {"before": engine_chunks(matrix, metas), "after": engine_chunks(matrix, metas, attribution_notes=True)}
@@ -210,20 +294,9 @@ def main() -> None:
             for arm, index in plan:
                 chunks = arms["after" if arm == "control" else arm]
                 session = DefenseSession(profile=profile, panel=panel, difficulty_current=DIFFICULTY)
-                turn = None
-                for attempt in range(1, ITEM_TRIES + 1):
-                    try:
-                        turn = paced(lambda: _generate_question(
-                            provider, session, chunks, _NoEncoder(), panelist, "", MODEL, retriever=fixed(index)
-                        ))
-                        break
-                    except LLMProviderError as exc:
-                        print(f"  {arm:7} chunk {index:3} {archetype}: try {attempt} failed ({type(exc).__name__}), "
-                              f"calls={calls.total}")
-                        if attempt == ITEM_TRIES:
-                            raise
-                        time.sleep(BUSY_WAIT_S)
-                assert turn is not None
+                turn = _generate_question(
+                    provider, session, chunks, _NoEncoder(), panelist, "", MODEL, retriever=fixed(index)
+                )
                 original = metas[index].text
                 grounded = is_grounded(turn.grounding_reference, original)
                 note_only = not grounded and is_grounded(turn.grounding_reference, turn.chunk_text)
@@ -237,13 +310,14 @@ def main() -> None:
                     "question": turn.question, "grounding_reference": turn.grounding_reference,
                     "prompt_saw_note": turn.chunk_text != original,
                 }) + "\n")
-                print(f"  {arm:7} chunk {index:3} {archetype:34} grounded={grounded} note_only={note_only} calls={calls.total}")
+                print(f"  {arm:7} chunk {index:3} {archetype:34} grounded={grounded} note_only={note_only} "
+                      f"calls={provider.spent} cache_hits={provider.hits}")
+        review_range = filtered.literature_review
         summary_docs.append({
             "file": document.path.name, "defense_type": document.defense_type.value,
             "persona_fallback": persona_fallback,
-            "tagged_chunks": tagged,
-            "tagged_chunks_citing_a_study": len(review_pool),
-            "literature_review_pages": [filtered.literature_review.start[0] + 1, filtered.literature_review.end[0] + 1],
+            "tagged_chunks": len(review_pool),
+            "literature_review_pages": [review_range.start[0] + 1, review_range.end[0] + 1] if review_range else None,
             "review_chunks": [{"chunk": i, "pages": [metas[i].page_start + 1, metas[i].page_end + 1]} for i in review],
             "control_chunks": [{"chunk": i, "pages": [metas[i].page_start + 1, metas[i].page_end + 1]} for i in control],
         })
@@ -265,7 +339,8 @@ def main() -> None:
         }
     summary = {
         "milestone": "v2.0 M7 J4", "model": MODEL, "difficulty": DIFFICULTY, "archetypes": ARCHETYPES,
-        "calls": calls.total, "calls_by_stage": calls.by_stage, "per_arm": per_arm, "documents": summary_docs,
+        "calls_this_run": calls.total, "calls_across_runs": provider.spent, "cache_hits_this_run": provider.hits,
+        "per_arm": per_arm, "documents": summary_docs,
     }
     SUMMARY.write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=1))
