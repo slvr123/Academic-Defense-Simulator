@@ -11,6 +11,10 @@ Against a real backend this spends real Gemini quota and one of today's defense
 slots. Without --interactive, each answer is built from the question's own source
 passage, so the run needs no typing; with it, you type the answers.
 
+With --voice-calls N, each question is also voiced through POST /tts part by part,
+as the frontend does it (part 0, then each next part), spending at most N MiMo
+calls in all; timings and sizes are recorded, never the audio (M6 H9).
+
 If the server has ADS_DEBUG_MEMORY=1, it also reads RSS and VmHWM before and
 after /start and after the last answer, and the size of this defense's chunk
 copy (the engine's per-defense copy of the document's chunks) as the server
@@ -88,6 +92,41 @@ class Run:
             self.log(f"  chunk copy for this defense: {copy['mb']} MB for {copy['chunks']} chunks")
 
 
+class VoiceBudget:
+    """MiMo calls left for --voice-calls. Every /tts request counts, failed or not."""
+
+    def __init__(self, calls: int) -> None:
+        self.left = calls
+
+
+def voice_question(client: httpx.Client, session_id: str, turn: int, budget: VoiceBudget) -> dict:
+    """The question's audio, part by part in order, as the frontend fetches it: part 0,
+    then part n+1 as soon as part n is in hand (the client plays n meanwhile)."""
+    started = time.perf_counter()
+    calls: list[dict] = []
+    parts, part, first_audio_s = 1, 0, None
+    while part < parts:
+        if budget.left <= 0:
+            calls.append({"part": part, "skipped": "budget"})
+            break
+        budget.left -= 1
+        sent = time.perf_counter()
+        response = client.post("/tts", json={"session_id": session_id, "turn": turn, "part": part})
+        call = {"part": part, "status": response.status_code, "ms": round((time.perf_counter() - sent) * 1000)}
+        calls.append(call)
+        if response.status_code != 200:
+            break
+        call["bytes"] = len(response.content)
+        parts = int(response.headers.get("x-tts-parts", "1"))
+        if part == 0:
+            first_audio_s = round(time.perf_counter() - started, 2)
+        part += 1
+    return {
+        "turn": turn, "parts": parts, "time_to_first_audio_s": first_audio_s,
+        "all_parts_s": round(time.perf_counter() - started, 2) if part == parts else None, "calls": calls,
+    }
+
+
 def expect(response: httpx.Response, status: int, what: str) -> dict:
     if response.status_code != status:
         raise SystemExit(f"{what}: HTTP {response.status_code} {response.text}")
@@ -96,10 +135,11 @@ def expect(response: httpx.Response, status: int, what: str) -> dict:
 
 def run_defense(
     client: httpx.Client, pdf: Path, *, panel: str | None, answer_for: Callable[[dict], str],
-    log: Callable[[str], None] = print, poll_s: float = 1.0,
+    log: Callable[[str], None] = print, poll_s: float = 1.0, voice_calls: int = 0,
 ) -> dict:
     run = Run(client, log)
-    record: dict = {"pdf": pdf.name, "started_at": datetime.now(timezone.utc).isoformat(), "turns": []}
+    budget = VoiceBudget(voice_calls)
+    record: dict = {"pdf": pdf.name, "started_at": datetime.now(timezone.utc).isoformat(), "turns": [], "voice": []}
     record["quota_before"] = run.quota()
     log(f"quota before: {record['quota_before']}")
 
@@ -134,6 +174,13 @@ def run_defense(
             f"difficulty {question['difficulty']}\n  Q: {question['question']}\n"
             f"  source: pages {source['page_start']}-{source['page_end']}, score {source['score']}, {source['origin']}"
         )
+        if voice_calls:
+            voiced = voice_question(client, session_id, question["turn"], budget)
+            record["voice"].append(voiced)
+            log(
+                f"  voice: {voiced['parts']} part(s), first audio {voiced['time_to_first_audio_s']} s, all parts "
+                f"{voiced['all_parts_s']} s; " + ", ".join(f"part {c['part']} {c.get('status', c.get('skipped'))} {c.get('ms', '')}ms" for c in voiced["calls"])
+            )
         text = answer_for(question)
         response, elapsed = run.call("POST", f"/sessions/{session_id}/answers", json={"text": text})
         result = expect(response, 200, "answer")
@@ -174,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--panel", default=None, help="panel JSON; omitted = defaults")
     parser.add_argument("--interactive", action="store_true", help="type the answers yourself")
     parser.add_argument("--out", type=Path, default=None, help="default: e2e-defense-<UTC time>.json in the cwd")
+    parser.add_argument("--voice-calls", type=int, default=0, help="voice each question via /tts parts, at most N MiMo calls")
     args = parser.parse_args(argv)
 
     def typed(question: dict) -> str:
@@ -183,7 +231,10 @@ def main(argv: list[str] | None = None) -> int:
 
     out = args.out or Path(f"e2e-defense-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}.json")
     with httpx.Client(base_url=args.base_url, timeout=httpx.Timeout(300)) as client:
-        record = run_defense(client, args.pdf, panel=args.panel, answer_for=typed if args.interactive else auto_answer)
+        record = run_defense(
+            client, args.pdf, panel=args.panel, answer_for=typed if args.interactive else auto_answer,
+            voice_calls=args.voice_calls,
+        )
     out.write_text(json.dumps(record, indent=2), encoding="utf-8")
     print(f"wrote {out}")
     return 0

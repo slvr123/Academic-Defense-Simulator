@@ -49,3 +49,25 @@ def test_the_script_records_the_live_chunk_copy(client_factory, tmp_path):
     assert any(line.startswith("  chunk copy for this defense:") for line in lines)
     assert record["turns"][0]["answer"].startswith("As we wrote on page ")
     assert any("report: 4 turns" in line for line in lines)
+
+
+def test_the_script_voices_each_question_in_parts_within_its_budget(client_factory, mimo, tmp_path):
+    pdf = make_pdf(tmp_path / "thesis.pdf", pages=16)
+    lines: list[str] = []
+    with client_factory(mimo_api_key="mimo-not-a-real-key", tts_split_sentences=True) as client:
+        record = run_defense(client, pdf, panel=None, answer_for=auto_answer, log=lines.append, poll_s=0.01, voice_calls=3)
+    voiced = record["voice"]
+    assert [v["turn"] for v in voiced] == [1, 2, 3, 4]
+    made = [c for v in voiced for c in v["calls"] if "status" in c]
+    assert len(made) == 3 == len(mimo.calls)  # the budget, then no more
+    assert all(c["status"] == 200 and c["bytes"] > 0 for c in made)
+    assert voiced[0]["time_to_first_audio_s"] is not None
+    assert voiced[-1]["calls"] == [{"part": 0, "skipped": "budget"}]
+    assert any(line.startswith("  voice: ") for line in lines)
+
+
+def test_without_voice_calls_nothing_is_voiced(client_factory, mimo, tmp_path):
+    with client_factory(mimo_api_key="mimo-not-a-real-key") as client:
+        record = run_defense(client, make_pdf(tmp_path / "t.pdf", pages=16), panel=None,
+                             answer_for=auto_answer, log=lambda _line: None, poll_s=0.01)
+    assert record["voice"] == [] and mimo.calls == []
