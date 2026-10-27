@@ -2,20 +2,25 @@
 
 Usage (from the repo root, in backend/.venv, which has the ONNX runtime):
 
-    python scripts/run_retrieval_eval.py
+    python scripts/run_retrieval_eval.py               # production ingest (M5: navigation filter)
+    python scripts/run_retrieval_eval.py --chunker v1  # v1's chunker, as M4 measured it
 
 Chunks come from the backend's own `parse_pdf`, embeddings from `OnnxEmbedder`
 (backend/model), and every simulated session is also run through v1's
 `retrieve()` on `engine_chunks`, the exact objects a live defense uses. No model
 API is called. Check E's validation against the M3 live run comes first and
-stops the run on a mismatch.
+stops the run on a mismatch. That run predates M5, so only `--chunker v1` can
+reproduce it; on the production chunker the replay is still checked against
+`retrieve()` turn by turn.
 
-Writes evals/v2.0-m4-retrieval-results.json: ranks, scores, page numbers, chunk
+Writes evals/v2.0-m5-retrieval-results.json (production) or the M4 file
+evals/v2.0-m4-retrieval-results.json (`--chunker v1`): ranks, scores, page numbers, chunk
 indices and hashes, never passage text. See docs/v2.0-m4-retrieval-eval-decisions.md.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import statistics
@@ -35,13 +40,23 @@ from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.retrieval import retrieve  # noqa: E402
 from backend import embedder as backend_embedder  # noqa: E402
 from backend.engine_adapter import RecordingEncoder, engine_chunks  # noqa: E402
+from academic_defense_simulator.rag.chunking import (  # noqa: E402
+    DocumentIngestionError,
+    InsufficientTextError,
+    PageChunk,
+    chunk_pdf_with_pages,
+)
+from backend.page_filter import front_matter_boundary, removable_pages  # noqa: E402
 from backend.pdf_ingest import IngestFailure, parse_pdf  # noqa: E402
 from backend.schemas import MAX_DOMAIN_PANELISTS  # noqa: E402
 from backend.sessions import ChunkMeta  # noqa: E402
 from evals import retrieval_checks as rc  # noqa: E402
 
 MODEL_DIR = ROOT / "backend" / "model"
-OUTPUT = ROOT / "evals" / "v2.0-m4-retrieval-results.json"
+OUTPUTS = {
+    "production": ROOT / "evals" / "v2.0-m5-retrieval-results.json",
+    "v1": ROOT / "evals" / "v2.0-m4-retrieval-results.json",
+}
 SEPTEMBER_CASES = "feat/retrieval-sources:evals/retrieval_cases.json"
 # Not in F4's list (repo root or the September cases), so reported but kept out of every verdict.
 SUPPLEMENTARY = [ROOT / "academic_defense_simulator" / "sample" / "sample-capstone-anicheck.pdf"]
@@ -91,10 +106,26 @@ def candidate_paths(september: dict[str, str]) -> list[Path]:
     return list(dict.fromkeys(paths))
 
 
-def load_document(path: Path, in_verdict: bool, embedder, counter) -> Document:
-    """Production ingest: backend.pdf_ingest.parse_pdf, then OnnxEmbedder.encode_one
-    per chunk, the same calls IngestQueue._ingest makes."""
-    page_chunks = parse_pdf(path)
+def parse_pdf_v1(path: Path) -> list[PageChunk]:
+    """`parse_pdf` as it was before M5: v1's chunker, with the same IngestFailure mapping."""
+    try:
+        chunks = chunk_pdf_with_pages(path)
+    except InsufficientTextError as exc:
+        raise IngestFailure("scanned", code="scanned_pdf") from exc
+    except DocumentIngestionError as exc:
+        raise IngestFailure(str(exc)) from exc
+    if not chunks:
+        raise IngestFailure("scanned", code="scanned_pdf")
+    return chunks
+
+
+PARSERS = {"production": parse_pdf, "v1": parse_pdf_v1}
+
+
+def load_document(path: Path, in_verdict: bool, embedder, counter, parse) -> Document:
+    """Ingest as IngestQueue._ingest does it: `parse` (production: backend.pdf_ingest.parse_pdf),
+    then OnnxEmbedder.encode_one per chunk."""
+    page_chunks = parse(path)
     chunks = [ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end) for i, c in enumerate(page_chunks)]
     matrix = np.stack([embedder.encode_one(c.text) for c in chunks]).astype(np.float32)
     with fitz.open(str(path)) as pdf:
@@ -265,7 +296,23 @@ def longest_string(value) -> int:
 
 
 
+def removal_report(doc: Document) -> dict:
+    """G5 criterion 2: which pages the filter takes out, and whether any sits at or after the boundary."""
+    boundary = front_matter_boundary(doc.page_texts)
+    removed = sorted(removable_pages(doc.page_texts))
+    return {
+        "boundary_page": None if boundary is None else boundary + 1,
+        "removed_pages": [p + 1 for p in removed],
+        "removed_at_or_after_boundary": 0 if boundary is None else sum(p >= boundary for p in removed),
+        "filter_applied": boundary is not None,
+    }
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="v2.0 retrieval eval, checks A-E")
+    parser.add_argument("--chunker", choices=sorted(PARSERS), default="production")
+    args = parser.parse_args()
+    parse = PARSERS[args.chunker]
     if backend_embedder.MAX_SEQ_LENGTH != rc.MAX_SEQ_LENGTH:
         raise SystemExit("evals.retrieval_checks.MAX_SEQ_LENGTH is out of step with backend.embedder")
     embedder = backend_embedder.OnnxEmbedder.load(MODEL_DIR)
@@ -285,7 +332,7 @@ def main() -> None:
         if path.name in september:
             entry["matches_september_hash"] = entry["sha256"] == september[path.name]
         try:
-            doc = load_document(path, in_verdict, embedder, counter)
+            doc = load_document(path, in_verdict, embedder, counter, parse)
         except IngestFailure as exc:
             inventory.append({**entry, "usable": False, "reason": f"parse_pdf: {exc.code or 'error'}"})
             continue
@@ -301,7 +348,10 @@ def main() -> None:
     scores = {d.sha256: {a: d.matrix @ query_vectors[a] for a in RETRIEVING_ARCHETYPES} for d in docs}
     rankings = {d.sha256: {a: rc.ranking(s) for a, s in scores[d.sha256].items()} for d in docs}
 
-    validation = validate_against_live_run(docs, rankings, embedder)
+    if args.chunker == "v1":
+        validation = validate_against_live_run(docs, rankings, embedder)
+    else:
+        validation = {"skipped": "the M3 live run used v1's chunker; see --chunker v1"}
 
     per_document = []
     for doc in docs:
@@ -324,6 +374,8 @@ def main() -> None:
             "check_c": check_c(doc, ranked, session_picks),
             "check_d": check_d(doc),
             "check_e": e,
+            # Only on the production chunker, so the v1 run stays byte-identical to M4's file.
+            **({"page_filter": removal_report(doc)} if args.chunker == "production" else {}),
         })
 
     counted = [d for d in per_document if d["in_verdict"]]
@@ -357,7 +409,7 @@ def main() -> None:
         },
     }
     output = {
-        "milestone": "v2.0 M4",
+        "milestone": "v2.0 M4" if args.chunker == "v1" else "v2.0 M5",
         "embedder": "backend.embedder.OnnxEmbedder (backend/model/model.onnx)",
         "max_seq_length": backend_embedder.MAX_SEQ_LENGTH,
         "near_tie_gap": rc.NEAR_TIE_GAP,
@@ -371,7 +423,7 @@ def main() -> None:
     longest = longest_string(output)
     if longest > 200:
         raise SystemExit(f"HALT: a string of {longest} characters would go into the results JSON")
-    OUTPUT.write_text(json.dumps(output, indent=1) + "\n", encoding="utf-8")
+    OUTPUTS[args.chunker].write_text(json.dumps(output, indent=1) + "\n", encoding="utf-8")
     print_summary(output, longest)
 
 
@@ -382,12 +434,17 @@ def print_summary(output: dict, longest: int) -> None:
               + (f"pages={d['pages']} chunks={d['chunks']}" if d["usable"] else d["reason"])
               + (f" sept_hash_match={d['matches_september_hash']}" if "matches_september_hash" in d else ""))
     print("validation (M3 live run):")
-    for t in output["validation"]["turns"]:
+    if "skipped" in output["validation"]:
+        print(f"  skipped: {output['validation']['skipped']}")
+    for t in output["validation"].get("turns", []):
         print(f"  turn {t['turn']} {t['archetype']:34} sim p{t['simulated_pages']} {t['simulated_score']}  live p{t['live_pages']} {t['live_score']}  match={t['match']}")
-    print(f"  turn 4 DA reuses a simulated chunk: {output['validation']['turn_4_devils_advocate']['reuses_a_simulated_chunk']}")
+    if "turns" in output["validation"]:
+        print(f"  turn 4 DA reuses a simulated chunk: {output['validation']['turn_4_devils_advocate']['reuses_a_simulated_chunk']}")
     for d in output["per_document"]:
         a, b, c, dd, e = (d[k] for k in ("check_a", "check_b", "check_c", "check_d", "check_e"))
         print(f"{d['file'][:60]} (in_verdict={d['in_verdict']}, {d['chunks']} chunks)")
+        if "page_filter" in d:
+            print(f"  filter {d['page_filter']}")
         print("  A " + (a["halted"] if "halted" in a else
               f"median shared top5={a['median_shared_top5']} mean={a['mean_shared_top5']:.2f} baseline={a['random_baseline_shared_top5']:.2f} "
               f"same_top1={a['same_top1_pairs']}/{a['pair_count']} distinct_top1={a['distinct_top1_chunks']} -> {a['verdict']}"))
