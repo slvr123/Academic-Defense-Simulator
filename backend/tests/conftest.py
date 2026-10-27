@@ -41,6 +41,44 @@ def make_pdf(path: Path, pages: int = 3, paragraphs_per_page: int = 6, text: boo
     return path
 
 
+CONTENTS_MARKER = "Statement of the Problem"
+NAVIGATION_PAGES = {
+    "title": ["A Study of Library Systems", "A Capstone Project", "Department of Computing", "2026"],
+    "contents": [
+        "Table of Contents",
+        "Abstract .................................... ii",
+        "Chapter 1 Introduction ...................... 1",
+        f"{CONTENTS_MARKER} ...................... 3",
+        "Chapter 2 Methodology ....................... 9",
+        "Chapter 3 Results ........................... 14",
+        "References .................................. 20",
+    ],
+    "abstract": ["Abstract", PARAGRAPH, "The system reduced manual cataloguing time for the librarian."],
+    "chapter_one": ["CHAPTER 1", "Introduction", PARAGRAPH, "The study scopes itself to a single school library."],
+    # Lines ending in numbers, like a results table: the detector flags this page, and
+    # only its place after the boundary keeps it.
+    "results": [
+        "Table 3 Respondents rating each criterion excellent",
+        "Functional suitability 27",
+        "Usability 24",
+        "Reliability 26",
+        "Portability 22",
+        "Total respondents 30",
+    ],
+}
+
+
+def make_navigation_pdf(path: Path, pages: list[str]) -> Path:
+    """One PDF page per key of NAVIGATION_PAGES, one text line per list entry."""
+    document = fitz.open()
+    for key in pages:
+        page = document.new_page()
+        for row, line in enumerate(NAVIGATION_PAGES[key]):
+            page.insert_text((36, 60 + 14 * row), line[:110], fontsize=8)
+    document.save(path)
+    return path
+
+
 class FakeEmbedder:
     """Deterministic unit vectors. `hold()` makes every encode wait until
     `release()`; `step()` lets exactly one encode through."""
