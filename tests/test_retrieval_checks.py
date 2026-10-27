@@ -5,11 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from backend.page_filter import front_matter_boundary, is_navigation_page
 from evals.retrieval_checks import (
     embedding_coverage,
-    front_matter_boundary,
     front_matter_summary,
-    is_navigation_page,
     near_tie_rate,
     overlap_verdict,
     pair_overlaps,

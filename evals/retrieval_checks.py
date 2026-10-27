@@ -9,12 +9,14 @@ See docs/v2.0-m4-retrieval-eval-decisions.md, F5.
 
 from __future__ import annotations
 
-import re
 import statistics
 from dataclasses import dataclass
 from itertools import combinations
 
 import numpy as np
+
+# The detector lives in production since M5; re-exported here for the runner and tests.
+from backend.page_filter import front_matter_boundary, is_navigation_page  # noqa: F401
 
 NEAR_TIE_GAP = 0.02
 OVERLAP_K = 5
@@ -107,39 +109,6 @@ def distribution(values: list[float]) -> dict[str, float]:
 
 
 # --- Check C: front matter --------------------------------------------------
-
-# A line that ends in a page number (arabic or roman), or that carries dotted leaders.
-_PAGE_REF_LINE = re.compile(r"(\.{3,}|…)|(^|\s)([0-9]{1,3}|[ivxlcIVXLC]{1,7})$")
-# A Chapter 1 or Introduction heading at the start of a line. A table of contents
-# matches this too, which is why navigation pages are skipped when finding the boundary.
-_CHAPTER_ONE_HEADING = re.compile(r"(?i)^(chapter\s+(1|i|one)\b|introduction\b|1\.?\s+introduction\b)")
-NAVIGATION_MIN_LINES = 5
-
-
-def _lines(page_text: str) -> list[str]:
-    return [line.strip() for line in page_text.splitlines() if line.strip()]
-
-
-def is_navigation_page(page_text: str) -> bool:
-    """A table of contents or list of figures/tables: most lines end in a page number
-    or carry dotted leaders. Pages with fewer than NAVIGATION_MIN_LINES lines never are,
-    so a title page whose only line is a page number doesn't qualify."""
-    lines = _lines(page_text)
-    if len(lines) < NAVIGATION_MIN_LINES:
-        return False
-    return sum(bool(_PAGE_REF_LINE.search(line)) for line in lines) > len(lines) / 2
-
-
-def front_matter_boundary(page_texts: list[str]) -> int | None:
-    """0-based index of the first non-navigation page with a Chapter 1 / Introduction
-    heading line; every page before it is front matter. None if no page has one."""
-    for index, text in enumerate(page_texts):
-        if is_navigation_page(text):
-            continue
-        if any(_CHAPTER_ONE_HEADING.match(line) for line in _lines(text)):
-            return index
-    return None
-
 
 @dataclass(frozen=True)
 class FrontMatterSummary:
