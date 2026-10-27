@@ -64,3 +64,6 @@ voice-check/
 
 # M3b E2: throwaway ad-block filter-matching tool and its downloaded lists (never an app dependency)
 scratch/
+
+# M7 J4 judging sheet, key and raw generations: they carry passage and question text
+attribution-judging/
