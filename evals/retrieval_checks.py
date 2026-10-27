@@ -17,6 +17,7 @@ import numpy as np
 
 # The detector lives in production since M5; re-exported here for the runner and tests.
 from backend.page_filter import front_matter_boundary, is_navigation_page  # noqa: F401
+from backend.retrieval_sampling import pick_near_tie, turn_seed
 
 NEAR_TIE_GAP = 0.02
 OVERLAP_K = 5
@@ -187,4 +188,20 @@ def replay_new_topic_turns(panel_rankings: list[tuple[str, list[int]]], max_turn
             raise ValueError("every chunk is already used")  # the engine raises here too
         used.add(chunk)
         turns.append(ReplayTurn(turn=len(turns) + 1, archetype=archetype, chunk=chunk, displacement_rank=order.index(chunk) + 1))
+    return turns
+
+
+def replay_seeded_turns(panel_scores: list[tuple[str, np.ndarray]], session_id: str, max_turns: int) -> list[ReplayTurn]:
+    """Check E under M6 H3's seeded near-tie sampling: as `replay_new_topic_turns`, but
+    turn n picks with production's `pick_near_tie` seeded by `turn_seed(session_id, n)`.
+    With no follow-ups, new-topic turn n is the defense's turn n."""
+    used: set[int] = set()
+    turns: list[ReplayTurn] = []
+    for archetype, scores in panel_scores[:max_turns]:
+        number = len(turns) + 1
+        chunk = pick_near_tie(scores, frozenset(used), turn_seed(session_id, number))
+        if chunk is None:
+            raise ValueError("every chunk is already used")  # the engine raises here too
+        used.add(chunk)
+        turns.append(ReplayTurn(turn=number, archetype=archetype, chunk=chunk, displacement_rank=ranking(scores).index(chunk) + 1))
     return turns

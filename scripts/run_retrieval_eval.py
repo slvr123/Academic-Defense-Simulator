@@ -55,6 +55,7 @@ from backend.page_filter import (  # noqa: E402
     trim_references,
 )
 from backend.pdf_ingest import IngestFailure, parse_pdf  # noqa: E402
+from backend.retrieval_sampling import NearTieRetriever, turn_seed  # noqa: E402
 from backend.schemas import MAX_DOMAIN_PANELISTS  # noqa: E402
 from backend.sessions import ChunkMeta  # noqa: E402
 from evals import retrieval_checks as rc  # noqa: E402
@@ -72,6 +73,7 @@ SEPTEMBER_CASES = "feat/retrieval-sources:evals/retrieval_cases.json"
 # Not in F4's list (repo root or the September cases), so reported but kept out of every verdict.
 SUPPLEMENTARY = [ROOT / "academic_defense_simulator" / "sample" / "sample-capstone-anicheck.pdf"]
 SESSION_TURNS = 6  # F5 Check E; the engine caps a session at one new topic per domain panelist
+SEEDED_SESSIONS = 20  # M6 H3: synthetic session ids per defense type for the seeded Check E
 
 # M3 live run, docs/v2.0-m3-results.md: DAZSMA, capstone, recommended panel. Sources are
 # 1-based pages and the score SourceTracker reported. Turn 4 is Devil's Advocate, who
@@ -161,16 +163,18 @@ def recommended_panel(composition_key: str) -> list[str]:
     return PANEL_COMPOSITION[composition_key][:MAX_DOMAIN_PANELISTS]
 
 
-def production_session(doc: Document, panel: list[str], embedder) -> list[tuple[int, float]]:
-    """The same turns through v1's own retrieve(), on the engine's chunk objects:
-    (chunk index, score as SourceTracker computes it) per new-topic turn."""
+def production_session(doc: Document, panel: list[str], embedder, session_id: str | None = None) -> list[tuple[int, float]]:
+    """The same turns through the retriever a live defense uses, on the engine's chunk
+    objects: v1's retrieve() (top-1), or with `session_id` M6's NearTieRetriever seeded
+    as backend/defense.py seeds it. (chunk index, score as SourceTracker computes it)."""
     chunks = engine_chunks(doc.matrix, doc.chunks)
     encoder = RecordingEncoder(embedder)
     used: set[int] = set()
     turns = []
     for archetype in panel[:SESSION_TURNS]:
         query = ARCHETYPE_CONFIG[archetype]["archetype_focus"]
-        index, _ = retrieve(query, chunks, top_k=1, embedding_model=encoder, exclude_indices=frozenset(used))[0]
+        retriever = retrieve if session_id is None else NearTieRetriever(turn_seed(session_id, len(turns) + 1))
+        index, _ = retriever(query, chunks, top_k=1, embedding_model=encoder, exclude_indices=frozenset(used))[0]
         used.add(index)
         turns.append((index, float(doc.matrix[index] @ encoder.take_query())))
     return turns
@@ -300,6 +304,56 @@ def check_e(doc: Document, rankings: dict[str, list[int]], queries: dict[str, np
     }
 
 
+def check_e_seeded(doc: Document, scores: dict[str, np.ndarray], embedder, avoid: set[int]) -> dict:
+    """H3's seeded replay: SEEDED_SESSIONS synthetic defenses per recommended panel, each
+    checked against production's NearTieRetriever and replayed a second time to show
+    it reproduces. `avoid` are chunks carrying navigation or reference text."""
+    per_type = {}
+    all_turns = []
+    for key in PANEL_COMPOSITION:
+        panel = recommended_panel(key)
+        sequences = []
+        for n in range(SEEDED_SESSIONS):
+            session_id = f"m6-eval-{n}"
+            turns = rc.replay_seeded_turns([(a, scores[a]) for a in panel], session_id, SESSION_TURNS)
+            if turns != rc.replay_seeded_turns([(a, scores[a]) for a in panel], session_id, SESSION_TURNS):
+                raise SystemExit(f"HALT: seeded replay isn't reproducible on {doc.path.name}, {key}")
+            production = [index for index, _ in production_session(doc, panel, embedder, session_id)]
+            if [t.chunk for t in turns] != production:
+                raise SystemExit(f"HALT: seeded replay disagrees with NearTieRetriever on {doc.path.name}, {key}")
+            sequences.append(tuple(t.chunk for t in turns))
+            all_turns += turns
+        per_type[key] = {
+            "distinct_sessions": len(set(sequences)),
+            "distinct_chunks_per_turn": [len({seq[i] for seq in sequences}) for i in range(len(sequences[0]))],
+        }
+    # How far below the best still-available chunk each pick scored: under NEAR_TIE_GAP by construction.
+    return {
+        "sessions_per_type": SEEDED_SESSIONS,
+        "per_type": per_type,
+        "max_displacement_rank": max(t.displacement_rank for t in all_turns),
+        "turns_over_5": sum(t.displacement_rank > 5 for t in all_turns),
+        "turn_count": len(all_turns),
+        "turns_on_avoided_chunks": sum(t.chunk in avoid for t in all_turns),
+    }
+
+
+def max_score_drop(doc: Document, scores: dict[str, np.ndarray]) -> float:
+    """The largest gap between a seeded pick and the best chunk it could have had,
+    over every seeded session: the relevance the sampling gave up."""
+    drop = 0.0
+    for key in PANEL_COMPOSITION:
+        panel = recommended_panel(key)
+        for n in range(SEEDED_SESSIONS):
+            used: set[int] = set()
+            for t in rc.replay_seeded_turns([(a, scores[a]) for a in panel], f"m6-eval-{n}", SESSION_TURNS):
+                s = scores[t.archetype]
+                best = max(float(s[i]) for i in range(len(s)) if i not in used)
+                drop = max(drop, best - float(s[t.chunk]))
+                used.add(t.chunk)
+    return drop
+
+
 def longest_string(value) -> int:
     if isinstance(value, str):
         return len(value)
@@ -363,6 +417,16 @@ def reference_report(doc: Document, top1_picks: list[int], session_picks: list[i
         "top1_reference_picks": sum(i in carrying for i in top1_picks),
         "session_reference_turns": sum(i in carrying for i in session_picks),
     }
+
+
+def seeded_report(doc: Document, scores: dict[str, np.ndarray], embedder) -> dict:
+    navigation = {i for i in range(len(doc.chunks)) if any(
+        rc.is_navigation_page(doc.page_texts[p]) for p in range(doc.chunks[i].page_start, doc.chunks[i].page_end + 1)
+    ) and doc.chunks[i].page_start < (front_matter_boundary(doc.page_texts) or 0)}
+    references = set(reference_report(doc, [], []).get("chunks_with_reference_text", []))
+    report = check_e_seeded(doc, scores, embedder, navigation | references)
+    report["max_score_drop"] = round(max_score_drop(doc, scores), 4)
+    return report
 
 
 def main() -> None:
@@ -434,6 +498,7 @@ def main() -> None:
             # Only where the chunker had them, so the v1 and m5 runs stay byte-identical to M4's and M5's files.
             **({"page_filter": removal_report(doc)} if args.chunker != "v1" else {}),
             **({"reference_filter": reference_report(doc, [r[0] for r in ranked.values()], session_picks)} if args.chunker == "production" else {}),
+            **({"check_e_seeded": seeded_report(doc, scores[doc.sha256], embedder)} if args.chunker == "production" and not short else {}),
         })
         if args.chunker == "m5":  # H2's before numbers, printed only: M5's file must not change
             print(f"before H1, {doc.path.name[:40]}: {reference_report(doc, [r[0] for r in ranked.values()], session_picks)}")
@@ -507,6 +572,12 @@ def print_summary(output: dict, longest: int) -> None:
             print(f"  filter {d['page_filter']}")
         if "reference_filter" in d:
             print(f"  references {d['reference_filter']}")
+        if "check_e_seeded" in d:
+            s = d["check_e_seeded"]
+            print(f"  E seeded: {s['sessions_per_type']} sessions/type, max displacement={s['max_displacement_rank']} "
+                  f"over5={s['turns_over_5']}/{s['turn_count']} avoided={s['turns_on_avoided_chunks']} max_score_drop={s['max_score_drop']}")
+            for key, v in s["per_type"].items():
+                print(f"    {key:30} distinct sessions={v['distinct_sessions']} distinct chunks per turn={v['distinct_chunks_per_turn']}")
         print("  A " + (a["halted"] if "halted" in a else
               f"median shared top5={a['median_shared_top5']} mean={a['mean_shared_top5']:.2f} baseline={a['random_baseline_shared_top5']:.2f} "
               f"same_top1={a['same_top1_pairs']}/{a['pair_count']} distinct_top1={a['distinct_top1_chunks']} -> {a['verdict']}"))

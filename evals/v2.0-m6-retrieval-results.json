@@ -1118,6 +1118,64 @@
    },
    "reference_filter": {
     "filter_applied": false
+   },
+   "check_e_seeded": {
+    "sessions_per_type": 20,
+    "per_type": {
+     "thesis": {
+      "distinct_sessions": 6,
+      "distinct_chunks_per_turn": [
+       1,
+       2,
+       3
+      ]
+     },
+     "capstone": {
+      "distinct_sessions": 2,
+      "distinct_chunks_per_turn": [
+       1,
+       1,
+       2
+      ]
+     },
+     "other/oral_comps": {
+      "distinct_sessions": 6,
+      "distinct_chunks_per_turn": [
+       2,
+       1,
+       3
+      ]
+     },
+     "other/scholarship_panel": {
+      "distinct_sessions": 9,
+      "distinct_chunks_per_turn": [
+       1,
+       3,
+       3
+      ]
+     },
+     "other/grant_defense": {
+      "distinct_sessions": 9,
+      "distinct_chunks_per_turn": [
+       1,
+       3,
+       3
+      ]
+     },
+     "other/certification_interview": {
+      "distinct_sessions": 1,
+      "distinct_chunks_per_turn": [
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    "max_displacement_rank": 4,
+    "turns_over_5": 0,
+    "turn_count": 360,
+    "turns_on_avoided_chunks": 0,
+    "max_score_drop": 0.0188
    }
   },
   {
@@ -2009,6 +2067,64 @@
     "chunks_with_reference_text": [],
     "top1_reference_picks": 0,
     "session_reference_turns": 0
+   },
+   "check_e_seeded": {
+    "sessions_per_type": 20,
+    "per_type": {
+     "thesis": {
+      "distinct_sessions": 5,
+      "distinct_chunks_per_turn": [
+       3,
+       2,
+       2
+      ]
+     },
+     "capstone": {
+      "distinct_sessions": 5,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       2
+      ]
+     },
+     "other/oral_comps": {
+      "distinct_sessions": 6,
+      "distinct_chunks_per_turn": [
+       2,
+       4,
+       2
+      ]
+     },
+     "other/scholarship_panel": {
+      "distinct_sessions": 10,
+      "distinct_chunks_per_turn": [
+       1,
+       4,
+       4
+      ]
+     },
+     "other/grant_defense": {
+      "distinct_sessions": 10,
+      "distinct_chunks_per_turn": [
+       1,
+       4,
+       4
+      ]
+     },
+     "other/certification_interview": {
+      "distinct_sessions": 11,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       3
+      ]
+     }
+    },
+    "max_displacement_rank": 5,
+    "turns_over_5": 0,
+    "turn_count": 360,
+    "turns_on_avoided_chunks": 0,
+    "max_score_drop": 0.0184
    }
   },
   {
@@ -2711,6 +2827,64 @@
     "chunks_with_reference_text": [],
     "top1_reference_picks": 0,
     "session_reference_turns": 0
+   },
+   "check_e_seeded": {
+    "sessions_per_type": 20,
+    "per_type": {
+     "thesis": {
+      "distinct_sessions": 6,
+      "distinct_chunks_per_turn": [
+       3,
+       2,
+       4
+      ]
+     },
+     "capstone": {
+      "distinct_sessions": 5,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       2
+      ]
+     },
+     "other/oral_comps": {
+      "distinct_sessions": 6,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       4
+      ]
+     },
+     "other/scholarship_panel": {
+      "distinct_sessions": 3,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       2
+      ]
+     },
+     "other/grant_defense": {
+      "distinct_sessions": 3,
+      "distinct_chunks_per_turn": [
+       2,
+       3,
+       2
+      ]
+     },
+     "other/certification_interview": {
+      "distinct_sessions": 3,
+      "distinct_chunks_per_turn": [
+       2,
+       1,
+       2
+      ]
+     }
+    },
+    "max_displacement_rank": 4,
+    "turns_over_5": 0,
+    "turn_count": 360,
+    "turns_on_avoided_chunks": 0,
+    "max_score_drop": 0.019
    }
   }
  ]

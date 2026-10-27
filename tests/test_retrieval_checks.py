@@ -15,6 +15,7 @@ from evals.retrieval_checks import (
     random_overlap_baseline,
     ranking,
     replay_new_topic_turns,
+    replay_seeded_turns,
     score_spread,
 )
 
@@ -177,3 +178,28 @@ def test_replay_stops_at_max_turns():
 def test_replay_raises_when_the_document_is_exhausted():
     with pytest.raises(ValueError):
         replay_new_topic_turns([("a", [0]), ("b", [0])], max_turns=2)
+
+
+# --- Check E, seeded (M6 H3) ----------------------------------------------------------
+
+
+def test_seeded_replay_is_reproducible_and_stays_in_the_near_tie_band():
+    # a: chunks 0 and 1 are near-tied; b: chunk 0 is clearly best, then 1 and 2 near-tied.
+    panel = [("a", np.array([0.50, 0.49, 0.10, 0.05])), ("b", np.array([0.90, 0.60, 0.595, 0.10]))]
+    first = replay_seeded_turns(panel, "session-1", max_turns=6)
+    assert first == replay_seeded_turns(panel, "session-1", max_turns=6)
+    assert first[0].chunk in {0, 1} and first[0].displacement_rank in {1, 2}
+    # b's best (0) is either still free or taken by a; its band is then {1, 2} minus a's pick.
+    assert first[1].chunk not in {first[0].chunk, 3}
+
+
+def test_seeded_replay_varies_across_sessions():
+    panel = [("a", np.array([0.50, 0.495, 0.49, 0.10]))]
+    firsts = {replay_seeded_turns(panel, f"s{n}", max_turns=1)[0].chunk for n in range(100)}
+    assert firsts == {0, 1, 2}
+
+
+def test_seeded_replay_without_near_ties_is_the_top1_replay():
+    panel = [("tech", np.array([0.1, 0.9, 0.5])), ("method", np.array([0.2, 0.95, 0.6]))]
+    rankings = [(a, ranking(s)) for a, s in panel]
+    assert replay_seeded_turns(panel, "any", max_turns=6) == replay_new_topic_turns(rankings, max_turns=6)

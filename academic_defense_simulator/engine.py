@@ -14,6 +14,7 @@ bookkeeping decision (`reconcile_actions`) that drivers execute.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from academic_defense_simulator.digest import render_digest_block, turn_total_score
@@ -363,7 +364,10 @@ def _generate_question(
     panelist: Panelist,
     other_subtype_line: str,
     model: str,
+    retriever: Callable[..., list[tuple[int, Chunk]]] | None = None,
 ) -> ConversationTurn:
+    """`retriever` (v2.0 M6 H3) replaces `retrieve` for the new-topic lookup and takes
+    the same arguments; None, the default, is `retrieve` itself, looked up at call time."""
     if panelist.archetype_key == DEVILS_ADVOCATE_KEY:
         return _generate_da_question(provider, session, panelist, model)
 
@@ -380,7 +384,7 @@ def _generate_question(
 
     if not is_followup:
         query = archetype["archetype_focus"]
-        results = retrieve(
+        results = (retriever or retrieve)(
             query,
             chunks,
             top_k=1,

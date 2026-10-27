@@ -37,6 +37,7 @@ from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
+from backend.retrieval_sampling import NearTieRetriever, turn_seed
 from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source
 from backend.sessions import Session
 
@@ -217,9 +218,12 @@ def _next_question(
 ) -> tuple[ConversationTurn, Source]:
     panelist = select_active_panelist(session)
     defense.encoder.take_query()  # drop a query left by an earlier failed attempt
+    # M6 H3: a new topic picks among near-ties, seeded by (session, turn), so a retried
+    # attempt and any replay of this defense land on the same chunk.
+    retriever = NearTieRetriever(turn_seed(session.profile.document_id, len(session.turns) + 1))
     turn = _generate_question(
         defense.providers.defense, session, defense.chunks, defense.encoder, panelist,
-        defense.other_subtype_line, defense.model,
+        defense.other_subtype_line, defense.model, retriever=retriever,
     )
     return turn, tracker.source_for(turn, defense.encoder.take_query())
 
