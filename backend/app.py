@@ -194,7 +194,7 @@ def create_app(
         allow_origins=settings.cors_origin_list,
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
-        expose_headers=["Retry-After"],
+        expose_headers=["Retry-After", "X-TTS-Parts"],
     )
     app.state.embedder = None
     app.state.settings = settings

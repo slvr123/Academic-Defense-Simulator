@@ -93,7 +93,7 @@ describe('panel voices (MiMo)', () => {
     const user = renderApp()
     await toQuestion(server, user, /^Panel voices/)
 
-    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 1 }) // never the text
+    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 1, part: 0 }) // never the text
     expect(screen.getByText('Voice loading')).toBeInTheDocument()
     expect(audio.plays).toEqual([])
 
@@ -130,7 +130,7 @@ describe('panel voices (MiMo)', () => {
     await screen.findByText(Q2)
     await vi.waitFor(() => expect(audio.plays).toEqual(['blob:clip-1', 'blob:clip-2']))
     expect(audio.revoked).toContain('blob:clip-1')
-    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 2 })
+    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 2, part: 0 })
   })
 
   it('discards a clip that arrives after the answer was sent (E7)', async () => {
@@ -200,6 +200,86 @@ describe('panel voices (MiMo)', () => {
     act(() => audio.fire('playing'))
     expect(screen.getByText('Speaking')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Play the question/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('panel voices in parts (M6 H9)', () => {
+  const partReply = (parts: number): Reply => ({
+    status: 200,
+    bytes: WAV,
+    headers: { 'Content-Type': 'audio/wav', 'X-TTS-Parts': String(parts) },
+  })
+  const partsAsked = (bodies: unknown[]) =>
+    bodies.map((body) => (typeof body === 'object' && body !== null ? (body as { part?: number }).part : undefined))
+
+  it('plays the parts in order, fetching the next one while the current one plays', async () => {
+    const audio = fakeAudio()
+    const speech = fakeSpeech()
+    const server = voiceServer()
+    const bodies: unknown[] = []
+    server.on(TTS, (body) => {
+      bodies.push(body)
+      return partReply(3)
+    })
+    const user = renderApp()
+    await toQuestion(server, user, /^Panel voices/)
+
+    await vi.waitFor(() => expect(audio.plays).toHaveLength(1))
+    // Part 1 is already asked for while part 0 plays (StrictMode's cancelled request is part 0 too).
+    await vi.waitFor(() => expect(partsAsked(bodies)).toContain(1))
+    expect(partsAsked(bodies)).not.toContain(2)
+    act(() => audio.fire('playing'))
+    expect(screen.getByText('Speaking')).toBeInTheDocument()
+
+    act(() => audio.fire('ended'))
+    await vi.waitFor(() => expect(audio.plays).toHaveLength(2))
+    expect(screen.getByText('Speaking')).toBeInTheDocument() // no gap shown between parts
+    await vi.waitFor(() => expect(partsAsked(bodies)).toContain(2))
+    act(() => audio.fire('ended'))
+    await vi.waitFor(() => expect(audio.plays).toHaveLength(3))
+    act(() => audio.fire('ended'))
+    await vi.waitFor(() => expect(screen.queryByText('Speaking')).not.toBeInTheDocument())
+    expect(new Set(audio.plays).size).toBe(3) // three different clips
+
+    const asked = bodies.length
+    await user.click(screen.getByRole('button', { name: /Replay/ }))
+    expect(audio.plays.at(-1)).toBe(audio.plays[0]) // Replay starts again at part 0, from the cache
+    act(() => audio.fire('ended'))
+    await vi.waitFor(() => expect(audio.plays).toHaveLength(5))
+    expect(bodies).toHaveLength(asked) // no new requests
+    expect(speech.spoken()).toEqual([])
+  })
+
+  it('stops quietly when a later part fails, with no browser voice', async () => {
+    const audio = fakeAudio()
+    const speech = fakeSpeech()
+    const server = voiceServer()
+    server.on(TTS, (body) =>
+      partsAsked([body])[0] === 0 ? partReply(2) : { status: 502, body: { detail: 'no voice', code: 'tts_failed' } },
+    )
+    const user = renderApp()
+    await toQuestion(server, user, /^Panel voices/)
+    await vi.waitFor(() => expect(audio.plays).toHaveLength(1))
+    act(() => audio.fire('playing'))
+    act(() => audio.fire('ended'))
+    await vi.waitFor(() => expect(screen.queryByText('Speaking')).not.toBeInTheDocument())
+    await advance(1000)
+    expect(audio.plays).toHaveLength(1)
+    expect(speech.spoken()).toEqual([])
+  })
+
+  it('revokes every part it made when the turn moves on', async () => {
+    const audio = fakeAudio()
+    fakeSpeech()
+    const server = voiceServer()
+    server.on(TTS, partReply(2))
+    const user = renderApp()
+    await toQuestion(server, user, /^Panel voices/)
+    await vi.waitFor(() => expect(audio.created).toHaveBeenCalledTimes(2)) // part 0, and part 1 prefetched
+    await user.type(screen.getByLabelText('Your answer'), 'An answer.')
+    await user.click(screen.getByRole('button', { name: 'Send answer' }))
+    await screen.findByText(Q2)
+    await vi.waitFor(() => expect(audio.revoked).toEqual(expect.arrayContaining(['blob:clip-1', 'blob:clip-2'])))
   })
 })
 

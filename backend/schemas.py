@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION
+from backend.tts_split import MAX_PARTS
 
 
 # v1's intake allows this many domain panelists; Devil's Advocate always joins them.
@@ -190,6 +191,9 @@ class TtsRequest(BaseModel):
 
     session_id: str = Field(min_length=1, max_length=64)
     turn: int = Field(ge=1)  # QuestionOut.turn
+    # M6 H9: one sentence of the question, 0-based; the response's X-TTS-Parts says how
+    # many there are. Omitted: the whole question, as before.
+    part: int | None = Field(default=None, ge=0, lt=MAX_PARTS)
 
 
 class SessionCreated(BaseModel):

@@ -164,18 +164,28 @@ export const getReport = (sessionId: string) => request<ReportResponse>('GET', `
 /** Where the defense is now: the open question, or done (M6 H5). */
 export const getCurrent = (sessionId: string) => request<CurrentQuestion>('GET', `${sessionPath(sessionId)}/current`)
 
+/** One part of a question's audio, and how many parts the question has (M6 H9). */
+export type TtsPart = { audio: Blob; parts: number }
+
+/** X-TTS-Parts, or 1 when it's missing or not a whole number from 1 to 8. */
+function readParts(header: string | null): number {
+  const parts = header === null ? NaN : Number(header.trim())
+  return Number.isInteger(parts) && parts >= 1 && parts <= 8 ? parts : 1
+}
+
 /**
- * POST /tts: one question's audio, read as a Blob of WAV bytes rather than text.
- * `signal` cancels it when the turn moves on (E7); a cancelled request resolves to a
- * network error, and callers check `signal.aborted` before acting on any result.
+ * POST /tts: one part of a question's audio, read as a Blob of WAV bytes rather than
+ * text. While the server's split flag is off, part 0 is the whole question and the only
+ * part (M6 H9). `signal` cancels it when the turn moves on (E7); a cancelled request
+ * resolves to a network error, and callers check `signal.aborted` before acting on it.
  */
-export async function fetchTts(sessionId: string, turn: number, signal: AbortSignal): Promise<ApiResult<Blob>> {
+export async function fetchTts(sessionId: string, turn: number, part: number, signal: AbortSignal): Promise<ApiResult<TtsPart>> {
   let response: Response
   try {
     response = await fetch(`${baseUrl()}/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, turn }),
+      body: JSON.stringify({ session_id: sessionId, turn, part }),
       signal,
     })
   } catch {
@@ -186,7 +196,7 @@ export async function fetchTts(sessionId: string, turn: number, signal: AbortSig
     return { ok: false, error: toApiError(response.status, parsed, response.headers.get('Retry-After')) }
   }
   try {
-    return { ok: true, data: await response.blob() }
+    return { ok: true, data: { audio: await response.blob(), parts: readParts(response.headers.get('X-TTS-Parts')) } }
   } catch {
     return { ok: false, error: { kind: 'network' } } // the body stopped arriving, or was cancelled
   }

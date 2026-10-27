@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     debug_client: bool = False
     # Defense starts per client IP per Pacific day (in memory, resets on restart).
     per_ip_daily_starts: int = Field(default=3, ge=1)
+    # M6 H9: POST /tts with `part` voices one sentence at a time. Off by default; turning
+    # it on is an env var on Render (ADS_TTS_SPLIT_SENTENCES=true), no deploy needed.
+    tts_split_sentences: bool = False
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

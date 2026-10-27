@@ -56,7 +56,9 @@ def test_preflight_allows_only_the_methods_and_headers_the_frontend_uses(client_
 def test_retry_after_is_readable_cross_origin(client_factory):
     with client_factory(cors_origins=ORIGINS) as client:
         response = client.get("/quota", headers={"Origin": FRONTEND})
-    assert response.headers["access-control-expose-headers"] == "Retry-After"
+    # Retry-After for the 429 and 503 notices; X-TTS-Parts for part-by-part voices (M6 H9).
+    exposed = {h.strip() for h in response.headers["access-control-expose-headers"].split(",")}
+    assert exposed == {"Retry-After", "X-TTS-Parts"}
 
 
 def test_origins_are_read_comma_separated_and_trimmed():

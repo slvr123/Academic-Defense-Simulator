@@ -174,7 +174,9 @@ export interface paths {
         /**
          * Tts
          * @description One question's audio as WAV bytes, in the asking panelist's voice. The
-         *     server keeps none of it once the response is sent.
+         *     server keeps none of it once the response is sent. With `part`, one sentence
+         *     of it and an X-TTS-Parts header (M6 H9); while ADS_TTS_SPLIT_SENTENCES is off
+         *     the whole question is the only part, so a client asking for parts still works.
          */
         post: operations["tts_tts_post"];
         delete?: never;
@@ -545,6 +547,8 @@ export interface components {
             session_id: string;
             /** Turn */
             turn: number;
+            /** Part */
+            part?: number | null;
         };
         /** ValidationError */
         ValidationError: {

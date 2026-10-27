@@ -59,7 +59,7 @@ class Providers:
 # Built per defense, so the counter tallies that defense's calls alone.
 ProvidersFactory = Callable[[CallCounter], Providers]
 
-# One synthesis and one retry per question (M3b E3).
+# One synthesis and one retry per question (M3b E3), or per part of it (M6 H9).
 TTS_CALLS_PER_QUESTION = 2
 
 
@@ -101,7 +101,8 @@ class Defense:
     # The /start response as first sent, replayed to a resent /start until the first
     # answer is in (M6 H4). Set under the turn lock.
     start_response: StartResponse | None = None
-    tts_calls: dict[int, int] = field(default_factory=dict)  # turn -> synth calls made
+    # (turn, part) -> synth calls made; part None is the whole question.
+    tts_calls: dict[tuple[int, int | None], int] = field(default_factory=dict)
     tts_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
@@ -113,14 +114,15 @@ class Defense:
         """The pending question's turn, or None when none is pending."""
         return len(self.session.turns) + 1 if self.pending is not None else None
 
-    def take_tts_call(self, turn: int) -> bool:
-        """Counts one synth call for `turn`; False once its calls are used up. Under
-        its own lock, so two /tts requests can't both take the last one."""
+    def take_tts_call(self, turn: int, part: int | None = None) -> bool:
+        """Counts one synth call for `turn` (and `part`); False once its calls are used
+        up. Under its own lock, so two /tts requests can't both take the last one."""
+        key = (turn, part)
         with self.tts_lock:
-            made = self.tts_calls.get(turn, 0)
+            made = self.tts_calls.get(key, 0)
             if made >= TTS_CALLS_PER_QUESTION:
                 return False
-            self.tts_calls[turn] = made + 1
+            self.tts_calls[key] = made + 1
             return True
 
 

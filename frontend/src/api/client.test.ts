@@ -148,16 +148,29 @@ describe('fetchTts reads binary audio and can be cancelled (E3, E7)', () => {
       sent = body
       return { status: 200, bytes: wav, headers: { 'Content-Type': 'audio/wav' } }
     })
-    const result = await fetchTts('abc', 2, new AbortController().signal)
-    expect(sent).toEqual({ session_id: 'abc', turn: 2 })
+    const result = await fetchTts('abc', 2, 0, new AbortController().signal)
+    expect(sent).toEqual({ session_id: 'abc', turn: 2, part: 0 })
     if (!result.ok) throw new Error('expected audio')
-    expect(result.data.type).toBe('audio/wav')
-    expect(new Uint8Array(await result.data.arrayBuffer())).toEqual(wav)
+    expect(result.data.audio.type).toBe('audio/wav')
+    expect(new Uint8Array(await result.data.audio.arrayBuffer())).toEqual(wav)
+    expect(result.data.parts).toBe(1) // no X-TTS-Parts: one part
+  })
+
+  it.each([
+    ['3', 3],
+    ['8', 8],
+    ['9', 1],
+    ['0', 1],
+    ['two', 1],
+  ])('reads X-TTS-Parts %s as %i part(s) (M6 H9)', async (header, parts) => {
+    fakeServer().on('POST /tts', { status: 200, bytes: wav, headers: { 'Content-Type': 'audio/wav', 'X-TTS-Parts': header } })
+    const result = await fetchTts('abc', 1, 1, new AbortController().signal)
+    expect(result.ok && result.data.parts).toBe(parts)
   })
 
   it('maps a coded failure', async () => {
     fakeServer().on('POST /tts', { status: 502, body: { detail: 'no voice', code: 'tts_failed' } })
-    expect(await fetchTts('abc', 1, new AbortController().signal)).toEqual({
+    expect(await fetchTts('abc', 1, 0, new AbortController().signal)).toEqual({
       ok: false,
       error: { kind: 'tts', code: 'tts_failed', message: 'no voice' },
     })
@@ -167,7 +180,7 @@ describe('fetchTts reads binary audio and can be cancelled (E3, E7)', () => {
     const server = fakeServer()
     server.on('POST /tts', () => new Promise<never>(() => {})) // never answers
     const controller = new AbortController()
-    const pending = fetchTts('abc', 1, controller.signal)
+    const pending = fetchTts('abc', 1, 0, controller.signal)
     controller.abort()
     expect(await pending).toEqual({ ok: false, error: { kind: 'network' } })
     expect(controller.signal.aborted).toBe(true)

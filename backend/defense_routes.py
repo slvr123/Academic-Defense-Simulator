@@ -60,6 +60,7 @@ from backend.schemas import (
 from backend.sessions import Session, SessionStatus, SessionStore
 from backend.settings import Settings
 from backend.tts import Synthesize, TtsFailed, synthesize_wav
+from backend.tts_split import split_sentences
 
 logger = logging.getLogger("backend.defense")
 
@@ -269,7 +270,9 @@ def register_defense_routes(
     )
     def tts(body: TtsRequest) -> Response:
         """One question's audio as WAV bytes, in the asking panelist's voice. The
-        server keeps none of it once the response is sent."""
+        server keeps none of it once the response is sent. With `part`, one sentence
+        of it and an X-TTS-Parts header (M6 H9); while ADS_TTS_SPLIT_SENTENCES is off
+        the whole question is the only part, so a client asking for parts still works."""
         key = settings.mimo_key
         if key is None:
             raise CodedHTTPException(503, TTS_UNAVAILABLE_MESSAGE, "tts_unavailable")
@@ -281,22 +284,31 @@ def register_defense_routes(
         asked = defense.asked.get(body.turn) if defense is not None else None
         if defense is None or asked is None:
             raise HTTPException(404, QUESTION_NOT_FOUND_MESSAGE)
-        if not defense.take_tts_call(body.turn):
+        parts = [asked.text]
+        if body.part is not None and settings.tts_split_sentences:
+            parts = split_sentences(asked.text)
+        if body.part is not None and body.part >= len(parts):
+            raise HTTPException(404, QUESTION_NOT_FOUND_MESSAGE)
+        text = parts[body.part or 0]
+        if not defense.take_tts_call(body.turn, body.part):
             raise CodedHTTPException(429, TTS_LIMIT_MESSAGE, "tts_limit")
         started = time.perf_counter()
+        # Timings, sizes and positions only: the question's text is never logged (H8).
+        part_label = "-" if body.part is None else f"{body.part}/{len(parts)}"
         try:
-            audio = synthesize_wav(synthesize, asked.text, asked.archetype_key, key)
+            audio = synthesize_wav(synthesize, text, asked.archetype_key, key)
         except TtsFailed as exc:
             logger.warning(
-                "tts failed session=%s turn=%d after %.2fs: %s", body.session_id, body.turn,
-                time.perf_counter() - started, exc,
+                "tts failed session=%s turn=%d part=%s chars=%d ms=%d: %s", body.session_id, body.turn,
+                part_label, len(text), (time.perf_counter() - started) * 1000, exc,
             )
             raise CodedHTTPException(502, TTS_FAILED_MESSAGE, "tts_failed") from exc
         logger.info(
-            "tts session=%s turn=%d archetype=%s bytes=%d s=%.2f", body.session_id, body.turn,
-            asked.archetype_key, len(audio), time.perf_counter() - started,
+            "tts session=%s turn=%d part=%s archetype=%s chars=%d bytes=%d ms=%d", body.session_id, body.turn,
+            part_label, asked.archetype_key, len(text), len(audio), (time.perf_counter() - started) * 1000,
         )
-        return Response(audio, media_type="audio/wav")
+        headers = {"X-TTS-Parts": str(len(parts))} if body.part is not None else None
+        return Response(audio, media_type="audio/wav", headers=headers)
 
     @app.get("/sessions/{session_id}/report", response_model=ReportResponse)
     def get_report(session_id: str) -> ReportResponse:

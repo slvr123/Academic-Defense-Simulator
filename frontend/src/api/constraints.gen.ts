@@ -17,6 +17,9 @@ export const limits = {
     },
     "turn": {
       "minimum": 1
+    },
+    "part": {
+      "minimum": 0
     }
   },
   "PanelConfig": {
