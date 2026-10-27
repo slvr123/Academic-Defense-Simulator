@@ -2,7 +2,8 @@
 
 Usage (from the repo root, in backend/.venv, which has the ONNX runtime):
 
-    python scripts/run_retrieval_eval.py               # production ingest (M5: navigation filter)
+    python scripts/run_retrieval_eval.py               # production ingest (M6: + reference list)
+    python scripts/run_retrieval_eval.py --chunker m5  # M5's chunker (navigation pages only)
     python scripts/run_retrieval_eval.py --chunker v1  # v1's chunker, as M4 measured it
 
 Chunks come from the backend's own `parse_pdf`, embeddings from `OnnxEmbedder`
@@ -13,8 +14,8 @@ stops the run on a mismatch. That run predates M5, so only `--chunker v1` can
 reproduce it; on the production chunker the replay is still checked against
 `retrieve()` turn by turn.
 
-Writes evals/v2.0-m5-retrieval-results.json (production) or the M4 file
-evals/v2.0-m4-retrieval-results.json (`--chunker v1`): ranks, scores, page numbers, chunk
+Writes evals/v2.0-m6-retrieval-results.json (production), or rewrites the M5 or M4
+file (`--chunker m5`, `--chunker v1`), which must come out byte-identical: ranks, scores, page numbers, chunk
 indices and hashes, never passage text. See docs/v2.0-m4-retrieval-eval-decisions.md.
 """
 
@@ -46,7 +47,13 @@ from academic_defense_simulator.rag.chunking import (  # noqa: E402
     PageChunk,
     chunk_pdf_with_pages,
 )
-from backend.page_filter import front_matter_boundary, removable_pages  # noqa: E402
+from backend.page_filter import (  # noqa: E402
+    chunk_pdf_filtered,
+    front_matter_boundary,
+    reference_range,
+    removable_pages,
+    trim_references,
+)
 from backend.pdf_ingest import IngestFailure, parse_pdf  # noqa: E402
 from backend.schemas import MAX_DOMAIN_PANELISTS  # noqa: E402
 from backend.sessions import ChunkMeta  # noqa: E402
@@ -54,9 +61,13 @@ from evals import retrieval_checks as rc  # noqa: E402
 
 MODEL_DIR = ROOT / "backend" / "model"
 OUTPUTS = {
-    "production": ROOT / "evals" / "v2.0-m5-retrieval-results.json",
+    "production": ROOT / "evals" / "v2.0-m6-retrieval-results.json",
+    "m5": ROOT / "evals" / "v2.0-m5-retrieval-results.json",
     "v1": ROOT / "evals" / "v2.0-m4-retrieval-results.json",
 }
+MILESTONES = {"production": "v2.0 M6", "m5": "v2.0 M5", "v1": "v2.0 M4"}
+# A removed reference line this long can't turn up in a kept chunk by coincidence.
+REFERENCE_LINE_MIN_CHARS = 20
 SEPTEMBER_CASES = "feat/retrieval-sources:evals/retrieval_cases.json"
 # Not in F4's list (repo root or the September cases), so reported but kept out of every verdict.
 SUPPLEMENTARY = [ROOT / "academic_defense_simulator" / "sample" / "sample-capstone-anicheck.pdf"]
@@ -106,10 +117,10 @@ def candidate_paths(september: dict[str, str]) -> list[Path]:
     return list(dict.fromkeys(paths))
 
 
-def parse_pdf_v1(path: Path) -> list[PageChunk]:
-    """`parse_pdf` as it was before M5: v1's chunker, with the same IngestFailure mapping."""
+def _parse_with(chunker, path: Path) -> list[PageChunk]:
+    """`parse_pdf` with an earlier chunker, and the same IngestFailure mapping."""
     try:
-        chunks = chunk_pdf_with_pages(path)
+        chunks = chunker(path)
     except InsufficientTextError as exc:
         raise IngestFailure("scanned", code="scanned_pdf") from exc
     except DocumentIngestionError as exc:
@@ -119,7 +130,11 @@ def parse_pdf_v1(path: Path) -> list[PageChunk]:
     return chunks
 
 
-PARSERS = {"production": parse_pdf, "v1": parse_pdf_v1}
+PARSERS = {
+    "production": parse_pdf,
+    "m5": lambda path: _parse_with(lambda p: chunk_pdf_filtered(p, trim_reference_list=False).chunks, path),
+    "v1": lambda path: _parse_with(chunk_pdf_with_pages, path),
+}
 
 
 def load_document(path: Path, in_verdict: bool, embedder, counter, parse) -> Document:
@@ -308,6 +323,48 @@ def removal_report(doc: Document) -> dict:
     }
 
 
+def reference_report(doc: Document, top1_picks: list[int], session_picks: list[int]) -> dict:
+    """H2: where H1's reference range is, whether anything outside it changes, and which
+    picks carry its text. On the M5 chunker the same range is measured, so the before
+    run counts the picks that H1 is meant to remove."""
+    references = reference_range(doc.page_texts)
+    if references is None:
+        return {"filter_applied": False}
+    trimmed = trim_references(doc.page_texts, references)
+    start_page, start_line = references.start
+    end_page, end_line = references.end or (len(doc.page_texts), 0)
+    removed_lines = []
+    outside_changes = 0
+    for index, (before, after) in enumerate(zip(doc.page_texts, trimmed)):
+        lines = before.splitlines(keepends=True)
+        if index < start_page or index > end_page:
+            outside_changes += before != after
+            continue
+        keep_before = "".join(lines[:start_line]) if index == start_page else ""
+        keep_after = "".join(lines[end_line:]) if index == end_page else ""
+        outside_changes += after != keep_before + keep_after  # anything kept besides the two allowed ends
+        first = start_line if index == start_page else 0
+        last = end_line if index == end_page else len(lines)
+        removed_lines += [line.strip() for line in lines[first:last]]
+    long_lines = [line for line in removed_lines if len(line) >= REFERENCE_LINE_MIN_CHARS]
+    # Position and text both: body chunks can quote a reference line word for word (a
+    # table's source citation), so only a chunk reaching the reference pages counts.
+    carrying = {
+        i for i, chunk in enumerate(doc.chunks)
+        if start_page <= chunk.page_end and chunk.page_start <= end_page and any(line in chunk.text for line in long_lines)
+    }
+    return {
+        "filter_applied": True,
+        "start": {"page": start_page + 1, "line": start_line},
+        "end": None if references.end is None else {"page": end_page + 1, "line": end_line},
+        "removed_lines": len(removed_lines),
+        "changes_outside_range": outside_changes,
+        "chunks_with_reference_text": sorted(carrying),
+        "top1_reference_picks": sum(i in carrying for i in top1_picks),
+        "session_reference_turns": sum(i in carrying for i in session_picks),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="v2.0 retrieval eval, checks A-E")
     parser.add_argument("--chunker", choices=sorted(PARSERS), default="production")
@@ -374,9 +431,12 @@ def main() -> None:
             "check_c": check_c(doc, ranked, session_picks),
             "check_d": check_d(doc),
             "check_e": e,
-            # Only on the production chunker, so the v1 run stays byte-identical to M4's file.
-            **({"page_filter": removal_report(doc)} if args.chunker == "production" else {}),
+            # Only where the chunker had them, so the v1 and m5 runs stay byte-identical to M4's and M5's files.
+            **({"page_filter": removal_report(doc)} if args.chunker != "v1" else {}),
+            **({"reference_filter": reference_report(doc, [r[0] for r in ranked.values()], session_picks)} if args.chunker == "production" else {}),
         })
+        if args.chunker == "m5":  # H2's before numbers, printed only: M5's file must not change
+            print(f"before H1, {doc.path.name[:40]}: {reference_report(doc, [r[0] for r in ranked.values()], session_picks)}")
 
     counted = [d for d in per_document if d["in_verdict"]]
     ran = {k: [d for d in counted if "halted" not in d[k]] for k in ("check_a", "check_b", "check_c", "check_e")}
@@ -409,7 +469,7 @@ def main() -> None:
         },
     }
     output = {
-        "milestone": "v2.0 M4" if args.chunker == "v1" else "v2.0 M5",
+        "milestone": MILESTONES[args.chunker],
         "embedder": "backend.embedder.OnnxEmbedder (backend/model/model.onnx)",
         "max_seq_length": backend_embedder.MAX_SEQ_LENGTH,
         "near_tie_gap": rc.NEAR_TIE_GAP,
@@ -445,6 +505,8 @@ def print_summary(output: dict, longest: int) -> None:
         print(f"{d['file'][:60]} (in_verdict={d['in_verdict']}, {d['chunks']} chunks)")
         if "page_filter" in d:
             print(f"  filter {d['page_filter']}")
+        if "reference_filter" in d:
+            print(f"  references {d['reference_filter']}")
         print("  A " + (a["halted"] if "halted" in a else
               f"median shared top5={a['median_shared_top5']} mean={a['mean_shared_top5']:.2f} baseline={a['random_baseline_shared_top5']:.2f} "
               f"same_top1={a['same_top1_pairs']}/{a['pair_count']} distinct_top1={a['distinct_top1_chunks']} -> {a['verdict']}"))

@@ -42,6 +42,9 @@ def make_pdf(path: Path, pages: int = 3, paragraphs_per_page: int = 6, text: boo
 
 
 CONTENTS_MARKER = "Statement of the Problem"
+CHAPTER_FIVE_MARKER = "The proponents recommend a second semester of use before wider rollout."
+REFERENCE_MARKER = "Automated circulation"
+APPENDIX_MARKER = "Respondents answered twenty Likert items."
 NAVIGATION_PAGES = {
     "title": ["A Study of Library Systems", "A Capstone Project", "Department of Computing", "2026"],
     "contents": [
@@ -65,6 +68,20 @@ NAVIGATION_PAGES = {
         "Portability 22",
         "Total respondents 30",
     ],
+    # M6 H1: the end of Chapter 5, then the reference list, then an appendix.
+    "body": ["The system was deployed for one semester.", PARAGRAPH],
+    "chapter_five_then_references": [
+        "CHAPTER 5",
+        CHAPTER_FIVE_MARKER,
+        "REFERENCES",
+        f"Abad, J. (2019). {REFERENCE_MARKER} in school libraries. Journal of Systems, 4(2), 1-9.",
+    ],
+    "references": [
+        f"Cruz, M. (2020). {REFERENCE_MARKER} for small institutions. Proceedings of ICCS, 33-40.",
+        f"Reyes, P. (2021). {REFERENCE_MARKER} and barcode cataloguing. Library Review, 12, 77-90.",
+    ],
+    "appendix": ["APPENDIX A - Survey Instrument", APPENDIX_MARKER, PARAGRAPH],
+    "early_literature_cited": ["CHAPTER 2", "Literature Cited", "Review of Related Literature", PARAGRAPH],
 }
 
 

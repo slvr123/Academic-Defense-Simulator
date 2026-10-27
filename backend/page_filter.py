@@ -1,15 +1,19 @@
-"""Front-matter navigation pages: detected, then left out of chunking (v2.0 M5).
+"""Pages and passages left out of chunking: front-matter navigation pages (v2.0 M5)
+and the reference list (M6 H1).
 
 A table of contents or list of figures names every topic in the paper, so it
-out-scores real content for nearly every panelist's focus query (M4 Check C).
-The detector is the one M4 measured, moved here unchanged from
-evals/retrieval_checks.py, which now imports it. See
-docs/v2.0-m5-navigation-filter-decisions.md.
+out-scores real content for nearly every panelist's focus query (M4 Check C); a
+reference list of paper titles does the same from the back (M5's finding).
+The navigation detector is the one M4 measured, moved here unchanged from
+evals/retrieval_checks.py, which imports it. See
+docs/v2.0-m5-navigation-filter-decisions.md and
+docs/v2.0-m6-retrieval-reliability-voice-decisions.md.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,6 +34,24 @@ _PAGE_REF_LINE = re.compile(r"(\.{3,}|…)|(^|\s)([0-9]{1,3}|[ivxlcIVXLC]{1,7})$
 # matches this too, which is why navigation pages are skipped when finding the boundary.
 _CHAPTER_ONE_HEADING = re.compile(r"(?i)^(chapter\s+(1|i|one)\b|introduction\b|1\.?\s+introduction\b)")
 NAVIGATION_MIN_LINES = 5
+
+# H1. An optional section number: "5", "5.1", "V", followed by "." or ")" and a space.
+_SECTION_NUMBER = r"(?:(?:\d{1,2}(?:\.\d{1,2})*|[ivxlc]{1,6})[.)]?\s+)?"
+# A line that is only a references heading. Anchored at both ends, so a contents
+# line ("References ........ 80") never matches.
+_REFERENCES_HEADING = re.compile(
+    rf"(?i)^{_SECTION_NUMBER}(?:references|bibliography|literature\s+cited|works\s+cited)[.:]?$"
+)
+# What ends the reference list: an appendix, CV or glossary heading, optionally
+# lettered or numbered, and optionally titled after a dash or colon ("Appendix A –
+# Survey Instrument"): appendices are often headed that way, and missing one would
+# delete every appendix after it.
+_BACK_MATTER_END_HEADING = re.compile(
+    rf"(?i)^{_SECTION_NUMBER}(?:appendix(?:\s+[a-z0-9]{{1,4}})?(?P<title>\s*[-–:.]\s*\S.*)?|appendices|curriculum\s+vitae|glossary)[.:]?$"
+)
+# Dotted leaders, or a title ending in a page number, make it a contents line, not a heading.
+_DOTTED_LEADERS = re.compile(r"\.{3,}|…")
+_TRAILING_PAGE_NUMBER = re.compile(r"\s\d{1,3}$")
 
 
 def _lines(page_text: str) -> list[str]:
@@ -57,6 +79,66 @@ def front_matter_boundary(page_texts: list[str]) -> int | None:
     return None
 
 
+def _is_back_matter_end(line: str) -> bool:
+    match = _BACK_MATTER_END_HEADING.match(line)
+    if match is None or _DOTTED_LEADERS.search(line):
+        return False
+    # "Appendix 1" is a heading; "Appendix A - Survey 85" is a contents line.
+    return not (match.group("title") and _TRAILING_PAGE_NUMBER.search(line))
+
+
+@dataclass(frozen=True)
+class ReferenceRange:
+    """The reference list, as 0-based (page, line) positions; lines are those of
+    `page_text.splitlines()`. Removed: from the start heading up to, not including,
+    the end heading, or to the end of the document when `end` is None."""
+
+    start: tuple[int, int]
+    end: tuple[int, int] | None
+
+
+def reference_range(page_texts: list[str]) -> ReferenceRange | None:
+    """H1: the first references heading after the front-matter boundary, accepted only
+    in the document's last half; None (nothing removed) otherwise, or with no boundary."""
+    boundary = front_matter_boundary(page_texts)
+    if boundary is None:
+        return None
+    start = _first_line(page_texts, (boundary, 0), lambda line: bool(_REFERENCES_HEADING.match(line)))
+    if start is None or start[0] < len(page_texts) / 2:
+        return None
+    return ReferenceRange(start=start, end=_first_line(page_texts, (start[0], start[1] + 1), _is_back_matter_end))
+
+
+def _first_line(page_texts: list[str], after: tuple[int, int], matches: Callable[[str], bool]) -> tuple[int, int] | None:
+    """The first (page, line) at or after `after` whose stripped text `matches`."""
+    for page_index in range(after[0], len(page_texts)):
+        lines = page_texts[page_index].splitlines()
+        first = after[1] if page_index == after[0] else 0
+        for line_index in range(first, len(lines)):
+            if matches(lines[line_index].strip()):
+                return page_index, line_index
+    return None
+
+
+def trim_references(page_texts: list[str], references: ReferenceRange | None) -> list[str]:
+    """Page texts with the reference range cut out. Text above the heading on its page
+    stays, and so does the end heading's page from the heading on."""
+    if references is None:
+        return list(page_texts)
+    start_page, start_line = references.start
+    end_page, end_line = references.end or (len(page_texts), 0)
+    trimmed = []
+    for page_index, text in enumerate(page_texts):
+        if page_index < start_page or page_index > end_page:
+            trimmed.append(text)
+            continue
+        lines = text.splitlines(keepends=True)
+        kept_before = lines[:start_line] if page_index == start_page else []
+        kept_after = lines[end_line:] if page_index == end_page else []
+        trimmed.append("".join(kept_before + kept_after))
+    return trimmed
+
+
 def removable_pages(page_texts: list[str]) -> set[int]:
     """0-based indices of navigation pages before the front-matter boundary. With no
     boundary, nothing: the filter fails open and the document chunks as before. Pages
@@ -70,13 +152,16 @@ def removable_pages(page_texts: list[str]) -> set[int]:
 @dataclass(frozen=True)
 class FilteredChunks:
     chunks: list[PageChunk]
-    removed_pages: list[int]  # 0-based, ascending
+    removed_pages: list[int]  # 0-based navigation pages, ascending
+    references: ReferenceRange | None
 
 
-def chunk_pdf_without_navigation(path: str | Path) -> FilteredChunks:
-    """v1's `chunk_pdf_with_pages`, reading every page except `removable_pages`.
-    Page indices stay those of the original PDF, and the scanned-PDF check counts
-    every page, removed ones included. With nothing removed, the chunks are v1's."""
+def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) -> FilteredChunks:
+    """v1's `chunk_pdf_with_pages`, reading every page except `removable_pages`, with
+    the reference list trimmed from the page text before v1's paragraph splitter runs
+    (`trim_reference_list=False` is M5's chunker, kept for the eval's before run).
+    Page indices stay those of the original PDF, and the scanned-PDF check counts all
+    the original text. With nothing removed, the chunks are v1's."""
     import fitz  # PyMuPDF
 
     try:
@@ -97,9 +182,10 @@ def chunk_pdf_without_navigation(path: str | Path) -> FilteredChunks:
         )
 
     removed = removable_pages(page_texts)
+    references = reference_range(page_texts) if trim_reference_list else None
     paragraphs: list[str] = []
     paragraph_pages: list[int] = []
-    for page_index, text in enumerate(page_texts):
+    for page_index, text in enumerate(trim_references(page_texts, references)):
         if page_index in removed:
             continue
         page_paragraphs = _paragraphs_from_page_text(text)
@@ -114,4 +200,4 @@ def chunk_pdf_without_navigation(path: str | Path) -> FilteredChunks:
         )
         for start, end in _pack_spans([len(p) for p in paragraphs])
     ]
-    return FilteredChunks(chunks=chunks, removed_pages=sorted(removed))
+    return FilteredChunks(chunks=chunks, removed_pages=sorted(removed), references=references)
