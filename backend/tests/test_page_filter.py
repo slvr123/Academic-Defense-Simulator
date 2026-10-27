@@ -307,14 +307,15 @@ def test_a_bare_chapter_two_starts_nothing_even_over_cited_text(tmp_path):
     assert filtered.literature_review is None and set(filtered.attributions) == {None}
 
 
-def test_the_bundled_sample_tags_its_review_where_it_cites():
+def test_the_bundled_sample_tags_its_citing_review_pages():
     filtered = chunk_pdf_filtered(SAMPLE_PDF)
     # "CHAPTER 2" is line 1 of page 6 (0-based 5) and its title, "REVIEW OF RELATED
     # LITERATURE AND STUDIES", line 2; CHAPTER 3 is line 1 of page 8. Each page is one
-    # paragraph, placed where it ends: pages 6 and 7 are in the range, and only page 6 cites.
+    # paragraph, placed where it ends: pages 6 and 7 are in the range, and both cite
+    # (page 7 only narratively, "Surname and Surname (YYYY)"); page 8 is Chapter 3.
     assert filtered.literature_review == LiteratureReviewRange(start=(5, 2), end=(7, 1))
     tagged = [(c.page_start, c.page_end, a) for c, a in zip(filtered.chunks, filtered.attributions) if a]
-    assert tagged == [(5, 5, "literature_review")]
+    assert tagged == [(5, 5, "literature_review"), (6, 6, "literature_review")]
 
 
 def _review_pages(start_line: str, end_line: str = "CHAPTER 3") -> list[str]:
@@ -375,6 +376,9 @@ def test_a_literature_line_in_the_contents_is_not_the_start():
     [
         "Reyes et al. (2020) found", "as noted (Reyes, 2021).", "(Reyes & Cruz, 2021a; Lim, 2019)",
         "as shown in [12]", "two studies [3, 7]", "several [4–6]",
+        # Narrative citations, added on 2026-10-27: initials are allowed before surnames.
+        "Reyes (2021) found", "Reyes and Cruz (2020) argued", "Dela-Cruz (2019b) notes",
+        "J. Reyes (2021) found", "M. A. Cruz and P. Lim (2020) argued", "M.A. Cruz (2018)",
     ],
 )
 def test_citations(text):
@@ -382,10 +386,13 @@ def test_citations(text):
 
 
 @pytest.mark.parametrize(
-    "text", ["the ISO/IEC 25010 model", "in 2021 the school", "Reyes (2021) found", "(see Figure 3)", "option [a]"]
+    "text",
+    [
+        "the ISO/IEC 25010 model", "ISO/IEC 25010 (2011)", "in 2021 the school", "the year (2021)",
+        "(see Figure 3)", "Version 2 (2021)", "option [a]",
+    ],
 )
 def test_not_citations(text):
-    # "Reyes (2021)" alone isn't in J2's list: et al., (Author, YYYY), or a numbered reference.
     assert not cites_a_study(text)
 
 

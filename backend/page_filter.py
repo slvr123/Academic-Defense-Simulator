@@ -77,8 +77,13 @@ _CHAPTER_THREE_HEADING = re.compile(
 )
 _METHODOLOGY_HEADING = re.compile(rf"(?i)^{_SECTION_NUMBER}methodology[.:]?$")
 # What makes a chunk cite a specific study: "Reyes et al.", "(Reyes, 2021)",
-# "(Reyes & Cruz, 2021a; Lim, 2019)", or a numbered reference like "[12]" or "[3, 7]".
-_CITATION = re.compile(r"\bet al\.|\([A-Z][^()]{0,80}?,\s*(?:19|20)\d{2}[a-z]?\)|\[\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]")
+# "(Reyes & Cruz, 2021a; Lim, 2019)", a numbered reference like "[12]" or "[3, 7]", or
+# a narrative citation: "Reyes (2021)", "Reyes and Cruz (2021)", "J. P. Reyes (2021)".
+_SURNAME = r"(?:[A-Z]\.\s?)*[A-Z][a-z][A-Za-z'’-]*"
+_NARRATIVE_CITATION = rf"\b{_SURNAME}(?:\s+and\s+{_SURNAME})?\s+\((?:19|20)\d{{2}}[a-z]?\)"
+_CITATION = re.compile(
+    rf"\bet al\.|\([A-Z][^()]{{0,80}}?,\s*(?:19|20)\d{{2}}[a-z]?\)|\[\d{{1,3}}(?:\s*[,–-]\s*\d{{1,3}})*\]|{_NARRATIVE_CITATION}"
+)
 
 # Which note a chunk's text gets in the engine's prompt (backend/engine_adapter.py).
 Attribution = Literal["literature_review", "partly_literature_review"]
