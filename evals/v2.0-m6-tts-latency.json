@@ -1,0 +1,100 @@
+{
+ "milestone": "v2.0 M6",
+ "source": "M3 live run questions",
+ "rounds": 2,
+ "questions": [
+  {
+   "turn": 1,
+   "archetype": "technical_implementation_reviewer",
+   "chars": 252,
+   "words": 32,
+   "parts": 1,
+   "first_part_chars": 252,
+   "whole_s": [
+    6.2,
+    5.77
+   ],
+   "first_part_s": [
+    6.2,
+    5.77
+   ]
+  },
+  {
+   "turn": 2,
+   "archetype": "methodology_expert",
+   "chars": 379,
+   "words": 55,
+   "parts": 1,
+   "first_part_chars": 379,
+   "whole_s": [
+    10.61,
+    9.12
+   ],
+   "first_part_s": [
+    10.61,
+    9.12
+   ]
+  },
+  {
+   "turn": 3,
+   "archetype": "results_conclusions_reviewer",
+   "chars": 427,
+   "words": 64,
+   "parts": 2,
+   "first_part_chars": 101,
+   "whole_s": [
+    7.77,
+    7.46
+   ],
+   "first_part_s": [
+    2.98,
+    3.0
+   ]
+  },
+  {
+   "turn": 4,
+   "archetype": "devils_advocate",
+   "chars": 438,
+   "words": 67,
+   "parts": 1,
+   "first_part_chars": 438,
+   "whole_s": [
+    8.08,
+    9.52
+   ],
+   "first_part_s": [
+    8.08,
+    9.52
+   ]
+  }
+ ],
+ "summary": {
+  "calls": 17,
+  "median_whole_s": 7.92,
+  "median_time_to_first_audio_s": 7.14,
+  "h10_latency_rule": "met (<= 8 s)"
+ },
+ "h10": {
+  "question_turn": 3,
+  "clips": {
+   "technical_implementation_reviewer": [
+    "technical_implementation_reviewer-whole.wav",
+    "technical_implementation_reviewer-part0.wav",
+    "technical_implementation_reviewer-part1.wav",
+    "technical_implementation_reviewer-split-joined.wav"
+   ],
+   "methodology_expert": [
+    "methodology_expert-whole.wav",
+    "methodology_expert-part0.wav",
+    "methodology_expert-part1.wav",
+    "methodology_expert-split-joined.wav"
+   ],
+   "results_conclusions_reviewer": [
+    "results_conclusions_reviewer-whole.wav",
+    "results_conclusions_reviewer-part0.wav",
+    "results_conclusions_reviewer-part1.wav",
+    "results_conclusions_reviewer-split-joined.wav"
+   ]
+  }
+ }
+}
