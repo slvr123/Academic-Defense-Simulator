@@ -2,7 +2,8 @@
 
 Checks that run before a job is enqueued (size, PDF-ness, page count) raise
 `UploadRejected` with the HTTP status the route returns. Parsing and chunking
-reuse v1's `rag/chunking.py`, Miss 3 page-number stripping included.
+reuse v1's `rag/chunking.py`, Miss 3 page-number stripping included, through
+`page_filter`, which first leaves out front-matter navigation pages (M5).
 """
 
 from __future__ import annotations
@@ -17,8 +18,8 @@ from academic_defense_simulator.rag.chunking import (
     DocumentIngestionError,
     InsufficientTextError,
     PageChunk,
-    chunk_pdf_with_pages,
 )
+from backend.page_filter import chunk_pdf_without_navigation
 from backend.schemas import IngestErrorCode
 
 logger = logging.getLogger(__name__)
@@ -102,11 +103,15 @@ class IngestFailure(Exception):
 
 def parse_pdf(path: Path) -> list[PageChunk]:
     try:
-        chunks = chunk_pdf_with_pages(path)
+        filtered = chunk_pdf_without_navigation(path)
     except InsufficientTextError as exc:
         raise IngestFailure(_scanned_message(exc.total_chars), code="scanned_pdf") from exc
     except DocumentIngestionError as exc:
         raise IngestFailure(str(exc)) from exc
+    chunks = filtered.chunks
+    if filtered.removed_pages:
+        # Page numbers only, 1-based as the source reveal shows them; never page text.
+        logger.info("navigation pages left out of chunking: %s", [p + 1 for p in filtered.removed_pages])
     if not chunks:
         raise IngestFailure(_scanned_message(0), code="scanned_pdf")
     return chunks

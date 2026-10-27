@@ -8,7 +8,7 @@ from pathlib import Path
 
 from academic_defense_simulator.rag.chunking import chunk_pdf_with_pages
 from backend.settings import Settings
-from backend.tests.conftest import make_pdf, upload, wait_for
+from backend.tests.conftest import CONTENTS_MARKER, make_navigation_pdf, make_pdf, upload, wait_for
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -46,6 +46,20 @@ def test_pdf_goes_from_queued_to_ready_with_page_ranges(client_factory, pdf):
             (c.page_start, c.page_end) for c in expected
         ]
         assert session.panel.starting_difficulty == 2  # panel omitted -> defaults
+
+
+def test_an_uploaded_contents_page_never_reaches_a_chunk(client_factory, tmp_path):
+    # M5: title, contents, abstract, Chapter 1, results. Only the contents page goes.
+    path = make_navigation_pdf(tmp_path / "thesis.pdf", ["title", "contents", "abstract", "chapter_one", "results"])
+    with client_factory() as client:
+        session_id = upload(client, path).json()["session_id"]
+        assert wait_for(client, session_id, _ready)["chunk_count"] >= 1
+        chunks = client.app.state.store.get(session_id).chunks
+    assert not any(CONTENTS_MARKER in c.text for c in chunks)
+    assert all("Table of Contents" not in c.text for c in chunks)
+    assert any("Abstract" in c.text for c in chunks) and any("Total respondents 30" in c.text for c in chunks)
+    # Page numbers are the PDF's own: the text starts on the title page and ends on the results page.
+    assert (chunks[0].page_start, chunks[-1].page_end) == (0, 4)
 
 
 def test_progress_increases_one_chunk_at_a_time(client_factory, tmp_path, embedder):
