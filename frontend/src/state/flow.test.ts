@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, ApiResult } from '../api/client'
-import type { SessionState } from '../api/types'
+import type { CurrentQuestion, SessionState } from '../api/types'
 import { evaluation, lastAnswer, nextQuestion, panelOptions, pdf, quota, report, startResponse } from '../test/fixtures'
-import { type Action, initialState, noticeFor, type Phase, reducer, type State } from './flow'
+import {
+  type Action,
+  initialState,
+  noticeFor,
+  type Phase,
+  reducer,
+  resyncedText,
+  type State,
+  STILL_PREPARING_TEXT,
+} from './flow'
 
 const NOW = Date.parse('2026-10-22T05:00:00Z')
 const fail = <T,>(error: ApiError): ApiResult<T> => ({ ok: false, error })
@@ -175,8 +184,21 @@ describe('starting the defense', () => {
     expect(startWith(ok(startResponse)).phase).toEqual({ ...question, draft: '' })
   })
 
-  it('swallows a 409 and keeps preparing', () => {
-    expect(startWith(fail({ kind: 'conflict', message: 'running' })).phase).toEqual({ kind: 'preparing', sessionId: S, auto: false })
+  it("says the panel is still preparing once a 409's resends ran out (M6 H4, replaces D16's swallow)", () => {
+    expect(startWith(fail({ kind: 'conflict', message: 'running' })).phase).toEqual({
+      kind: 'ready',
+      sessionId: S,
+      chunkCount: null,
+      notice: { kind: 'message', text: STILL_PREPARING_TEXT },
+    })
+  })
+
+  it('shows already_started as the server words it (M6 H4)', () => {
+    const text = 'This defense has already started. Answer the current question instead.'
+    expect(startWith(fail({ kind: 'alreadyStarted', message: text })).phase).toMatchObject({
+      kind: 'ready',
+      notice: { kind: 'message', text },
+    })
   })
 
   it('schedules one automatic retry for a busy 503 with Retry-After, and none after it', () => {
@@ -199,9 +221,10 @@ describe('starting the defense', () => {
     ['per_ip_limit' as const],
     ['daily_cap' as const],
     [null],
-  ])('carries the 429 code %s and its reset time', (code) => {
-    const state = startWith(fail({ kind: 'limited', code, message: 'm', retryAfterS: 3600 }))
-    expect(state.phase).toMatchObject({ kind: 'ready', notice: { kind: 'limited', code, resetsAt: NOW + 3_600_000 } })
+  ])('carries the 429 code %s, its limit and its reset time', (code) => {
+    const limit = code === 'per_ip_limit' ? 3 : null
+    const state = startWith(fail({ kind: 'limited', code, limit, message: 'm', retryAfterS: 3600 }))
+    expect(state.phase).toMatchObject({ kind: 'ready', notice: { kind: 'limited', code, limit, resetsAt: NOW + 3_600_000 } })
   })
 
   it('maps 502, 422 and a network error to their notices', () => {
@@ -255,6 +278,32 @@ describe('answering', () => {
   it('shows a stale_question 409 verbatim, keeping the answer (E13)', () => {
     const text = "That answer is for a question that isn't open any more."
     expect(finish(fail({ kind: 'stale', message: text })).phase).toEqual({ ...question, notice: { kind: 'message', text } })
+  })
+
+  describe('after a stale answer (M6 H5)', () => {
+    const stale: ApiError = { kind: 'stale', message: "That answer is for a question that isn't open any more." }
+    const resync = (current: ApiResult<CurrentQuestion>) =>
+      run(at(question), { type: 'answerRequested', auto: false }, { type: 'resynced', sessionId: S, stale, current, now: NOW })
+    const third = { ...startResponse.question, turn: 3 }
+
+    it('moves to the open question, keeps the typed text, and says why', () => {
+      expect(resync(ok({ done: false, question: third })).phase).toEqual({
+        ...question,
+        question: third,
+        last: null,
+        notice: { kind: 'message', text: resyncedText(3) },
+      })
+      expect(resyncedText(3)).toBe("This answer was for an earlier question. You're now on question 3.")
+    })
+
+    it('goes to finishing when the defense is done', () => {
+      expect(resync(ok({ done: true, question: null })).phase).toEqual({ kind: 'finishing', sessionId: S, notice: null })
+    })
+
+    it('falls back to the stale message when /current fails, and to expired on a 404', () => {
+      expect(resync(fail({ kind: 'network' })).phase).toEqual({ ...question, notice: { kind: 'message', text: stale.message } })
+      expect(resync(fail({ kind: 'notFound', message: 'gone' })).phase).toEqual({ kind: 'expired' })
+    })
   })
 
   it('schedules one automatic retry for a busy 503, none after the retry itself', () => {
@@ -320,9 +369,10 @@ describe('the report', () => {
 
 describe('noticeFor', () => {
   it('keeps limited without Retry-After to no reset time', () => {
-    expect(noticeFor({ kind: 'limited', code: 'daily_cap', message: 'm', retryAfterS: null }, NOW, true)).toEqual({
+    expect(noticeFor({ kind: 'limited', code: 'daily_cap', limit: null, message: 'm', retryAfterS: null }, NOW, true)).toEqual({
       kind: 'limited',
       code: 'daily_cap',
+      limit: null,
       resetsAt: null,
     })
   })

@@ -2,6 +2,7 @@
 // or a typed ApiError; status codes stop here (M3 decisions D5).
 import type {
   AnswerResponse,
+  CurrentQuestion,
   ErrorCode,
   HealthResponse,
   LimitCode,
@@ -20,11 +21,13 @@ export type ApiError =
   | { kind: 'notFound'; message: string } // 404: the session expired or never existed
   | { kind: 'conflict'; message: string } // 409: a request for this session is already running
   | { kind: 'stale'; message: string } // 409 stale_question: that question isn't open any more (E13)
+  | { kind: 'alreadyStarted'; message: string } // 409 already_started: /start after the first answer (M6 H4)
   | { kind: 'turnFailed'; message: string } // 502: nothing was recorded, send the same request again
   | { kind: 'busy'; message: string; retryAfterS: number | null } // 503
   | { kind: 'tooLarge'; message: string } // 413: too many bytes or too many pages
   | { kind: 'invalid'; message: string } // 422
-  | { kind: 'limited'; code: LimitCode | null; message: string; retryAfterS: number | null } // 429
+  // 429; limit: the starts a network gets per day, sent with per_ip_limit (M6 H6)
+  | { kind: 'limited'; code: LimitCode | null; limit: number | null; message: string; retryAfterS: number | null }
   | { kind: 'tts'; code: TtsErrorCode; message: string } // /tts's coded 429, 502 and 503 (E3)
   | { kind: 'unexpected'; message: string }
 
@@ -32,13 +35,14 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError 
 
 // A Record over the generated union: the build fails if the backend adds a code
 // this client hasn't placed.
-const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale'> = {
+const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started'> = {
   per_ip_limit: 'limit',
   daily_cap: 'limit',
   tts_limit: 'tts',
   tts_failed: 'tts',
   tts_unavailable: 'tts',
   stale_question: 'stale',
+  already_started: 'started',
 }
 
 function isErrorCode(value: unknown): value is ErrorCode {
@@ -90,13 +94,22 @@ export function toApiError(status: number, body: unknown, retryAfter: string | n
     case 404:
       return { kind: 'notFound', message }
     case 409:
-      return code === 'stale_question' ? { kind: 'stale', message } : { kind: 'conflict', message }
+      if (code === 'stale_question') return { kind: 'stale', message }
+      return code === 'already_started' ? { kind: 'alreadyStarted', message } : { kind: 'conflict', message }
     case 413:
       return { kind: 'tooLarge', message }
     case 422:
       return { kind: 'invalid', message }
-    case 429:
-      return { kind: 'limited', code: isLimitCode(code) ? code : null, message, retryAfterS: parseRetryAfter(retryAfter) }
+    case 429: {
+      const limit = field(body, 'limit')
+      return {
+        kind: 'limited',
+        code: isLimitCode(code) ? code : null,
+        limit: typeof limit === 'number' && Number.isInteger(limit) ? limit : null,
+        message,
+        retryAfterS: parseRetryAfter(retryAfter),
+      }
+    }
     case 502:
       return { kind: 'turnFailed', message }
     case 503:
@@ -148,6 +161,8 @@ export const startDefense = (sessionId: string) => request<StartResponse>('POST'
 export const submitAnswer = (sessionId: string, text: string, turn: number) =>
   request<AnswerResponse>('POST', `${sessionPath(sessionId)}/answers`, { text, turn })
 export const getReport = (sessionId: string) => request<ReportResponse>('GET', `${sessionPath(sessionId)}/report`)
+/** Where the defense is now: the open question, or done (M6 H5). */
+export const getCurrent = (sessionId: string) => request<CurrentQuestion>('GET', `${sessionPath(sessionId)}/current`)
 
 /**
  * POST /tts: one question's audio, read as a Blob of WAV bytes rather than text.

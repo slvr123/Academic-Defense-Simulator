@@ -285,7 +285,7 @@ def test_idle_ready_session_is_evicted_by_the_sweep(client_factory, pdf):
         wait_for(client, session_id, _ready)
         # Polled, not a fixed sleep: the job's gc.collect() calls hold the GIL for
         # a while (about 0.2 s each with torch loaded by the parity test).
-        deadline = time.monotonic() + 5
+        deadline = time.monotonic() + 15  # M6 H7: room for a slow machine; the sweep runs every 0.05 s
         while len(client.app.state.store) and time.monotonic() < deadline:
             time.sleep(0.05)
         assert len(client.app.state.store) == 0  # the sweep, not a lookup, removed it

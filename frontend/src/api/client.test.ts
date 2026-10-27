@@ -57,12 +57,22 @@ describe('toApiError maps each status to the error the UI branches on', () => {
     [undefined, null],
   ])('a 429 with code %s is read as %s', (code, expected) => {
     const error = toApiError(429, { detail: 'used up', code }, '3600')
-    expect(error).toEqual({ kind: 'limited', code: expected, message: 'used up', retryAfterS: 3600 })
+    expect(error).toEqual({ kind: 'limited', code: expected, limit: null, message: 'used up', retryAfterS: 3600 })
+  })
+
+  it("reads a per_ip_limit 429's limit, and ignores one that isn't a whole number (M6 H6)", () => {
+    expect(toApiError(429, { detail: 'd', code: 'per_ip_limit', limit: 5 }, null)).toMatchObject({ code: 'per_ip_limit', limit: 5 })
+    expect(toApiError(429, { detail: 'd', code: 'per_ip_limit', limit: '5' }, null)).toMatchObject({ limit: null })
+    expect(toApiError(429, { detail: 'd', code: 'per_ip_limit', limit: 2.5 }, null)).toMatchObject({ limit: null })
   })
 
   it('tells a stale_question 409 from a plain one (E13)', () => {
     expect(toApiError(409, { detail: 'moved on', code: 'stale_question' }, null)).toEqual({ kind: 'stale', message: 'moved on' })
     expect(toApiError(409, { detail: 'still running' }, null)).toEqual({ kind: 'conflict', message: 'still running' })
+  })
+
+  it('tells already_started from a plain 409 (M6 H4)', () => {
+    expect(toApiError(409, { detail: 'started', code: 'already_started' }, null)).toEqual({ kind: 'alreadyStarted', message: 'started' })
   })
 
   it.each([
@@ -192,7 +202,7 @@ describe('createSession uploads with XHR', () => {
     server.upload.current?.respond(429, { detail: 'used up', code: 'daily_cap' }, { 'Retry-After': '120' })
     expect(await pending).toEqual({
       ok: false,
-      error: { kind: 'limited', code: 'daily_cap', message: 'used up', retryAfterS: 120 },
+      error: { kind: 'limited', code: 'daily_cap', limit: null, message: 'used up', retryAfterS: 120 },
     })
   })
 

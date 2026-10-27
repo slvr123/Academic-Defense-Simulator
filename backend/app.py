@@ -110,12 +110,15 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def quota_used_up(now: datetime, message: str | None = None, code: LimitCode = "daily_cap") -> HTTPException:
+def quota_used_up(
+    now: datetime, message: str | None = None, code: LimitCode = "daily_cap", limit: int | None = None
+) -> HTTPException:
     """429 until midnight Pacific: today's defenses are used up, or `message`'s reason.
-    `code` tells the client which limit it hit without reading the message."""
+    `code` tells the client which limit it hit without reading the message, and
+    `limit` how many starts that limit allows (sent for per_ip_limit, M6 H6)."""
     retry_after = int((resets_at(pacific_day(now)) - now).total_seconds())
     return CodedHTTPException(
-        429, message or quota_used_up_message(now), code, headers={"Retry-After": str(retry_after)}
+        429, message or quota_used_up_message(now), code, headers={"Retry-After": str(retry_after)}, limit=limit
     )
 
 

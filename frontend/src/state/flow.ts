@@ -5,6 +5,7 @@ import type { ApiError, ApiResult } from '../api/client'
 import { defaults } from '../api/constraints.gen'
 import type {
   AnswerResponse,
+  CurrentQuestion,
   Evaluation,
   LimitCode,
   PanelConfig,
@@ -26,7 +27,7 @@ export type Notice =
   | { kind: 'stillWorking' } // an answer's resends kept getting 409 while the first was running (E13)
   // retryAt: when the one automatic retry fires (epoch ms); null means a "Try again" button only.
   | { kind: 'busy'; message: string; retryAt: number | null }
-  | { kind: 'limited'; code: LimitCode | null; resetsAt: number | null }
+  | { kind: 'limited'; code: LimitCode | null; limit: number | null; resetsAt: number | null }
   | { kind: 'message'; text: string }
 
 export type Draft = { file: File | null; panel: PanelConfig }
@@ -90,6 +91,8 @@ export type Action =
   | { type: 'answerChanged'; text: string }
   | { type: 'answerRequested'; auto: boolean }
   | { type: 'answerFinished'; sessionId: string; result: ApiResult<AnswerResponse>; now: number }
+  // An answer refused as stale, then GET /current's answer (M6 H5).
+  | { type: 'resynced'; sessionId: string; stale: ApiError; current: ApiResult<CurrentQuestion>; now: number }
   | { type: 'reportRequested' }
   | { type: 'reportFinished'; sessionId: string; result: ApiResult<ReportResponse>; now: number }
   | { type: 'restart' }
@@ -131,10 +134,12 @@ export function noticeFor(error: ApiError, now: number, autoRetryAllowed: boolea
       return {
         kind: 'limited',
         code: error.code,
+        limit: error.limit,
         resetsAt: error.retryAfterS !== null ? now + error.retryAfterS * 1000 : null,
       }
     case 'notFound': // callers send a 404 to the expired phase before asking for a notice
     case 'stale':
+    case 'alreadyStarted':
     case 'tts': // /tts errors never reach the flow; the voice falls back on its own (E8)
     case 'tooLarge':
     case 'invalid':
@@ -179,12 +184,23 @@ function polled(state: State, sessionId: string, result: ApiResult<SessionState>
   }
 }
 
+export const STILL_PREPARING_TEXT = 'The panel is still preparing this defense. Try again in a moment.'
+
+/** "This answer was for an earlier question...": shown after a stale answer moves the screen on (M6 H5). */
+export function resyncedText(turn: number): string {
+  return `This answer was for an earlier question. You're now on question ${turn}.`
+}
+
 function started(state: State, sessionId: string, result: ApiResult<StartResponse>, now: number): State {
   const { phase } = state
   if (!inFlight(phase, 'preparing', sessionId)) return state
   if (!result.ok) {
-    if (result.error.kind === 'conflict') return state // D16: swallowed, the in-flight state continues
     if (result.error.kind === 'notFound') return expired(state)
+    // A plain 409 means useFlow's resends ran out while the first /start was still running
+    // (M6 H4; this replaces D16's "swallowed", which left the screen preparing for good).
+    if (result.error.kind === 'conflict') {
+      return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, notice: { kind: 'message', text: STILL_PREPARING_TEXT } } }
+    }
     return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, notice: noticeFor(result.error, now, !phase.auto) } }
   }
   const { panel, question, topic } = result.data
@@ -209,6 +225,23 @@ function answered(state: State, sessionId: string, result: ApiResult<AnswerRespo
   }
   const last: Turn = { question: defense.question, answer: defense.draft, evaluation }
   return { ...state, phase: { ...defense, kind: 'question', question: next_question, draft: '', last, notice: null } }
+}
+
+function resynced(state: State, sessionId: string, stale: ApiError, current: ApiResult<CurrentQuestion>, now: number): State {
+  const { phase } = state
+  if (!inFlight(phase, 'submitting', sessionId)) return state
+  const { auto: _auto, ...defense } = phase
+  if (!current.ok) {
+    // No way to the open question: show the stale refusal as before (E13).
+    if (current.error.kind === 'notFound') return expired(state)
+    return { ...state, phase: { ...defense, kind: 'question', notice: noticeFor(stale, now, false) } }
+  }
+  if (current.data.done) return { ...state, phase: { kind: 'finishing', sessionId, notice: null } }
+  const question = current.data.question
+  if (question === null) return { ...state, phase: { ...defense, kind: 'question', notice: noticeFor(stale, now, false) } }
+  // The typed text stays in the box; the last evaluation was for a question this screen never saw answered.
+  const notice: Notice = { kind: 'message', text: resyncedText(question.turn) }
+  return { ...state, phase: { ...defense, kind: 'question', question, last: null, notice } }
 }
 
 function reported(state: State, sessionId: string, result: ApiResult<ReportResponse>, now: number): State {
@@ -280,6 +313,8 @@ export function reducer(state: State, action: Action): State {
     }
     case 'answerFinished':
       return answered(state, action.sessionId, action.result, action.now)
+    case 'resynced':
+      return resynced(state, action.sessionId, action.stale, action.current, action.now)
 
     case 'reportRequested':
       if (phase.kind !== 'finishing') return state

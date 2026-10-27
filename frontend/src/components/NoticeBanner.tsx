@@ -5,10 +5,16 @@ import { moreAt } from '../lib/manilaTime'
 import type { Notice } from '../state/flow'
 import { Button } from './ui'
 
-function limitedText(code: LimitCode | null, resetsAt: number | null): string {
+/** The per-network limit comes from the 429 itself (M6 H6); an older server sends none. */
+function perIpText(limit: number | null): string {
+  if (limit === null) return "You've used this network's defenses for today."
+  return `You've used your ${limit} defense${limit === 1 ? '' : 's'} for today.`
+}
+
+function limitedText(code: LimitCode | null, limit: number | null, resetsAt: number | null): string {
   const reason =
     code === 'per_ip_limit'
-      ? "You've used your 3 defenses for today."
+      ? perIpText(limit)
       : code === 'daily_cap'
         ? "Today's defenses are all used."
         : 'No more defenses can start right now.' // no code, or one this build doesn't know
@@ -101,7 +107,7 @@ export function NoticeBanner({
         )
       break
     case 'limited':
-      body = <p>{limitedText(notice.code, notice.resetsAt)}</p>
+      body = <p>{limitedText(notice.code, notice.limit, notice.resetsAt)}</p>
       break
     case 'message':
       body = <p className="whitespace-pre-line">{notice.text}</p>

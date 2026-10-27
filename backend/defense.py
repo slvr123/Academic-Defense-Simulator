@@ -38,7 +38,7 @@ from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
-from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source
+from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
 from backend.sessions import Session
 
 logger = logging.getLogger("backend.defense")
@@ -98,6 +98,9 @@ class Defense:
     # becomes pending, never changed after, so /tts reads it without the turn lock.
     asked: dict[int, AskedQuestion] = field(default_factory=dict)
     last_answer: AnsweredTurn | None = None  # only the last; set under the turn lock
+    # The /start response as first sent, replayed to a resent /start until the first
+    # answer is in (M6 H4). Set under the turn lock.
+    start_response: StartResponse | None = None
     tts_calls: dict[int, int] = field(default_factory=dict)  # turn -> synth calls made
     tts_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -226,6 +229,13 @@ def _next_question(
         defense.other_subtype_line, defense.model, retriever=retriever,
     )
     return turn, tracker.source_for(turn, defense.encoder.take_query())
+
+
+def current_question(defense: Defense) -> QuestionOut | None:
+    """The open question, as it was sent; None when none is pending."""
+    if defense.pending is None or defense.pending_source is None:
+        return None
+    return question_out(defense.session, defense.pending, defense.pending_source)
 
 
 def panelist_out(session: DefenseSession, archetype_key: str) -> PanelistOut:

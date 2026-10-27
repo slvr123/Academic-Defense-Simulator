@@ -8,6 +8,10 @@ import { nextQuestion, report, startResponse } from './test/fixtures'
 import { advance, defaultServer, deferred, renderApp, startDefense, uploadAccepted } from './test/renderApp'
 import { fakeAudio, fakeSpeech, restoreObjectUrls, WAV } from './test/voiceFakes'
 
+// M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
+// needs more than vitest's 5 s default. No retries: a failing test still fails.
+vi.setConfig({ testTimeout: 15_000 })
+
 type User = ReturnType<typeof renderApp>
 
 const Q1 = 'How did you validate your survey instrument?'

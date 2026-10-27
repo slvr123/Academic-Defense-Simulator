@@ -6,6 +6,10 @@ import type { FakeServer, Reply } from './test/fakeServer'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
 import { advance, defaultServer, deferred, renderApp, startDefense, uploadAccepted } from './test/renderApp'
 
+// M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
+// needs more than vitest's 5 s default. No retries: a failing test still fails.
+vi.setConfig({ testTimeout: 15_000 })
+
 type User = ReturnType<typeof renderApp>
 
 const Q1 = 'How did you validate your survey instrument?'
@@ -69,12 +73,45 @@ describe('preparing (D16, /start in flight)', () => {
     ['daily_cap', "Today's defenses are all used."],
   ])('shows a %s 429 at start with a way to start over', async (code, text) => {
     const server = defenseServer()
-    server.on(START, { status: 429, body: { detail: 'x', code }, headers: { 'Retry-After': '3600' } })
+    server.on(START, { status: 429, body: { detail: 'x', code, limit: 3 }, headers: { 'Retry-After': '3600' } })
     const user = renderApp()
     await toReady(server, user)
     await startDefense(user)
     expect(await screen.findByText(new RegExp(`^${text.replace(/[.']/g, '.')} More at .+, Manila time\\.$`))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument()
+  })
+
+  it("uses the per-IP limit the 429 carries, not a fixed 3 (M6 H6)", async () => {
+    const server = defenseServer()
+    server.on(START, { status: 429, body: { detail: 'x', code: 'per_ip_limit', limit: 5 }, headers: { 'Retry-After': '3600' } })
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    expect(await screen.findByText(/^You've used your 5 defenses for today\./)).toBeInTheDocument()
+  })
+
+  it('resends a /start that met a 409 and opens the replayed first question (M6 H4)', async () => {
+    const server = defenseServer()
+    let starts = 0
+    server.on(START, () => (++starts === 1 ? { status: 409, body: { detail: 'still running' } } : { status: 200, body: startResponse }))
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    await advance(3000)
+    expect(await screen.findByText(Q1)).toBeInTheDocument()
+    expect(server.count(START)).toBe(2)
+  })
+
+  it('shows already_started as the server words it, and never resends it (M6 H4)', async () => {
+    const server = defenseServer()
+    const text = 'This defense has already started. Answer the current question instead.'
+    server.on(START, { status: 409, body: { detail: text, code: 'already_started' } })
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    expect(await screen.findByText(text)).toBeInTheDocument()
+    await advance(30_000)
+    expect(server.count(START)).toBe(1)
   })
 
   it('counts down a busy 503 on start and retries it once by itself', async () => {
@@ -177,10 +214,25 @@ describe('the answer loop', () => {
     ])
   })
 
-  it('shows a stale_question 409 as the server words it (E13)', async () => {
+  it('after a stale_question 409, moves to the open question and keeps the typed answer (M6 H5)', async () => {
+    const server = defenseServer()
+    server.on(ANSWERS, { status: 409, body: { detail: 'moved on', code: 'stale_question' } })
+    server.on('GET /sessions/abc/current', { status: 200, body: { done: false, question: nextQuestion.next_question } })
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answer(user, 'My typed answer')
+    expect(await screen.findByText(Q2)).toBeInTheDocument()
+    expect(screen.getByText("This answer was for an earlier question. You're now on question 2.")).toBeInTheDocument()
+    expect(screen.getByLabelText('Your answer')).toHaveValue('My typed answer')
+    await advance(30_000)
+    expect(server.count(ANSWERS)).toBe(1) // never resent
+  })
+
+  it("shows the stale_question 409 as the server words it when /current can't answer (E13)", async () => {
     const server = defenseServer()
     const text = "That answer is for a question that isn't open any more. The defense has moved on without it."
     server.on(ANSWERS, { status: 409, body: { detail: text, code: 'stale_question' } })
+    server.on('GET /sessions/abc/current', 'network')
     const user = renderApp()
     await toQuestion(server, user)
     await answer(user)

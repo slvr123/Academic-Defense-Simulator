@@ -9,7 +9,9 @@ takes it, so a voice playing never blocks an answer (M3b E5).
 
 Answers are idempotent when the client says which turn it answers (M3b E13): a
 resend of the turn just answered gets that turn's stored response again, with no
-re-scoring, and any other turn but the open one gets 409 `stale_question`.
+re-scoring, and any other turn but the open one gets 409 `stale_question`. /start
+is too (M6 H4): a resend before the first answer gets the original response, and
+after it 409 `already_started`. GET /current says where the defense is (M6 H5).
 
 Quota: /start reserves one slot for today (Pacific) before any Gemini call, and
 fails closed (503) if the store can't be reached. Nothing else touches it. A
@@ -32,6 +34,7 @@ from backend.client_ip import StartLimiter, client_ip
 from backend.defense import (
     AnsweredTurn,
     Defense,
+    current_question,
     Providers,
     ProvidersFactory,
     answer,
@@ -47,6 +50,7 @@ from backend.schemas import (
     AnswerRequest,
     AnswerResponse,
     ChunkCopy,
+    CurrentQuestion,
     ErrorBody,
     ReportResponse,
     StartResponse,
@@ -150,7 +154,9 @@ def register_defense_routes(
         day = pacific_day(now)
         if not limiter.take(day, ip):
             logger.info("per-ip limit reached ip=%s", ip)
-            raise quota_used_up(now, per_ip_message(settings.per_ip_daily_starts), "per_ip_limit")
+            raise quota_used_up(
+                now, per_ip_message(settings.per_ip_daily_starts), "per_ip_limit", limit=settings.per_ip_daily_starts
+            )
         try:
             reserved = app.state.quota.reserve(day, quota_plan.cap)
         except QuotaUnavailable as exc:
@@ -162,13 +168,21 @@ def register_defense_routes(
             raise quota_used_up(now)
         logger.info("quota reserved %d/%d for %s", reserved, quota_plan.cap, day)
 
-    @app.post("/sessions/{session_id}/start", response_model=StartResponse, responses={429: {"model": ErrorBody}})
+    @app.post(
+        "/sessions/{session_id}/start", response_model=StartResponse,
+        responses={409: {"model": ErrorBody}, 429: {"model": ErrorBody}},
+    )
     def start_defense(session_id: str, request: Request) -> StartResponse:
         session = ready_session(session_id)
         with _turn(session):
             defense = session.defense
             if defense is not None and (defense.pending is not None or defense.done):
-                raise HTTPException(409, ALREADY_STARTED_MESSAGE)
+                # A resend whose first response was lost (H4): the same body, no Gemini
+                # call and no second reservation, until an answer has gone in.
+                if defense.start_response is not None and not defense.session.turns and defense.last_answer is None:
+                    logger.info("start replayed session=%s", session_id)
+                    return defense.start_response
+                raise CodedHTTPException(409, ALREADY_STARTED_MESSAGE, "already_started")
             if defense is None:
                 domain_count = len(session.panel.domain_archetypes())
                 if len(session.chunks) < domain_count:
@@ -192,13 +206,28 @@ def register_defense_routes(
             except LLMProviderError as exc:
                 logger.warning("first question failed session=%s busy=%s: %s", session_id, is_panel_busy(exc), exc)
                 raise llm_failure(exc) from exc
-        profile = defense.session.profile
-        return StartResponse(
-            domain=profile.domain,
-            topic=profile.topic,
-            panel=[panelist_out(defense.session, p.archetype_key) for p in defense.session.panel],
-            question=question,
-        )
+            profile = defense.session.profile
+            defense.start_response = StartResponse(
+                domain=profile.domain,
+                topic=profile.topic,
+                panel=[panelist_out(defense.session, p.archetype_key) for p in defense.session.panel],
+                question=question,
+            )
+            return defense.start_response
+
+    @app.get("/sessions/{session_id}/current", response_model=CurrentQuestion, responses={409: {"model": ErrorBody}})
+    def get_current(session_id: str) -> CurrentQuestion:
+        """The open question, or done (M6 H5). Under the turn lock, so it never reads a
+        defense halfway through moving on; a turn in progress is 409, as elsewhere."""
+        session = ready_session(session_id)
+        with _turn(session):
+            defense = _started(session)
+            if defense.done:
+                return CurrentQuestion(done=True, question=None)
+            question = current_question(defense)
+            if question is None:  # the first question failed; /start asks it again
+                raise HTTPException(409, NOT_STARTED_MESSAGE)
+            return CurrentQuestion(done=False, question=question)
 
     @app.post("/sessions/{session_id}/answers", response_model=AnswerResponse, responses={409: {"model": ErrorBody}})
     def submit_answer(session_id: str, body: AnswerRequest) -> AnswerResponse:

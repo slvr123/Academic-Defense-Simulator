@@ -83,6 +83,7 @@ def test_the_fourth_start_from_one_ip_is_429(client_factory, quota_store, long_p
         other = _start_from(client, long_pdf, "198.51.100.1")
     assert fourth.status_code == 429 and fourth.json()["detail"] == per_ip_message(3)
     assert fourth.json()["code"] == "per_ip_limit"
+    assert fourth.json()["limit"] == 3  # M6 H6: the client's copy reads it from here
     assert "retry-after" in fourth.headers
     assert other.status_code == 200
     assert quota_store.used(DAY) == 4  # the refused start reserved nothing

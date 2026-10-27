@@ -116,6 +116,14 @@ class StartResponse(BaseModel):
     question: QuestionOut
 
 
+class CurrentQuestion(BaseModel):
+    """GET /sessions/{id}/current (M6 H5): where the defense is now, so a client whose
+    answer was refused as stale can move to the open question without reloading."""
+
+    done: bool
+    question: QuestionOut | None  # the open question; None once the defense is done
+
+
 class AnswerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -194,7 +202,8 @@ class SessionCreated(BaseModel):
 LimitCode = Literal["per_ip_limit", "daily_cap"]
 TtsErrorCode = Literal["tts_limit", "tts_failed", "tts_unavailable"]
 AnswerErrorCode = Literal["stale_question"]
-ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode]
+StartErrorCode = Literal["already_started"]
+ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode]
 IngestErrorCode = Literal["scanned_pdf"]
 
 
@@ -215,6 +224,7 @@ class ErrorBody(BaseModel):
 
     detail: str | list[dict[str, object]]
     code: ErrorCode | None = None
+    limit: int | None = None  # with per_ip_limit: the starts a network gets per day (M6 H6)
 
 
 class QuotaStatus(BaseModel):

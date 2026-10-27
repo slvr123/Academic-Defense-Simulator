@@ -11,7 +11,8 @@ import { type Draft, initialState, reducer, type State, type VoiceChoice } from 
 
 // M2 doesn't specify a poll interval; 2 s is D16's fallback.
 export const POLL_INTERVAL_MS = 2000
-// A resent answer that meets the first one still running gets 409: wait, resend (E13).
+// A resent answer or start that meets the first one still running gets 409: wait,
+// resend (E13; M6 H4 for /start).
 export const CONFLICT_RETRY_MS = 3000
 export const CONFLICT_RETRIES = 10
 
@@ -114,7 +115,13 @@ export function useFlow(): Flow {
       if (phase.kind !== 'ready') return
       const { sessionId } = phase
       dispatch({ type: 'startRequested', auto })
-      const result = await api.startDefense(sessionId)
+      let result = await api.startDefense(sessionId)
+      // A plain 409: the first /start is still running, or its response was lost and a
+      // resend met it. Once it's done, a resend gets its response replayed (M6 H4).
+      for (let tries = 0; !result.ok && result.error.kind === 'conflict' && tries < CONFLICT_RETRIES; tries++) {
+        await sleep(CONFLICT_RETRY_MS)
+        result = await api.startDefense(sessionId)
+      }
       dispatch({ type: 'startFinished', sessionId, result, now: Date.now() })
     })
 
@@ -135,6 +142,13 @@ export function useFlow(): Flow {
       for (let tries = 0; !result.ok && result.error.kind === 'conflict' && tries < CONFLICT_RETRIES; tries++) {
         await sleep(CONFLICT_RETRY_MS)
         result = await api.submitAnswer(sessionId, draft, question.turn)
+      }
+      if (!result.ok && result.error.kind === 'stale') {
+        // The defense moved on without this answer (another tab): find where it is (M6 H5).
+        const current = await api.getCurrent(sessionId)
+        dispatch({ type: 'resynced', sessionId, stale: result.error, current, now: Date.now() })
+        if (current.ok && current.data.done) await fetchReport(sessionId)
+        return
       }
       dispatch({ type: 'answerFinished', sessionId, result, now: Date.now() })
       if (result.ok && result.data.done) await fetchReport(sessionId)

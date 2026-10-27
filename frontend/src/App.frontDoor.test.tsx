@@ -5,6 +5,10 @@ import { pdf, quota } from './test/fixtures'
 import { advance, chooseFile, defaultServer, deferred, HEALTHY, renderApp, submitDocument, uploadAccepted } from './test/renderApp'
 import type { Reply } from './test/fakeServer'
 
+// M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
+// needs more than vitest's 5 s default. No retries: a failing test still fails.
+vi.setConfig({ testTimeout: 15_000 })
+
 describe('page load and quota (D15, D25)', () => {
   it('shows the config screen at once and the waking message only after an early submit', async () => {
     const server = defaultServer()
@@ -186,7 +190,7 @@ describe('upload errors (D16, D23, D24)', () => {
     await screen.findByText(/defenses left today/)
     await submitDocument(user)
     await act(async () =>
-      server.upload.current?.respond(429, { detail: 'any wording', code }, { 'Retry-After': String(2 * 3600) }),
+      server.upload.current?.respond(429, { detail: 'any wording', code, limit: 3 }, { 'Retry-After': String(2 * 3600) }),
     )
     expect(await screen.findByText(text)).toBeInTheDocument()
   })

@@ -174,12 +174,18 @@ def test_the_409s_around_a_defense(client_factory, quota_store, long_pdf):
         assert _answer(client, session_id).json()["detail"] == NOT_STARTED_MESSAGE
         assert client.get(f"/sessions/{session_id}/report").json()["detail"] == NOT_STARTED_MESSAGE
 
-        assert _start(client, session_id).status_code == 200
+        first = _start(client, session_id)
+        assert first.status_code == 200
+        # M6 H4: before any answer, a resent start replays the first response (it was lost).
         again = _start(client, session_id)
-        assert (again.status_code, again.json()["detail"]) == (409, ALREADY_STARTED_MESSAGE)
+        assert (again.status_code, again.json()) == (200, first.json())
         assert quota_store.used(TODAY) == 1  # the second start reserved nothing
         early = client.get(f"/sessions/{session_id}/report")
         assert (early.status_code, early.json()["detail"]) == (409, REPORT_NOT_READY_MESSAGE)
+
+        assert _answer(client, session_id).status_code == 200
+        late = _start(client, session_id)
+        assert (late.status_code, late.json()) == (409, {"detail": ALREADY_STARTED_MESSAGE, "code": "already_started"})
 
         _run_to_end(client, session_id)
         after = _answer(client, session_id)

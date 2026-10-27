@@ -1,8 +1,12 @@
 // The basic report (D13), reached through a whole defense against the scripted server.
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { lastAnswer, report, startResponse } from './test/fixtures'
 import { advance, defaultServer, renderApp, startDefense, uploadAccepted } from './test/renderApp'
+
+// M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
+// needs more than vitest's 5 s default. No retries: a failing test still fails.
+vi.setConfig({ testTimeout: 15_000 })
 
 async function toReport(body = report) {
   const server = defaultServer()

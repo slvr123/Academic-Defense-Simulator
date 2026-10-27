@@ -124,6 +124,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{session_id}/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Current
+         * @description The open question, or done (M6 H5). Under the turn lock, so it never reads a
+         *     defense halfway through moving on; a turn in progress is 409, as elsewhere.
+         */
+        get: operations["get_current_sessions__session_id__current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{session_id}/answers": {
         parameters: {
             query?: never;
@@ -221,6 +242,16 @@ export interface components {
             /** Icon */
             icon: string;
         };
+        /**
+         * CurrentQuestion
+         * @description GET /sessions/{id}/current (M6 H5): where the defense is now, so a client whose
+         *     answer was refused as stale can move to the open question without reloading.
+         */
+        CurrentQuestion: {
+            /** Done */
+            done: boolean;
+            question: components["schemas"]["QuestionOut"] | null;
+        };
         /** DefenseReport */
         DefenseReport: {
             /** Difficulty Trajectory */
@@ -267,7 +298,9 @@ export interface components {
                 [key: string]: unknown;
             }[];
             /** Code */
-            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question") | null;
+            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question" | "already_started") | null;
+            /** Limit */
+            limit?: number | null;
         };
         /**
          * Evaluation
@@ -766,6 +799,15 @@ export interface operations {
                     "application/json": components["schemas"]["StartResponse"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -782,6 +824,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_current_sessions__session_id__current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentQuestion"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
