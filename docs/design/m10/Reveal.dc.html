@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ADS reveal — source passage and your PDF</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&amp;family=Instrument+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1160px; box-sizing: border-box; background: {{t.bg}}; color: {{t.text}}; font-family: {{t.ui}}; font-size: 15px; padding: 0 2rem 3rem">
+<div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 18px 0; border-bottom: 1px solid {{t.line}}">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<span style="font-family: {{t.display}}; font-size: 20px; font-weight: 600; letter-spacing: -0.01em">Academic Defense Simulator</span>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">Wearable TDOA sound localization · Thesis defense</span>
+</div>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">Question 2 · Round 1 of 3</span>
+<div style="display: flex; gap: 8px">
+<button type="button" aria-pressed="true" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.accent}}; background: {{t.accentSoft}}; color: {{t.text}}; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Your document
+</button>
+<button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: {{t.muted}}; cursor: pointer">End session</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<main style="display: flex; flex-direction: column; gap: 18px; padding: 28px 32px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.line}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<span style="font-family: {{t.mono}}; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: {{t.accent}}">Dr. O'Sullivan asked</span>
+<ol aria-label="Turn progress" style="display: flex; flex-wrap: wrap; gap: 14px; margin: 0; padding: 0; list-style: none; font-family: {{t.mono}}; font-size: 12px">
+<li style="color: {{t.muted}}">✓ Asked</li>
+<li style="color: {{t.muted}}">✓ Answered</li>
+<li aria-current="step" style="display: flex; align-items: center; gap: 6px; color: {{t.accent}}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{t.accent}}"></span>Reviewing</li>
+<li style="color: {{t.faint}}">Handoff</li>
+</ol>
+</div>
+<p style="margin: 0; font-family: {{t.q}}; font-size: 19px; line-height: 1.5; font-weight: {{t.qWeight}}">Moving to your experimental methodology, you've set a strict 70 dB static threshold for ambient noise during testing. How does your system maintain this threshold without adaptive noise gating, and what is your plan for the spectral leakage from ambient signals just below that limit?</p>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 12px; background: {{t.inset}}; border: 1px solid {{t.line}}">
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">Your answer</span>
+<p style="margin: 0; font-size: 15.5px; line-height: 1.6">The 70 dB limit is a condition on the test room, not our only gate. Section 3.2.4 describes an adaptive noise floor, and an event has to clear both. Below 70 dB, the bandpass filter and GCC-PHAT's phase weighting do most of the work, but we haven't measured accuracy at different ambient levels yet.</p>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: {{t.muted}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Answer recorded. Scores stay sealed until the debrief.
+</div>
+</main>
+
+<aside aria-label="Source passage" style="display: flex; flex-direction: column; gap: 14px; padding: 24px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.accent}}">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+<span style="font-family: {{t.display}}; font-size: 19px; font-weight: 600">What Dr. O'Sullivan was reading</span>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">PDF pages 43–45 · match 0.41</span>
+</div>
+<article style="padding: 24px 26px; border-radius: 6px; background: {{t.paper}}; color: {{t.paperInk}}; border: 1px solid {{t.paperLine}}">
+<p style="margin: 0; font-family: {{t.paperFont}}; font-size: 15.5px; line-height: 1.7">…In this design, the independent variables are the azimuthal angle of the sound source, tested at 30-degree intervals across a full 360-degree range, and the radial distance of the sound source from the prototype. The controlled variables include the speed of sound in the test environment, the calibrated baseline distance between the lateral microphone pair, the intensity and type of the test sound stimulus, and the indoor ambient noise level, which <mark style="background: {{t.hl}}; color: {{t.paperInk}}; padding: 1px 2px; border-radius: 2px">must remain below the 70 dB static threshold established for the system.</mark></p>
+</article>
+<button type="button" style="align-self: flex-start; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid {{t.line}}; background: {{t.inset}}; color: {{t.text}}; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
+Open at page 43 in your PDF
+</button>
+</aside>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; background: {{t.idle}}; border: 1px solid {{t.line}}">
+<span aria-hidden="true" style="flex: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: {{t.mono}}; font-size: 12px; background: {{t.av2}}; color: {{t.avText}}">MÜ</span>
+<span style="font-size: 14px; color: {{t.muted}}">Dr. Müller is reading your objectives and scope…</span>
+</div>
+</div>
+
+<section aria-label="Your PDF" style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.line}}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-weight: 600">Your PDF</span>
+<div style="display: flex; align-items: center; gap: 4px">
+<button type="button" aria-label="Previous page" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">‹</button>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}; padding: 0 8px">p. 43 / 82</span>
+<button type="button" aria-label="Next page" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">›</button>
+<button type="button" aria-label="Close PDF" style="width: 40px; height: 40px; border-radius: 8px; border: 0; background: transparent; color: {{t.muted}}; cursor: pointer">✕</button>
+</div>
+</div>
+<div role="img" aria-label="Page 43 of your PDF, shown in your browser's PDF viewer" style="display: flex; flex-direction: column; gap: 9px; padding: 34px 30px; min-height: 560px; box-sizing: border-box; border-radius: 4px; background: #FFFFFF; border: 1px solid {{t.line}}">
+<div style="height: 9px; width: 55%; border-radius: 2px; background: #C9CBD1"></div>
+<div style="height: 6px; width: 100%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 97%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 99%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 92%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 98%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 60%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 10px"></div>
+<div style="height: 6px; width: 100%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 96%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 99%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 94%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 100%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 97%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 88%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 10px"></div>
+<div style="height: 6px; width: 100%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 95%; border-radius: 2px; background: #E1E2E6"></div>
+<div style="height: 6px; width: 72%; border-radius: 2px; background: #E1E2E6"></div>
+</div>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">Opened from your own file in this browser. Nothing is uploaded again.</span>
+</section>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scheme":{"editor":"enum","options":["bench","redpen","archive"],"default":"redpen"},"$preview":{"width":1440,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      bench: { bg: '#14120F', surface: '#1C1915', inset: '#16130F', line: '#37312A', text: '#EDE6D6', muted: '#ABA08C', faint: '#9C927F', accent: '#E3A75B', accentInk: '#1A140C', accentSoft: '#2A2219', idle: '#1A1714', display: 'Newsreader, serif', q: 'Newsreader, serif', qWeight: 400, ui: "'Instrument Sans', sans-serif", mono: "'IBM Plex Mono', monospace", paper: '#EFE7D6', paperInk: '#2A241C', paperLine: '#D9CFB9', paperFont: 'Newsreader, serif', hl: '#F0C27E', av2: '#3C4A3F', avText: '#EDE6D6' },
+      redpen: { bg: '#F3F3EF', surface: '#FFFFFF', inset: '#FAFAF8', line: '#D6D6CE', text: '#15171C', muted: '#53565E', faint: '#686B74', accent: '#2340B5', accentInk: '#FFFFFF', accentSoft: '#E9EDFA', idle: '#FFFFFF', display: "'Hanken Grotesk', sans-serif", q: "'Hanken Grotesk', sans-serif", qWeight: 500, ui: "'Hanken Grotesk', sans-serif", mono: "'IBM Plex Mono', monospace", paper: '#FFFFFF', paperInk: '#15171C', paperLine: '#D6D6CE', paperFont: 'Newsreader, serif', hl: '#FFE873', av2: '#D9E3DB', avText: '#15171C' },
+      archive: { bg: '#161514', surface: '#1F1E1C', inset: '#191817', line: '#3A3734', text: '#ECE8E1', muted: '#ABA59C', faint: '#948F87', accent: '#E8593F', accentInk: '#180B07', accentSoft: '#30201B', idle: '#1B1A19', display: "'Schibsted Grotesk', sans-serif", q: "'Schibsted Grotesk', sans-serif", qWeight: 500, ui: "'Schibsted Grotesk', sans-serif", mono: "'JetBrains Mono', monospace", paper: '#ECE8E1', paperInk: '#1F1E1C', paperLine: '#C9C3B8', paperFont: 'Newsreader, serif', hl: '#F5C4B8', av2: '#333B36', avText: '#ECE8E1' }
+    };
+    return { t: S[this.props.scheme] || S.redpen };
+  }
+}
+</script>
+</body>
+</html>

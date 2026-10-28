@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ADS session — asking</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&amp;family=Instrument+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit}
+textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1000px; box-sizing: border-box; background: {{t.bg}}; color: {{t.text}}; font-family: {{t.ui}}; font-size: 15px; padding: 0 2rem 3rem">
+<div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 18px 0; border-bottom: 1px solid {{t.line}}">
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span style="font-family: {{t.display}}; font-size: 20px; font-weight: 600; letter-spacing: -0.01em">Academic Defense Simulator</span>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">Wearable TDOA sound localization · Thesis defense</span>
+</div>
+<div aria-label="Progress" style="display: flex; align-items: center; gap: 12px; font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">
+<span>Question 2</span>
+<div aria-hidden="true" style="display: flex; gap: 5px">
+<span style="width: 18px; height: 4px; border-radius: 2px; background: {{t.text}}"></span>
+<span style="width: 18px; height: 4px; border-radius: 2px; background: {{t.accent}}"></span>
+<span style="width: 18px; height: 4px; border-radius: 2px; background: {{t.line}}"></span>
+<span style="width: 18px; height: 4px; border-radius: 2px; background: {{t.line}}"></span>
+</div>
+<span>Round 1 of 3</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<button type="button" aria-label="Voice: panel voice. Change voice" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.text}}; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
+Panel voice
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+</button>
+<button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.text}}; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Your document
+</button>
+<button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: {{t.muted}}; cursor: pointer">End session</button>
+</div>
+</header>
+
+<section aria-label="The panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px 16px; box-sizing: border-box; border-radius: 12px; border: 1px {{c.borderStyle}} {{c.border}}; background: {{c.bg}}">
+<span aria-hidden="true" style="flex: none; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: {{t.mono}}; font-size: 13px; font-weight: 500; background: {{c.avBg}}; color: {{c.avText}}">{{c.initials}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-weight: 600; font-size: 15px; color: {{c.nameColor}}">{{c.name}}</span>
+<span style="font-size: 12.5px; color: {{t.muted}}">{{c.role}}</span>
+</span>
+<span style="margin-left: auto; flex: none; display: flex; align-items: center; gap: 6px; font-family: {{t.mono}}; font-size: 12px; color: {{c.statusColor}}"><sc-if value="{{c.active}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{t.accent}}"></span></sc-if>{{c.status}}</span>
+</div>
+</sc-for>
+</section>
+
+<main style="display: flex; flex-direction: column; gap: 22px; padding: 32px 36px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.line}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<span style="font-family: {{t.mono}}; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: {{t.accent}}">Dr. O'Sullivan asks · <span style="color: {{t.muted}}; letter-spacing: 0.02em; text-transform: none">Methodology Expert</span></span>
+<ol aria-label="Turn progress" style="display: flex; flex-wrap: wrap; gap: 16px; margin: 0; padding: 0; list-style: none; font-family: {{t.mono}}; font-size: 12px">
+<li aria-current="step" style="display: flex; align-items: center; gap: 6px; color: {{t.accent}}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{t.accent}}"></span>Asking</li>
+<li style="color: {{t.faint}}">Your answer</li>
+<li style="color: {{t.faint}}">Reviewing</li>
+<li style="color: {{t.faint}}">Handoff</li>
+</ol>
+</div>
+
+<p style="margin: 0; max-width: 64ch; font-family: {{t.q}}; font-size: 26px; line-height: 1.45; font-weight: {{t.qWeight}}; letter-spacing: -0.005em">Moving to your experimental methodology, you've set a strict 70 dB static threshold for ambient noise during testing. Given that your TDOA framework relies on clear cross-correlation of signal onsets, how does your system maintain this threshold without adaptive noise gating, and what is your plan for the spectral leakage introduced by ambient signals just below that 70 dB limit?</p>
+
+<div style="display: flex; align-items: center; gap: 8px; font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Grounded in a passage from your document — revealed after you answer
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid {{t.line}}">
+<label for="answer" style="font-size: 13px; font-weight: 500; color: {{t.muted}}">Your answer</label>
+<textarea id="answer" rows="6" placeholder="Answer as you would in the room." style="width: 100%; box-sizing: border-box; resize: vertical; padding: 16px; border-radius: 12px; border: 1px solid {{t.line}}; background: {{t.inset}}; color: {{t.text}}; font-size: 16px; line-height: 1.55"></textarea>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: {{t.muted}}; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
+Transcript · 1 earlier turn
+</button>
+<div style="display: flex; align-items: center; gap: 16px">
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">0 words · Ctrl+Enter to send</span>
+<button type="button" style="min-height: 48px; padding: 0 26px; border-radius: 12px; border: 0; background: {{t.accent}}; color: {{t.accentInk}}; font-weight: 600; cursor: pointer">Send answer</button>
+</div>
+</div>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scheme":{"editor":"enum","options":["bench","redpen","archive"],"default":"redpen"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      bench: { bg: '#14120F', surface: '#1C1915', inset: '#16130F', line: '#37312A', text: '#EDE6D6', muted: '#ABA08C', faint: '#9C927F', accent: '#E3A75B', accentInk: '#1A140C', accentSoft: '#2A2219', idle: '#1A1714', display: 'Newsreader, serif', q: 'Newsreader, serif', qWeight: 400, ui: "'Instrument Sans', sans-serif", mono: "'IBM Plex Mono', monospace", av: ['#3D4452', '#5A4A2E', '#3C4A3F', '#4A3838'], avText: '#EDE6D6', dash: '#6B5A55' },
+      redpen: { bg: '#F3F3EF', surface: '#FFFFFF', inset: '#FAFAF8', line: '#D6D6CE', text: '#15171C', muted: '#53565E', faint: '#686B74', accent: '#2340B5', accentInk: '#FFFFFF', accentSoft: '#E9EDFA', idle: '#FFFFFF', display: "'Hanken Grotesk', sans-serif", q: "'Hanken Grotesk', sans-serif", qWeight: 500, ui: "'Hanken Grotesk', sans-serif", mono: "'IBM Plex Mono', monospace", av: ['#DCDEE5', '#E5E0D6', '#D9E3DB', '#EBDADA'], avText: '#15171C', dash: '#B3261E' },
+      archive: { bg: '#161514', surface: '#1F1E1C', inset: '#191817', line: '#3A3734', text: '#ECE8E1', muted: '#ABA59C', faint: '#948F87', accent: '#E8593F', accentInk: '#180B07', accentSoft: '#30201B', idle: '#1B1A19', display: "'Schibsted Grotesk', sans-serif", q: "'Schibsted Grotesk', sans-serif", qWeight: 500, ui: "'Schibsted Grotesk', sans-serif", mono: "'JetBrains Mono', monospace", av: ['#34383D', '#3D3A33', '#333B36', '#3E3433'], avText: '#ECE8E1', dash: '#E8593F' }
+    };
+    const t = S[this.props.scheme] || S.redpen;
+    const people = [
+      { name: 'Dr. Nguyen', role: 'Technical Implementation', initials: 'NG', status: 'Asked 1', state: 'done' },
+      { name: "Dr. O'Sullivan", role: 'Methodology Expert', initials: 'OS', status: 'Speaking', state: 'active' },
+      { name: 'Dr. Müller', role: 'Results & Conclusions', initials: 'MÜ', status: 'Up next', state: 'next' },
+      { name: 'Dr. Al-Farsi', role: "Devil's Advocate", initials: 'AF', status: 'Speaks last', state: 'da' }
+    ];
+    const cards = people.map((p, i) => {
+      const active = p.state === 'active';
+      return {
+        ...p,
+        active,
+        bg: active ? t.accentSoft : t.idle,
+        border: active ? t.accent : (p.state === 'da' ? t.dash : t.line),
+        borderStyle: p.state === 'da' ? 'dashed' : 'solid',
+        avBg: active ? t.accent : t.av[i],
+        avText: active ? t.accentInk : t.avText,
+        nameColor: active ? t.text : t.text,
+        statusColor: active ? t.accent : t.muted
+      };
+    });
+    return { t, cards };
+  }
+}
+</script>
+</body>
+</html>

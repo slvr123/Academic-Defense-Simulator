@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ADS start — upload and panel presets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&amp;family=Instrument+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1060px; box-sizing: border-box; background: {{t.bg}}; color: {{t.text}}; font-family: {{t.ui}}; font-size: 15px; padding: 0 2rem 3rem">
+<div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid {{t.line}}">
+<span style="font-family: {{t.display}}; font-size: 20px; font-weight: 600; letter-spacing: -0.01em">Academic Defense Simulator</span>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.muted}}">10 of 11 defenses left today</span>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+
+<section style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 22px; padding-top: 12px">
+<h1 style="margin: 0; font-family: {{t.display}}; font-size: 44px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em">Face a panel that has read your paper.</h1>
+<p style="margin: 0; max-width: 44ch; font-size: 17px; line-height: 1.6; color: {{t.muted}}">Upload your thesis or capstone. Each panelist questions you from your own pages, and after you answer you see the exact passage the question came from.</p>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 6px">
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">No paper handy?</span>
+<a href="#" style="display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 14px 18px; border-radius: 12px; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.text}}; text-decoration: none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"></path><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600">Read a recorded defense</span>
+<span style="font-size: 13px; color: {{t.muted}}">A full session on our sample capstone. Free, no upload.</span>
+</span>
+</a>
+<a href="#" style="display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 14px 18px; border-radius: 12px; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.text}}; text-decoration: none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600">Try it with the sample paper</span>
+<span style="font-size: 13px; color: {{t.muted}}">A live panel on the same capstone. Uses one of today's defenses.</span>
+</span>
+</a>
+</div>
+</section>
+
+<form style="flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 22px; padding: 28px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.line}}">
+
+<label for="pdf" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 150px; padding: 20px; box-sizing: border-box; border-radius: 12px; border: 1.5px dashed {{t.dropLine}}; background: {{t.inset}}; text-align: center; cursor: pointer">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{t.accent}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m6 10 6-6 6 6"></path><path d="M4 20h16"></path></svg>
+<span style="font-weight: 600">Drop your PDF here, or <span style="color: {{t.accent}}; text-decoration: underline; text-underline-offset: 3px">browse</span></span>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">PDF with selectable text · up to 30 MB · 250 pages</span>
+<input id="pdf" type="file" accept="application/pdf" style="position: absolute; width: 1px; height: 1px; opacity: 0">
+</label>
+
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+<legend style="padding: 0 0 10px; font-size: 13px; font-weight: 600; color: {{t.muted}}">Defense type</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{types}}" as="ty" hint-placeholder-count="3">
+<button type="button" onClick="{{ty.pick}}" aria-pressed="{{ty.pressed}}" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid {{ty.border}}; background: {{ty.bg}}; color: {{ty.color}}; font-weight: 500; cursor: pointer">{{ty.label}}</button>
+</sc-for>
+</div>
+</fieldset>
+
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 10px; font-size: 13px; font-weight: 600; color: {{t.muted}}">Panel</legend>
+<sc-for list="{{presets}}" as="p" hint-placeholder-count="5">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.pressed}}" style="display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 12px 16px; box-sizing: border-box; border-radius: 12px; border: 1px solid {{p.border}}; background: {{p.bg}}; color: {{t.text}}; text-align: left; cursor: pointer">
+<span aria-hidden="true" style="flex: none; width: 18px; height: 18px; border-radius: 50%; box-sizing: border-box; border: {{p.ring}}"></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-weight: 600">{{p.label}}</span>
+<span style="font-size: 13px; color: {{t.muted}}">{{p.members}}</span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{custom}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 10px 4px 4px">
+<sc-for list="{{archetypes}}" as="a" hint-placeholder-count="8">
+<label style="display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer"><input type="checkbox" checked="{{a.on}}" style="width: 18px; height: 18px; accent-color: {{t.accent}}">{{a.label}}</label>
+</sc-for>
+</div>
+<span style="font-family: {{t.mono}}; font-size: 12px; color: {{t.faint}}">Pick up to 3 · the Devil's Advocate always joins</span>
+</sc-if>
+<span style="font-size: 13px; color: {{t.faint}}; padding-top: 4px">Every panel also seats a Devil's Advocate, who speaks last.</span>
+</fieldset>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding-top: 6px; border-top: 1px solid {{t.line}}">
+<div style="display: flex; align-items: center; gap: 10px; padding-top: 14px">
+<span style="font-size: 13px; font-weight: 600; color: {{t.muted}}">Starting difficulty</span>
+<div role="group" aria-label="Starting difficulty" style="display: flex; gap: 4px">
+<button type="button" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">1</button>
+<button type="button" aria-pressed="true" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.accent}}; background: {{t.accentSoft}}; color: {{t.text}}; font-weight: 600; cursor: pointer">2</button>
+<button type="button" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">3</button>
+<button type="button" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">4</button>
+<button type="button" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.line}}; background: transparent; color: {{t.text}}; cursor: pointer">5</button>
+</div>
+</div>
+<button type="button" style="margin-top: 14px; min-height: 48px; padding: 0 26px; border-radius: 12px; border: 0; background: {{t.accent}}; color: {{t.accentInk}}; font-weight: 600; cursor: pointer">Convene the panel</button>
+</div>
+<button type="button" style="align-self: flex-start; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border: 0; background: transparent; color: {{t.muted}}; cursor: pointer">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+Optional: domain and research title (the panel reads them from your paper otherwise)
+</button>
+</form>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scheme":{"editor":"enum","options":["bench","redpen","archive"],"default":"redpen"},"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { type: 'thesis', preset: 'recommended' }; }
+  renderVals() {
+    const S = {
+      bench: { bg: '#14120F', surface: '#1C1915', inset: '#16130F', line: '#37312A', dropLine: '#6B5A45', text: '#EDE6D6', muted: '#ABA08C', faint: '#9C927F', accent: '#E3A75B', accentInk: '#1A140C', accentSoft: '#2A2219', display: 'Newsreader, serif', ui: "'Instrument Sans', sans-serif", mono: "'IBM Plex Mono', monospace" },
+      redpen: { bg: '#F3F3EF', surface: '#FFFFFF', inset: '#FAFAF8', line: '#D6D6CE', dropLine: '#8E93A3', text: '#15171C', muted: '#53565E', faint: '#686B74', accent: '#2340B5', accentInk: '#FFFFFF', accentSoft: '#E9EDFA', display: "'Hanken Grotesk', sans-serif", ui: "'Hanken Grotesk', sans-serif", mono: "'IBM Plex Mono', monospace" },
+      archive: { bg: '#161514', surface: '#1F1E1C', inset: '#191817', line: '#3A3734', dropLine: '#6E5A52', text: '#ECE8E1', muted: '#ABA59C', faint: '#948F87', accent: '#E8593F', accentInk: '#180B07', accentSoft: '#30201B', display: "'Schibsted Grotesk', sans-serif", ui: "'Schibsted Grotesk', sans-serif", mono: "'JetBrains Mono', monospace" }
+    };
+    const t = S[this.props.scheme] || S.redpen;
+    const recommended = {
+      thesis: 'Methodology · Literature & Theory · Problem & Objectives',
+      capstone: 'Technical Implementation · Methodology · Results & Conclusions',
+      other: 'Methodology · Problem & Objectives · Ethics & Practicality'
+    };
+    const typeLabel = { thesis: 'thesis', capstone: 'capstone', other: 'this defense' };
+    const types = [['thesis', 'Thesis'], ['capstone', 'Capstone'], ['other', 'Other']].map(([id, label]) => {
+      const on = this.state.type === id;
+      return { label, pressed: on ? 'true' : 'false', border: on ? t.accent : t.line, bg: on ? t.accentSoft : 'transparent', color: t.text, pick: () => this.setState({ type: id }) };
+    });
+    const list = [
+      ['recommended', 'Recommended for a ' + typeLabel[this.state.type], recommended[this.state.type]],
+      ['technical', 'Technical-heavy', 'Technical Implementation · Methodology · Statistical Analysis'],
+      ['research', 'Research-heavy', 'Literature & Theory · Problem & Objectives · Results & Conclusions'],
+      ['impact', 'Real-world impact', 'Industry Practice · Ethics & Practicality · Technical Implementation'],
+      ['custom', 'Custom', 'Choose up to three panelists yourself']
+    ];
+    const presets = list.map(([id, label, members]) => {
+      const on = this.state.preset === id;
+      return { label, members, pressed: on ? 'true' : 'false', border: on ? t.accent : t.line, bg: on ? t.accentSoft : 'transparent', ring: on ? ('5px solid ' + t.accent) : ('1.5px solid ' + t.faint), pick: () => this.setState({ preset: id }) };
+    });
+    const archetypes = ['Methodology Expert', 'Literature & Theory Specialist', 'Technical Implementation Reviewer', 'Results & Conclusions Reviewer', 'Statistical & Data Analysis Reviewer', 'Research Problem & Objectives Reviewer', 'Ethics & Practicality Reviewer', 'Industry & Professional Practice Reviewer'].map((label, i) => ({ label, on: i < 2 }));
+    return { t, types, presets, archetypes, custom: this.state.preset === 'custom' };
+  }
+}
+</script>
+</body>
+</html>
