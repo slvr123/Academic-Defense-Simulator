@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- M10 N12: the share image, 1200x630, in the Bench style. Rendered to
+     public/og-image.png (and the favicon PNGs from public/favicon.svg) by
+     scripts/render_identity.py; re-run it after changing this file. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Instrument+Sans:wght@500;600&family=IBM+Plex+Mono:wght@500&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      html, body { margin: 0; }
+      body {
+        width: 1200px;
+        height: 630px;
+        box-sizing: border-box;
+        padding: 72px 80px 64px;
+        background: #14120f;
+        color: #ede6d6;
+        font-family: "Instrument Sans", sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .mark { display: flex; align-items: center; gap: 18px; }
+      .mark svg { width: 56px; height: 56px; }
+      .wordmark { font-family: Newsreader, serif; font-size: 34px; font-weight: 600; letter-spacing: -0.01em; }
+      h1 { margin: 0; max-width: 17ch; font-family: Newsreader, serif; font-size: 82px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; }
+      .panel { display: flex; gap: 14px; }
+      .card {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #37312a;
+        background: #1a1714;
+        font-size: 18px;
+        font-weight: 600;
+        color: #c9c0ae;
+      }
+      .card img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #2e2923; }
+      .card.lit { border-color: #e3a75b; background: #2a2219; color: #ede6d6; }
+      .card.lit img { border-color: #e3a75b; }
+      .card.devil { border-style: dashed; border-color: #806a64; }
+    </style>
+  </head>
+  <body>
+    <div class="mark">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#1c1915" />
+        <path d="M37 13H22a4 4 0 0 0-4 4v30a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V22z" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round" />
+        <path d="M37 13v9h9" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round" />
+        <path d="M24 33h16M24 40h10" stroke="#EDE6D6" stroke-width="3.5" stroke-linecap="round" />
+      </svg>
+      <span class="wordmark">Academic Defense Simulator</span>
+    </div>
+    <h1>Face a panel that has read your paper.</h1>
+    <div class="panel">
+      <div class="card lit"><img src="../public/icons/engineer.png" alt="" />Methodology</div>
+      <div class="card"><img src="../public/icons/professor.png" alt="" />Problem &amp; Objectives</div>
+      <div class="card"><img src="../public/icons/scholar.png" alt="" />Results &amp; Conclusions</div>
+      <div class="card devil"><img src="../public/icons/researcher.png" alt="" />Devil's Advocate</div>
+    </div>
+  </body>
+</html>

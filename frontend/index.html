@@ -2,9 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/icons/professor.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academic Defense Simulator - Face a panel that has read your paper</title>
+    <meta name="description" content="Upload your thesis or capstone and defend it before an AI panel that questions you from your own pages, then shows the exact passage each question came from." />
     <meta name="theme-color" content="#14120F" />
+    <!-- M10 N12: favicon, and the share preview. %SITE_URL% is VITE_SITE_URL at build time (vite.config.ts). -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="%SITE_URL%/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Academic Defense Simulator" />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:title" content="Academic Defense Simulator" />
+    <meta property="og:description" content="Face a panel that has read your paper. AI panelists question you from your own pages, then show the passage each question came from." />
+    <meta property="og:image" content="%SITE_URL%/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Academic Defense Simulator: Face a panel that has read your paper." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Academic Defense Simulator" />
+    <meta name="twitter:description" content="Face a panel that has read your paper. AI panelists question you from your own pages, then show the passage each question came from." />
+    <meta name="twitter:image" content="%SITE_URL%/og-image.png" />
     <!-- The Bench type (M8 K6): Newsreader, Instrument Sans, IBM Plex Mono. index.css falls back to system fonts. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,7 +31,6 @@
       href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <title>Academic Defense Simulator</title>
   </head>
   <body>
     <div id="root"></div>

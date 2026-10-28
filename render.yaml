@@ -64,3 +64,6 @@ services:
       # Baked into the public JavaScript at build time: never a secret.
       - key: VITE_API_BASE_URL
         value: https://ads-backend-bv63.onrender.com
+      # M10 N12: the static site's own URL, for the absolute og:image and og:url in index.html.
+      - key: VITE_SITE_URL
+        value: https://ads-frontend-wpyc.onrender.com

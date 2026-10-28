@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- M10 N12: the Bench mark. Ground #14120F, accent #E3A75B (src/index.css tokens). -->
+  <rect width="64" height="64" rx="14" fill="#14120F"/>
+  <path d="M37 13H22a4 4 0 0 0-4 4v30a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V22z" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M37 13v9h9" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M24 33h16M24 40h10" stroke="#EDE6D6" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
