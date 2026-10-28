@@ -343,6 +343,17 @@ export interface components {
             tts_available: boolean;
         };
         /**
+         * Highlight
+         * @description Where the question's grounding_reference sits in Source.text, as UTF-16 code-unit
+         *     offsets (JavaScript's string indices), end exclusive (M8 K6).
+         */
+        Highlight: {
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+        };
+        /**
          * OtherSubtype
          * @enum {string}
          */
@@ -429,6 +440,8 @@ export interface components {
             difficulty: number;
             /** Sources */
             sources: components["schemas"]["Source"][];
+            /** Grounding Reference */
+            grounding_reference: string;
         };
         /**
          * QuotaStatus
@@ -454,6 +467,8 @@ export interface components {
             /** Topic */
             topic: string;
             report: components["schemas"]["DefenseReport"];
+            /** Overall Raw */
+            overall_raw: number;
             /** Transcript */
             transcript: components["schemas"]["TranscriptTurn"][];
         };
@@ -511,6 +526,7 @@ export interface components {
              * @enum {string}
              */
             origin: "new_topic" | "follow_up" | "devils_advocate";
+            highlight?: components["schemas"]["Highlight"] | null;
         };
         /** StartResponse */
         StartResponse: {
@@ -533,6 +549,8 @@ export interface components {
             difficulty: number;
             /** Sources */
             sources: components["schemas"]["Source"][];
+            /** Grounding Reference */
+            grounding_reference: string;
             /** Answer */
             answer: string;
             evaluation: components["schemas"]["Evaluation"];

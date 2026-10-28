@@ -2,11 +2,16 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-line bg-card p-4 sm:p-6 ${className}`}>{children}</section>
+  return <section className={`rounded-2xl border border-line-strong bg-card p-5 sm:p-8 ${className}`}>{children}</section>
 }
 
 export function Heading({ children }: { children: ReactNode }) {
-  return <h2 className="font-serif text-xl leading-snug">{children}</h2>
+  return <h2 className="font-serif text-2xl leading-snug font-medium">{children}</h2>
+}
+
+/** Small uppercase mono label, as the Bench design marks sections ("Dr. Reyes asks"). */
+export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <span className={`font-mono text-xs tracking-[0.12em] uppercase ${className}`}>{children}</span>
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' }
@@ -14,12 +19,12 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primar
 export function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
   const look =
     variant === 'primary'
-      ? 'bg-brand text-white hover:bg-brand/90 disabled:bg-muted/40'
-      : 'border border-line bg-card text-ink hover:bg-paper disabled:text-muted'
+      ? 'bg-accent font-semibold text-on-accent hover:bg-accent-hover disabled:bg-rail disabled:text-muted'
+      : 'border border-line-strong bg-card text-ink hover:border-accent disabled:text-subtle'
   return (
     <button
       type="button"
-      className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed ${look} ${className}`}
+      className={`min-h-11 rounded-xl px-5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed motion-reduce:transition-none ${look} ${className}`}
       {...props}
     />
   )
@@ -38,14 +43,24 @@ export function ProgressBar({ value, label }: { value: number; label: string }) 
         aria-valuenow={percent}
         className="h-2 w-full overflow-hidden rounded-full bg-line"
       >
-        <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-accent transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${percent}%` }} />
       </div>
-      <p className="mt-2 text-sm text-muted">{percent}%</p>
+      <p className="mt-2 font-mono text-xs text-muted">{percent}%</p>
     </div>
   )
 }
 
 /** A slow pulse that says "working" next to the words that say what. Never shown alone. */
 export function Working() {
-  return <span aria-hidden className="inline-block size-2.5 animate-pulse rounded-full bg-brand motion-reduce:animate-none" />
+  return <span aria-hidden className="inline-block size-2.5 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
+}
+
+/** The document icon the Bench design puts beside anything about the candidate's paper. */
+export function DocumentIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+      <path d="M14 3v6h6" />
+    </svg>
+  )
 }

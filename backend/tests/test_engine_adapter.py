@@ -99,7 +99,7 @@ def test_new_topic_turns_retrieve_the_best_unused_chunk_with_its_score_and_pages
     assert first.chunk_index == index
     assert first_source.model_dump() == {
         "text": defense.metas[index].text, "page_start": 2 * index + 1, "page_end": 2 * index + 2,
-        "score": pytest.approx(round(score, 4)), "origin": "new_topic",
+        "score": pytest.approx(round(score, 4)), "origin": "new_topic", "highlight": None,  # set later, by defense._next_question
     }
 
     defense.answer(first, strong=True)  # strong: the next panelist opens a new topic

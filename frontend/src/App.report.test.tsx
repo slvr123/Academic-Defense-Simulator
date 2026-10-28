@@ -1,4 +1,4 @@
-// The basic report (D13), reached through a whole defense against the scripted server.
+// The debrief (D13, M8 K8), reached through a whole defense against the scripted server.
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { lastAnswer, report, startResponse } from './test/fixtures'
@@ -19,32 +19,42 @@ async function toReport(body = report) {
   await advance(2000)
   await startDefense(user)
   await user.type(await screen.findByLabelText('Your answer'), 'We adapted ISO 25010.')
-  await user.click(screen.getByRole('button', { name: 'Send answer' }))
-  await screen.findByText('Your defense report')
+  await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+  await screen.findByText('Your debrief')
   return { server, user }
 }
 
 describe('the report', () => {
-  it('shows the averages on 100, the narrative, each panelist, suggestions and the transcript with sources', async () => {
+  it('leads with the backend’s overall_raw on 100, then the averages, the narrative and each panelist (M8 K8)', async () => {
     await toReport()
-    const overall = screen.getByText('Overall', { selector: 'h3' }).closest('section')
-    if (overall === null) throw new Error('no overall section')
-    // 3.5, 3, 4 -> 70, 60, 80, rescaled after averaging (v1.2.1)
-    expect(within(overall).getByText('70/100')).toBeInTheDocument()
+    const overall = screen.getByRole('region', { name: 'Overall' })
+    // overall_raw 3.5 -> 70; the averages 3.5, 3, 4 -> 70, 60, 80 (v1.2.1)
+    expect(within(overall).getByText('70', { exact: false, selector: 'p' })).toHaveTextContent('70/100')
+    expect(within(overall).getAllByText('70/100')).toHaveLength(1) // clarity; the headline's /100 is its own span
     expect(within(overall).getByText('60/100')).toBeInTheDocument()
     expect(within(overall).getByText('80/100')).toBeInTheDocument()
     expect(within(overall).getByText(/The scale floor is 20\./)).toBeInTheDocument()
     expect(screen.getByText('You grounded most answers in the document.')).toBeInTheDocument()
     expect(screen.getByText('· 1 turn(s)')).toBeInTheDocument()
-    expect(screen.getByText(/Report Cronbach’s alpha/)).toBeInTheDocument()
     expect(screen.getByText('No escalation moments this session')).toBeInTheDocument()
+  })
 
-    const transcript = screen.getByText('Transcript').closest('section')
-    if (transcript === null) throw new Error('no transcript')
+  it('gives each question a card: scores, answer, highlighted passage, the gap and a stronger answer (M8 K8)', async () => {
+    await toReport()
+    const cards = screen.getByRole('region', { name: 'Question by question' })
+    const card = within(cards).getByText('How did you validate your survey instrument?').closest('details')
+    if (card === null) throw new Error('no question card')
+    expect(card).toHaveAttribute('open') // the first card starts open
+    expect(within(card).getByText('73/100')).toBeInTheDocument() // this turn's overall: 11 / 3
+    expect(within(card).getByText('We adapted ISO 25010.')).toBeInTheDocument()
+    expect(within(card).getByText('adapted from ISO/IEC 25010', { selector: 'mark' })).toBeInTheDocument()
+    expect(within(card).getByText('PDF pages 12–13')).toBeInTheDocument()
+    expect(within(card).getByText('No reliability coefficient reported.')).toBeInTheDocument()
+    expect(within(card).getByText(/Report Cronbach’s alpha/)).toBeInTheDocument()
+
+    const transcript = screen.getByRole('region', { name: 'Full transcript' })
     expect(within(transcript).getByText('How did you validate your survey instrument?')).toBeInTheDocument()
     expect(within(transcript).getByText('We adapted ISO 25010.')).toBeInTheDocument()
-    expect(within(transcript).getByText(/Source passage for turn 1/)).toBeInTheDocument()
-    expect(within(transcript).getByText('PDF pages 12–13')).toBeInTheDocument()
   })
 
   it('says so when the narrative or suggestions fell back', async () => {

@@ -106,7 +106,7 @@ describe('panel voices (MiMo)', () => {
 
     act(() => audio.fire('playing'))
     expect(screen.getByText('Speaking')).toBeInTheDocument()
-    expect(speakingAvatars()).toBe(2) // the panel strip and the question card
+    expect(speakingAvatars()).toBe(1) // the lit seat on the bench (M8 K6)
 
     act(() => audio.fire('ended'))
     expect(screen.queryByText('Speaking')).not.toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('panel voices (MiMo)', () => {
     await vi.waitFor(() => expect(audio.plays).toEqual(['blob:clip-1']))
 
     await user.type(screen.getByLabelText('Your answer'), 'Thirty respondents.')
-    await user.click(screen.getByRole('button', { name: 'Send answer' }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
     await screen.findByText(Q2)
     await vi.waitFor(() => expect(audio.plays).toEqual(['blob:clip-1', 'blob:clip-2']))
     expect(audio.revoked).toContain('blob:clip-1')
@@ -147,8 +147,8 @@ describe('panel voices (MiMo)', () => {
     await toQuestion(server, user, /^Panel voices/)
 
     await user.type(screen.getByLabelText('Your answer'), 'Thirty respondents.')
-    await user.click(screen.getByRole('button', { name: 'Send answer' }))
-    expect(screen.getByText('The panel is weighing your answer.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    expect(screen.getByText('Dr. Reyes is reviewing your answer.')).toBeInTheDocument()
     await act(async () => clip.resolve(CLIP))
     await advance(2000)
     expect(audio.plays).toEqual([])
@@ -279,7 +279,7 @@ describe('panel voices in parts (M6 H9)', () => {
     await toQuestion(server, user, /^Panel voices/)
     await vi.waitFor(() => expect(audio.created).toHaveBeenCalledTimes(2)) // part 0, and part 1 prefetched
     await user.type(screen.getByLabelText('Your answer'), 'An answer.')
-    await user.click(screen.getByRole('button', { name: 'Send answer' }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
     await screen.findByText(Q2)
     await vi.waitFor(() => expect(audio.revoked).toEqual(expect.arrayContaining(['blob:clip-1', 'blob:clip-2'])))
   })

@@ -1,6 +1,7 @@
 """The frontend's copies of what the backend can send (M3 decisions D11): every icon
 name a panelist or /panel-options can carry has a file the static site serves, and
-every archetype has an accent. Fails on drift in either direction."""
+the frontend knows the Devil's Advocate by v1's key (M8 K6 retired the per-archetype
+accents). Fails on drift in either direction."""
 
 from __future__ import annotations
 
@@ -30,10 +31,13 @@ def test_the_static_icons_are_byte_identical_copies_of_v1s():
     assert v1 and static == v1
 
 
-def test_every_archetype_has_an_accent_in_the_frontend():
-    accents = (FRONTEND / "src" / "lib" / "accents.ts").read_text(encoding="utf-8")
-    missing = [key for key in ARCHETYPE_CONFIG if f"  {key}: {{" not in accents]
-    assert missing == []
+def test_the_frontend_knows_the_devils_advocate_by_v1s_key():
+    # M8 K6 retired the per-archetype accents (only the active panelist is lit); what the
+    # bench still needs per archetype is which plate is the Devil's Advocate's.
+    from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
+
+    panel = (FRONTEND / "src" / "lib" / "panel.ts").read_text(encoding="utf-8")
+    assert f"export const DEVILS_ADVOCATE_KEY = '{DEVILS_ADVOCATE_KEY}'" in panel
 
 
 def test_the_frontend_voice_map_is_v1s_voice_profiles_exactly():

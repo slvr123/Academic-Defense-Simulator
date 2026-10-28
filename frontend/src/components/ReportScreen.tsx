@@ -1,13 +1,15 @@
-// The basic report (D13): v1's report sections, as v1 renders them, plus the full
-// transcript with each turn's sources. The debrief-style rebuild comes later.
+// The debrief (M8 K8): the headline score, the three dimension averages, then one card
+// per question with the answer, the passage, the gap the panelist found and a stronger
+// answer. Every score of the defense is here and nowhere earlier (K7). v1's other
+// sections (narrative, per panelist, pushback) and the full transcript stay.
 import type { ReactNode } from 'react'
-import type { DefenseReport, PanelOptions, ReportResponse, TranscriptTurn } from '../api/types'
-import { accentFor } from '../lib/accents'
+import type { AnswerSuggestion, DefenseReport, PanelOptions, ReportResponse, TranscriptTurn } from '../api/types'
 import { PUSHBACK_OUTCOME_LABELS, panelistName } from '../lib/labels'
+import { SCALE_CAPTION, toHundred } from '../lib/scoreDisplay'
 import { Avatar } from './Avatar'
 import { EvaluationScores, ScaleCaption, ScoreRow } from './Scores'
-import { Sources } from './Sources'
-import { Button, Card, Heading } from './ui'
+import { SourcePassage } from './Sources'
+import { Button, Eyebrow } from './ui'
 
 type Seat = { title: string; icon: string }
 
@@ -22,48 +24,89 @@ function seats(transcript: TranscriptTurn[], options: PanelOptions | null): Map<
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card className="space-y-3">
-      <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">{title}</h3>
+    <section aria-label={title} className="space-y-4 rounded-2xl border border-line-strong bg-card p-5 sm:p-8">
+      <Eyebrow className="text-muted">{title}</Eyebrow>
       {children}
-    </Card>
+    </section>
   )
 }
 
-function Overview({ report }: { report: DefenseReport }) {
+function Headline({ report, overallRaw }: { report: DefenseReport; overallRaw: number }) {
   return (
-    <Section title="Overall">
+    <section aria-label="Overall" className="space-y-5 rounded-2xl border border-accent bg-card p-5 sm:p-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Eyebrow className="text-accent">Overall</Eyebrow>
+          <p className="font-serif text-6xl leading-none font-medium sm:text-7xl">
+            {toHundred(overallRaw)}
+            <span className="text-2xl text-muted sm:text-3xl">/100</span>
+          </p>
+        </div>
+        <p className="max-w-sm text-sm text-muted">The mean of your clarity, depth and grounding across every question.</p>
+      </div>
       <ScoreRow clarity={report.overall_avg_clarity} depth={report.overall_avg_depth} grounding={report.overall_avg_grounding} />
-      <ScaleCaption />
-      <p className="text-sm">
-        <span className="font-medium">Difficulty by turn: </span>
-        {report.difficulty_trajectory.join(' → ')}
-      </p>
-      <p className="leading-relaxed">
-        {report.narrative_fallback_used || !report.narrative ? 'Narrative unavailable this session' : report.narrative}
-      </p>
-    </Section>
+      <p className="text-xs text-muted">{SCALE_CAPTION}</p>
+    </section>
+  )
+}
+
+function Labelled({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-xs text-subtle">{label}</p>
+      {children}
+    </div>
+  )
+}
+
+function QuestionCard({ turn, suggestion, open }: { turn: TranscriptTurn; suggestion: AnswerSuggestion | undefined; open: boolean }) {
+  const gap = turn.evaluation.primary_gap
+  return (
+    <details open={open} className="group rounded-2xl border border-line-strong bg-card">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 p-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+        <Avatar icon={turn.panelist.icon} size="sm" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-mono text-xs text-muted">
+            Question {turn.turn} · {panelistName(turn.panelist.name)} · {turn.panelist.title}
+          </span>
+          <span className="block truncate font-serif text-base group-open:whitespace-normal">{turn.question}</span>
+        </span>
+        <span aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none">
+          ▾
+        </span>
+      </summary>
+      <div className="space-y-5 border-t border-line p-4 sm:p-6">
+        <EvaluationScores evaluation={turn.evaluation} />
+        <Labelled label="Your answer">
+          <p className="leading-relaxed whitespace-pre-line text-ink-dim">{turn.answer}</p>
+        </Labelled>
+        <Labelled label="The passage">
+          {turn.sources.map((source, i) => (
+            <SourcePassage key={i} source={source} />
+          ))}
+        </Labelled>
+        <Labelled label="The gap the panelist found">
+          <p className="leading-relaxed">{gap ?? 'No gap noted for this answer.'}</p>
+        </Labelled>
+        <Labelled label="A stronger answer">
+          <p className="leading-relaxed">{suggestion?.suggestion ?? 'No suggestion for this answer.'}</p>
+        </Labelled>
+      </div>
+    </details>
   )
 }
 
 function Transcript({ transcript }: { transcript: TranscriptTurn[] }) {
   return (
-    <Section title="Transcript">
+    <Section title="Full transcript">
       <ol className="space-y-6">
         {transcript.map((turn) => (
-          <li key={turn.turn} className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Avatar icon={turn.panelist.icon} archetypeKey={turn.panelist.archetype_key} size="sm" />
-              <p className="text-sm">
-                <span className="font-medium">{panelistName(turn.panelist.name)}</span>
-                <span className={accentFor(turn.panelist.archetype_key).text}> · {turn.panelist.title}</span>
-                <span className="text-muted"> · question {turn.turn}, difficulty {turn.difficulty}</span>
-              </p>
-            </div>
+          <li key={turn.turn} className="space-y-2">
+            <p className="font-mono text-xs text-muted">
+              {panelistName(turn.panelist.name)} · {turn.panelist.title} · question {turn.turn}, difficulty {turn.difficulty}
+            </p>
             <p className="font-serif leading-relaxed">{turn.question}</p>
-            <blockquote className="border-l-2 border-line pl-3 text-sm whitespace-pre-line">{turn.answer}</blockquote>
-            <EvaluationScores evaluation={turn.evaluation} />
-            {turn.evaluation.primary_gap && <p className="text-sm">What was missing: {turn.evaluation.primary_gap}</p>}
-            <Sources sources={turn.sources} />
+            <blockquote className="border-l-2 border-line-strong pl-3 text-sm whitespace-pre-line text-ink-dim">{turn.answer}</blockquote>
           </li>
         ))}
       </ol>
@@ -74,28 +117,47 @@ function Transcript({ transcript }: { transcript: TranscriptTurn[] }) {
 export function ReportScreen({ result, options, onRestart }: { result: ReportResponse; options: PanelOptions | null; onRestart: () => void }) {
   const { report, transcript } = result
   const byKey = seats(transcript, options)
+  const suggestions = report.suggestions_fallback_used ? [] : (report.answer_suggestions ?? [])
   return (
-    <div className="space-y-4">
-      <div>
-        <Heading>Your defense report</Heading>
-        <p className="text-sm text-muted">
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h2 className="font-serif text-3xl font-medium">Your debrief</h2>
+        <p className="font-mono text-xs text-muted">
           {result.topic} · {result.domain}
         </p>
       </div>
 
-      <Overview report={report} />
+      <Headline report={report} overallRaw={result.overall_raw} />
+
+      <Section title="The panel's view">
+        <p className="font-serif text-lg leading-relaxed">
+          {report.narrative_fallback_used || !report.narrative ? 'Narrative unavailable this session' : report.narrative}
+        </p>
+        <p className="text-sm text-muted">
+          <span className="font-medium text-ink">Difficulty by turn: </span>
+          {report.difficulty_trajectory.join(' → ')}
+        </p>
+      </Section>
+
+      <section aria-label="Question by question" className="space-y-3">
+        <Eyebrow className="text-muted">Question by question</Eyebrow>
+        {report.suggestions_fallback_used && <p className="text-sm text-muted">Suggestions unavailable this session</p>}
+        {transcript.map((turn, i) => (
+          <QuestionCard key={turn.turn} turn={turn} suggestion={suggestions.find((s) => s.turn_index === turn.turn - 1)} open={i === 0} />
+        ))}
+      </section>
 
       <Section title="Per panelist">
-        <ul className="space-y-4">
+        <ul className="space-y-5">
           {report.panelist_sections.map((section) => {
             const seat = byKey.get(section.archetype_key)
             return (
               <li key={section.archetype_key} className="space-y-2">
                 <div className="flex items-center gap-3">
-                  {seat && <Avatar icon={seat.icon} archetypeKey={section.archetype_key} size="sm" />}
+                  {seat && <Avatar icon={seat.icon} size="sm" />}
                   <p className="text-sm">
                     <span className="font-medium">{panelistName(section.panelist_name)}</span>
-                    {seat && <span className={accentFor(section.archetype_key).text}> · {seat.title}</span>}
+                    {seat && <span className="text-muted"> · {seat.title}</span>}
                     <span className="text-muted"> · {section.turns_taken} turn(s)</span>
                   </p>
                 </div>
@@ -113,6 +175,7 @@ export function ReportScreen({ result, options, onRestart }: { result: ReportRes
             )
           })}
         </ul>
+        <ScaleCaption />
       </Section>
 
       <Section title="Pushback events">
@@ -124,22 +187,6 @@ export function ReportScreen({ result, options, onRestart }: { result: ReportRes
               <li key={event.turn_index}>
                 Turn {event.turn_index + 1}: difficulty {event.difficulty_from} → {event.difficulty_to},{' '}
                 {PUSHBACK_OUTCOME_LABELS[event.outcome]}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      <Section title="Answer suggestions">
-        {report.suggestions_fallback_used ? (
-          <p className="text-sm">Suggestions unavailable this session</p>
-        ) : !report.answer_suggestions?.length ? (
-          <p className="text-sm">No suggestions for this session</p>
-        ) : (
-          <ul className="space-y-2 text-sm">
-            {report.answer_suggestions.map((s) => (
-              <li key={s.turn_index}>
-                <span className="font-medium">Turn {s.turn_index + 1}:</span> {s.suggestion}
               </li>
             ))}
           </ul>

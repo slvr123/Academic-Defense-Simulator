@@ -30,6 +30,7 @@ from academic_defense_simulator.engine import (
     session_is_complete,
 )
 from academic_defense_simulator.llm.provider import CallCounter, LLMProvider
+from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.panel import compose_full_roster, generate_panel
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
@@ -37,6 +38,7 @@ from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
+from backend.highlight import highlight_span
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
 from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
 from backend.sessions import Session
@@ -238,7 +240,8 @@ def _next_question(
         defense.providers.defense, session, defense.chunks, defense.encoder, panelist,
         defense.other_subtype_line, defense.model, retriever=retriever,
     )
-    return turn, tracker.source_for(turn, defense.encoder.take_query())
+    source = tracker.source_for(turn, defense.encoder.take_query())
+    return turn, source.model_copy(update={"highlight": highlight_span(turn.grounding_reference, source.text)})
 
 
 def current_question(defense: Defense) -> QuestionOut | None:
@@ -265,7 +268,16 @@ def question_out(session: DefenseSession, turn: ConversationTurn, source: Source
         question=turn.question,
         difficulty=turn.difficulty_level,
         sources=[source],
+        grounding_reference=turn.grounding_reference,
     )
+
+
+def overall_raw(report: DefenseReport) -> float:
+    """M8 K8's headline: the mean of the three dimension averages, on v1's 1-5 scale.
+    Computed here, not in the client, so the number in the report is one the backend
+    owns and tests; the client only rescales it to 100 (scoreDisplay), as for every
+    other score."""
+    return (report.overall_avg_clarity + report.overall_avg_depth + report.overall_avg_grounding) / 3
 
 
 def evaluation_out(turn: ConversationTurn) -> Evaluation:

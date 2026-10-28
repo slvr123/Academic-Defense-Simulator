@@ -48,21 +48,30 @@ export const panelOptions: PanelOptions = {
 export const reyes: PanelistOut = { archetype_key: 'methodology_expert', name: 'Reyes', title: 'Methodology Expert', icon: 'engineer' }
 export const santos: PanelistOut = { archetype_key: 'devils_advocate', name: 'Santos', title: "Devil's Advocate", icon: 'researcher' }
 
-export const question = (turn: number, text: string, panelist: PanelistOut = reyes): QuestionOut => ({
-  turn,
-  panelist,
-  question: text,
-  difficulty: 2,
-  sources: [
-    {
-      text: `Source passage for turn ${turn}: the instrument was adapted from ISO/IEC 25010.`,
-      page_start: 12,
-      page_end: 13,
-      score: 0.8123,
-      origin: 'new_topic',
-    },
-  ],
-})
+// The question's grounding_reference, which the backend highlights in its passage (M8 K6).
+export const GROUNDING_REFERENCE = 'adapted from ISO/IEC 25010'
+
+export const question = (turn: number, text: string, panelist: PanelistOut = reyes): QuestionOut => {
+  const passage = `Source passage for turn ${turn}: the instrument was adapted from ISO/IEC 25010.`
+  const start = passage.indexOf(GROUNDING_REFERENCE)
+  return {
+    turn,
+    panelist,
+    question: text,
+    difficulty: 2,
+    sources: [
+      {
+        text: passage,
+        page_start: 12,
+        page_end: 13,
+        score: 0.8123,
+        origin: 'new_topic',
+        highlight: { start, end: start + GROUNDING_REFERENCE.length },
+      },
+    ],
+    grounding_reference: GROUNDING_REFERENCE,
+  }
+}
 
 export const startResponse: StartResponse = {
   domain: 'Information Technology',
@@ -116,6 +125,7 @@ export const report: ReportResponse = {
     ],
     suggestions_fallback_used: false,
   },
+  overall_raw: 3.5, // (3.5 + 3 + 4) / 3
   transcript: [
     {
       turn: 1,
@@ -123,6 +133,7 @@ export const report: ReportResponse = {
       question: 'How did you validate your survey instrument?',
       difficulty: 2,
       sources: question(1, '').sources,
+      grounding_reference: GROUNDING_REFERENCE,
       answer: 'We adapted ISO 25010.',
       evaluation,
     },

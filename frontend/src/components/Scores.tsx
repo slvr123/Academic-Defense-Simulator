@@ -1,5 +1,5 @@
 // Scores arrive on v1's 1-5 scale and show on 100 (D17, v1.2.1), always with the
-// caption that says what the 100 means.
+// caption that says what the 100 means. Shown only in the report (M8 K7).
 import type { Evaluation } from '../api/types'
 import { SCALE_CAPTION, toHundred, turnOverall } from '../lib/scoreDisplay'
 
@@ -12,15 +12,15 @@ export function ScoreRow({ clarity, depth, grounding, overall }: { clarity: numb
   return (
     <dl className="grid grid-cols-3 gap-2 text-center sm:grid-cols-4">
       {overall !== undefined && (
-        <div className="col-span-3 rounded-lg bg-brand-soft p-2 sm:col-span-1">
-          <dt className="text-xs text-brand">Overall</dt>
-          <dd className="text-lg font-semibold text-brand">{toHundred(overall)}/100</dd>
+        <div className="col-span-3 rounded-xl border border-accent bg-accent-soft p-2 sm:col-span-1">
+          <dt className="font-mono text-xs text-accent">Overall</dt>
+          <dd className="font-serif text-xl font-medium text-ink">{toHundred(overall)}/100</dd>
         </div>
       )}
       {cells.map(([name, value]) => (
-        <div key={name} className="rounded-lg bg-paper p-2">
-          <dt className="text-xs text-muted">{name}</dt>
-          <dd className="text-lg font-semibold">{toHundred(value)}/100</dd>
+        <div key={name} className="rounded-xl border border-line bg-field p-2">
+          <dt className="font-mono text-xs text-muted">{name}</dt>
+          <dd className="font-serif text-xl font-medium">{toHundred(value)}/100</dd>
         </div>
       ))}
     </dl>

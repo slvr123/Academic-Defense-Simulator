@@ -22,7 +22,7 @@ type Props = {
   onSubmit: () => void
 }
 
-const fieldClass = 'mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-base focus:border-brand focus:outline-none'
+const fieldClass = 'mt-1 w-full rounded-lg border border-line-strong bg-field px-3 py-2 text-base focus:border-accent focus:outline-none'
 
 export function ConfigScreen({ draft, options, quota, notice, onChange, onSubmit }: Props) {
   const { panel, file } = draft
@@ -46,7 +46,7 @@ export function ConfigScreen({ draft, options, quota, notice, onChange, onSubmit
           id={ids.file}
           type="file"
           accept="application/pdf,.pdf"
-          className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-soft file:px-3 file:py-2 file:text-brand"
+          className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:py-2 file:text-accent file:font-medium"
           onChange={(event) => onChange({ file: event.target.files?.[0] ?? null })}
         />
         {file && (
@@ -63,7 +63,7 @@ export function ConfigScreen({ draft, options, quota, notice, onChange, onSubmit
             {DEFENSE_TYPES.map((type) => (
               <label
                 key={type}
-                className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-sm has-checked:border-brand has-checked:bg-brand-soft has-checked:text-brand"
+                className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-sm has-checked:border-accent has-checked:bg-accent-soft has-checked:text-accent"
               >
                 <input
                   type="radio"
@@ -142,7 +142,7 @@ export function ConfigScreen({ draft, options, quota, notice, onChange, onSubmit
             {range(PANEL.starting_difficulty.minimum, PANEL.starting_difficulty.maximum).map((level) => (
               <label
                 key={level}
-                className="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-line text-sm has-checked:border-brand has-checked:bg-brand-soft has-checked:text-brand"
+                className="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-line text-sm has-checked:border-accent has-checked:bg-accent-soft has-checked:text-accent"
               >
                 <input
                   type="radio"
@@ -199,15 +199,15 @@ function PanelPicker({ options, draft, onChange }: { options: PanelOptions | nul
           const full = !checked && seated.length >= options.max_domain_panelists
           return (
             <li key={archetype.archetype_key}>
-              <label className={`flex items-center gap-3 rounded-lg border p-2 ${checked ? 'border-brand bg-brand-soft' : 'border-line'} ${full ? 'opacity-50' : 'cursor-pointer'}`}>
+              <label className={`flex items-center gap-3 rounded-lg border p-2 ${checked ? 'border-accent bg-accent-soft' : 'border-line'} ${full ? 'opacity-50' : 'cursor-pointer'}`}>
                 <input
                   type="checkbox"
                   checked={checked}
                   disabled={full || (checked && seated.length === 1)}
                   onChange={() => onChange({ ...panel, archetype_keys: toggleArchetype(options, panel, archetype.archetype_key) })}
-                  className="size-4 accent-brand"
+                  className="size-4 accent-accent"
                 />
-                <Avatar icon={archetype.icon} archetypeKey={archetype.archetype_key} size="sm" />
+                <Avatar icon={archetype.icon} size="sm" dimmed={!checked} />
                 <span className="text-sm">{archetype.title}</span>
               </label>
             </li>
@@ -215,7 +215,7 @@ function PanelPicker({ options, draft, onChange }: { options: PanelOptions | nul
         })}
         <li className="flex items-center gap-3 rounded-lg border border-dashed border-line p-2 text-sm text-muted">
           <input type="checkbox" checked disabled className="size-4" aria-label={`${options.devils_advocate.title} always sits`} />
-          <Avatar icon={options.devils_advocate.icon} archetypeKey={options.devils_advocate.archetype_key} size="sm" />
+          <Avatar icon={options.devils_advocate.icon} size="sm" />
           <span>{options.devils_advocate.title}, always on the panel</span>
         </li>
       </ul>

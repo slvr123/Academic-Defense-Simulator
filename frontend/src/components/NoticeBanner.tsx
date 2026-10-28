@@ -61,8 +61,8 @@ export function NoticeBanner({
 }: Props) {
   const tone =
     notice.kind === 'limited' || notice.kind === 'message'
-      ? 'border-danger/30 bg-danger-soft'
-      : 'border-warn/30 bg-warn-soft'
+      ? 'border-danger/40 bg-danger-soft text-ink'
+      : 'border-warn/40 bg-warn-soft text-ink'
   const retry = onRetry && (
     <Button variant="secondary" onClick={onRetry} className="mt-3">
       {retryLabel}

@@ -4,6 +4,7 @@ import type { components } from './schema.gen'
 
 type Schemas = components['schemas']
 
+export type AnswerSuggestion = Schemas['AnswerSuggestion']
 export type ArchetypeOption = Schemas['ArchetypeOption']
 export type DefenseReport = Schemas['DefenseReport']
 export type DefenseType = Schemas['DefenseType']

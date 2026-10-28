@@ -40,6 +40,7 @@ from backend.defense import (
     answer,
     ask,
     evaluation_out,
+    overall_raw,
     panelist_out,
     setup_defense,
 )
@@ -323,6 +324,7 @@ def register_defense_routes(
             domain=state.profile.domain,
             topic=state.profile.topic,
             report=state.report,
+            overall_raw=overall_raw(state.report),
             transcript=[
                 TranscriptTurn(
                     turn=i + 1,
@@ -330,6 +332,7 @@ def register_defense_routes(
                     question=turn.question,
                     difficulty=turn.difficulty_level,
                     sources=[source],
+                    grounding_reference=turn.grounding_reference,
                     answer=turn.answer or "",
                     evaluation=evaluation_out(turn),
                 )

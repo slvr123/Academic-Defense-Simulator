@@ -82,6 +82,14 @@ class PanelConfig(BaseModel):
         )
 
 
+class Highlight(BaseModel):
+    """Where the question's grounding_reference sits in Source.text, as UTF-16 code-unit
+    offsets (JavaScript's string indices), end exclusive (M8 K6)."""
+
+    start: int
+    end: int
+
+
 class Source(BaseModel):
     """The document passage a question was grounded in. Pages are 1-based, as a PDF
     viewer numbers them. `score` is the cosine similarity that retrieved the chunk;
@@ -93,6 +101,8 @@ class Source(BaseModel):
     page_end: int
     score: float
     origin: Literal["new_topic", "follow_up", "devils_advocate"]
+    # The question's grounding_reference in `text`, when v1's grounding check accepts it (M8 K6).
+    highlight: Highlight | None = None
 
 
 class PanelistOut(BaseModel):
@@ -108,6 +118,7 @@ class QuestionOut(BaseModel):
     question: str
     difficulty: int  # 1-5
     sources: list[Source]  # top-1 retrieval, as in v1
+    grounding_reference: str  # the words the question was grounded in (M8 K6); shown only after answering
 
 
 class StartResponse(BaseModel):
@@ -166,6 +177,7 @@ class TranscriptTurn(BaseModel):
     question: str
     difficulty: int
     sources: list[Source]
+    grounding_reference: str
     answer: str
     evaluation: Evaluation
 
@@ -174,6 +186,9 @@ class ReportResponse(BaseModel):
     domain: str
     topic: str
     report: DefenseReport  # v1's report: averages, per-panelist sections, pushback, narrative, suggestions
+    # M8 K8: the mean of the report's three dimension averages, on v1's 1-5 scale;
+    # the client rescales it for display like every other score.
+    overall_raw: float
     transcript: list[TranscriptTurn]
 
 

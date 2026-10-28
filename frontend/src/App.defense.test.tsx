@@ -42,7 +42,7 @@ async function toQuestion(server: FakeServer, user: User) {
 
 async function answer(user: User, text = 'We adapted ISO 25010.') {
   await user.type(screen.getByLabelText('Your answer'), text)
-  await user.click(screen.getByRole('button', { name: 'Send answer' }))
+  await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 }
 
 describe('preparing (D16, /start in flight)', () => {
@@ -56,9 +56,10 @@ describe('preparing (D16, /start in flight)', () => {
 
     expect(screen.getByText('The panel is preparing. They are reading your document.')).toBeInTheDocument()
     expect(screen.getByText('This usually takes 30–60 seconds.')).toBeInTheDocument() // measured (M7 J6)
-    const seats = screen.getByRole('list', { name: 'Seated panel' })
-    expect(within(seats).getByText('Methodology Expert')).toBeInTheDocument()
-    expect(within(seats).getByText("Devil's Advocate")).toBeInTheDocument()
+    const bench = screen.getByRole('region', { name: 'The panel' })
+    expect(within(bench).getAllByText('Methodology Expert').length).toBeGreaterThan(0)
+    expect(within(bench).getAllByText("Devil's Advocate").length).toBeGreaterThan(0)
+    expect(within(bench).getAllByText('Preparing').length).toBe(4) // every seat (3 + Devil's Advocate) gets ready, nobody lit
 
     await advance(8000)
     expect(screen.getByText('The panel is preparing. Each panelist is choosing what to press you on.')).toBeInTheDocument()
@@ -130,25 +131,25 @@ describe('preparing (D16, /start in flight)', () => {
 })
 
 describe('the answer loop', () => {
-  it('holds the open question’s source back, then reveals it with the 100-point scores after the answer (D17, D18)', async () => {
+  it('holds the open question’s source back, then reveals it with its highlight and no scores after the answer (D18, M8 K6, K7)', async () => {
     const server = defenseServer()
     const user = renderApp()
     await toQuestion(server, user)
-    expect(screen.queryByText(SOURCE_1)).not.toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(SOURCE_1) // the passage is split around its highlight, so match on text content
 
     await answer(user)
     expect(await screen.findByText(Q2)).toBeInTheDocument()
-    expect(screen.getByText(SOURCE_1)).toBeInTheDocument()
+    expect(document.body).toHaveTextContent(SOURCE_1)
     expect(screen.getByText('PDF pages 12–13')).toBeInTheDocument()
-    expect(screen.queryByText(SOURCE_2)).not.toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(SOURCE_2)
 
-    // clarity 4, depth 3, grounding 4 -> 80, 60, 80; overall 11 / 3 -> 73
-    const scores = screen.getByText(/How the panel scored your answer to question 1/).closest('section')
-    if (scores === null) throw new Error('no score card')
-    expect(within(scores).getAllByText('80/100')).toHaveLength(2)
-    expect(within(scores).getByText('60/100')).toBeInTheDocument()
-    expect(within(scores).getByText('73/100')).toBeInTheDocument()
-    expect(within(scores).getByText(/The scale floor is 20\./)).toBeInTheDocument()
+    const reveal = screen.getByRole('complementary', { name: 'Source passage' })
+    expect(within(reveal).getByText('What Dr. Reyes was reading')).toBeInTheDocument()
+    expect(within(reveal).getByText('adapted from ISO/IEC 25010', { selector: 'mark' })).toBeInTheDocument()
+    expect(within(reveal).getByText('Answer recorded. Scores stay sealed until the debrief.')).toBeInTheDocument()
+    // K7: the evaluation came back (80, 60, 80; 73 overall) but no score is on screen.
+    expect(screen.queryByText(/\/100/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/scale floor/)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Your answer')).toHaveValue('')
   })
 
@@ -160,13 +161,16 @@ describe('the answer loop', () => {
     await toQuestion(server, user)
     await answer(user)
 
-    expect(screen.getByText('The panel is weighing your answer.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Send answer' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Your answer')).toHaveAttribute('readonly')
+    expect(screen.getByText('Dr. Reyes is reviewing your answer.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Submit answer' })).not.toBeInTheDocument()
+    // The answer box gives way to the answer as sent while the panel reviews it.
+    expect(screen.queryByLabelText('Your answer')).not.toBeInTheDocument()
+    expect(screen.getByText('We adapted ISO 25010.')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Turn progress' })).toHaveTextContent('Reviewing')
 
     server.on(ANSWERS, { status: 200, body: nextQuestion })
     await act(async () => reply.resolve({ status: 409, body: { detail: 'The panel is still working on this session.' } }))
-    expect(screen.getByText('The panel is weighing your answer.')).toBeInTheDocument()
+    expect(screen.getByText('Dr. Reyes is reviewing your answer.')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(server.count(ANSWERS)).toBe(1)
     await advance(3000)

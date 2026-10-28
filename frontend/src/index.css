@@ -1,51 +1,140 @@
 @import "tailwindcss";
 
-/* Design tokens (D7). Each --color-* here becomes utilities such as bg-ink or
-   text-accent-methodology; components use these, never one-off hex values. */
+/* Design tokens: the Bench design (docs/design/bench/, M8 K6), replacing M3 D7's light
+   palette. Each --color-* here becomes utilities such as bg-card or text-muted;
+   components use these, never one-off hex values. Every text/background pair in use
+   passes WCAG AA (docs/v2.0-m8-results.md lists the ratios and the shades changed). */
 @theme {
-  /* System fonts only: nothing to download on a slow connection. */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: ui-serif, Georgia, "Times New Roman", serif;
+  /* Loaded from Google Fonts in index.html, with system fallbacks while they arrive. */
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: Newsreader, ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-  --color-paper: #f7f5f0;
-  --color-card: #ffffff;
-  --color-ink: #1d1b18;
-  --color-muted: #6b665e;
-  --color-line: #e2ddd3;
-  --color-brand: #7a1f2b;
-  --color-brand-soft: #f3e4e6;
-  --color-warn: #8a5a00;
-  --color-warn-soft: #fbf1dc;
-  --color-danger: #a12c2c;
-  --color-danger-soft: #fbe6e6;
-  --color-ok: #2f6b3a;
+  /* Ground and surfaces, darkest to lightest. */
+  --color-ground: #14120f;
+  --color-field: #16130f; /* answer box, inner panels */
+  --color-surface: #1a1714; /* the bench */
+  --color-card: #1c1915;
+  --color-raised: #201c17; /* the name-plate rail */
 
-  /* One accent per archetype (panel presence). */
-  --color-accent-methodology: #2f5d8a;
-  --color-accent-literature: #6b4c9a;
-  --color-accent-technical: #2f7a6d;
-  --color-accent-ethics: #9a6b2f;
-  --color-accent-problem: #3f6f2f;
-  --color-accent-statistics: #8a3f6b;
-  --color-accent-results: #2f6f8a;
-  --color-accent-industry: #5c5c2f;
-  --color-accent-devil: #a12c2c;
+  /* Borders. */
+  --color-line: #2e2923;
+  --color-line-strong: #37312a;
+  --color-rail: #3a3125;
+  --color-devil-line: #806a64; /* the Devil's Advocate's dashed plate (mockup #4A3A36 is 1.6:1; 3:1 needed) */
 
-  /* The asking panelist's portrait while their voice plays (M3b E11). */
-  --animate-speaking: speaking 1.4s ease-in-out infinite;
+  /* Text. */
+  --color-ink: #ede6d6;
+  --color-ink-dim: #c9c0ae; /* an unlit panelist's name */
+  --color-muted: #aba08c;
+  --color-subtle: #9c927f;
+  --color-faint: #8c8270; /* upcoming turn steps */
 
+  /* The one accent: the active panelist, the current step, the primary action. */
+  --color-accent: #e3a75b;
+  --color-accent-hover: #f0c489;
+  --color-accent-soft: #2a2219; /* the lit name plate */
+  --color-on-accent: #1a140c;
+  --color-preparing: #8aa6d6;
+
+  /* The source passage, printed on paper. */
+  --color-paper: #efe7d6;
+  --color-paper-ink: #2a241c;
+  --color-paper-muted: #5e5446;
+  --color-paper-edge: #d9cfb9;
+  --color-highlight: #f0c27e;
+
+  /* Notices on the dark ground. */
+  --color-warn: #f0c489;
+  --color-warn-soft: #2a2219;
+  --color-danger: #f2a7a0;
+  --color-danger-soft: #2b1b19;
+
+  /* Motion (M8 K9): only where it shows state, and none under reduced motion (below). */
+  --animate-speaking: speaking 1.6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-reveal: reveal 0.4s ease-out both;
+  --animate-caret: caret 1s steps(1) infinite;
+
+  /* The speaking panelist's portrait: a soft amber ring that breathes. */
   @keyframes speaking {
     0%,
     100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 45%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent);
     }
     50% {
-      box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-brand) 0%, transparent);
+      box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 0%, transparent);
+    }
+  }
+
+  /* "Reviewing": a band of light moving across the words while the answer is scored. */
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+
+  /* The source reveal slides in once the answer is recorded. */
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* The typewriter's caret while the question is still being written out. */
+  @keyframes caret {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 }
 
 body {
   /* wrap-anywhere: a long URL or file name in a passage wraps instead of widening the page (D8). */
-  @apply bg-paper font-sans text-ink antialiased wrap-anywhere;
+  @apply bg-ground font-sans text-ink antialiased wrap-anywhere;
+}
+
+/* Text that shimmers while the panel reviews an answer: the words stay readable, a
+   lighter band passes over them. */
+.shimmer-text {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-accent) 0%,
+    var(--color-accent) 40%,
+    var(--color-accent-hover) 50%,
+    var(--color-accent) 60%,
+    var(--color-accent) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+}
+
+/* M8 K9: every animation and transition stops under reduced motion. Components also
+   opt out one by one (motion-reduce:), this is the backstop. The typewriter has its
+   own check (useTypewriter, D9). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .shimmer-text {
+    color: var(--color-accent);
+    background-image: none;
+  }
 }

@@ -51,3 +51,6 @@ export function withDefenseType(panel: PanelConfig, defenseType: DefenseType): P
 export function withSubtype(panel: PanelConfig, subtype: OtherSubtype): PanelConfig {
   return { ...panel, other_subtype: subtype, archetype_keys: null }
 }
+
+/** v1's DEVILS_ADVOCATE_KEY: always seated last, and drawn with a dashed plate on the bench. */
+export const DEVILS_ADVOCATE_KEY = 'devils_advocate'
