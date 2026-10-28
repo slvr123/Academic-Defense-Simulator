@@ -1,0 +1,167 @@
+{
+ "milestone": "v2.0 M7 J4",
+ "model": "gemini-3.1-flash-lite",
+ "difficulty": 3,
+ "archetypes": [
+  "technical_implementation_reviewer",
+  "methodology_expert"
+ ],
+ "calls_this_run": 9,
+ "calls_across_runs": 63,
+ "cache_hits_this_run": 47,
+ "per_arm": {
+  "before": {
+   "items": 20,
+   "grounded": 17,
+   "note_only_grounding": 0
+  },
+  "after": {
+   "items": 20,
+   "grounded": 19,
+   "note_only_grounding": 0
+  },
+  "control": {
+   "items": 12,
+   "grounded": 12,
+   "note_only_grounding": 0
+  }
+ },
+ "documents": [
+  {
+   "file": "sample3.pdf",
+   "defense_type": "thesis",
+   "persona_fallback": false,
+   "tagged_chunks": 14,
+   "literature_review_pages": [
+    13,
+    43
+   ],
+   "review_chunks": [
+    {
+     "chunk": 7,
+     "pages": [
+      13,
+      14
+     ]
+    },
+    {
+     "chunk": 9,
+     "pages": [
+      16,
+      18
+     ]
+    },
+    {
+     "chunk": 10,
+     "pages": [
+      18,
+      21
+     ]
+    },
+    {
+     "chunk": 11,
+     "pages": [
+      20,
+      22
+     ]
+    },
+    {
+     "chunk": 13,
+     "pages": [
+      25,
+      26
+     ]
+    },
+    {
+     "chunk": 14,
+     "pages": [
+      27,
+      29
+     ]
+    },
+    {
+     "chunk": 16,
+     "pages": [
+      30,
+      32
+     ]
+    },
+    {
+     "chunk": 17,
+     "pages": [
+      32,
+      35
+     ]
+    },
+    {
+     "chunk": 19,
+     "pages": [
+      37,
+      39
+     ]
+    },
+    {
+     "chunk": 20,
+     "pages": [
+      39,
+      41
+     ]
+    }
+   ],
+   "control_chunks": [
+    {
+     "chunk": 22,
+     "pages": [
+      43,
+      45
+     ]
+    },
+    {
+     "chunk": 30,
+     "pages": [
+      56,
+      59
+     ]
+    },
+    {
+     "chunk": 39,
+     "pages": [
+      74,
+      76
+     ]
+    }
+   ]
+  },
+  {
+   "file": "Group2_Library Management System for DAZSMA Documentation (1).pdf",
+   "defense_type": "capstone",
+   "persona_fallback": false,
+   "tagged_chunks": 0,
+   "literature_review_pages": null,
+   "review_chunks": [],
+   "control_chunks": [
+    {
+     "chunk": 33,
+     "pages": [
+      101,
+      102
+     ]
+    },
+    {
+     "chunk": 39,
+     "pages": [
+      109,
+      113
+     ]
+    },
+    {
+     "chunk": 46,
+     "pages": [
+      126,
+      130
+     ]
+    }
+   ]
+  }
+ ]
+}
