@@ -13,7 +13,8 @@ the previous chunk; Devil's Advocate contests an earlier one), the source carrie
 the score from that chunk's first retrieval.
 
 M7 J2: with attribution notes on, a literature-review chunk's text in the engine
-carries a note saying it describes cited work. Only the text the engine's prompts see
+carries a note saying it describes cited work (M8 K2 adds the rule against asking
+how the candidate built it). Only the text the engine's prompts see
 changes. Retrieval ranks the session matrix, embedded at ingest from the original
 text, and the source reveal reads ChunkMeta, so neither sees the note.
 """
@@ -54,17 +55,24 @@ class RecordingEncoder:
         return query
 
 
-# M7 J2. No page numbers: the panelist would quote them back as if they were evidence.
+# M7 J2, with M8 K2's rule added (round 1's wording is in docs/v2.0-m7-results.md).
+# No page numbers: the panelist would quote them back as if they were evidence.
 ATTRIBUTION_NOTES: dict[Attribution, str] = {
     "literature_review": (
         "[Note to the panelist: this excerpt is from the candidate's review of related literature. "
         "It describes other researchers' work that the candidate cites, not the candidate's own study or system. "
-        "Ask about how the candidate used, compared against, or departed from this work.]"
+        "Ask about how the candidate used, compared against, or departed from this work. "
+        "Never ask how the candidate built, ran, scaled, deployed or implemented the system or method this "
+        "excerpt describes, because the candidate didn't build it; ask why they chose it, how they compared "
+        "their own work against it, or where they departed from it.]"
     ),
     "partly_literature_review": (
         "[Note to the panelist: part of this excerpt is from the candidate's review of related literature. "
         "Where it describes other researchers' work that the candidate cites, that work is not the candidate's "
-        "own study or system: ask about how the candidate used, compared against, or departed from it.]"
+        "own study or system: ask about how the candidate used, compared against, or departed from it. "
+        "Never ask how the candidate built, ran, scaled, deployed or implemented a system or method the "
+        "excerpt credits to other researchers; ask why they chose it, how they compared their own work "
+        "against it, or where they departed from it.]"
     ),
 }
 

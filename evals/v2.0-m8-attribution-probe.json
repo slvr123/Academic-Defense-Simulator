@@ -1,0 +1,173 @@
+{
+ "milestone": "v2.0 M8 K3",
+ "model": "gemini-3.1-flash-lite",
+ "difficulty": 3,
+ "archetypes": [
+  "technical_implementation_reviewer",
+  "methodology_expert"
+ ],
+ "calls_this_run": 29,
+ "calls_across_runs": 29,
+ "cache_hits_this_run": 2,
+ "persona_fallback": false,
+ "items": 28,
+ "grounded": 28,
+ "note_only_grounding": 0,
+ "invented_citation_items": [],
+ "per_chunk": [
+  {
+   "chunk": 7,
+   "pages": [
+    13,
+    14
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 8,
+   "pages": [
+    15,
+    16
+   ],
+   "grounded": {
+    "technical_implementation_reviewer": true,
+    "methodology_expert": true
+   }
+  },
+  {
+   "chunk": 9,
+   "pages": [
+    16,
+    18
+   ],
+   "grounded": {
+    "technical_implementation_reviewer": true,
+    "methodology_expert": true
+   }
+  },
+  {
+   "chunk": 10,
+   "pages": [
+    18,
+    21
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 11,
+   "pages": [
+    20,
+    22
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 12,
+   "pages": [
+    22,
+    25
+   ],
+   "grounded": {
+    "technical_implementation_reviewer": true,
+    "methodology_expert": true
+   }
+  },
+  {
+   "chunk": 13,
+   "pages": [
+    25,
+    26
+   ],
+   "grounded": {
+    "technical_implementation_reviewer": true,
+    "methodology_expert": true
+   }
+  },
+  {
+   "chunk": 14,
+   "pages": [
+    27,
+    29
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 15,
+   "pages": [
+    28,
+    30
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 16,
+   "pages": [
+    30,
+    32
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 17,
+   "pages": [
+    32,
+    35
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 18,
+   "pages": [
+    35,
+    37
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 19,
+   "pages": [
+    37,
+    39
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  },
+  {
+   "chunk": 20,
+   "pages": [
+    39,
+    41
+   ],
+   "grounded": {
+    "methodology_expert": true,
+    "technical_implementation_reviewer": true
+   }
+  }
+ ]
+}

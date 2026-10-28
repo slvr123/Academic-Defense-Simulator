@@ -125,14 +125,23 @@ class CachedProvider(LLMProvider):
     """The defense provider behind the prompt-hash cache, the pacing, the backoff and
     the cross-run call ledger (see the module docstring)."""
 
-    def __init__(self, inner: LLMProvider, calls: CallCounter, max_calls: int) -> None:
+    def __init__(
+        self, inner: LLMProvider, calls: CallCounter, max_calls: int, *,
+        cache: Path | None = None, ledger: Path | None = None, read_only_caches: tuple[Path, ...] = (),
+    ) -> None:
+        """`cache` and `ledger` default to M7's; M8's round 2 passes its own, and reads
+        M7's cache too (`read_only_caches`) so identical setup prompts aren't paid twice."""
         self._inner, self._calls, self._max = inner, calls, max_calls
+        self._cache_path, self._ledger = cache or CACHE, ledger or LEDGER
         self._cache = {}
-        if CACHE.exists():
-            for line in CACHE.read_text(encoding="utf-8").splitlines():
-                entry = json.loads(line)
-                self._cache[entry["key"]] = entry["response"]
-        self._spent_before = json.loads(LEDGER.read_text(encoding="utf-8"))["calls"] if LEDGER.exists() else 0
+        for path in (*read_only_caches, self._cache_path):
+            if path.exists():
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    entry = json.loads(line)
+                    self._cache[entry["key"]] = entry["response"]
+        self._spent_before = (
+            json.loads(self._ledger.read_text(encoding="utf-8"))["calls"] if self._ledger.exists() else 0
+        )
         self._last_call = 0.0
         self.hits = 0
 
@@ -177,12 +186,12 @@ class CachedProvider(LLMProvider):
                 time.sleep(BACKOFF_S[attempt])
             finally:
                 self._last_call = time.monotonic()
-                LEDGER.write_text(json.dumps({"calls": self.spent}) + "\n", encoding="utf-8")
+                self._ledger.write_text(json.dumps({"calls": self.spent}) + "\n", encoding="utf-8")
         raise AssertionError("unreachable")
 
     def _store(self, key: str, response: str) -> None:
         self._cache[key] = response
-        with CACHE.open("a", encoding="utf-8") as cache:
+        with self._cache_path.open("a", encoding="utf-8") as cache:
             cache.write(json.dumps({"key": key, "response": response}) + "\n")
 
 
@@ -389,8 +398,8 @@ Then run `backend\\.venv\\Scripts\\python scripts\\score_attribution_judging.py`
 """
 
 
-def write_sheet(items: list[dict]) -> None:
-    parts = [SHEET_HEADER]
+def write_sheet(items: list[dict], header: str = SHEET_HEADER, out_dir: Path = OUT_DIR) -> None:
+    parts = [header]
     for n, item in enumerate(items, start=1):
         quoted = "\n".join(f"> {line}" if line.strip() else ">" for line in item["passage"].splitlines())
         parts.append(
@@ -402,7 +411,7 @@ def write_sheet(items: list[dict]) -> None:
             f"**Passage:**\n\n{quoted}\n\n"
             f"Label:\n"
         )
-    (OUT_DIR / "sheet.md").write_text("".join(parts), encoding="utf-8")
+    (out_dir / "sheet.md").write_text("".join(parts), encoding="utf-8")
 
 
 if __name__ == "__main__":
