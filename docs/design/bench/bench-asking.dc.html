@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ADS session bench — asking</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=Instrument+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#14120F}
+a{color:#E3A75B}a:hover{color:#F0C489}
+@keyframes bench-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.bench-caret{animation:bench-blink 1s steps(1) infinite}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 980px; box-sizing: border-box; background: #14120F; color: #EDE6D6; font-family: 'Instrument Sans', sans-serif; font-size: 15px; padding: 0 1.5rem 3rem">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; border-bottom: 1px solid #37312A">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+<span style="font-family: Newsreader, serif; font-size: 22px; font-weight: 600; letter-spacing: -0.01em">Academic Defense Simulator</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">AniCheck · Capstone defense</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">Turn 5 of 8 · Round 2</span>
+<div aria-hidden="true" style="display: flex; gap: 4px">
+<div style="width: 22px; height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: #EDE6D6"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: #37312A"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: #37312A"></div>
+<div style="width: 22px; height: 4px; border-radius: 2px; background: #37312A"></div>
+</div>
+</div>
+<div style="display: flex; gap: 8px">
+<button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #37312A; background: #1C1915; color: #EDE6D6; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Your document
+</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: #ABA08C; cursor: pointer">End session</button>
+</div>
+</header>
+
+<section aria-label="The panel" style="display: flex; flex-direction: column; border-radius: 18px; background: #1A1714; border: 1px solid #2E2923; overflow: hidden">
+<div style="display: flex; align-items: flex-end; padding: 0 12px">
+
+<div style="flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: {{accent}}"></div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 50%; width: 240px; height: 150px; transform: translateX(-50%); background: radial-gradient(ellipse 50% 85% at 50% 0%, rgba(227,167,91,0.20), rgba(227,167,91,0))"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="position: relative; margin-top: 20px" role="img" aria-label="Dr. Castro, speaking">
+<circle cx="60" cy="17" r="11" fill="#B9843F"></circle>
+<circle cx="60" cy="46" r="25" fill="#E3A75B"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#E3A75B"></path>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #2E2923"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="margin-top: 20px" role="img" aria-label="Dr. Lim, up next">
+<circle cx="60" cy="46" r="25" fill="#3D4452"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#3D4452"></path>
+<circle cx="50" cy="47" r="7" fill="none" stroke="#1A1714" stroke-width="2.5"></circle>
+<circle cx="70" cy="47" r="7" fill="none" stroke="#1A1714" stroke-width="2.5"></circle>
+<path d="M57 47 H63" stroke="#1A1714" stroke-width="2.5"></path>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #2E2923"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="margin-top: 20px" role="img" aria-label="Dr. Abad, has asked one question">
+<path d="M31 54 C27 18 93 18 89 54 L89 72 L31 72 Z" fill="#2F3A31"></path>
+<circle cx="60" cy="47" r="24" fill="#3C4A3F"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#3C4A3F"></path>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #2E2923"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="margin-top: 20px" role="img" aria-label="Dr. Navarro, speaks last">
+<g transform="rotate(-6 60 100)">
+<circle cx="60" cy="46" r="25" fill="#4A3838"></circle>
+<path d="M4 130 C4 93 30 79 60 79 C90 79 116 93 116 130 Z" fill="#4A3838"></path>
+</g>
+</svg>
+</div>
+
+</div>
+
+<div style="position: relative; margin-top: -10px; display: flex; padding: 12px 12px 14px; background: #201C17; border-top: 2px solid #3A3125">
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; background: #2A2219; border: 1px solid {{accent}}">
+<span style="display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 14px"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{accent}}"></span>Dr. Imelda Castro</span>
+<span style="font-size: 12px; color: #ABA08C">Methodology Expert</span>
+</div>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; border: 1px solid transparent">
+<span style="font-weight: 600; font-size: 14px; color: #C9C0AE">Dr. Raymund Lim</span>
+<span style="font-size: 12px; color: #9C927F">Technical Implementation</span>
+</div>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; border: 1px solid transparent">
+<span style="font-weight: 600; font-size: 14px; color: #C9C0AE">Dr. Teresa Abad</span>
+<span style="font-size: 12px; color: #9C927F">Statistical Analysis</span>
+</div>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; border: 1px dashed #4A3A36">
+<span style="font-weight: 600; font-size: 14px; color: #C9C0AE">Dr. Paolo Navarro</span>
+<span style="font-size: 12px; color: #9C927F">Devil's Advocate</span>
+</div>
+</div>
+
+</div>
+</section>
+
+<main style="display: flex; flex-direction: column; gap: 28px; padding: 36px 40px 32px; border-radius: 18px; background: #1C1915; border: 1px solid #37312A">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: {{accent}}">Dr. Castro asks</span>
+<ol aria-label="Turn progress" style="display: flex; flex-wrap: wrap; gap: 18px; margin: 0; padding: 0; list-style: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px">
+<li style="display: flex; align-items: center; gap: 6px; color: #ABA08C"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Retrieved</li>
+<li aria-current="step" style="display: flex; align-items: center; gap: 6px; color: {{accent}}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{accent}}"></span>Asking</li>
+<li style="color: #8C8270">Your answer</li>
+<li style="color: #8C8270">Reviewing</li>
+<li style="color: #8C8270">Handoff</li>
+</ol>
+</div>
+
+<p style="margin: 0; max-width: 62ch; font-family: Newsreader, serif; font-size: 28px; line-height: 1.45; letter-spacing: -0.005em; color: #EDE6D6">Every leaf in your dataset was detached and photographed flat on white cardboard, between eight and ten in the morning, from about twenty-five centimeters. A farmer in Barangay Masagana will photograph a leaf still on the plant, at noon, against other leaves. What in your evaluation tells you the 94.7%<span class="bench-caret" aria-hidden="true" style="display: inline-block; width: 2px; height: 1.05em; margin-left: 4px; vertical-align: -0.15em; background: {{accent}}"></span></p>
+
+<div style="display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9C927F">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Grounded in a passage from your document — revealed after you answer
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 8px; border-top: 1px solid #2E2923">
+<label for="answer" style="font-size: 13px; font-weight: 500; color: #ABA08C; padding-top: 14px">Your answer</label>
+<textarea id="answer" rows="5" disabled placeholder="Opens when Dr. Castro finishes asking." style="width: 100%; box-sizing: border-box; resize: vertical; padding: 16px; border-radius: 12px; border: 1px solid #37312A; background: #16130F; color: #EDE6D6; font-family: 'Instrument Sans', sans-serif; font-size: 16px; line-height: 1.55"></textarea>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<button type="button" style="min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #ABA08C; cursor: pointer; text-decoration: underline; text-underline-offset: 3px">Transcript · 4 earlier turns</button>
+<button type="button" disabled style="min-height: 48px; padding: 0 26px; border-radius: 12px; border: 0; background: #3A3125; color: #9C927F; font-weight: 600">Submit answer</button>
+</div>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#E3A75B","options":["#E3A75B","#D98C8C","#8FB8C9"]},"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#E3A75B' };
+}
+}
+</script>
+</body>
+</html>

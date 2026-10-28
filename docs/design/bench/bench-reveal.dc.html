@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ADS session bench — source passage reveal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=Instrument+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#14120F}
+a{color:#E3A75B}a:hover{color:#F0C489}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1080px; box-sizing: border-box; background: #14120F; color: #EDE6D6; font-family: 'Instrument Sans', sans-serif; font-size: 15px; padding: 0 1.5rem 3rem">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; border-bottom: 1px solid #37312A">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+<span style="font-family: Newsreader, serif; font-size: 22px; font-weight: 600; letter-spacing: -0.01em">Academic Defense Simulator</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">AniCheck · Capstone defense</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">Turn 5 of 8 · Round 2</span>
+<div style="display: flex; gap: 8px">
+<button type="button" aria-pressed="true" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #E3A75B; background: #2A231A; color: #EDE6D6; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+Your document
+</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: #ABA08C; cursor: pointer">End session</button>
+</div>
+</header>
+
+<section aria-label="The panel" style="display: flex; flex-direction: column; border-radius: 18px; background: #1A1714; border: 1px solid #2E2923; overflow: hidden">
+<div style="display: flex; align-items: flex-end; padding: 0 12px">
+
+<div style="flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #E3A75B"></div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 50%; width: 240px; height: 150px; transform: translateX(-50%); background: radial-gradient(ellipse 50% 85% at 50% 0%, rgba(227,167,91,0.12), rgba(227,167,91,0))"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="position: relative; margin-top: 20px" role="img" aria-label="Dr. Castro, reviewing your answer">
+<g transform="rotate(4 60 100)">
+<circle cx="60" cy="17" r="11" fill="#B9843F"></circle>
+<circle cx="60" cy="46" r="25" fill="#E3A75B"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#E3A75B"></path>
+</g>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #8AA6D6"></div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 50%; width: 240px; height: 150px; transform: translateX(-50%); background: radial-gradient(ellipse 50% 85% at 50% 0%, rgba(138,166,214,0.12), rgba(138,166,214,0))"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="position: relative; margin-top: 20px" role="img" aria-label="Dr. Lim, preparing the next question">
+<circle cx="60" cy="46" r="25" fill="#6F86AE"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#6F86AE"></path>
+<circle cx="50" cy="47" r="7" fill="none" stroke="#1A1714" stroke-width="2.5"></circle>
+<circle cx="70" cy="47" r="7" fill="none" stroke="#1A1714" stroke-width="2.5"></circle>
+<path d="M57 47 H63" stroke="#1A1714" stroke-width="2.5"></path>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #2E2923"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="margin-top: 20px" role="img" aria-label="Dr. Abad, has asked one question">
+<path d="M31 54 C27 18 93 18 89 54 L89 72 L31 72 Z" fill="#2F3A31"></path>
+<circle cx="60" cy="47" r="24" fill="#3C4A3F"></circle>
+<path d="M8 130 C8 93 31 79 60 79 C89 79 112 93 112 130 Z" fill="#3C4A3F"></path>
+</svg>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<div aria-hidden="true" style="width: 56px; height: 3px; border-radius: 0 0 3px 3px; background: #2E2923"></div>
+<svg width="92" height="100" viewBox="0 0 120 130" style="margin-top: 20px" role="img" aria-label="Dr. Navarro, speaks last">
+<g transform="rotate(-6 60 100)">
+<circle cx="60" cy="46" r="25" fill="#4A3838"></circle>
+<path d="M4 130 C4 93 30 79 60 79 C90 79 116 93 116 130 Z" fill="#4A3838"></path>
+</g>
+</svg>
+</div>
+
+</div>
+
+<div style="position: relative; margin-top: -10px; display: flex; padding: 12px 12px 14px; background: #201C17; border-top: 2px solid #3A3125">
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; background: #2A2219; border: 1px solid #6B5233">
+<span style="font-weight: 600; font-size: 14px">Dr. Imelda Castro</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #E3A75B">Reviewing</span>
+</div>
+</div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; background: #1E232C; border: 1px solid #4A5E80">
+<span style="font-weight: 600; font-size: 14px; color: #D4DDEB">Dr. Raymund Lim</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A9C0E4">Preparing</span>
+</div>
+</div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; border: 1px solid transparent">
+<span style="font-weight: 600; font-size: 14px; color: #C9C0AE">Dr. Teresa Abad</span>
+<span style="font-size: 12px; color: #9C927F">Statistical Analysis</span>
+</div>
+</div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; justify-content: center; padding: 0 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 16px; border-radius: 8px; border: 1px dashed #4A3A36">
+<span style="font-weight: 600; font-size: 14px; color: #C9C0AE">Dr. Paolo Navarro</span>
+<span style="font-size: 12px; color: #9C927F">Devil's Advocate</span>
+</div>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<main style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 22px; padding: 30px 32px; border-radius: 18px; background: #1C1915; border: 1px solid #37312A">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #E3A75B">Dr. Castro asked</span>
+<ol aria-label="Turn progress" style="display: flex; flex-wrap: wrap; gap: 14px; margin: 0; padding: 0; list-style: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px">
+<li style="color: #ABA08C">✓ Asked</li>
+<li style="color: #ABA08C">✓ Answered</li>
+<li aria-current="step" style="display: flex; align-items: center; gap: 6px; color: #E3A75B"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: #E3A75B"></span>Reviewing</li>
+<li style="color: #8C8270">Handoff</li>
+</ol>
+</div>
+
+<p style="margin: 0; font-family: Newsreader, serif; font-size: 21px; line-height: 1.5; color: #EDE6D6">Every leaf in your dataset was detached and photographed flat on white cardboard, between eight and ten in the morning, from about twenty-five centimeters. A farmer in Barangay Masagana will photograph a leaf still on the plant, at noon, against other leaves. What in your evaluation tells you the 94.7% survives that change in conditions — and if nothing does, what is that accuracy actually measuring?</p>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border-radius: 12px; background: #16130F; border: 1px solid #2E2923">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9C927F">Your answer</span>
+<p style="margin: 0; font-size: 16px; line-height: 1.6; color: #D9D1C0">We didn't test outside those conditions. Our 648 test images came from the same collection, so the 94.7% is accuracy on controlled photos. We list a longer field validation in our recommendations, but we haven't run it yet.</p>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #ABA08C">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Answer recorded. Scores stay sealed until the debrief.
+</div>
+</main>
+
+<aside aria-label="Source passage" style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 18px; background: #1C1915; border: 1px solid #E3A75B">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+<span style="font-family: Newsreader, serif; font-size: 20px; font-weight: 600">What Dr. Castro was reading</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">Top match · p. 7</span>
+</div>
+
+<article style="padding: 28px 30px; border-radius: 6px; background: #EFE7D6; color: #2A241C; box-shadow: 0 1px 0 #D9CFB9, 0 18px 40px rgba(0,0,0,0.35)">
+<div style="display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5E5446">
+<span>AniCheck — Chapter 3, Methodology</span>
+<span>7</span>
+</div>
+<h3 style="margin: 0 0 10px; font-family: Newsreader, serif; font-size: 18px; font-weight: 600">Dataset Collection</h3>
+<p style="margin: 0; font-family: Newsreader, serif; font-size: 16px; line-height: 1.65">Leaf images were collected from eleven rice fields within Barangay Masagana over a six-week period spanning the vegetative and reproductive stages of the 2024 wet season crop. Photographs were captured using a Samsung Galaxy A54 at a resolution of 3000 by 4000 pixels. To ensure consistency, <mark style="background: #F0C27E; color: #2A241C; padding: 1px 2px; border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone">each leaf was detached and photographed flat against a white cardboard background under natural daylight between 8:00 AM and 10:00 AM, with the camera held approximately 25 centimeters from the leaf surface.</mark></p>
+</article>
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9C927F; padding-bottom: 6px">Also retrieved for this question</span>
+<button type="button" style="display: flex; align-items: flex-start; gap: 14px; width: 100%; min-height: 44px; padding: 12px 14px; border-radius: 10px; border: 1px solid #2E2923; background: #16130F; color: #EDE6D6; text-align: left; cursor: pointer">
+<span style="flex: none; width: 34px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">p. 8</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600">Preprocessing and Augmentation</span>
+<span style="font-size: 13px; color: #ABA08C">80:20 stratified split — 2,592 training, 648 test images</span>
+</span>
+</button>
+<button type="button" style="display: flex; align-items: flex-start; gap: 14px; width: 100%; min-height: 44px; padding: 12px 14px; border-radius: 10px; border: 1px solid #2E2923; background: #16130F; color: #EDE6D6; text-align: left; cursor: pointer">
+<span style="flex: none; width: 34px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ABA08C">p. 14</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600">Limitations</span>
+<span style="font-size: 13px; color: #ABA08C">Transfer of test accuracy to field photos was not established</span>
+</span>
+</button>
+</div>
+</aside>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
