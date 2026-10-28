@@ -17,12 +17,14 @@ export function seatedKeys(options: PanelOptions, panel: PanelConfig): string[] 
   return roster.archetypes.slice(0, options.max_domain_panelists).map((a) => a.archetype_key)
 }
 
-/** The seated archetypes with titles and icons, Devil's Advocate last as v1 seats it. */
+/** The seated archetypes with titles and icons, in seating order (the first asks first,
+ * v1's select_active_panelist), Devil's Advocate last as v1 seats it. */
 export function seatedPanel(options: PanelOptions, panel: PanelConfig): ArchetypeOption[] {
   const roster = rosterFor(options, panel)
   if (roster === null) return []
-  const keys = seatedKeys(options, panel)
-  return [...roster.archetypes.filter((a) => keys.includes(a.archetype_key)), options.devils_advocate]
+  const byKey = new Map(roster.archetypes.map((a) => [a.archetype_key, a]))
+  const seated = seatedKeys(options, panel).flatMap((key) => byKey.get(key) ?? [])
+  return [...seated, options.devils_advocate]
 }
 
 /** Add or remove one panelist, keeping at least one and at most the maximum, in roster order. */

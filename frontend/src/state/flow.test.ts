@@ -34,6 +34,7 @@ const question: Phase = {
   question: startResponse.question,
   draft: 'My answer',
   last: null,
+  turns: [],
   notice: null,
 }
 const { notice: _notice, ...defense } = question
@@ -99,6 +100,7 @@ describe('config and upload', () => {
     expect(state.phase).toEqual({ kind: 'uploading', loaded: 512, total: 1024 })
     const queued = run(state, {
       type: 'uploadFinished',
+      panel: initialState().draft.panel,
       result: ok({ session_id: S, status: 'queued', queue_position: 2 }),
       now: NOW,
     })
@@ -108,6 +110,7 @@ describe('config and upload', () => {
   it('returns to config with a notice when the upload fails, keeping the file', () => {
     const state = run(withFile, { type: 'uploadRequested' }, {
       type: 'uploadFinished',
+      panel: initialState().draft.panel,
       result: fail({ kind: 'invalid', message: "That file isn't a PDF. Upload a .pdf document." }),
       now: NOW,
     })
@@ -118,6 +121,7 @@ describe('config and upload', () => {
   it('never schedules an automatic retry for an upload, even with Retry-After', () => {
     const state = run(withFile, { type: 'uploadRequested' }, {
       type: 'uploadFinished',
+      panel: initialState().draft.panel,
       result: fail({ kind: 'busy', message: 'busy', retryAfterS: 60 }),
       now: NOW,
     })
@@ -127,7 +131,7 @@ describe('config and upload', () => {
   it('ignores progress and results when not uploading', () => {
     const state = initialState()
     expect(run(state, { type: 'uploadProgress', loaded: 1, total: 2 })).toBe(state)
-    expect(run(state, { type: 'uploadFinished', result: ok({ session_id: S, status: 'queued', queue_position: 1 }), now: NOW })).toBe(state)
+    expect(run(state, { type: 'uploadFinished', panel: initialState().draft.panel, result: ok({ session_id: S, status: 'queued', queue_position: 1 }), now: NOW })).toBe(state)
   })
 })
 
@@ -146,7 +150,14 @@ describe('polling', () => {
     state = run(state, poll({ status: 'embedding', progress: 0.4 }))
     expect(state.phase).toEqual({ kind: 'embedding', sessionId: S, progress: 0.4, notice: null })
     state = run(state, poll({ status: 'ready', chunk_count: 92, defense: 'not_started' }))
-    expect(state.phase).toEqual({ kind: 'ready', sessionId: S, chunkCount: 92, notice: null })
+    expect(state.phase).toEqual({ kind: 'ready', sessionId: S, chunkCount: 92, ingest: null, notice: null })
+  })
+
+  it('keeps the ingest summary from the ready poll for the preparing screen (M10 N6)', () => {
+    const ingest = { page_count: 16, citable_passages: 20, navigation_pages: [], reference_list: { start: 16, end: 16 }, literature_review: null, held_back_passages: 0 }
+    const ready = run(queued, poll({ status: 'ready', chunk_count: 20, ingest }))
+    expect(ready.phase).toMatchObject({ kind: 'ready', ingest })
+    expect(run(ready, { type: 'startRequested', auto: false }).phase).toMatchObject({ kind: 'preparing', ingest })
   })
 
   it('reads a scanned PDF from error_code, not the text', () => {
@@ -175,12 +186,12 @@ describe('polling', () => {
 })
 
 describe('starting the defense', () => {
-  const ready = at({ kind: 'ready', sessionId: S, chunkCount: 8, notice: null })
+  const ready = at({ kind: 'ready', sessionId: S, chunkCount: 8, ingest: null, notice: null })
   const startWith = (result: ApiResult<typeof startResponse>, auto = false) =>
     run(ready, { type: 'startRequested', auto }, { type: 'startFinished', sessionId: S, result, now: NOW })
 
   it('prepares, then opens the first question', () => {
-    expect(run(ready, { type: 'startRequested', auto: false }).phase).toEqual({ kind: 'preparing', sessionId: S, auto: false })
+    expect(run(ready, { type: 'startRequested', auto: false }).phase).toEqual({ kind: 'preparing', sessionId: S, ingest: null, auto: false })
     expect(startWith(ok(startResponse)).phase).toEqual({ ...question, draft: '' })
   })
 
@@ -189,6 +200,7 @@ describe('starting the defense', () => {
       kind: 'ready',
       sessionId: S,
       chunkCount: null,
+      ingest: null,
       notice: { kind: 'message', text: STILL_PREPARING_TEXT },
     })
   })
@@ -207,6 +219,7 @@ describe('starting the defense', () => {
       kind: 'ready',
       sessionId: S,
       chunkCount: null,
+      ingest: null,
       notice: { kind: 'busy', message: 'The panel is busy right now.', retryAt: NOW + 60_000 },
     })
     expect(startWith(busy, true).phase).toMatchObject({ notice: { kind: 'busy', retryAt: null } })
@@ -257,6 +270,7 @@ describe('answering', () => {
       question: nextQuestion.next_question,
       draft: '',
       last: { question: startResponse.question, answer: 'My answer', evaluation },
+      turns: [{ question: startResponse.question, answer: 'My answer', evaluation }],
     })
   })
 
@@ -323,7 +337,7 @@ describe('answering', () => {
 })
 
 describe('the voice choice (M3b E9)', () => {
-  const ready = (ttsAvailable: boolean) => at({ kind: 'ready', sessionId: S, chunkCount: 8, notice: null }, { ttsAvailable })
+  const ready = (ttsAvailable: boolean) => at({ kind: 'ready', sessionId: S, chunkCount: 8, ingest: null, notice: null }, { ttsAvailable })
   const choose = (voice: 'panel' | 'browser' | 'none'): Action => ({ type: 'voiceChosen', voice })
 
   it('is made on the ready screen and kept in state', () => {
@@ -338,8 +352,17 @@ describe('the voice choice (M3b E9)', () => {
     expect(run(state, choose('panel'))).toBe(state)
   })
 
-  it('can only be made before the defense starts', () => {
-    const state = at(question, { ttsAvailable: true })
+  it('can be switched during the defense, and records that the panel-voice disclosure was shown (M10 N9)', () => {
+    const state = at(question, { ttsAvailable: true, voice: 'none' })
+    const switched = run(state, choose('panel'))
+    expect(switched.voice).toBe('panel')
+    expect(switched.panelDisclosed).toBe(true)
+    expect(run(switched, choose('browser'))).toMatchObject({ voice: 'browser', panelDisclosed: true })
+    expect(run(switched, { type: 'restart' }).panelDisclosed).toBe(false)
+  })
+
+  it('is never made outside the ready screen and the defense', () => {
+    const state = at({ kind: 'finishing', sessionId: S, notice: null }, { ttsAvailable: true })
     expect(run(state, choose('panel'))).toBe(state)
   })
 
@@ -361,9 +384,9 @@ describe('the report', () => {
 
   it('restarts with the file cleared and the panel choices kept', () => {
     const panel = { ...initialState().draft.panel, starting_difficulty: 4 }
-    const state = run(at({ kind: 'report', report }, { draft: { file: pdf(), panel } }), { type: 'restart' })
+    const state = run(at({ kind: 'report', report }, { draft: { file: pdf(), panel, preset: 'technical' } }), { type: 'restart' })
     expect(state.phase).toEqual({ kind: 'configuring', notice: null })
-    expect(state.draft).toEqual({ file: null, panel })
+    expect(state.draft).toEqual({ file: null, panel, preset: 'technical' })
   })
 })
 

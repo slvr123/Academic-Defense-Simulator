@@ -7,6 +7,7 @@ import type {
   AnswerResponse,
   CurrentQuestion,
   Evaluation,
+  IngestSummary,
   LimitCode,
   PanelConfig,
   PanelistOut,
@@ -18,6 +19,7 @@ import type {
   SessionState,
   StartResponse,
 } from '../api/types'
+import type { PresetId } from '../lib/presets'
 import { isTooLarge, TOO_LARGE_MESSAGE } from '../lib/upload'
 
 /** What went wrong, in the terms the screen needs to show it and offer a way on. */
@@ -30,7 +32,9 @@ export type Notice =
   | { kind: 'limited'; code: LimitCode | null; limit: number | null; resetsAt: number | null }
   | { kind: 'message'; text: string }
 
-export type Draft = { file: File | null; panel: PanelConfig }
+/** The start form. `panel.archetype_keys` holds the Custom choice; a preset's keys are
+ * resolved against /panel-options when the upload goes (M10 N7). */
+export type Draft = { file: File | null; panel: PanelConfig; preset: PresetId }
 
 export type QuotaView = { kind: 'loading' } | { kind: 'hidden' } | { kind: 'known'; quota: QuotaStatus }
 
@@ -47,6 +51,7 @@ type Defense = {
   question: QuestionOut
   draft: string // the answer box; kept through a failed send (D16, 502)
   last: Turn | null
+  turns: Turn[] // every answered question, oldest first, for the transcript drawer (M10 N10)
 }
 
 export type Phase =
@@ -56,9 +61,9 @@ export type Phase =
   | { kind: 'embedding'; sessionId: string; progress: number; notice: Notice | null }
   | { kind: 'failed'; message: string; scanned: boolean }
   | { kind: 'expired' } // a 404: the session is gone (D16)
-  | { kind: 'ready'; sessionId: string; chunkCount: number | null; notice: Notice | null }
+  | { kind: 'ready'; sessionId: string; chunkCount: number | null; ingest: IngestSummary | null; notice: Notice | null }
   // auto: this request is the one automatic retry after a busy 503, so no second one follows.
-  | { kind: 'preparing'; sessionId: string; auto: boolean }
+  | { kind: 'preparing'; sessionId: string; ingest: IngestSummary | null; auto: boolean }
   | ({ kind: 'question'; notice: Notice | null } & Defense)
   | ({ kind: 'submitting'; auto: boolean } & Defense)
   | { kind: 'finishing'; sessionId: string; notice: Notice | null }
@@ -68,6 +73,7 @@ export type State = {
   serverAwake: boolean // a flag beside the phase, not a phase (D25)
   ttsAvailable: boolean // the server can make panel voices (/status, M3b E6)
   voice: VoiceChoice | null // null until chosen for this defense; never persisted (E9)
+  panelDisclosed: boolean // the MiMo disclosure was shown this session (M10 N9)
   options: PanelOptions | null
   quota: QuotaView
   draft: Draft
@@ -81,9 +87,11 @@ export type Action =
   | { type: 'quotaLoaded'; quota: QuotaStatus }
   | { type: 'quotaHidden' }
   | { type: 'draftChanged'; draft: Partial<Draft> }
+  | { type: 'startNotice'; notice: Notice } // a start-screen problem before any upload (the sample paper didn't load)
   | { type: 'uploadRequested' }
   | { type: 'uploadProgress'; loaded: number; total: number }
-  | { type: 'uploadFinished'; result: ApiResult<SessionCreated>; now: number }
+  // panel: the config that was sent, archetype keys resolved (M10 N7)
+  | { type: 'uploadFinished'; result: ApiResult<SessionCreated>; panel: PanelConfig; now: number }
   | { type: 'sessionPolled'; sessionId: string; result: ApiResult<SessionState>; now: number }
   | { type: 'pollResumed' }
   | { type: 'startRequested'; auto: boolean }
@@ -107,9 +115,10 @@ export function initialState(): State {
     serverAwake: false,
     ttsAvailable: false,
     voice: null,
+    panelDisclosed: false,
     options: null,
     quota: { kind: 'loading' },
-    draft: { file: null, panel: { ...defaults.PanelConfig } },
+    draft: { file: null, panel: { ...defaults.PanelConfig }, preset: 'recommended' },
     phase: { kind: 'configuring', notice: null },
   }
 }
@@ -171,7 +180,10 @@ function polled(state: State, sessionId: string, result: ApiResult<SessionState>
     case 'embedding':
       return { ...state, phase: { kind: 'embedding', sessionId, progress: session.progress ?? 0, notice: null } }
     case 'ready':
-      return { ...state, phase: { kind: 'ready', sessionId, chunkCount: session.chunk_count ?? null, notice: null } }
+      return {
+        ...state,
+        phase: { kind: 'ready', sessionId, chunkCount: session.chunk_count ?? null, ingest: session.ingest ?? null, notice: null },
+      }
     case 'failed':
       return {
         ...state,
@@ -199,12 +211,14 @@ function started(state: State, sessionId: string, result: ApiResult<StartRespons
     // A plain 409 means useFlow's resends ran out while the first /start was still running
     // (M6 H4; this replaces D16's "swallowed", which left the screen preparing for good).
     if (result.error.kind === 'conflict') {
-      return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, notice: { kind: 'message', text: STILL_PREPARING_TEXT } } }
+      const notice: Notice = { kind: 'message', text: STILL_PREPARING_TEXT }
+      return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, ingest: phase.ingest, notice } }
     }
-    return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, notice: noticeFor(result.error, now, !phase.auto) } }
+    const notice = noticeFor(result.error, now, !phase.auto)
+    return { ...state, phase: { kind: 'ready', sessionId, chunkCount: null, ingest: phase.ingest, notice } }
   }
   const { panel, question, topic } = result.data
-  return { ...state, phase: { kind: 'question', sessionId, topic, panel, question, draft: '', last: null, notice: null } }
+  return { ...state, phase: { kind: 'question', sessionId, topic, panel, question, draft: '', last: null, turns: [], notice: null } }
 }
 
 function answered(state: State, sessionId: string, result: ApiResult<AnswerResponse>, now: number): State {
@@ -224,7 +238,8 @@ function answered(state: State, sessionId: string, result: ApiResult<AnswerRespo
     return { ...state, phase: { ...defense, kind: 'question', notice: { kind: 'message', text } } }
   }
   const last: Turn = { question: defense.question, answer: defense.draft, evaluation }
-  return { ...state, phase: { ...defense, kind: 'question', question: next_question, draft: '', last, notice: null } }
+  const turns = [...defense.turns, last]
+  return { ...state, phase: { ...defense, kind: 'question', question: next_question, draft: '', last, turns, notice: null } }
 }
 
 function resynced(state: State, sessionId: string, stale: ApiError, current: ApiResult<CurrentQuestion>, now: number): State {
@@ -260,10 +275,12 @@ export function reducer(state: State, action: Action): State {
     case 'serverAwake':
       return { ...state, serverAwake: true, ttsAvailable: action.ttsAvailable }
     case 'voiceChosen':
-      if (phase.kind !== 'ready') return state
+      // Chosen before the first question, and switchable during the defense (M10 N9).
+      if (phase.kind !== 'ready' && phase.kind !== 'question' && phase.kind !== 'submitting') return state
       // Panel voices send question text to MiMo, so they're only offered when the server has them.
       if (action.voice === 'panel' && !state.ttsAvailable) return state
-      return { ...state, voice: action.voice }
+      // Every screen that offers Panel voice shows the disclosure with it, or before it.
+      return { ...state, voice: action.voice, panelDisclosed: state.panelDisclosed || action.voice === 'panel' }
     case 'optionsLoaded':
       return { ...state, options: action.options }
     case 'quotaLoaded':
@@ -274,6 +291,9 @@ export function reducer(state: State, action: Action): State {
     case 'draftChanged':
       if (phase.kind !== 'configuring') return state
       return { ...state, draft: { ...state.draft, ...action.draft } }
+    case 'startNotice':
+      if (phase.kind !== 'configuring') return state
+      return { ...state, phase: { kind: 'configuring', notice: action.notice } }
 
     case 'uploadRequested': {
       const { file } = state.draft
@@ -288,7 +308,11 @@ export function reducer(state: State, action: Action): State {
       if (phase.kind !== 'uploading') return state
       const { result } = action
       if (!result.ok) return { ...state, phase: { kind: 'configuring', notice: noticeFor(result.error, action.now, false) } }
-      return { ...state, phase: { kind: 'queued', sessionId: result.data.session_id, position: result.data.queue_position, notice: null } }
+      return {
+        ...state,
+        draft: { ...state.draft, panel: action.panel },
+        phase: { kind: 'queued', sessionId: result.data.session_id, position: result.data.queue_position, notice: null },
+      }
     }
 
     case 'sessionPolled':
@@ -299,7 +323,7 @@ export function reducer(state: State, action: Action): State {
 
     case 'startRequested':
       if (phase.kind !== 'ready') return state
-      return { ...state, phase: { kind: 'preparing', sessionId: phase.sessionId, auto: action.auto } }
+      return { ...state, phase: { kind: 'preparing', sessionId: phase.sessionId, ingest: phase.ingest, auto: action.auto } }
     case 'startFinished':
       return started(state, action.sessionId, action.result, action.now)
 
@@ -323,6 +347,12 @@ export function reducer(state: State, action: Action): State {
       return reported(state, action.sessionId, action.result, action.now)
 
     case 'restart': // a new document is a new defense: the voice is chosen again
-      return { ...state, voice: null, draft: { ...state.draft, file: null }, phase: { kind: 'configuring', notice: null } }
+      return {
+        ...state,
+        voice: null,
+        panelDisclosed: false,
+        draft: { ...state.draft, file: null },
+        phase: { kind: 'configuring', notice: null },
+      }
   }
 }

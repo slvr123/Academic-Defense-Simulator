@@ -1,5 +1,5 @@
 // D16's front-door rows, rendered through the real App with a scripted network.
-import { act, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { pdf, quota } from './test/fixtures'
 import { advance, chooseFile, defaultServer, deferred, HEALTHY, renderApp, submitDocument, uploadAccepted } from './test/renderApp'
@@ -47,29 +47,59 @@ describe('page load and quota (D15, D25)', () => {
     const server = defaultServer()
     server.on('GET /quota', { status: 503, body: { detail: "The demo's usage counter is waking up." } })
     const user = renderApp()
-    await screen.findByText('Methodology Expert') // rosters loaded, so /quota has answered too
+    await screen.findByRole('button', { name: /Recommended for a thesis/ }) // rosters loaded, so /quota has answered too
     expect(screen.queryByText(/defenses left/)).not.toBeInTheDocument()
     await chooseFile(user)
     expect(screen.getByRole('button', { name: /upload and convene/i })).toBeEnabled()
   })
 })
 
-describe('panel config (D14, D21, D22)', () => {
-  it('lists the roster with labels, never raw enum values, and sends the chosen panel', async () => {
+describe('panel config (D14, D21, D22) and presets (M10 N7)', () => {
+  const sentPanel = (server: ReturnType<typeof defaultServer>) => {
+    const sent = server.upload.current?.form?.get('panel')
+    return typeof sent === 'string' ? JSON.parse(sent) : null
+  }
+
+  it('selects the Recommended preset for the type and sends its panel', async () => {
     const server = defaultServer()
     const user = renderApp()
-    await screen.findByText('Methodology Expert')
-    await user.click(screen.getByText('Other'))
+    const recommended = await screen.findByRole('button', { name: /Recommended for a thesis/ })
+    expect(recommended).toHaveAttribute('aria-pressed', 'true')
+    expect(recommended).toHaveTextContent('Methodology · Problem & Objectives · Results & Conclusions')
+    // The fixture's thesis roster has no Technical Implementation or Statistical Analysis seat,
+    // so the presets that need them are hidden, not sent.
+    expect(screen.queryByRole('button', { name: /Technical-heavy/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Research-heavy/ })).not.toBeInTheDocument()
+    await submitDocument(user)
+    expect(sentPanel(server)).toMatchObject({
+      defense_type: 'thesis',
+      archetype_keys: ['methodology_expert', 'problem_objectives_reviewer', 'results_conclusions_reviewer'],
+    })
+  })
+
+  it('lists the roster under Custom with labels, notes the Literature Specialist, and sends the chosen panel', async () => {
+    const server = defaultServer()
+    const user = renderApp()
+    await screen.findByRole('button', { name: /Recommended for a thesis/ })
+    await user.click(screen.getByRole('button', { name: /^Custom/ }))
+    // Custom starts from the selected preset; the Literature Specialist isn't in it, and says why.
+    expect(screen.getByRole('checkbox', { name: /Methodology Expert/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Literature & Theory Specialist/ })).not.toBeChecked()
+    expect(screen.getByText("Doesn't read the literature review in this version.")).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Other' }))
     expect(screen.getByRole('option', { name: 'Oral comps' })).toBeInTheDocument()
     expect(screen.queryByText('oral_comps')).not.toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText('Kind of panel'), 'Certification interview')
-    await user.click(screen.getByLabelText('Industry Practice Reviewer', { exact: false }))
+    // The fixture's certification roster seats no preset, so Custom is all there is.
+    expect(screen.getByRole('button', { name: /^Custom/ })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('checkbox', { name: /Industry Practice Reviewer/ }))
+    await user.click(screen.getByText(/Optional details/))
     await user.type(screen.getByLabelText(/domain/i), 'IT')
-    await user.click(screen.getByText('4'))
+    await user.click(screen.getByRole('button', { name: '4' }))
     await submitDocument(user)
 
-    const sent = server.upload.current?.form?.get('panel')
-    expect(typeof sent === 'string' && JSON.parse(sent)).toEqual({
+    expect(sentPanel(server)).toEqual({
       defense_type: 'other',
       other_subtype: 'certification_interview',
       domain: 'IT',
@@ -77,6 +107,17 @@ describe('panel config (D14, D21, D22)', () => {
       archetype_keys: ['technical_implementation_reviewer'],
       starting_difficulty: 4,
     })
+  })
+
+  it('takes a dropped PDF as the file (N3)', async () => {
+    defaultServer()
+    renderApp()
+    const zone = (await screen.findByText(/Drop your PDF here/)).closest('label')
+    if (zone === null) throw new Error('no drop zone')
+    const file = new File(['%PDF-1.7'], 'dropped.pdf', { type: 'application/pdf' })
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+    expect(await screen.findByText('dropped.pdf')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /upload and convene/i })).toBeEnabled()
   })
 })
 

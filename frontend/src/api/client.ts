@@ -127,7 +127,7 @@ function parseJson(text: string): unknown {
   }
 }
 
-async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<ApiResult<T>> {
+async function request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<ApiResult<T>> {
   let response: Response
   try {
     response = await fetch(`${baseUrl()}${path}`, {
@@ -143,6 +143,7 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown):
   if (!response.ok) {
     return { ok: false, error: toApiError(response.status, parsed, response.headers.get('Retry-After')) }
   }
+  if (response.status === 204) return { ok: true, data: undefined as T } // no body to read
   if (parsed === undefined) return { ok: false, error: { kind: 'unexpected', message: 'The server sent a reply that could not be read.' } }
   // The one place a body is trusted to match its type: the types are generated from the
   // same Pydantic models that produced it.
@@ -161,6 +162,8 @@ export const startDefense = (sessionId: string) => request<StartResponse>('POST'
 export const submitAnswer = (sessionId: string, text: string, turn: number) =>
   request<AnswerResponse>('POST', `${sessionPath(sessionId)}/answers`, { text, turn })
 export const getReport = (sessionId: string) => request<ReportResponse>('GET', `${sessionPath(sessionId)}/report`)
+/** Ends the session on the server: its chunks and defense are dropped at once (M10 N2). */
+export const deleteSession = (sessionId: string) => request<void>('DELETE', sessionPath(sessionId))
 /** Where the defense is now: the open question, or done (M6 H5). */
 export const getCurrent = (sessionId: string) => request<CurrentQuestion>('GET', `${sessionPath(sessionId)}/current`)
 

@@ -52,6 +52,9 @@ e2e_driver.py
 !academic_defense_simulator/sample/
 !academic_defense_simulator/sample/*.pdf
 !academic_defense_simulator/sample/chunks.json
+# M10 N5: the same sample, served by the static site for "Try it with the sample paper".
+!frontend/public/sample/
+!frontend/public/sample/*.pdf
 # Raw Gemini 429 bodies from scripts/capture_429.py (M2): local evidence for the
 # 429 classifier, may carry project ids
 captures/

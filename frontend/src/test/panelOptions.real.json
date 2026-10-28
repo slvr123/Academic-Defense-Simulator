@@ -1,0 +1,216 @@
+{
+  "max_domain_panelists": 3,
+  "devils_advocate": {
+    "archetype_key": "devils_advocate",
+    "title": "Devil's Advocate",
+    "icon": "hacker"
+  },
+  "rosters": [
+    {
+      "defense_type": "thesis",
+      "other_subtype": null,
+      "archetypes": [
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "literature_theory_specialist",
+          "title": "Literature & Theory Specialist",
+          "icon": "dean"
+        },
+        {
+          "archetype_key": "problem_objectives_reviewer",
+          "title": "Research Problem & Objectives Reviewer",
+          "icon": "professor"
+        },
+        {
+          "archetype_key": "results_conclusions_reviewer",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        {
+          "archetype_key": "statistical_analysis_reviewer",
+          "title": "Statistical & Data Analysis Reviewer",
+          "icon": "researcher"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        },
+        {
+          "archetype_key": "technical_implementation_reviewer",
+          "title": "Technical Implementation Reviewer",
+          "icon": "engineer"
+        }
+      ]
+    },
+    {
+      "defense_type": "capstone",
+      "other_subtype": null,
+      "archetypes": [
+        {
+          "archetype_key": "technical_implementation_reviewer",
+          "title": "Technical Implementation Reviewer",
+          "icon": "engineer"
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "results_conclusions_reviewer",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        {
+          "archetype_key": "industry_practice_reviewer",
+          "title": "Industry & Professional Practice Reviewer",
+          "icon": "student"
+        },
+        {
+          "archetype_key": "problem_objectives_reviewer",
+          "title": "Research Problem & Objectives Reviewer",
+          "icon": "professor"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        },
+        {
+          "archetype_key": "statistical_analysis_reviewer",
+          "title": "Statistical & Data Analysis Reviewer",
+          "icon": "researcher"
+        },
+        {
+          "archetype_key": "literature_theory_specialist",
+          "title": "Literature & Theory Specialist",
+          "icon": "dean"
+        }
+      ]
+    },
+    {
+      "defense_type": "other",
+      "other_subtype": "oral_comps",
+      "archetypes": [
+        {
+          "archetype_key": "literature_theory_specialist",
+          "title": "Literature & Theory Specialist",
+          "icon": "dean"
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "problem_objectives_reviewer",
+          "title": "Research Problem & Objectives Reviewer",
+          "icon": "professor"
+        },
+        {
+          "archetype_key": "statistical_analysis_reviewer",
+          "title": "Statistical & Data Analysis Reviewer",
+          "icon": "researcher"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        }
+      ]
+    },
+    {
+      "defense_type": "other",
+      "other_subtype": "scholarship_panel",
+      "archetypes": [
+        {
+          "archetype_key": "problem_objectives_reviewer",
+          "title": "Research Problem & Objectives Reviewer",
+          "icon": "professor"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "results_conclusions_reviewer",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        {
+          "archetype_key": "literature_theory_specialist",
+          "title": "Literature & Theory Specialist",
+          "icon": "dean"
+        }
+      ]
+    },
+    {
+      "defense_type": "other",
+      "other_subtype": "certification_interview",
+      "archetypes": [
+        {
+          "archetype_key": "technical_implementation_reviewer",
+          "title": "Technical Implementation Reviewer",
+          "icon": "engineer"
+        },
+        {
+          "archetype_key": "industry_practice_reviewer",
+          "title": "Industry & Professional Practice Reviewer",
+          "icon": "student"
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        }
+      ]
+    },
+    {
+      "defense_type": "other",
+      "other_subtype": "grant_defense",
+      "archetypes": [
+        {
+          "archetype_key": "problem_objectives_reviewer",
+          "title": "Research Problem & Objectives Reviewer",
+          "icon": "professor"
+        },
+        {
+          "archetype_key": "ethics_practicality_reviewer",
+          "title": "Ethics & Practicality Reviewer",
+          "icon": "gorilla"
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        {
+          "archetype_key": "industry_practice_reviewer",
+          "title": "Industry & Professional Practice Reviewer",
+          "icon": "student"
+        },
+        {
+          "archetype_key": "literature_theory_specialist",
+          "title": "Literature & Theory Specialist",
+          "icon": "dean"
+        }
+      ]
+    }
+  ]
+}

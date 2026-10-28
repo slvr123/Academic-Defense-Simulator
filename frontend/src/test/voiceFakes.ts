@@ -57,9 +57,16 @@ export function fakeAudio() {
 
   let made = 0
   const revoked: string[] = []
+  // Audio clips only: the candidate's PDF gets its own object URL (M10 N4), counted apart.
   const created = vi.fn(() => `blob:clip-${++made}`)
-  Object.defineProperty(URL, 'createObjectURL', { value: created, configurable: true })
-  Object.defineProperty(URL, 'revokeObjectURL', { value: (url: string) => revoked.push(url), configurable: true })
+  const createObjectURL = (object: Blob) => (object instanceof File ? `blob:document-${object.name}` : created())
+  Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true })
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    value: (url: string) => {
+      if (!url.startsWith('blob:document')) revoked.push(url)
+    },
+    configurable: true,
+  })
 
   return {
     /** Every clip play() was called for, in order. */

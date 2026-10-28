@@ -35,6 +35,11 @@ export function pageRange(start: number, end: number): string {
   return start === end ? `PDF page ${start}` : `PDF pages ${start}–${end}`
 }
 
+/** A skipped range on the preparing screen (M10 N6): "p. 3" or "pp. 3–4", PDF page numbers. */
+export function pageSpan(start: number, end: number): string {
+  return start === end ? `p. ${start}` : `pp. ${start}–${end}`
+}
+
 export const PUSHBACK_OUTCOME_LABELS: Record<PushbackOutcome, string> = {
   recovered: 'recovered',
   held: 'held',

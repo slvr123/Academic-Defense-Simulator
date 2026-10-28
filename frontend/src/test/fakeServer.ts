@@ -95,7 +95,8 @@ export function fakeServer(): FakeServer {
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
     const reply = await abortable(Promise.resolve(handler(body)), init?.signal)
     if (reply === 'network') throw new TypeError('Failed to fetch')
-    const sent = reply.bytes ?? (reply.body === undefined ? '' : JSON.stringify(reply.body))
+    // A 204 carries no body at all; Response refuses even an empty one.
+    const sent = reply.status === 204 ? null : (reply.bytes ?? (reply.body === undefined ? '' : JSON.stringify(reply.body)))
     return new Response(sent, { status: reply.status, headers: reply.headers })
   })
 

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION, image_icon_path
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from backend.schemas import MAX_DOMAIN_PANELISTS, PanelConfig
@@ -51,3 +54,11 @@ def test_the_openapi_schema_carries_panel_config_and_the_upload_body(client_fact
     body = schema["paths"]["/sessions"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
     assert body["properties"]["panel"]["contentSchema"] == {"$ref": "#/components/schemas/PanelConfig"}
     assert body["required"] == ["file"]
+
+
+def test_the_frontend_preset_fixture_is_the_live_response(client_factory):
+    """M10 N7: the frontend checks its panel presets against this copy of /panel-options
+    (frontend/src/lib/presets.test.ts); it must be what the endpoint returns today."""
+    fixture = Path(__file__).resolve().parents[2] / "frontend" / "src" / "test" / "panelOptions.real.json"
+    with client_factory() as client:
+        assert client.get("/panel-options").json() == json.loads(fixture.read_text(encoding="utf-8"))

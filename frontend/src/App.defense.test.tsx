@@ -46,23 +46,49 @@ async function answer(user: User, text = 'We adapted ISO 25010.') {
 }
 
 describe('preparing (D16, /start in flight)', () => {
-  it('shows the seated panel and staged copy, never a bare spinner', async () => {
+  it('shows what the panel has to work with and what each seat looks for, never a bare spinner (M10 N6)', async () => {
     const server = defenseServer()
+    server.on('GET /sessions/abc', {
+      status: 200,
+      body: {
+        status: 'ready',
+        chunk_count: 8,
+        defense: 'not_started',
+        ingest: {
+          page_count: 40,
+          citable_passages: 6,
+          navigation_pages: [{ start: 3, end: 4 }],
+          reference_list: { start: 38, end: 40 },
+          literature_review: { start: 9, end: 15 },
+          held_back_passages: 2,
+        },
+      },
+    })
     const start = deferred<Reply>()
     server.on(START, () => start.promise)
     const user = renderApp()
     await toReady(server, user)
     await startDefense(user)
 
-    expect(screen.getByText('The panel is preparing. They are reading your document.')).toBeInTheDocument()
-    expect(screen.getByText('This usually takes 30–60 seconds.')).toBeInTheDocument() // measured (M7 J6)
-    const bench = screen.getByRole('region', { name: 'The panel' })
-    expect(within(bench).getAllByText('Methodology Expert').length).toBeGreaterThan(0)
-    expect(within(bench).getAllByText("Devil's Advocate").length).toBeGreaterThan(0)
-    expect(within(bench).getAllByText('Preparing').length).toBe(4) // every seat (3 + Devil's Advocate) gets ready, nobody lit
+    expect(screen.getByRole('heading', { name: 'The panel is reading your paper' })).toBeInTheDocument()
+    expect(screen.getByText(/Usually 30–60 seconds/)).toBeInTheDocument() // measured (M7 J6)
+    // Real numbers from the session status, never invented ones.
+    expect(screen.getByText('40')).toBeInTheDocument()
+    expect(screen.getByText('pages in your PDF')).toBeInTheDocument()
+    expect(screen.getByText('6')).toBeInTheDocument()
+    expect(screen.getByText('Contents and list pages · pp. 3–4')).toBeInTheDocument()
+    expect(screen.getByText('Reference list · pp. 38–40')).toBeInTheDocument()
+    expect(screen.getByText('Literature review · pp. 9–15 · 2 passages held back in this version')).toBeInTheDocument()
 
-    await advance(8000)
-    expect(screen.getByText('The panel is preparing. Each panelist is choosing what to press you on.')).toBeInTheDocument()
+    const seats = within(screen.getByRole('list', { name: 'Panel preparation' })).getAllByRole('listitem')
+    expect(seats).toHaveLength(4) // the Recommended thesis preset, then the Devil's Advocate
+    expect(seats[0]).toHaveTextContent('Methodology Expert')
+    expect(seats[0]).toHaveTextContent('Writing question 1')
+    expect(seats[0]).toHaveTextContent('whether your approach answers your question')
+    expect(seats[1]).toHaveTextContent('Seated')
+    expect(seats[3]).toHaveTextContent("Devil's Advocate")
+    expect(seats[3]).toHaveTextContent('Speaks last')
+    expect(document.body).not.toHaveTextContent(/Reading Chapter/)
 
     await act(async () => start.resolve({ status: 200, body: startResponse }))
     expect(await screen.findByText(Q1)).toBeInTheDocument()
