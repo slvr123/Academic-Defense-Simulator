@@ -3,7 +3,6 @@
 // the active card is lit (accent border, soft ground, dot); the Devil's Advocate's card
 // is dashed. Replaces M8's centred bench row. Statuses use only what the client knows:
 // the API never says who asks next, so there is no "Up next".
-import type { RefObject } from 'react'
 import { DEVILS_ADVOCATE_KEY } from '../lib/panel'
 import { panelistName } from '../lib/labels'
 import { Avatar } from './Avatar'
@@ -21,8 +20,6 @@ type Props = {
   status: ActiveStatus
   /** Questions each panelist has asked and had answered, by archetype key. */
   asked: Record<string, number>
-  /** The handoff timeline (M10 N13) reads the cards from here. */
-  gridRef?: RefObject<HTMLUListElement | null>
 }
 
 function idleStatus(card: Card, asked: number): string {
@@ -30,10 +27,10 @@ function idleStatus(card: Card, asked: number): string {
   return card.archetypeKey === DEVILS_ADVOCATE_KEY ? 'Speaks last' : 'Yet to ask'
 }
 
-export function PanelGrid({ cards, active, status, asked, gridRef }: Props) {
+export function PanelGrid({ cards, active, status, asked }: Props) {
   return (
     <section aria-label="The panel">
-      <ul ref={gridRef} className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] sm:gap-3">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] sm:gap-3">
         {cards.map((card) => {
           const lit = card.archetypeKey === active
           const devil = card.archetypeKey === DEVILS_ADVOCATE_KEY

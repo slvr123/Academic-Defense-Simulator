@@ -1,12 +1,13 @@
 // The answer loop (M8 K6, M10 N2): preparing, the question, the review, and the
 // previous answer's source reveal. Scores stay sealed until the report (K7).
-import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { limits } from '../api/constraints.gen'
 import type { ArchetypeOption, IngestSummary, PanelistOut, QuestionOut } from '../api/types'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { loadAnswerDraft, saveAnswerDraft, wordCount } from '../lib/answerDrafts'
 import { DEVILS_ADVOCATE_KEY } from '../lib/panel'
 import { looksFor } from '../lib/panelCopy'
+import { useHandoff, useSeatsArrive } from '../motion/motion'
 import { pageSpan, panelistName } from '../lib/labels'
 import { currentStep, TURN_STEPS, type TurnStep } from '../lib/turnSteps'
 import type { Notice, Turn, VoiceChoice } from '../state/flow'
@@ -64,9 +65,11 @@ function Skipped({ ingest }: { ingest: IngestSummary }) {
 /** "The panel is reading your paper" (N6, canvas Preparing.dc.html). Each seat shows its
  * role and what that role looks for; names arrive with /start's response. The first seat
  * writes question 1 (v1 opens with the first domain panelist); the Devil's Advocate speaks last. */
-export function PreparingScreen({ seats, ingest, listRef }: { seats: ArchetypeOption[]; ingest: IngestSummary | null; listRef?: RefObject<HTMLUListElement | null> }) {
+export function PreparingScreen({ seats, ingest }: { seats: ArchetypeOption[]; ingest: IngestSummary | null }) {
+  const root = useRef<HTMLElement>(null)
+  useSeatsArrive(root, seats.length)
   return (
-    <section aria-labelledby="preparing-title" className="flex flex-col gap-6 rounded-2xl border border-line-strong bg-card p-5 sm:gap-7 sm:px-10 sm:py-9">
+    <section ref={root} aria-labelledby="preparing-title" className="flex flex-col gap-6 rounded-2xl border border-line-strong bg-card p-5 sm:gap-7 sm:px-10 sm:py-9">
       <div className="flex flex-col gap-2">
         <h2 id="preparing-title" className="flex items-center gap-3 font-serif text-[26px] font-semibold tracking-[-0.015em] sm:text-[32px]">
           <Working /> {PREPARING_TITLE}
@@ -83,7 +86,7 @@ export function PreparingScreen({ seats, ingest, listRef }: { seats: ArchetypeOp
       )}
 
       {seats.length > 0 && (
-        <ul ref={listRef} aria-label="Panel preparation" className="flex flex-col gap-2.5">
+        <ul aria-label="Panel preparation" className="flex flex-col gap-2.5">
           {seats.map((seat, i) => {
             const first = i === 0
             const devil = seat.archetype_key === DEVILS_ADVOCATE_KEY
@@ -198,12 +201,12 @@ function VoiceControls({ voice, submitting }: { voice: QuestionVoice; submitting
 /** The previous question's reveal, once its answer is recorded: the passage the panelist
  * was reading, with the words the question was grounded in highlighted. No scores (K7).
  * `onOpenPage` opens the candidate's own PDF at the passage's first page (N4). */
-export function SourceReveal({ turn, onOpenPage, revealRef }: { turn: Turn; onOpenPage: ((page: number) => void) | null; revealRef?: RefObject<HTMLElement | null> }) {
+export function SourceReveal({ turn, onOpenPage }: { turn: Turn; onOpenPage: ((page: number) => void) | null }) {
   const { question, answer } = turn
   const asker = panelistName(question.panelist.name)
   const page = question.sources[0]?.page_start
   return (
-    <aside ref={revealRef} aria-label="Source passage" className="flex min-w-0 flex-col gap-4 rounded-2xl border border-accent bg-card p-5 sm:p-6">
+    <aside data-reveal aria-label="Source passage" className="flex min-w-0 flex-col gap-4 rounded-2xl border border-accent bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-serif text-xl font-semibold">What {asker} was reading</h3>
         <span className="font-mono text-xs text-muted">Question {question.turn}</span>
@@ -266,15 +269,13 @@ type QuestionScreenProps = {
   documentPanel: ReactNode
   /** The recorded demo (N5): the answer is read-only and the send button says "Next". */
   replay?: boolean
-  /** The handoff and reveal timelines (N13) read these. */
-  gridRef?: RefObject<HTMLUListElement | null>
-  questionRef?: RefObject<HTMLElement | null>
-  revealRef?: RefObject<HTMLElement | null>
 }
 
 export function QuestionScreen(props: QuestionScreenProps) {
   const { sessionId, voiceChoice, player, panel, question, draft, last, turns, submitting, notice, onChange, onSend, onAutoRetry, onOpenPage, documentPanel } = props
-  const { replay = false, gridRef, questionRef, revealRef } = props
+  const { replay = false } = props
+  const root = useRef<HTMLDivElement>(null)
+  useHandoff(root, question.turn)
   const answerId = useId()
   const voice = useQuestionVoice({ player, choice: voiceChoice, sessionId, question, submitting })
   const [typed, setTyped] = useState(false)
@@ -303,15 +304,15 @@ export function QuestionScreen(props: QuestionScreenProps) {
     onChange(text)
   }
 
-  const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} revealRef={revealRef} />
+  const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} />
 
   return (
-    <div className="space-y-5">
-      <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} gridRef={gridRef} />
+    <div ref={root} className="space-y-5">
+      <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} />
       <div className="flex flex-wrap items-start gap-6">
         <div className={`flex min-w-0 flex-col gap-6 ${documentPanel ? 'flex-[999_1_560px]' : 'flex-[1_1_520px]'}`}>
           <section
-            ref={questionRef}
+            data-question
             aria-label={`Question ${question.turn}`}
             className="flex min-w-0 flex-col gap-6 rounded-2xl border border-line-strong bg-card p-5 sm:gap-7 sm:px-9 sm:pt-8 sm:pb-7"
           >

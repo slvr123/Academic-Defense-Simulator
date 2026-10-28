@@ -50,10 +50,10 @@
   --color-danger: #f2a7a0;
   --color-danger-soft: #2b1b19;
 
-  /* Motion (M8 K9): only where it shows state, and none under reduced motion (below). */
+  /* Motion (M8 K9): only where it shows state, and none under reduced motion (below).
+     The handoff, the source reveal and the seats arriving are GSAP timelines (M10 N13, src/motion). */
   --animate-speaking: speaking 1.6s ease-in-out infinite;
   --animate-shimmer: shimmer 1.8s linear infinite;
-  --animate-reveal: reveal 0.4s ease-out both;
   --animate-caret: caret 1s steps(1) infinite;
 
   /* The speaking panelist's portrait: a soft amber ring that breathes. */
@@ -74,18 +74,6 @@
     }
     to {
       background-position: -100% 0;
-    }
-  }
-
-  /* The source reveal slides in once the answer is recorded. */
-  @keyframes reveal {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
     }
   }
 
