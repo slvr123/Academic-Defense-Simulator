@@ -54,14 +54,43 @@ PAIRS = [
     ("danger", "card", BODY, "'no defenses left' line"),
     ("accent", "card", LARGE, "lit plate border, focus ring (non-text)"),
     ("devil-line", "raised", LARGE, "Devil's Advocate dashed plate (non-text)"),
+    # v2.0 M10: pairs the new screens added (existing tokens only, N1).
+    ("ink", "surface", BODY, "M10: panel card name, path buttons"),
+    ("muted", "surface", BODY, "M10: panel card role and status, path button detail, demo note"),
+    ("muted", "accent-soft", BODY, "M10: lit card role, pressed preset's members"),
+    ("subtle", "ground", BODY, "M10: 'No paper handy?', word count on the phone send bar"),
+    ("accent", "ground", BODY, "M10: 'Recorded demo' badge, drop zone 'browse'"),
+    ("ink", "raised", BODY, "M10: voice menu items"),
+    ("subtle", "field", BODY, "M10: drop zone limits line"),
+    ("ink", "ground", BODY, "M10: phone PDF sheet title"),
+    ("devil-line", "field", LARGE, "M10: drop zone dashed border (non-text)"),
+    ("devil-line", "surface", LARGE, "M10: Devil's Advocate dashed card (non-text)"),
+    ("subtle", "card", LARGE, "M10: unpressed preset ring (non-text)"),
+]
+
+# M10 N11: the print stylesheet's own tokens (index.css, @media print), black on white.
+PRINT_PAIRS = [
+    ("ink", "card", BODY, "print: body text"),
+    ("muted", "card", BODY, "print: secondary text"),
+    ("subtle", "card", BODY, "print: labels"),
+    ("paper-ink", "paper", BODY, "print: source passage"),
+    ("paper-ink", "highlight", BODY, "print: highlighted reference (also underlined)"),
+    ("paper-muted", "paper", BODY, "print: passage page label"),
+    ("accent", "card", BODY, "print: 'Overall' label"),
+    ("line-strong", "card", LARGE, "print: card borders (non-text)"),
 ]
 
 # Shades the Bench mockup used that this theme changed, with the mockup's value.
 MOCKUP = {"devil-line": "#4A3A36"}
 
 
-def tokens() -> dict[str, str]:
-    return dict(re.findall(r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})", CSS.read_text(encoding="utf-8")))
+def tokens(print_media: bool = False) -> dict[str, str]:
+    """The screen tokens, or with `print_media` the screen tokens overridden by @media print's."""
+    screen, _, printed = CSS.read_text(encoding="utf-8").partition("@media print")
+    found = dict(re.findall(r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})", screen))
+    if print_media:
+        found.update(re.findall(r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})", printed))
+    return found
 
 
 def luminance(hex_colour: str) -> float:
@@ -79,16 +108,16 @@ def ratio(a: str, b: str) -> float:
 
 
 def main() -> int:
-    colours = tokens()
     failed = 0
     print(f"{'foreground':13} {'background':12} {'ratio':>6} {'bar':>4}  {'mockup':>12}  use")
-    for fg, bg, bar, use in PAIRS:
-        value = ratio(colours[fg], colours[bg])
-        before = f"{ratio(MOCKUP[fg], colours[bg]):.2f} ({MOCKUP[fg]})" if fg in MOCKUP else ""
-        verdict = "ok" if value >= bar else "FAIL"
-        failed += verdict == "FAIL"
-        print(f"{fg:13} {bg:12} {value:6.2f} {bar:4.1f}  {before:>12}  {use} {verdict}")
-    print(f"{len(PAIRS)} pairs, {failed} failing")
+    for pairs, colours in ((PAIRS, tokens()), (PRINT_PAIRS, tokens(print_media=True))):
+        for fg, bg, bar, use in pairs:
+            value = ratio(colours[fg], colours[bg])
+            before = f"{ratio(MOCKUP[fg], colours[bg]):.2f} ({MOCKUP[fg]})" if fg in MOCKUP and pairs is PAIRS else ""
+            verdict = "ok" if value >= bar else "FAIL"
+            failed += verdict == "FAIL"
+            print(f"{fg:13} {bg:12} {value:6.2f} {bar:4.1f}  {before:>12}  {use} {verdict}")
+    print(f"{len(PAIRS) + len(PRINT_PAIRS)} pairs, {failed} failing")
     return 1 if failed else 0
 
 

@@ -65,7 +65,7 @@ function Skipped({ ingest }: { ingest: IngestSummary }) {
 /** "The panel is reading your paper" (N6, canvas Preparing.dc.html). Each seat shows its
  * role and what that role looks for; names arrive with /start's response. The first seat
  * writes question 1 (v1 opens with the first domain panelist); the Devil's Advocate speaks last. */
-export function PreparingScreen({ seats, ingest }: { seats: ArchetypeOption[]; ingest: IngestSummary | null }) {
+export function PreparingScreen({ seats, ingest, recorded = false }: { seats: ArchetypeOption[]; ingest: IngestSummary | null; recorded?: boolean }) {
   const root = useRef<HTMLElement>(null)
   useSeatsArrive(root, seats.length)
   return (
@@ -74,7 +74,9 @@ export function PreparingScreen({ seats, ingest }: { seats: ArchetypeOption[]; i
         <h2 id="preparing-title" className="flex items-center gap-3 font-serif text-[26px] font-semibold tracking-[-0.015em] sm:text-[32px]">
           <Working /> {PREPARING_TITLE}
         </h2>
-        <p className="text-base text-muted">Here's what they have to work with. The first question is being written.</p>
+        <p className="text-base text-muted">
+          {recorded ? 'What the panel had to work with in this recording.' : "Here's what they have to work with. The first question is being written."}
+        </p>
       </div>
 
       {ingest && (

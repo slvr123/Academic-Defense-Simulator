@@ -136,7 +136,9 @@ function useExpandedForPrint() {
   }, [])
 }
 
-export function ReportScreen({ result, options, onRestart }: { result: ReportResponse; options: PanelOptions | null; onRestart: () => void }) {
+type ReportScreenProps = { result: ReportResponse; options: PanelOptions | null; onRestart: () => void; restartLabel?: string }
+
+export function ReportScreen({ result, options, onRestart, restartLabel = 'Start a new defense' }: ReportScreenProps) {
   const { report, transcript } = result
   const byKey = seats(transcript, options)
   const suggestions = report.suggestions_fallback_used ? [] : (report.answer_suggestions ?? [])
@@ -224,7 +226,7 @@ export function ReportScreen({ result, options, onRestart }: { result: ReportRes
       <Transcript transcript={transcript} />
 
       <Button className="print:hidden" onClick={onRestart}>
-        Start a new defense
+        {restartLabel}
       </Button>
     </div>
   )

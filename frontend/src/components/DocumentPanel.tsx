@@ -7,7 +7,8 @@ import { useRef } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
-export function DocumentPanel({ url, page, onClose }: { url: string; page: number; onClose: () => void }) {
+/** `sample`: the recorded demo's bundled capstone (N5), not the candidate's own file. */
+export function DocumentPanel({ url, page, onClose, sample = false }: { url: string; page: number; onClose: () => void; sample?: boolean }) {
   const root = useRef<HTMLElement>(null)
   // The phone sheet covers the page, so it traps focus; on wide screens the panel sits
   // beside the question and Tab moves freely between them.
@@ -21,7 +22,7 @@ export function DocumentPanel({ url, page, onClose }: { url: string; page: numbe
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold">
-          Your PDF <span className="font-mono text-xs font-normal text-muted">· opened at page {page}</span>
+          {sample ? 'The sample PDF' : 'Your PDF'} <span className="font-mono text-xs font-normal text-muted">· opened at page {page}</span>
         </span>
         <button
           type="button"
@@ -36,7 +37,9 @@ export function DocumentPanel({ url, page, onClose }: { url: string; page: numbe
       </div>
       {/* Keyed by page: a new #page on the same document isn't always honoured, a fresh frame is. */}
       <iframe key={page} src={`${url}#page=${page}`} title={`Your PDF, page ${page}`} className="min-h-0 w-full flex-1 rounded border border-line-strong bg-paper" />
-      <p className="font-mono text-xs text-subtle">Opened from your own file in this browser. Nothing is uploaded again.</p>
+      <p className="font-mono text-xs text-subtle">
+        {sample ? 'The bundled sample capstone, served with this page.' : 'Opened from your own file in this browser. Nothing is uploaded again.'}
+      </p>
     </section>
   )
 }

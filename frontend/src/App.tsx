@@ -2,6 +2,7 @@
 // screen gets exactly the fields that variant carries.
 import { useState } from 'react'
 import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
+import { DemoReplay } from './components/DemoReplay'
 import { DocumentPanel } from './components/DocumentPanel'
 import { QuotaLine } from './components/QuotaLine'
 import { ReportScreen } from './components/ReportScreen'
@@ -22,6 +23,7 @@ export default function App() {
   const [player] = useState(createPlayer)
   const { state } = flow
   const { phase } = state
+  const [demo, setDemo] = useState(false) // "Read a recorded defense" (N5)
   const inDefense = phase.kind === 'question' || phase.kind === 'submitting'
 
   // N4: the candidate's own PDF, as an object URL while the defense runs. It goes (and is
@@ -60,7 +62,7 @@ export default function App() {
           quota={state.quota}
           notice={phase.notice}
           onTrySample={() => void flow.trySample()}
-          onReadRecording={() => {}}
+          onReadRecording={() => setDemo(true)}
           onChange={flow.editDraft}
           onSubmit={() => void flow.upload()}
         />
@@ -168,6 +170,8 @@ export default function App() {
       </div>
     )
   }
+
+  if (demo) return <DemoReplay player={player} onExit={() => setDemo(false)} />
 
   return (
     <div className="min-h-dvh">
