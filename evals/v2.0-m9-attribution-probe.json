@@ -1,0 +1,44 @@
+{
+ "milestone": "v2.0 M9 L5",
+ "model": "gemini-3.1-flash-lite",
+ "difficulty": 3,
+ "archetype": "literature_theory_specialist",
+ "calls_this_run": 19,
+ "calls_across_runs": 19,
+ "cache_hits_this_run": 1,
+ "documents": [
+  {
+   "document": "sample3.pdf",
+   "review_chunks": [
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "persona_fallback": false
+  },
+  {
+   "document": "sample-capstone-anicheck.pdf",
+   "review_chunks": [
+    3,
+    4
+   ],
+   "persona_fallback": false
+  }
+ ],
+ "items": 16,
+ "grounded": 15,
+ "note_only_grounding": 0,
+ "note_named_authors": 16,
+ "invented_citation_items": []
+}
