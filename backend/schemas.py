@@ -226,6 +226,27 @@ ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode]
 IngestErrorCode = Literal["scanned_pdf"]
 
 
+class PageRange(BaseModel):
+    """1-based and inclusive, as a PDF viewer numbers pages."""
+
+    start: int
+    end: int
+
+
+class IngestSummary(BaseModel):
+    """M10 N6: what ingest read and left out, for the preparing screen. Counts and
+    page numbers only, never text."""
+
+    page_count: int
+    citable_passages: int  # passages this panel's new topics can draw on
+    navigation_pages: list[PageRange]  # contents and list pages left out (M5)
+    reference_list: PageRange | None  # left out (M6 H1)
+    # M9: set when no panelist on this panel may draw the literature review's tagged
+    # passages; held_back_passages says how many that is.
+    literature_review: PageRange | None
+    held_back_passages: int
+
+
 class SessionState(BaseModel):
     status: Literal["queued", "embedding", "ready", "failed"]
     defense: Literal["not_started", "in_progress", "done"] | None = None  # once ready
@@ -234,6 +255,7 @@ class SessionState(BaseModel):
     chunk_count: int | None = None
     error: str | None = None
     error_code: IngestErrorCode | None = None  # with error, when the reason has a code
+    ingest: IngestSummary | None = None  # once ready (M10 N6)
 
 
 class ErrorBody(BaseModel):

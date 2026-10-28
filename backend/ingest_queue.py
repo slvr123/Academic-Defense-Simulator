@@ -21,6 +21,7 @@ import numpy as np
 
 from backend import memory
 from backend.embedder import EMBEDDING_DIM, Embedder
+from backend.ingest_summary import SkippedPages, skipped_pages
 from backend.pdf_ingest import IngestFailure, parse_pdf
 from backend.schemas import IngestErrorCode
 from backend.sessions import ChunkMeta, Session, SessionStatus
@@ -43,6 +44,7 @@ class IngestJob:
 class IngestResult:
     matrix: np.ndarray
     chunks: list[ChunkMeta]
+    skipped: SkippedPages
     parse_s: float
     embed_s: float
 
@@ -137,6 +139,7 @@ class IngestQueue:
         if result is not None and not session.cancelled:
             session.matrix = result.matrix
             session.chunks = result.chunks
+            session.skipped = result.skipped
             session.progress = 1.0
             session.status = SessionStatus.READY
         result_chunks = len(result.chunks) if result else None
@@ -197,6 +200,7 @@ class IngestQueue:
         return IngestResult(
             matrix=matrix,
             chunks=chunks,
+            skipped=skipped_pages(filtered, job.page_count),
             parse_s=parsed - started,
             embed_s=time.perf_counter() - parsed,
         )

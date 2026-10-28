@@ -28,6 +28,7 @@ from backend.schemas import IngestErrorCode, PanelConfig
 
 if TYPE_CHECKING:
     from backend.defense import Defense
+    from backend.ingest_summary import SkippedPages
 
 
 class SessionStatus(str, Enum):
@@ -66,6 +67,7 @@ class Session:
     error_code: IngestErrorCode | None = None
     matrix: np.ndarray | None = None  # (chunk_count, 384) float32, unit rows
     chunks: list[ChunkMeta] = field(default_factory=list)
+    skipped: SkippedPages | None = None  # set with the chunks (M10 N6)
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk
     defense: Defense | None = None  # from POST /start
     # One defense request at a time per session; a second one gets 409 rather than queueing.
@@ -125,6 +127,7 @@ class SessionStore:
             session.cancelled = True
             session.matrix = None
             session.chunks = []
+            session.skipped = None
             session.defense = None
         return session
 

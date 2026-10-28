@@ -33,6 +33,7 @@ from backend.defense_routes import defense_status, gemini_providers_factory, reg
 from backend.embedder import Embedder, OnnxEmbedder
 from backend.errors import CodedHTTPException, coded_http_exception_handler
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
+from backend.ingest_summary import ingest_summary
 from backend.panel_options import panel_options
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
 from backend.quota import (
@@ -316,6 +317,7 @@ def create_app(
             error=session.error,
             error_code=session.error_code,
             defense=defense_status(session),
+            ingest=ingest_summary(session, settings.lit_review_access),
         )
 
     @app.delete("/sessions/{session_id}", status_code=204)

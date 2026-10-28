@@ -354,10 +354,37 @@ export interface components {
             end: number;
         };
         /**
+         * IngestSummary
+         * @description M10 N6: what ingest read and left out, for the preparing screen. Counts and
+         *     page numbers only, never text.
+         */
+        IngestSummary: {
+            /** Page Count */
+            page_count: number;
+            /** Citable Passages */
+            citable_passages: number;
+            /** Navigation Pages */
+            navigation_pages: components["schemas"]["PageRange"][];
+            reference_list: components["schemas"]["PageRange"] | null;
+            literature_review: components["schemas"]["PageRange"] | null;
+            /** Held Back Passages */
+            held_back_passages: number;
+        };
+        /**
          * OtherSubtype
          * @enum {string}
          */
         OtherSubtype: "oral_comps" | "scholarship_panel" | "certification_interview" | "grant_defense";
+        /**
+         * PageRange
+         * @description 1-based and inclusive, as a PDF viewer numbers pages.
+         */
+        PageRange: {
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+        };
         /**
          * PanelOptions
          * @description GET /panel-options: what PanelConfig's archetype_keys can hold, per defense type.
@@ -504,6 +531,7 @@ export interface components {
             error?: string | null;
             /** Error Code */
             error_code?: "scanned_pdf" | null;
+            ingest?: components["schemas"]["IngestSummary"] | null;
         };
         /**
          * Source

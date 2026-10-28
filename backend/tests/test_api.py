@@ -38,7 +38,9 @@ def test_pdf_goes_from_queued_to_ready_with_page_ranges(client_factory, pdf):
 
         state = wait_for(client, created["session_id"], _ready)
         expected = chunk_pdf_with_pages(pdf)
+        ingest = state.pop("ingest")  # M10 N6; backend/tests/test_ingest_summary.py covers it
         assert state == {"status": "ready", "progress": 1.0, "chunk_count": len(expected), "defense": "not_started"}
+        assert ingest["page_count"] == 3 and ingest["citable_passages"] == len(expected)
 
         session = client.app.state.store.get(created["session_id"])
         assert session.matrix.shape == (len(expected), 384)
