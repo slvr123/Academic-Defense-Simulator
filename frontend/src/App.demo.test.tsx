@@ -1,8 +1,10 @@
 // M10 N5: the no-upload paths. The recorded demo replays a static fixture through the
 // real screens with no backend call; the sample-paper button uploads the bundled capstone.
-import { screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { DEMO_NOTE, DEMO_PATH, type DemoRecording } from './components/DemoReplay'
+import { DEMO_NOTE, DEMO_PATH, DemoReplay, type DemoRecording, RECORDING_AVAILABLE } from './components/DemoReplay'
+import { createPlayer } from './voice/player'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
 import { defaultServer, renderApp } from './test/renderApp'
 import { SAMPLE_PDF_PATH } from './state/useFlow'
@@ -34,13 +36,27 @@ function demoServer() {
   return server
 }
 
+/** The replay on its own: the start screen hides its button until a recording ships. */
+function renderReplay(onExit = vi.fn()) {
+  const user = userEvent.setup()
+  render(<DemoReplay player={createPlayer()} onExit={onExit} />)
+  return { user, onExit }
+}
+
 describe('Read a recorded defense (N5)', () => {
+  it('is offered on the start screen exactly when the recording is shipped (deferred to M10.1)', async () => {
+    const shipped = Object.keys(import.meta.glob('../public/demo/anicheck-defense.json')).length === 1
+    expect(RECORDING_AVAILABLE).toBe(shipped)
+    defaultServer()
+    renderApp()
+    await screen.findByText(/defenses left today/)
+    expect(screen.queryByRole('button', { name: /Read a recorded defense/ }) !== null).toBe(RECORDING_AVAILABLE)
+    expect(screen.getByRole('button', { name: /Try it with the sample paper/ })).toBeInTheDocument()
+  })
+
   it('replays the recording through the real screens with Next, labelled, and makes no backend call', async () => {
     const server = demoServer()
-    const user = renderApp()
-    await screen.findByText(/defenses left today/)
-    const before = server.calls.length
-    await user.click(screen.getByRole('button', { name: /Read a recorded defense/ }))
+    const { user, onExit } = renderReplay()
 
     // Preparing, with the recording's real ingest numbers.
     expect(await screen.findByText('What the panel had to work with in this recording.')).toBeInTheDocument()
@@ -65,16 +81,15 @@ describe('Read a recorded defense (N5)', () => {
     expect(await screen.findByText('Your debrief')).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Overall' })).getByText('70', { exact: false, selector: 'p' })).toHaveTextContent('70/100')
     // The static fixture only (StrictMode's mount effect asks for it twice), never the API.
-    expect(new Set(server.calls.slice(before))).toEqual(new Set([`GET ${DEMO_PATH}`]))
+    expect(new Set(server.calls)).toEqual(new Set([`GET ${DEMO_PATH}`]))
 
     await user.click(screen.getByRole('button', { name: 'Leave the demo' }))
-    expect(await screen.findByText(/Drop your PDF here/)).toBeInTheDocument()
+    expect(onExit).toHaveBeenCalled()
   })
 
   it('offers only the browser voice or none, never panel voices', async () => {
     demoServer()
-    const user = renderApp()
-    await user.click(await screen.findByRole('button', { name: /Read a recorded defense/ }))
+    const { user } = renderReplay()
     await user.click(await screen.findByRole('button', { name: 'Next' }))
     await user.click(await screen.findByRole('button', { name: /^Voice: / }))
     expect(screen.queryByRole('radio', { name: 'Panel voice' })).not.toBeInTheDocument()
@@ -83,8 +98,7 @@ describe('Read a recorded defense (N5)', () => {
 
   it('opens the sample PDF at the revealed page', async () => {
     demoServer()
-    const user = renderApp()
-    await user.click(await screen.findByRole('button', { name: /Read a recorded defense/ }))
+    const { user } = renderReplay()
     await user.click(await screen.findByRole('button', { name: 'Next' }))
     await user.click(await screen.findByRole('button', { name: 'Next' }))
     await user.click(await screen.findByRole('button', { name: 'Open at page 12 in your PDF' }))

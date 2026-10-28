@@ -24,7 +24,8 @@ type Props = {
   notice: Notice | null
   /** Null when the sample paper isn't shipped: the button is dropped (N5). */
   onTrySample: (() => void) | null
-  onReadRecording: () => void
+  /** Null until a recording is shipped: the button is hidden (N5, deferred to M10.1). */
+  onReadRecording: (() => void) | null
   onChange: (draft: Partial<Draft>) => void
   onSubmit: () => void
 }
@@ -51,12 +52,14 @@ export function StartScreen({ draft, options, quota, notice, onTrySample, onRead
         </p>
         <div className="flex flex-col gap-2.5 pt-1.5">
           <span className="font-mono text-xs text-subtle">No paper handy?</span>
-          <PathButton
-            icon={<path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" />}
-            title="Read a recorded defense"
-            detail="A full session on our sample capstone. Free, no upload."
-            onClick={onReadRecording}
-          />
+          {onReadRecording && (
+            <PathButton
+              icon={<path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" />}
+              title="Read a recorded defense"
+              detail="A full session on our sample capstone. Free, no upload."
+              onClick={onReadRecording}
+            />
+          )}
           {onTrySample && (
             <PathButton
               icon={<path d="M8 5v14l11-7z" />}

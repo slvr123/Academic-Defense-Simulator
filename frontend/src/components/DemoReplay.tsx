@@ -15,6 +15,11 @@ import { SessionHeader, WORDMARK } from './SessionHeader'
 import { Button, Card, Heading, Working } from './ui'
 
 export const DEMO_PATH = '/demo/anicheck-defense.json'
+/** Whether public/demo/anicheck-defense.json is shipped. False until it is recorded
+ * (deferred to M10.1: Gemini answered 503 to every /start in M10); the start screen
+ * hides "Read a recorded defense" until then. App.demo.test.tsx fails if this and the
+ * file disagree, so committing the recording means flipping it. */
+export const RECORDING_AVAILABLE = false
 export const DEMO_PDF_PATH = '/sample/sample-capstone-anicheck.pdf'
 export const DEMO_NOTE = 'Answers in this recording were written to demonstrate the panel.'
 

@@ -2,7 +2,7 @@
 // screen gets exactly the fields that variant carries.
 import { useState } from 'react'
 import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
-import { DemoReplay } from './components/DemoReplay'
+import { DemoReplay, RECORDING_AVAILABLE } from './components/DemoReplay'
 import { DocumentPanel } from './components/DocumentPanel'
 import { QuotaLine } from './components/QuotaLine'
 import { ReportScreen } from './components/ReportScreen'
@@ -62,7 +62,7 @@ export default function App() {
           quota={state.quota}
           notice={phase.notice}
           onTrySample={() => void flow.trySample()}
-          onReadRecording={() => setDemo(true)}
+          onReadRecording={RECORDING_AVAILABLE ? () => setDemo(true) : null}
           onChange={flow.editDraft}
           onSubmit={() => void flow.upload()}
         />
