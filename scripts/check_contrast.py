@@ -77,6 +77,8 @@ PRINT_PAIRS = [
     ("paper-ink", "highlight", BODY, "print: highlighted reference (also underlined)"),
     ("paper-muted", "paper", BODY, "print: passage page label"),
     ("accent", "card", BODY, "print: 'Overall' label"),
+    ("ink", "accent-soft", BODY, "print: a question's Overall score tile"),
+    ("accent", "accent-soft", BODY, "print: the tile's 'Overall' label"),
     ("line-strong", "card", LARGE, "print: card borders (non-text)"),
 ]
 

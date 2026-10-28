@@ -5,6 +5,7 @@
 // the API never says who asks next, so there is no "Up next".
 import { DEVILS_ADVOCATE_KEY } from '../lib/panel'
 import { panelistName } from '../lib/labels'
+import { shortTitle } from '../lib/panelCopy'
 import { Avatar } from './Avatar'
 
 export type Card = { archetypeKey: string; surname: string | null; title: string; icon: string }
@@ -46,7 +47,7 @@ export function PanelGrid({ cards, active, status, asked }: Props) {
               <Avatar icon={card.icon} size="md" dimmed={!lit} speaking={lit && status === 'speaking'} />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[15px] font-semibold text-ink">{card.surname ? panelistName(card.surname) : card.title}</span>
-                <span className="truncate text-[12.5px] text-muted">{card.title}</span>
+                <span className="truncate text-[12.5px] text-muted" title={card.title}>{shortTitle(card.archetypeKey, card.title)}</span>
               </span>
               <span className={`flex shrink-0 items-center gap-1.5 font-mono text-xs ${lit ? 'text-accent' : 'text-muted'}`}>
                 {lit && <span aria-hidden className="size-[7px] rounded-full bg-accent" />}

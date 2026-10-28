@@ -148,6 +148,10 @@ body {
     --color-subtle: #4a4a4a;
     --color-faint: #4a4a4a;
     --color-accent: #000000;
+    --color-accent-soft: #ffffff;
+    --color-rail: #6b6b6b;
+    --color-warn-soft: #ffffff;
+    --color-danger-soft: #ffffff;
     --color-paper: #ffffff;
     --color-paper-ink: #000000;
     --color-paper-muted: #3d3d3d;
