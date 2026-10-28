@@ -138,3 +138,48 @@ body {
     background-image: none;
   }
 }
+
+/* M10 N11: the debrief printed, or saved as PDF from the print dialog. Black on white,
+   so it reads on a black-and-white printer: the tokens are swapped for print, the
+   passage card loses its shadow for a rule, and the highlight is underlined as well as
+   shaded, since the shade alone can vanish in greyscale. Navigation and buttons are
+   hidden where they're drawn (print:hidden); every question card is opened by
+   ReportScreen before printing. */
+@media print {
+  :root {
+    --color-ground: #ffffff;
+    --color-field: #ffffff;
+    --color-surface: #ffffff;
+    --color-card: #ffffff;
+    --color-raised: #ffffff;
+    --color-line: #8a8a8a;
+    --color-line-strong: #6b6b6b;
+    --color-ink: #000000;
+    --color-ink-dim: #1f1f1f;
+    --color-muted: #3d3d3d;
+    --color-subtle: #4a4a4a;
+    --color-faint: #4a4a4a;
+    --color-accent: #000000;
+    --color-paper: #ffffff;
+    --color-paper-ink: #000000;
+    --color-paper-muted: #3d3d3d;
+    --color-paper-edge: #6b6b6b;
+    --color-highlight: #d9d9d9;
+  }
+  body {
+    background: #ffffff;
+  }
+  figure {
+    box-shadow: none !important;
+    border: 1px solid var(--color-paper-edge);
+    break-inside: avoid;
+  }
+  mark {
+    text-decoration: underline 2px;
+    text-underline-offset: 2px;
+  }
+  details > summary {
+    list-style: none;
+  }
+}
+

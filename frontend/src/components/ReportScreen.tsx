@@ -2,7 +2,7 @@
 // per question with the answer, the passage, the gap the panelist found and a stronger
 // answer. Every score of the defense is here and nowhere earlier (K7). v1's other
 // sections (narrative, per panelist, pushback) and the full transcript stay.
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import type { AnswerSuggestion, DefenseReport, PanelOptions, ReportResponse, TranscriptTurn } from '../api/types'
 import { PUSHBACK_OUTCOME_LABELS, panelistName } from '../lib/labels'
 import { SCALE_CAPTION, toHundred } from '../lib/scoreDisplay'
@@ -62,7 +62,7 @@ function Labelled({ label, children }: { label: string; children: ReactNode }) {
 function QuestionCard({ turn, suggestion, open }: { turn: TranscriptTurn; suggestion: AnswerSuggestion | undefined; open: boolean }) {
   const gap = turn.evaluation.primary_gap
   return (
-    <details open={open} className="group rounded-2xl border border-line-strong bg-card">
+    <details open={open} className="group rounded-2xl border border-line-strong bg-card print:break-inside-avoid-page">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 p-4 sm:px-6 [&::-webkit-details-marker]:hidden">
         <Avatar icon={turn.panelist.icon} size="sm" />
         <span className="min-w-0 flex-1">
@@ -71,7 +71,7 @@ function QuestionCard({ turn, suggestion, open }: { turn: TranscriptTurn; sugges
           </span>
           <span className="block truncate font-serif text-base group-open:whitespace-normal">{turn.question}</span>
         </span>
-        <span aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none">
+        <span aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none print:hidden">
           ▾
         </span>
       </summary>
@@ -114,17 +114,45 @@ function Transcript({ transcript }: { transcript: TranscriptTurn[] }) {
   )
 }
 
+/** M10 N11: printing expands every question card, whether it's "Save as PDF" or the
+ * browser's own Print, and puts each card back as it was afterwards. */
+function useExpandedForPrint() {
+  useEffect(() => {
+    let reopen: HTMLDetailsElement[] = []
+    const before = () => {
+      reopen = Array.from(document.querySelectorAll<HTMLDetailsElement>('[data-report] details:not([open])'))
+      for (const details of reopen) details.open = true
+    }
+    const after = () => {
+      for (const details of reopen) details.open = false
+      reopen = []
+    }
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint', after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint', after)
+    }
+  }, [])
+}
+
 export function ReportScreen({ result, options, onRestart }: { result: ReportResponse; options: PanelOptions | null; onRestart: () => void }) {
   const { report, transcript } = result
   const byKey = seats(transcript, options)
   const suggestions = report.suggestions_fallback_used ? [] : (report.answer_suggestions ?? [])
+  useExpandedForPrint()
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="font-serif text-3xl font-medium">Your debrief</h2>
-        <p className="font-mono text-xs text-muted">
-          {result.topic} · {result.domain}
-        </p>
+    <div data-report className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="font-serif text-3xl font-medium">Your debrief</h2>
+          <p className="font-mono text-xs text-muted">
+            {result.topic} · {result.domain}
+          </p>
+        </div>
+        <Button variant="secondary" className="print:hidden" onClick={() => window.print()}>
+          Save as PDF
+        </Button>
       </div>
 
       <Headline report={report} overallRaw={result.overall_raw} />
@@ -195,7 +223,9 @@ export function ReportScreen({ result, options, onRestart }: { result: ReportRes
 
       <Transcript transcript={transcript} />
 
-      <Button onClick={onRestart}>Start a new defense</Button>
+      <Button className="print:hidden" onClick={onRestart}>
+        Start a new defense
+      </Button>
     </div>
   )
 }

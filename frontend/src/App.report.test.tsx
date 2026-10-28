@@ -71,4 +71,23 @@ describe('the report', () => {
     await user.click(screen.getByRole('button', { name: 'Start a new defense' }))
     expect(screen.getByRole('button', { name: /upload and convene/i })).toBeDisabled()
   })
+
+  it('saves as PDF through the print dialog, with every question card expanded for the print (M10 N11)', async () => {
+    const print = vi.fn()
+    vi.stubGlobal('print', print)
+    const second = { ...report.transcript[0], turn: 2, question: 'Why thirty respondents?' }
+    await toReport({ ...report, transcript: [...report.transcript, second] })
+    const cards = within(screen.getByRole('region', { name: 'Question by question' }))
+    const closed = cards.getByText('Why thirty respondents?').closest('details')
+    expect(closed).not.toHaveAttribute('open')
+
+    screen.getByRole('button', { name: 'Save as PDF' }).click()
+    expect(print).toHaveBeenCalledOnce()
+    window.dispatchEvent(new Event('beforeprint'))
+    expect(closed).toHaveAttribute('open')
+    window.dispatchEvent(new Event('afterprint'))
+    expect(closed).not.toHaveAttribute('open') // back as it was
+    expect(screen.getByRole('button', { name: 'Save as PDF' })).toHaveClass('print:hidden')
+    expect(screen.getByRole('button', { name: 'Start a new defense' })).toHaveClass('print:hidden')
+  })
 })
