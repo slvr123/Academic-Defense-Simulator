@@ -1,0 +1,51 @@
+{
+ "milestone": "v2.0 M8 K5",
+ "source": "M3 live run questions (as M6 H8)",
+ "model": "mimo-v2.5-tts-voiceclone",
+ "questions": [
+  {
+   "turn": 1,
+   "archetype": "technical_implementation_reviewer",
+   "chars": 252,
+   "parts": 1,
+   "clone_whole_s": 6.87,
+   "clone_whole_ok": true,
+   "first_audio_s": 6.87
+  },
+  {
+   "turn": 2,
+   "archetype": "methodology_expert",
+   "chars": 379,
+   "parts": 1,
+   "clone_whole_s": 7.65,
+   "clone_whole_ok": true,
+   "first_audio_s": 7.65
+  },
+  {
+   "turn": 3,
+   "archetype": "results_conclusions_reviewer",
+   "chars": 427,
+   "parts": 2,
+   "clone_whole_s": 8.13,
+   "clone_whole_ok": true,
+   "clone_part_s": [
+    6.11,
+    9.0
+   ],
+   "first_audio_s": 6.11
+  },
+  {
+   "turn": 4,
+   "archetype": "devils_advocate",
+   "chars": 438,
+   "parts": 1,
+   "clone_whole_s": 10.98,
+   "clone_whole_ok": true,
+   "first_audio_s": 10.98
+  }
+ ],
+ "median_first_audio_s": 7.26,
+ "median_clone_whole_s": 7.890000000000001,
+ "split_question_turn": 3,
+ "mimo_calls_across_commands": 27
+}

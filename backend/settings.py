@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -63,6 +64,10 @@ class Settings(BaseSettings):
     # M6 H9: POST /tts with `part` voices one sentence at a time. Off by default; turning
     # it on is an env var on Render (ADS_TTS_SPLIT_SENTENCES=true), no deploy needed.
     tts_split_sentences: bool = False
+    # M8 K5: "design" (VoiceDesign from each archetype's description, as before) or "clone"
+    # (mimo-v2.5-tts-voiceclone from the archetype's clip in backend/voice_refs/).
+    # ADS_TTS_VOICE_MODE=clone on Render turns it on; it combines with ADS_TTS_SPLIT_SENTENCES.
+    tts_voice_mode: Literal["design", "clone"] = "design"
     # M7 J3: literature-review chunks reach the question prompt with a note that they
     # describe cited work. Off by default; ADS_ATTRIBUTION_NOTES=true on Render turns it on.
     attribution_notes: bool = False

@@ -59,7 +59,8 @@ from backend.schemas import (
 )
 from backend.sessions import SessionCapacityError, SessionStatus, SessionStore
 from backend.settings import Settings
-from backend.tts import Synthesize, default_synthesize
+from backend.tts import Synthesize
+from backend.tts_clone import synthesize_for
 
 logger = logging.getLogger("backend")
 
@@ -146,9 +147,11 @@ def create_app(
     quota_store_factory: QuotaStoreFactory = _postgres_store,
     clock: Clock = _utc_now,
     providers_factory: Callable[[Settings], ProvidersFactory] = gemini_providers_factory,
-    synthesize: Synthesize = default_synthesize,
+    synthesize: Synthesize | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
+    # M8 K5: without an injected one, ADS_TTS_VOICE_MODE picks VoiceDesign or the cloned voices.
+    synthesize = synthesize or synthesize_for(settings.tts_voice_mode)
     quota_plan = plan_quota(settings)
 
     @asynccontextmanager
@@ -156,6 +159,7 @@ def create_app(
         _configure_logging()
         logger.info("memory at startup %s", memory.describe())
         log_plan(quota_plan)
+        logger.info("tts voice_mode=%s split_sentences=%s", settings.tts_voice_mode, settings.tts_split_sentences)
         app.state.quota = quota_store_factory(settings)
         app.state.providers_factory = providers_factory(settings)
         reset_upload_dir(settings.upload_dir)
