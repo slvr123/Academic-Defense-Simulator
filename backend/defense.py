@@ -93,7 +93,7 @@ class Defense:
     calls: CallCounter
     model: str  # the defense model's name, which v1's engine passes to its grounding check
     other_subtype_line: str
-    lit_review_access: LitReviewAccess = "literature"  # settings.lit_review_access (M9 L2)
+    lit_review_access: LitReviewAccess = "none"  # settings.lit_review_access (M9 L2)
     chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
     pending_source: Source | None = None
@@ -138,7 +138,7 @@ def setup_defense(
     model: str,
     *,
     attribution_notes: bool = False,
-    lit_review_access: LitReviewAccess = "literature",
+    lit_review_access: LitReviewAccess = "none",
 ) -> Defense:
     """Extraction (only when the client sent no domain or topic) and persona
     generation. Neither raises on a Gemini failure: v1 falls back to blank

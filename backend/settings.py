@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     attribution_notes: bool = False
     # M9 L2: who may retrieve a literature-review chunk. "literature" is only the
     # Literature & Theory Specialist; "none" is nobody. The default is L5's verdict.
-    lit_review_access: LitReviewAccess = "literature"
+    lit_review_access: LitReviewAccess = "none"
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

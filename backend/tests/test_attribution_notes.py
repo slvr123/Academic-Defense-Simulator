@@ -15,7 +15,7 @@ from backend.tests.conftest import THESIS_WITH_REVIEW, make_page_pdf, upload, wa
 
 NOTE_START = "[Note to the panelist:"
 # Three of the fixture's four chunks are tagged, and since M9 L2 only the Literature
-# Specialist may draw them, so it's on the panel to carry the notes into a prompt.
+# Specialist may draw them (with lit_review_access="literature"), so it carries the notes.
 PANEL = json.dumps({"archetype_keys": ["methodology_expert", "literature_theory_specialist"]})
 
 
@@ -61,7 +61,7 @@ def test_ingest_stores_each_chunks_tag(client_factory, review_pdf):
 
 
 def test_with_the_flag_off_no_prompt_carries_a_note(client_factory, gemini, review_pdf):
-    with client_factory() as client:
+    with client_factory(lit_review_access="literature") as client:
         session_id = _ready(client, review_pdf)
         sources = _run_defense(client, session_id)
         session = client.app.state.store.get(session_id)
@@ -72,7 +72,7 @@ def test_with_the_flag_off_no_prompt_carries_a_note(client_factory, gemini, revi
 
 
 def test_with_the_flag_on_tagged_chunks_reach_the_prompt_with_their_note(client_factory, gemini, review_pdf):
-    with client_factory(attribution_notes=True) as client:
+    with client_factory(attribution_notes=True, lit_review_access="literature") as client:
         session_id = _ready(client, review_pdf)
         sources = _run_defense(client, session_id)
         metas = client.app.state.store.get(session_id).chunks

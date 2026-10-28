@@ -79,7 +79,7 @@
    "pooled_median_shared_top5": 1.0,
    "per_document": {
     "Group2_Library Management System for DAZSMA Documentation (1).pdf": "differentiated",
-    "sample3.pdf": "differentiated"
+    "sample3.pdf": "partial"
    },
    "verdict": "differentiated"
   },
@@ -1435,16 +1435,16 @@
      28
     ],
     "literature_theory_specialist": [
-     7,
-     6,
      29,
      36,
-     9,
      35,
      27,
-     12,
      2,
-     22
+     22,
+     38,
+     37,
+     33,
+     24
     ],
     "technical_implementation_reviewer": [
      33,
@@ -1524,7 +1524,7 @@
      {
       "archetype_a": "methodology_expert",
       "archetype_b": "literature_theory_specialist",
-      "shared_top_k": 1,
+      "shared_top_k": 3,
       "same_top1": false
      },
      {
@@ -1572,13 +1572,13 @@
      {
       "archetype_a": "literature_theory_specialist",
       "archetype_b": "ethics_practicality_reviewer",
-      "shared_top_k": 0,
+      "shared_top_k": 1,
       "same_top1": false
      },
      {
       "archetype_a": "literature_theory_specialist",
       "archetype_b": "problem_objectives_reviewer",
-      "shared_top_k": 1,
+      "shared_top_k": 2,
       "same_top1": false
      },
      {
@@ -1591,12 +1591,12 @@
       "archetype_a": "literature_theory_specialist",
       "archetype_b": "results_conclusions_reviewer",
       "shared_top_k": 1,
-      "same_top1": false
+      "same_top1": true
      },
      {
       "archetype_a": "literature_theory_specialist",
       "archetype_b": "industry_practice_reviewer",
-      "shared_top_k": 0,
+      "shared_top_k": 2,
       "same_top1": false
      },
      {
@@ -1690,14 +1690,14 @@
       "same_top1": false
      }
     ],
-    "median_shared_top5": 1.0,
-    "mean_shared_top5": 1.6428571428571428,
-    "same_top1_pairs": 3,
+    "median_shared_top5": 2.0,
+    "mean_shared_top5": 1.8571428571428572,
+    "same_top1_pairs": 4,
     "pair_count": 28,
     "random_baseline_shared_top5": 0.625,
-    "distinct_top1_chunks": 6,
-    "distinct_top5_chunks": 18,
-    "verdict": "differentiated"
+    "distinct_top1_chunks": 5,
+    "distinct_top5_chunks": 15,
+    "verdict": "partial"
    },
    "check_b": {
     "per_archetype": {
@@ -1714,13 +1714,13 @@
      },
      "literature_theory_specialist": {
       "top5_scores": [
-       0.0969,
-       0.085,
        0.0508,
        0.0449,
-       0.0371
+       0.0363,
+       0.0353,
+       0.0264
       ],
-      "gap_1_2": 0.0119,
+      "gap_1_2": 0.006,
       "near_tie": true
      },
      "technical_implementation_reviewer": {
@@ -1792,12 +1792,12 @@
     },
     "near_tie_rate": 0.625,
     "gap_distribution": {
-     "min": 0.0078062862157821655,
-     "q1": 0.011131096631288528,
+     "min": 0.005952849984169006,
+     "q1": 0.008537054061889648,
      "median": 0.014328844845294952,
      "q3": 0.025672081857919693,
      "max": 0.036133989691734314,
-     "mean": 0.018833236768841743
+     "mean": 0.018088020384311676
     }
    },
    "check_c": {
@@ -1845,13 +1845,13 @@
       {
        "turn": 2,
        "archetype": "literature_theory_specialist",
-       "chunk": 7,
+       "chunk": 29,
        "displacement_rank": 1,
        "pages": [
-        13,
-        14
+        56,
+        56
        ],
-       "score": 0.0969
+       "score": 0.0508
       },
       {
        "turn": 3,
@@ -1904,13 +1904,13 @@
       {
        "turn": 1,
        "archetype": "literature_theory_specialist",
-       "chunk": 7,
+       "chunk": 29,
        "displacement_rank": 1,
        "pages": [
-        13,
-        14
+        56,
+        56
        ],
-       "score": 0.0969
+       "score": 0.0508
       },
       {
        "turn": 2,
@@ -2072,11 +2072,11 @@
     "sessions_per_type": 20,
     "per_type": {
      "thesis": {
-      "distinct_sessions": 6,
+      "distinct_sessions": 10,
       "distinct_chunks_per_turn": [
        3,
-       2,
-       1
+       5,
+       2
       ]
      },
      "capstone": {
@@ -2088,9 +2088,9 @@
       ]
      },
      "other/oral_comps": {
-      "distinct_sessions": 6,
+      "distinct_sessions": 10,
       "distinct_chunks_per_turn": [
-       2,
+       4,
        3,
        1
       ]
@@ -2120,11 +2120,11 @@
       ]
      }
     },
-    "max_displacement_rank": 3,
+    "max_displacement_rank": 5,
     "turns_over_5": 0,
     "turn_count": 360,
     "turns_on_avoided_chunks": 0,
-    "max_score_drop": 0.0176
+    "max_score_drop": 0.0184
    }
   },
   {
@@ -2208,9 +2208,9 @@
      7,
      0,
      11,
-     4,
      1,
-     8
+     8,
+     2
     ],
     "technical_implementation_reviewer": [
      7,
@@ -2890,7 +2890,7 @@
  ],
  "literature_routing": {
   "Group2_Library Management System for DAZSMA Documentation (1).pdf": {
-   "access": "literature",
+   "access": "none",
    "tagged_chunks": [],
    "tagged_pages": [],
    "per_archetype": {
@@ -3009,7 +3009,7 @@
    }
   },
   "non_defense_sample.pdf": {
-   "access": "literature",
+   "access": "none",
    "tagged_chunks": [],
    "tagged_pages": [],
    "per_archetype": {
@@ -3128,7 +3128,7 @@
    }
   },
   "sample3.pdf": {
-   "access": "literature",
+   "access": "none",
    "tagged_chunks": [
     6,
     7,
@@ -3236,9 +3236,9 @@
       "seeded_turns_total": 40
      },
      "after": {
-      "top1": 1,
-      "plain_turns": 2,
-      "seeded_turns": 40,
+      "top1": 0,
+      "plain_turns": 0,
+      "seeded_turns": 0,
       "seeded_turns_total": 40
      }
     },
@@ -3329,7 +3329,7 @@
    }
   },
   "sample-capstone-anicheck.pdf": {
-   "access": "literature",
+   "access": "none",
    "tagged_chunks": [
     3,
     4

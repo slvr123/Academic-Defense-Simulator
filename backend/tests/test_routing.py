@@ -144,7 +144,7 @@ def _attribution(metas: list[ChunkMeta], question: dict):
 
 def test_in_a_defense_only_the_literature_specialist_draws_tagged_chunks(client_factory, tmp_path, literature_first):
     pdf = make_page_pdf(tmp_path / "Long Thesis.pdf", LONG_THESIS)
-    with client_factory() as client:
+    with client_factory(lit_review_access="literature") as client:
         questions, metas = _defense(client, pdf, FULL_PANEL)
     assert sum(m.attribution is not None for m in metas) == 3 and sum(m.attribution is None for m in metas) == 4
     asked_by = {q["panelist"]["archetype_key"] for q in questions}
@@ -186,7 +186,7 @@ def test_an_untagged_document_gives_the_engine_byte_identical_input(client_facto
 
 def test_start_refuses_a_panel_the_untagged_chunks_cannot_seat(client_factory, tmp_path):
     pdf = make_page_pdf(tmp_path / "Kiosk Thesis.pdf", THESIS_WITH_REVIEW)  # one untagged chunk of four
-    with client_factory() as client:
+    with client_factory(lit_review_access="literature") as client:
         session_id = upload(client, pdf, panel=json.dumps({"archetype_keys": ["methodology_expert", "technical_implementation_reviewer"]})).json()["session_id"]
         wait_for(client, session_id, lambda s: s.get("status") == "ready")
         response = client.post(f"/sessions/{session_id}/start")
@@ -195,7 +195,7 @@ def test_start_refuses_a_panel_the_untagged_chunks_cannot_seat(client_factory, t
 
 
 def test_lit_review_access_defaults_to_the_l5_verdict():
-    assert make_settings().lit_review_access == "literature"
+    assert make_settings().lit_review_access == "none"  # the judge: 5 of 16 counted as M
 
 
 # --- L3: the note names the researchers ----------------------------------------------
