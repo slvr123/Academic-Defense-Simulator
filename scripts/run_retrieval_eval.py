@@ -5,6 +5,7 @@ Usage (from the repo root, in backend/.venv, which has the ONNX runtime):
     python scripts/run_retrieval_eval.py               # production ingest (M6: + reference list)
     python scripts/run_retrieval_eval.py --chunker m5  # M5's chunker (navigation pages only)
     python scripts/run_retrieval_eval.py --chunker v1  # v1's chunker, as M4 measured it
+    python scripts/run_retrieval_eval.py --lit-review-access literature  # M9 L2 routing (or `none`)
 
 Chunks come from the backend's own `parse_pdf`, embeddings from `OnnxEmbedder`
 (backend/model), and every simulated session is also run through v1's
@@ -17,6 +18,15 @@ reproduce it; on the production chunker the replay is still checked against
 Writes evals/v2.0-m6-retrieval-results.json (production), or rewrites the M5 or M4
 file (`--chunker m5`, `--chunker v1`), which must come out byte-identical: ranks, scores, page numbers, chunk
 indices and hashes, never passage text. See docs/v2.0-m4-retrieval-eval-decisions.md.
+
+With `--lit-review-access` (M9 L4) every check runs as a live defense retrieves under
+L2's routing: an archetype barred from the literature review scores its tagged chunks
+at -inf, so its ranking, near-tie band and displacement rank cover only the chunks it
+may draw, and every simulated session is still checked turn by turn against
+production's retriever, now wrapped in `backend.routing.routed`. A document without
+tagged chunks comes out exactly as before. The run writes
+evals/v2.0-m9-retrieval-results.json, with a `literature_routing` section of
+tagged-chunk picks per archetype before and after routing.
 """
 
 from __future__ import annotations
@@ -56,6 +66,7 @@ from backend.page_filter import (  # noqa: E402
 )
 from backend.pdf_ingest import IngestFailure, parse_pdf  # noqa: E402
 from backend.retrieval_sampling import NearTieRetriever, turn_seed  # noqa: E402
+from backend.routing import blocked_chunks, routed  # noqa: E402
 from backend.schemas import MAX_DOMAIN_PANELISTS  # noqa: E402
 from backend.sessions import ChunkMeta  # noqa: E402
 from evals import retrieval_checks as rc  # noqa: E402
@@ -67,6 +78,7 @@ OUTPUTS = {
     "v1": ROOT / "evals" / "v2.0-m4-retrieval-results.json",
 }
 MILESTONES = {"production": "v2.0 M6", "m5": "v2.0 M5", "v1": "v2.0 M4"}
+ROUTED_OUTPUT = ROOT / "evals" / "v2.0-m9-retrieval-results.json"
 # A removed reference line this long can't turn up in a kept chunk by coincidence.
 REFERENCE_LINE_MIN_CHARS = 20
 SEPTEMBER_CASES = "feat/retrieval-sources:evals/retrieval_cases.json"
@@ -95,6 +107,7 @@ class Document:
     chunks: list[ChunkMeta]
     matrix: np.ndarray
     token_counts: list[int]
+    access: str | None = None  # M9 L2's lit_review_access, None for no routing
 
     @property
     def chunk_pages(self) -> list[tuple[int, int]]:
@@ -139,11 +152,15 @@ PARSERS = {
 }
 
 
-def load_document(path: Path, in_verdict: bool, embedder, counter, parse) -> Document:
+def load_document(path: Path, in_verdict: bool, embedder, counter, parse, access: str | None = None) -> Document:
     """Ingest as IngestQueue._ingest does it: `parse` (production: backend.pdf_ingest.parse_pdf),
-    then OnnxEmbedder.encode_one per chunk."""
+    then OnnxEmbedder.encode_one per chunk. With `access`, each chunk carries its M7 tag."""
     page_chunks = parse(path)
-    chunks = [ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end) for i, c in enumerate(page_chunks)]
+    tags = parse_pdf(path).attributions if access is not None else [None] * len(page_chunks)
+    chunks = [
+        ChunkMeta(chunk_id=i, text=c.text, page_start=c.page_start, page_end=c.page_end, attribution=tag)
+        for i, (c, tag) in enumerate(zip(page_chunks, tags, strict=True))
+    ]
     matrix = np.stack([embedder.encode_one(c.text) for c in chunks]).astype(np.float32)
     with fitz.open(str(path)) as pdf:
         page_texts = [page.get_text("text") for page in pdf]
@@ -155,6 +172,7 @@ def load_document(path: Path, in_verdict: bool, embedder, counter, parse) -> Doc
         chunks=chunks,
         matrix=matrix,
         token_counts=[len(counter.encode(c.text).ids) for c in chunks],
+        access=access,
     )
 
 
@@ -174,6 +192,8 @@ def production_session(doc: Document, panel: list[str], embedder, session_id: st
     for archetype in panel[:SESSION_TURNS]:
         query = ARCHETYPE_CONFIG[archetype]["archetype_focus"]
         retriever = retrieve if session_id is None else NearTieRetriever(turn_seed(session_id, len(turns) + 1))
+        if doc.access is not None:
+            retriever = routed(retriever, doc.chunks, archetype, doc.access)
         index, _ = retriever(query, chunks, top_k=1, embedding_model=encoder, exclude_indices=frozenset(used))[0]
         used.add(index)
         turns.append((index, float(doc.matrix[index] @ encoder.take_query())))
@@ -429,10 +449,58 @@ def seeded_report(doc: Document, scores: dict[str, np.ndarray], embedder) -> dic
     return report
 
 
+def routed_scores(doc: Document, scores: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Each archetype's scores with the chunks it may not draw at -inf: last in its
+    ranking, never in a near-tie band. Unchanged arrays when nothing is blocked."""
+    out = {}
+    for archetype, s in scores.items():
+        blocked = blocked_chunks(doc.chunks, archetype, doc.access)
+        if blocked:
+            s = s.copy()
+            s[sorted(blocked)] = -np.inf
+        out[archetype] = s
+    return out
+
+
+def tagged_picks(scores: dict[str, np.ndarray], tagged: set[int], sessions: bool) -> dict[str, dict[str, int]]:
+    """Per archetype: whether its top-1 is tagged, and its turns on tagged chunks over
+    Check E's plain sessions and the seeded sessions (M6 H3's ids), when the document
+    is long enough for Check E (`sessions`)."""
+    out = {a: {"top1": int(rc.ranking(s)[0] in tagged), "plain_turns": 0, "seeded_turns": 0, "seeded_turns_total": 0}
+           for a, s in scores.items()}
+    rankings = {a: rc.ranking(s) for a, s in scores.items()}
+    for key in PANEL_COMPOSITION if sessions else []:
+        panel = recommended_panel(key)
+        for t in rc.replay_new_topic_turns([(a, rankings[a]) for a in panel], SESSION_TURNS):
+            out[t.archetype]["plain_turns"] += t.chunk in tagged
+        for n in range(SEEDED_SESSIONS):
+            for t in rc.replay_seeded_turns([(a, scores[a]) for a in panel], f"m6-eval-{n}", SESSION_TURNS):
+                out[t.archetype]["seeded_turns"] += t.chunk in tagged
+                out[t.archetype]["seeded_turns_total"] += 1
+    return out
+
+
+def routing_report(doc: Document, raw: dict[str, np.ndarray], routed_: dict[str, np.ndarray]) -> dict:
+    """L4 criterion 1: tagged-chunk picks per archetype, before routing and after."""
+    tagged = {i for i, c in enumerate(doc.chunks) if c.attribution is not None}
+    sessions = len(doc.chunks) >= rc.OVERLAP_K
+    before, after = tagged_picks(raw, tagged, sessions), tagged_picks(routed_, tagged, sessions)
+    return {
+        "access": doc.access,
+        "tagged_chunks": sorted(tagged),
+        "tagged_pages": [doc.pages_1based(i) for i in sorted(tagged)],
+        "per_archetype": {a: {"before": before[a], "after": after[a]} for a in raw},
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="v2.0 retrieval eval, checks A-E")
     parser.add_argument("--chunker", choices=sorted(PARSERS), default="production")
+    parser.add_argument("--lit-review-access", choices=["literature", "none"], default=None,
+                        help="M9 L2 routing (production chunker only)")
     args = parser.parse_args()
+    if args.lit_review_access is not None and args.chunker != "production":
+        raise SystemExit("--lit-review-access needs the production chunker")
     parse = PARSERS[args.chunker]
     if backend_embedder.MAX_SEQ_LENGTH != rc.MAX_SEQ_LENGTH:
         raise SystemExit("evals.retrieval_checks.MAX_SEQ_LENGTH is out of step with backend.embedder")
@@ -453,7 +521,7 @@ def main() -> None:
         if path.name in september:
             entry["matches_september_hash"] = entry["sha256"] == september[path.name]
         try:
-            doc = load_document(path, in_verdict, embedder, counter, parse)
+            doc = load_document(path, in_verdict, embedder, counter, parse, args.lit_review_access)
         except IngestFailure as exc:
             inventory.append({**entry, "usable": False, "reason": f"parse_pdf: {exc.code or 'error'}"})
             continue
@@ -466,7 +534,8 @@ def main() -> None:
     query_vectors = {
         a: embedder.encode_one(ARCHETYPE_CONFIG[a]["archetype_focus"]) for a in RETRIEVING_ARCHETYPES
     }
-    scores = {d.sha256: {a: d.matrix @ query_vectors[a] for a in RETRIEVING_ARCHETYPES} for d in docs}
+    raw_scores = {d.sha256: {a: d.matrix @ query_vectors[a] for a in RETRIEVING_ARCHETYPES} for d in docs}
+    scores = {d.sha256: routed_scores(d, raw_scores[d.sha256]) for d in docs} if args.lit_review_access else raw_scores
     rankings = {d.sha256: {a: rc.ranking(s) for a, s in scores[d.sha256].items()} for d in docs}
 
     if args.chunker == "v1":
@@ -545,10 +614,14 @@ def main() -> None:
         "summary": summary,
         "per_document": per_document,
     }
+    if args.lit_review_access is not None:
+        output["milestone"] = "v2.0 M9"
+        output["literature_routing"] = {d.path.name: routing_report(d, raw_scores[d.sha256], scores[d.sha256]) for d in docs}
     longest = longest_string(output)
     if longest > 200:
         raise SystemExit(f"HALT: a string of {longest} characters would go into the results JSON")
-    OUTPUTS[args.chunker].write_text(json.dumps(output, indent=1) + "\n", encoding="utf-8")
+    out_path = ROUTED_OUTPUT if args.lit_review_access is not None else OUTPUTS[args.chunker]
+    out_path.write_text(json.dumps(output, indent=1) + "\n", encoding="utf-8")
     print_summary(output, longest)
 
 
@@ -587,6 +660,12 @@ def print_summary(output: dict, longest: int) -> None:
               f"session_rate={c['session_pick_rate']:.3f} session_nav_picks={c['session_navigation_picks']} -> over_retrieved={c['over_retrieved']}"))
         print(f"  D over 256: {dd['over_limit']}/{dd['chunks']}, mean seen share={dd['mean_seen_share']:.3f}")
         print("  E " + (e["halted"] if "halted" in e else f"max displacement={e['max_displacement_rank']} over5={e['turns_over_5']}/{e['turn_count']} displaced={e['turns_displaced']}"))
+    for name, r in output.get("literature_routing", {}).items():
+        print(f"routing {name[:50]} access={r['access']} tagged={len(r['tagged_chunks'])}")
+        for a, v in r["per_archetype"].items():
+            b, f = v["before"], v["after"]
+            print(f"  {a:34} top1 {b['top1']}->{f['top1']}  plain {b['plain_turns']}->{f['plain_turns']}  "
+                  f"seeded {b['seeded_turns']}/{b['seeded_turns_total']}->{f['seeded_turns']}/{f['seeded_turns_total']}")
     print("summary:", json.dumps(output["summary"], indent=1))
     print(f"longest string in results JSON: {longest} characters")
 
