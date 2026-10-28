@@ -16,7 +16,8 @@ M7 J2: with attribution notes on, a literature-review chunk's text in the engine
 carries a note saying it describes cited work (M8 K2 adds the rule against asking
 how the candidate built it). Only the text the engine's prompts see
 changes. Retrieval ranks the session matrix, embedded at ingest from the original
-text, and the source reveal reads ChunkMeta, so neither sees the note.
+text, and the source reveal reads ChunkMeta, so neither sees the note. M9 L3 adds
+the researchers the chunk cites, by name, when it cites any.
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ from academic_defense_simulator.models.session import ConversationTurn
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY
 from academic_defense_simulator.rag.retrieval import Chunk
 from backend.embedder import Embedder
-from backend.page_filter import Attribution
+from backend.page_filter import Attribution, cited_authors
 from backend.schemas import Source
 from backend.sessions import ChunkMeta
 
@@ -77,11 +78,28 @@ ATTRIBUTION_NOTES: dict[Attribution, str] = {
 }
 
 
+# M9 L3: after the note, who the excerpt cites, so the panelist can't take a cited
+# system for the candidate's. Only on a chunk that names someone.
+CITED_AUTHORS_NOTE = (
+    "[Researchers cited in this excerpt: {authors}. Their systems are not the candidate's. "
+    "Ask how the candidate used, compared against or departed from them.]"
+)
+
+
+def attribution_note(meta: ChunkMeta) -> str:
+    """A tagged chunk's note: M8's, then L3's list when the chunk cites anyone by name."""
+    assert meta.attribution is not None
+    authors = cited_authors(meta.text)
+    if not authors:
+        return ATTRIBUTION_NOTES[meta.attribution]
+    return f"{ATTRIBUTION_NOTES[meta.attribution]}\n{CITED_AUTHORS_NOTE.format(authors=', '.join(authors))}"
+
+
 def engine_text(meta: ChunkMeta, attribution_notes: bool) -> str:
     """The chunk's text as the engine's prompts see it: with its note when notes are on."""
     if not attribution_notes or meta.attribution is None:
         return meta.text
-    return f"{ATTRIBUTION_NOTES[meta.attribution]}\n\n{meta.text}"
+    return f"{attribution_note(meta)}\n\n{meta.text}"
 
 
 def chunk_copy_bytes(chunks: list[Chunk], metas: list[ChunkMeta]) -> int:

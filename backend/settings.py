@@ -20,6 +20,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from backend.routing import LitReviewAccess
+
 BACKEND_DIR = Path(__file__).resolve().parent
 
 # v1 verified 13 RPM clean against flash-lite's 15 (gemini_provider._RPM_CEILING): its
@@ -71,6 +73,9 @@ class Settings(BaseSettings):
     # M7 J3: literature-review chunks reach the question prompt with a note that they
     # describe cited work. Off by default; ADS_ATTRIBUTION_NOTES=true on Render turns it on.
     attribution_notes: bool = False
+    # M9 L2: who may retrieve a literature-review chunk. "literature" is only the
+    # Literature & Theory Specialist; "none" is nobody. The default is L5's verdict.
+    lit_review_access: LitReviewAccess = "literature"
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

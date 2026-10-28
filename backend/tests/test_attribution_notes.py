@@ -14,7 +14,9 @@ from backend.settings import Settings
 from backend.tests.conftest import THESIS_WITH_REVIEW, make_page_pdf, upload, wait_for
 
 NOTE_START = "[Note to the panelist:"
-PANEL = json.dumps({"archetype_keys": ["methodology_expert", "technical_implementation_reviewer"]})
+# Three of the fixture's four chunks are tagged, and since M9 L2 only the Literature
+# Specialist may draw them, so it's on the panel to carry the notes into a prompt.
+PANEL = json.dumps({"archetype_keys": ["methodology_expert", "literature_theory_specialist"]})
 
 
 @pytest.fixture

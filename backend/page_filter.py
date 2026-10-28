@@ -179,6 +179,51 @@ def cites_a_study(text: str) -> bool:
     return _CITATION.search(text) is not None
 
 
+# M9 L3: who a chunk cites, for the Literature Specialist's note. The same citation
+# forms as _CITATION, read for their names: narrative ("Kim et al. (2025)", "Yang and
+# Song (2021)", "Yosinski, Clune, Bengio, and Lipson (2014)"), parenthetical
+# ("(Lee & Choi, 2025; Lim, 2019)") and a bare "Jahana et al.". Numbered references
+# ("[12]") carry no name, so they add nothing.
+_YEAR = r"(?:19|20)\d{2}[a-z]?"
+_NARRATIVE_AUTHORS = re.compile(
+    rf"\b(?P<names>{_SURNAME}\s+et\s+al\.?|{_SURNAME}(?:,\s+{_SURNAME})+,\s+(?:and|&)\s+{_SURNAME}"
+    rf"|{_SURNAME}\s+(?:and|&)\s+{_SURNAME}|{_SURNAME})\s+\((?P<year>{_YEAR})\)"
+)
+_PARENTHETICAL = re.compile(rf"\((?P<body>[A-Z][^()]{{0,200}}?,\s*{_YEAR})\)")
+_PARENTHETICAL_ENTRY = re.compile(rf"(?P<names>[A-Z][^;,]*?(?:,\s*[A-Z][^;,]*?)*),\s*(?P<year>{_YEAR})$")
+_BARE_ET_AL = re.compile(rf"\b(?P<names>{_SURNAME})\s+et\s+al\b")
+_INITIALS = re.compile(r"\b(?:[A-Z]\.\s?)+(?=[A-Z][a-z])")
+
+
+def _display_names(names: str) -> str:
+    """Initials dropped, whitespace collapsed, a possessive's apostrophe dropped, and
+    three or more names shortened to the first one "et al."."""
+    names = _INITIALS.sub("", re.sub(r"\s+", " ", names)).strip().rstrip("'’")
+    if re.search(r",.*,", names) and re.search(r"\b(?:and|&)\s", names):
+        return f"{names.split(',')[0]} et al."
+    return names
+
+
+def cited_authors(text: str) -> list[str]:
+    """Each study the text cites, as "Kim et al. (2025)", in order of first mention,
+    without repeats. A name cited only without a year is listed without one, unless the
+    same name is also cited with a year."""
+    found: list[tuple[int, str]] = []
+    for match in _NARRATIVE_AUTHORS.finditer(text):
+        found.append((match.start(), f"{_display_names(match['names'])} ({match['year']})"))
+    for match in _PARENTHETICAL.finditer(text):
+        for entry in match["body"].split(";"):
+            parsed = _PARENTHETICAL_ENTRY.search(entry.strip())
+            if parsed is not None:
+                found.append((match.start(), f"{_display_names(parsed['names'])} ({parsed['year']})"))
+    dated = {citation.split(" ")[0] for _, citation in found}
+    for match in _BARE_ET_AL.finditer(text):
+        name = _display_names(match["names"])
+        if name not in dated:
+            found.append((match.start(), f"{name} et al."))
+    return list(dict.fromkeys(citation for _, citation in sorted(found, key=lambda f: f[0])))
+
+
 def _set_as_heading(line: str) -> bool:
     """All capitals, or every word of four letters or more capitalised."""
     words = re.findall(r"[A-Za-z]+", line)

@@ -40,6 +40,7 @@ from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.highlight import highlight_span
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
+from backend.routing import LitReviewAccess, routed
 from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
 from backend.sessions import Session
 
@@ -92,6 +93,7 @@ class Defense:
     calls: CallCounter
     model: str  # the defense model's name, which v1's engine passes to its grounding check
     other_subtype_line: str
+    lit_review_access: LitReviewAccess = "literature"  # settings.lit_review_access (M9 L2)
     chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
     pending_source: Source | None = None
@@ -136,11 +138,13 @@ def setup_defense(
     model: str,
     *,
     attribution_notes: bool = False,
+    lit_review_access: LitReviewAccess = "literature",
 ) -> Defense:
     """Extraction (only when the client sent no domain or topic) and persona
     generation. Neither raises on a Gemini failure: v1 falls back to blank
     fields and to the static panel, and so does this. `attribution_notes` is
-    settings.attribution_notes (M7 J3)."""
+    settings.attribution_notes (M7 J3); `lit_review_access` is
+    settings.lit_review_access (M9 L2)."""
     assert session.matrix is not None
     config: PanelConfig = session.panel
     domain, topic = config.domain, config.topic
@@ -154,9 +158,10 @@ def setup_defense(
     copy_bytes = chunk_copy_bytes(chunks, session.chunks)
     logger.info(
         "defense setup session=%s panel=%s persona_fallback=%s calls=%d chunks=%d chunk_copy_mb=%.2f "
-        "attribution_notes=%d",
+        "attribution_notes=%d lit_review_chunks=%d lit_review_access=%s",
         session.id, [p.archetype_key for p in panel], fallback_used, calls.total, len(chunks),
         copy_bytes / 2**20, sum(c.text is not m.text for c, m in zip(chunks, session.chunks)),
+        sum(m.attribution is not None for m in session.chunks), lit_review_access,
     )
     return Defense(
         session=DefenseSession(profile=profile, panel=panel, difficulty_current=profile.difficulty_start),
@@ -167,6 +172,7 @@ def setup_defense(
         providers=providers,
         calls=calls,
         model=model,
+        lit_review_access=lit_review_access,
         other_subtype_line=(
             f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
         ),
@@ -234,8 +240,12 @@ def _next_question(
     panelist = select_active_panelist(session)
     defense.encoder.take_query()  # drop a query left by an earlier failed attempt
     # M6 H3: a new topic picks among near-ties, seeded by (session, turn), so a retried
-    # attempt and any replay of this defense land on the same chunk.
-    retriever = NearTieRetriever(turn_seed(session.profile.document_id, len(session.turns) + 1))
+    # attempt and any replay of this defense land on the same chunk. M9 L2: among the
+    # chunks this panelist may draw.
+    retriever = routed(
+        NearTieRetriever(turn_seed(session.profile.document_id, len(session.turns) + 1)),
+        defense.tracker.chunks, panelist.archetype_key, defense.lit_review_access,
+    )
     turn = _generate_question(
         defense.providers.defense, session, defense.chunks, defense.encoder, panelist,
         defense.other_subtype_line, defense.model, retriever=retriever,

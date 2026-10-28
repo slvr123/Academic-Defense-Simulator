@@ -47,6 +47,7 @@ from backend.defense import (
 from backend.errors import CodedHTTPException
 from backend.llm_errors import PANEL_BUSY_MESSAGE, PANEL_BUSY_RETRY_AFTER_S, is_panel_busy
 from backend.quota import QuotaPlan, QuotaUnavailable, pacific_day
+from backend.routing import may_draw_literature
 from backend.schemas import (
     AnswerRequest,
     AnswerResponse,
@@ -193,11 +194,20 @@ def register_defense_routes(
                         f"This document has {len(session.chunks)} passage(s), too few for {domain_count} "
                         "panelists to each open a topic. Choose fewer panelists or upload a longer document.",
                     )
+                # M9 L2: a panelist barred from the literature review opens its topic outside it.
+                barred = sum(not may_draw_literature(k, settings.lit_review_access) for k in session.panel.domain_archetypes())
+                untagged = sum(c.attribution is None for c in session.chunks)
+                if barred > untagged:
+                    raise HTTPException(
+                        422,
+                        f"This document has {untagged} passage(s) outside its literature review, too few for {barred} "
+                        "panelists to each open a topic there. Choose fewer panelists or upload a longer document.",
+                    )
                 reserve_quota(client_ip(request, settings.trusted_proxy_hops))
                 calls = CallCounter()
                 defense = setup_defense(
                     session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
-                    attribution_notes=settings.attribution_notes,
+                    attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
                 )
                 session.defense = defense
                 app.state.last_chunk_copy = ChunkCopy(
