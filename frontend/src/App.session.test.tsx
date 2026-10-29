@@ -6,6 +6,7 @@ import { QuestionScreen } from './components/DefenseScreens'
 import type { FakeServer } from './test/fakeServer'
 import { evaluation, nextQuestion, report, startResponse } from './test/fixtures'
 import { advance, defaultServer, renderApp, startDefense, uploadAccepted } from './test/renderApp'
+import { installWide } from './test/setup'
 import { fakeSpeech } from './test/voiceFakes'
 import { createPlayer } from './voice/player'
 
@@ -216,6 +217,7 @@ describe('the transcript drawer (N10)', () => {
 
 describe("the candidate's own PDF (N4)", () => {
   it('opens at the revealed page from the source card and the header, and revokes the URL when the session ends', async () => {
+    installWide() // the card layout
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     const server = sessionServer()
     const user = renderApp()
@@ -242,6 +244,7 @@ describe("the candidate's own PDF (N4)", () => {
   })
 
   it('hides the open-at-page button when the file is gone', () => {
+    installWide() // the card layout
     const turn = { question: startResponse.question, answer: 'A', evaluation }
     render(
       <QuestionScreen
@@ -272,6 +275,7 @@ describe('the paged reveal (M10 follow-up)', () => {
   const counter = () => within(reveal()).getByText(/^\d+ \/ \d+$/)
 
   it('pages between the passage and the question with your answer, by button, arrow key and swipe', async () => {
+    installWide() // the card layout
     const server = sessionServer()
     const user = renderApp()
     await toQuestion(server, user)
@@ -306,6 +310,7 @@ describe('the paged reveal (M10 follow-up)', () => {
   })
 
   it('starts each new reveal on page 1', async () => {
+    installWide() // the card layout
     const server = sessionServer()
     const user = renderApp()
     await toQuestion(server, user)
@@ -322,6 +327,7 @@ describe('the paged reveal (M10 follow-up)', () => {
   })
 
   it('shares one slot with the PDF: opening it swaps the reveal out, Back to passage swaps it back', async () => {
+    installWide() // the card layout
     const server = sessionServer()
     const user = renderApp()
     await toQuestion(server, user)
@@ -332,5 +338,71 @@ describe('the paged reveal (M10 follow-up)', () => {
     await user.click(screen.getByRole('button', { name: /Back to passage/ }))
     expect(screen.queryByRole('region', { name: 'Your PDF' })).not.toBeInTheDocument()
     expect(reveal()).toBeInTheDocument()
+  })
+})
+
+describe('the reveal below 1024 px: a bar that opens a sheet (M10 follow-up)', () => {
+  const bar = () => screen.getByRole('button', { name: /was reading .* See the passage/ })
+
+  it('shows a one-line bar; the sheet takes focus, pages, and closes on Esc back to the bar', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+
+    expect(bar()).toHaveTextContent('Dr. Reyes was reading p. 12 · See the passage')
+    expect(screen.queryByRole('dialog', { name: 'Source passage' })).not.toBeInTheDocument()
+    await user.click(bar())
+    const sheet = screen.getByRole('dialog', { name: 'Source passage' })
+    expect(sheet).toContainElement(document.activeElement as HTMLElement)
+    expect(within(sheet).getByText('1 / 2')).toBeInTheDocument()
+    // The close control and the PDF button are in the footer row; page 1 is all passage.
+    expect(within(sheet).getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    expect(within(sheet).getAllByRole('button', { name: 'Open at page 12 in your PDF' })).toHaveLength(1)
+    expect(within(screen.getByRole('group', { name: '1 of 2' })).queryByRole('button')).toBeNull()
+    await user.click(within(sheet).getByRole('button', { name: 'Next page' }))
+    expect(within(sheet).getByText('2 / 2')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(bar()).toHaveFocus()
+  })
+
+  it('closes on a swipe down and on Close, and starts each new reveal closed on page 1', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+
+    await user.click(bar())
+    const card = screen.getByRole('dialog').querySelector('[data-reveal]')
+    if (!card) throw new Error('no card')
+    fireEvent.pointerDown(card, { pointerType: 'touch', clientX: 100, clientY: 100 })
+    fireEvent.pointerUp(card, { pointerType: 'touch', clientX: 105, clientY: 190 })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(bar())
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Next page' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(bar()).toHaveFocus()
+
+    server.on(ANSWERS, { status: 200, body: { evaluation, next_question: { ...nextQuestion.next_question, turn: 3, question: 'Third?' }, done: false } })
+    await user.type(screen.getByLabelText('Your answer'), 'Power analysis.')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    await screen.findByText('Third?', { selector: '.sr-only' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // starts closed
+    await user.click(bar())
+    expect(within(screen.getByRole('dialog')).getByText('Question 2')).toBeInTheDocument()
+    expect(within(screen.getByRole('dialog')).getByText('1 / 2')).toBeInTheDocument()
+  })
+
+  it('shows no match score anywhere in the reveal', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+    await user.click(bar())
+    expect(document.body).not.toHaveTextContent(/match \d/)
   })
 })

@@ -261,7 +261,9 @@ export function QuestionScreen(props: QuestionScreenProps) {
     onChange(text)
   }
 
-  const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} />
+  // The reveal stays mounted while the PDF has the slot, so its page (and, on phones, its
+  // open sheet) are as they were on "Back to passage".
+  const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} suspended={Boolean(documentPanel)} />
   const slot = documentPanel || reveal
 
   return (
@@ -269,8 +271,9 @@ export function QuestionScreen(props: QuestionScreenProps) {
       <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} />
       {/* One slot beside the question holds the reveal or the PDF, never both, and never
           adds height: at lg it fills the row the question column sets (absolute inset-0);
-          below lg the reveal is a fixed 360 px under the answer and the PDF a sheet. */}
-      <div className={`grid items-stretch gap-6 ${slot ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
+          below lg the reveal is a one-line bar under the answer (its sheet and the PDF's
+          cover the page), 12 px below it. */}
+      <div className={`grid items-stretch gap-3 lg:gap-6 ${slot ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
         <div className="flex min-w-0 flex-col gap-6">
           <section
             data-question
@@ -364,7 +367,16 @@ export function QuestionScreen(props: QuestionScreenProps) {
             )}
           </section>
         </div>
-        {slot && <div className="relative min-w-0">{slot}</div>}
+        {slot && (
+          <div className="relative min-w-0">
+            {documentPanel}
+            {reveal && (
+              <div hidden={Boolean(documentPanel)} className={documentPanel ? undefined : 'contents'}>
+                {reveal}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {transcriptOpen && <TranscriptDrawer turns={turns} onClose={() => setTranscriptOpen(false)} />}
     </div>

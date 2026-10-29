@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { PreparingScreen, QuestionScreen } from '../components/DefenseScreens'
 import realOptions from '../test/panelOptions.real.json'
 import { evaluation, nextQuestion, startResponse } from '../test/fixtures'
-import { installMatchMedia } from '../test/setup'
+import { installMatchMedia, WIDE } from '../test/setup'
 import { createPlayer } from '../voice/player'
 import { MOTION_OK } from './motion'
 
@@ -38,7 +38,7 @@ const animated = (element: Element) => gsap.getTweensOf(element).length > 0
 
 describe('motion (M10 N13)', () => {
   it('plays the handoff as one timeline: lit card, then question, then the source reveal', () => {
-    installMatchMedia((query) => query === MOTION_OK)
+    installMatchMedia((query) => query === MOTION_OK || query === WIDE)
     const { unmount } = renderQuestion()
     const lit = document.querySelector('[data-lit]')
     const question = document.querySelector('[data-question]')
@@ -51,7 +51,7 @@ describe('motion (M10 N13)', () => {
   })
 
   it('runs no GSAP animation under prefers-reduced-motion, so everything is in its final state', () => {
-    installMatchMedia((query) => query === '(prefers-reduced-motion: reduce)')
+    installMatchMedia((query) => query === '(prefers-reduced-motion: reduce)' || query === WIDE)
     renderQuestion()
     const lit = document.querySelector('[data-lit]')
     const question = document.querySelector('[data-question]')

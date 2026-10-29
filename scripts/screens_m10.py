@@ -209,7 +209,15 @@ def answer_one(page: Page, api: Api) -> None:
     api.set(f"POST /sessions/{SID}/answers", ANSWERED[0])
     page.get_by_label("Your answer").fill(ANSWERS[0])
     page.get_by_role("button", name="Submit answer").click()
-    page.get_by_role("complementary", name="Source passage").wait_for()
+    page.locator("[data-reveal], [data-reveal-bar]").first.wait_for()
+
+
+def open_reveal(page: Page) -> None:
+    """Below 1024 px the reveal is a bar: open its sheet. At 1280 the card is already open."""
+    bar = page.locator("[data-reveal-bar]")
+    if bar.count() > 0:
+        bar.click()
+        page.get_by_role("dialog", name="Source passage").wait_for()
 
 
 def report(page: Page, api: Api) -> None:
@@ -235,7 +243,7 @@ STATES: list[tuple[str, Callable[[Page, Api], None]]] = [
     ("11-question-typed", lambda p, a: (to_question(p, a), p.get_by_label("Your answer").fill(ANSWERS[0]))),
     ("12-reviewing", lambda p, a: (to_question(p, a), a.hold(f"POST /sessions/{SID}/answers"), p.get_by_label("Your answer").fill(ANSWERS[0]), p.get_by_role("button", name="Submit answer").click(), p.wait_for_timeout(300))),
     ("13-question-2-reveal", answer_one),
-    ("14-pdf-open", lambda p, a: (answer_one(p, a), p.get_by_role("button", name="Open at page").click(), p.wait_for_timeout(800))),
+    ("14-pdf-open", lambda p, a: (answer_one(p, a), open_reveal(p), p.get_by_role("button", name="Open at page").click(), p.wait_for_timeout(800))),
     ("15-transcript", lambda p, a: (answer_one(p, a), p.get_by_role("button", name="Transcript · 1 earlier turn").click())),
     ("16-voice-menu", lambda p, a: (to_question(p, a), p.get_by_role("button", name="Voice: No voice. Change voice").click())),
     ("17-voice-disclosure", lambda p, a: (to_question(p, a), p.get_by_role("button", name="Voice: No voice. Change voice").click(), p.get_by_role("radio", name="Panel voice").click())),
@@ -244,8 +252,13 @@ STATES: list[tuple[str, Callable[[Page, Api], None]]] = [
     ("20-report", report),
     ("21-report-print", lambda p, a: (report(p, a), p.emulate_media(media="print"), p.evaluate("window.dispatchEvent(new Event('beforeprint'))"))),
     ("22-failed-scanned", lambda p, a: (a.set(f"GET /sessions/{SID}", {"status": "failed", "error": "x", "error_code": "scanned_pdf"}), upload(p, a), p.get_by_text("This document couldn't be read").wait_for(timeout=15000))),
+    ("24-reveal-sheet-open", lambda p, a: (answer_one(p, a), open_reveal(p), p.wait_for_timeout(300))),
+    ("25-reveal-page-2", lambda p, a: (answer_one(p, a), open_reveal(p), p.get_by_role("button", name="Next page").click(), p.wait_for_timeout(400))),
     ("23-quota-zero", lambda p, a: p.get_by_text("No defenses left today").wait_for()),
 ]
+
+
+OVERLAYS = {"14-pdf-open", "15-transcript", "17-voice-disclosure", "18-end-confirm", "24-reveal-sheet-open", "25-reveal-page-2"}
 
 
 def main() -> int:
@@ -289,7 +302,9 @@ def main() -> int:
                         page.wait_for_timeout(1200 if motion == "motion" else 150)  # timelines settle
                         wide = page.evaluate("[document.documentElement.scrollWidth, innerWidth]")
                         file = args.out / f"{name}-{width}-{motion}.png"
-                        page.screenshot(path=str(file), full_page=True)
+                        # Overlays (sheets, drawers, dialogs) are fixed to the viewport, which a
+                        # full-page capture stretches; those states are captured as the screen shows them.
+                        page.screenshot(path=str(file), full_page=name not in OVERLAYS)
                         flag = "OVERFLOW" if wide[0] > wide[1] else "fits"
                         if wide[0] > wide[1] and width == 375:
                             overflowing.append(file.name)

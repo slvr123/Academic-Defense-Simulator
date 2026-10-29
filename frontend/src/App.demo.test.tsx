@@ -7,6 +7,7 @@ import { DEMO_NOTE, DEMO_PATH, DemoReplay, type DemoRecording, RECORDING_AVAILAB
 import { createPlayer } from './voice/player'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
 import { defaultServer, renderApp } from './test/renderApp'
+import { installWide } from './test/setup'
 import { SAMPLE_PDF_PATH } from './state/useFlow'
 
 vi.setConfig({ testTimeout: 15_000 })
@@ -55,6 +56,7 @@ describe('Read a recorded defense (N5)', () => {
   })
 
   it('replays the recording through the real screens with Next, labelled, and makes no backend call', async () => {
+    installWide() // the card layout
     const server = demoServer()
     const { user, onExit } = renderReplay()
 
@@ -97,6 +99,7 @@ describe('Read a recorded defense (N5)', () => {
   })
 
   it('opens the sample PDF at the revealed page', async () => {
+    installWide() // the card layout
     demoServer()
     const { user } = renderReplay()
     await user.click(await screen.findByRole('button', { name: 'Next' }))

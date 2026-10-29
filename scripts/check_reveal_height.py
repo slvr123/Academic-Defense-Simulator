@@ -4,10 +4,12 @@
 
 Against `vite preview` of a build made with VITE_API_BASE_URL=http://api.test, with the
 canned AniCheck responses of scripts/screens_m10.py. For question 2 (question 1's reveal
-showing), at 1280 px with the PDF closed and open and at 375 px, it prints the page's
-height with the slot's content and with that content removed (display: none), for the
-canned passage and for a long one (the whole AniCheck methodology page plus a long
-answer), and the card's height and page count. Exit status 1 if a 1280 px page grows.
+showing) it prints the page's height with the slot's content and with it removed
+(display: none): at 1280 px the reveal card, and the PDF panel in its place; at 375 px
+the reveal bar (its whole slot, gap included). Then the page count: at 1280 the card's,
+at 375 the sheet's, opened from the bar. Both for the canned passage and a long one
+(the AniCheck methodology pages plus a long answer). Exit status 1 if a 1280 px page
+grows at all or a 375 px page grows by more than 56 px.
 """
 
 from __future__ import annotations
@@ -59,16 +61,16 @@ def to_reveal(page: Page, api: screens.Api, start: dict, answered: dict, answer:
     api.set(f"POST /sessions/{screens.SID}/answers", answered)
     page.get_by_label("Your answer").fill(answer)
     page.get_by_role("button", name="Submit answer").click()
-    page.locator("[data-reveal]").wait_for()
+    page.locator("[data-reveal], [data-reveal-bar]").first.wait_for()
     page.wait_for_timeout(300)
 
 
-def heights(page: Page, selector: str) -> tuple[int, int]:
-    """The page's height with the slot content, then with it hidden; restored after."""
+def heights(page: Page, element: str) -> tuple[int, int]:
+    """The page's height with `element` (a JS expression), then with it hidden; restored after."""
     with_it = page.evaluate("document.documentElement.scrollHeight")
-    page.evaluate(f"document.querySelector('{selector}').style.display = 'none'")
+    page.evaluate(f"({element}).style.display = 'none'")
     without = page.evaluate("document.documentElement.scrollHeight")
-    page.evaluate(f"document.querySelector('{selector}').style.display = ''")
+    page.evaluate(f"({element}).style.display = ''")
     return with_it, without
 
 
@@ -102,28 +104,39 @@ def main() -> int:
                     page.goto(f"http://localhost:{port}/")
                     page.get_by_text("Drop your PDF here").wait_for()
                     to_reveal(page, api, data["start"], data["answered"], answer)
+                    narrow = width < 1024
+                    if pdf:
+                        page.get_by_role("button", name="Open at page").click()
+                        page.locator('section[aria-label="Your PDF"]').wait_for()
+                        element = "document.querySelector('section[aria-label=\"Your PDF\"]')"
+                    elif narrow:
+                        element = "document.querySelector('[data-reveal-bar]').parentElement.parentElement"  # the slot cell
+                    else:
+                        element = "document.querySelector('[data-reveal]')"
+                    with_it, without = heights(page, element)
+                    if narrow:
+                        page.locator("[data-reveal-bar]").click()
+                        page.get_by_role("dialog", name="Source passage").wait_for()
+                        page.wait_for_timeout(200)
                     card = page.evaluate("Math.round(document.querySelector('[data-reveal]').getBoundingClientRect().height)")
                     counter = page.locator("[data-reveal]").get_by_text("/ ").inner_text()
                     scroll = page.evaluate(
                         "Array.from(document.querySelectorAll('[data-reveal] *')).filter(e => e.scrollHeight > e.clientHeight + 1"
                         " && ['auto','scroll'].includes(getComputedStyle(e).overflowY)).length"
                     )
-                    selector = "[data-reveal]"
-                    if pdf:
-                        page.get_by_role("button", name="Open at page").click()
-                        page.locator('section[aria-label="Your PDF"]').wait_for()
-                        selector = 'section[aria-label="Your PDF"]'
-                    with_it, without = heights(page, selector)
-                    label = f"{text:6} {width}px {'PDF open' if pdf else 'reveal  '}"
-                    verdict = "same" if with_it <= without else f"+{with_it - without}px"
-                    if with_it > without and width == 1280:
+                    what = "PDF open" if pdf else ("bar     " if narrow else "reveal  ")
+                    label = f"{text:6} {width}px {what}"
+                    grown = with_it - without
+                    verdict = "same" if grown <= 0 else f"+{grown}px"
+                    if (width >= 1024 and grown > 0) or (narrow and grown > 56):
                         grew += 1
-                    print(f"{label}  page {with_it} with, {without} without ({verdict})  card {card}px, pages {counter}, scrolling boxes {scroll}")
+                    shown = "card hidden under the PDF," if pdf else (f"sheet {card}px," if narrow else f"card {card}px,")
+                    print(f"{label}  page {with_it} with, {without} without ({verdict})  {shown} pages {counter}, scrolling boxes {scroll}")
                     context.close()
             browser.close()
     finally:
         subprocess.run(f"taskkill /F /T /PID {preview.pid}", shell=True, capture_output=True)
-    print(f"{grew} 1280 px case(s) where the page grew")
+    print(f"{grew} case(s) over the limit (1280: any growth; 375: more than 56 px)")
     return 1 if grew else 0
 
 

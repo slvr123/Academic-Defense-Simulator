@@ -22,6 +22,12 @@ export function installMatchMedia(matches: (query: string) => boolean = () => fa
 }
 installMatchMedia()
 
+/** A desktop-width viewport (the reveal's card and the PDF side panel, M10 follow-up). */
+export const WIDE = '(min-width: 1024px)'
+export function installWide(also: (query: string) => boolean = () => false) {
+  installMatchMedia((query) => query === WIDE || also(query))
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()

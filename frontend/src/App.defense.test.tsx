@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { FakeServer, Reply } from './test/fakeServer'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
 import { advance, defaultServer, deferred, renderApp, startDefense, uploadAccepted } from './test/renderApp'
+import { installWide } from './test/setup'
 
 // M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
 // needs more than vitest's 5 s default. No retries: a failing test still fails.
@@ -158,6 +159,7 @@ describe('preparing (D16, /start in flight)', () => {
 
 describe('the answer loop', () => {
   it('holds the open question’s source back, then reveals it with its highlight and no scores after the answer (D18, M8 K6, K7)', async () => {
+    installWide() // the card layout
     const server = defenseServer()
     const user = renderApp()
     await toQuestion(server, user)

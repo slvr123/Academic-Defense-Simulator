@@ -24,9 +24,8 @@ export function SourcePassage({ source, span, compact = false }: { source: Sourc
           {pageRange(source.page_start, source.page_end)}
           {continued && ' · continued'}
         </span>
-        <span>
-          {SOURCE_ORIGIN_LABELS[source.origin]} · match {source.score.toFixed(2)}
-        </span>
+        {/* The retrieval score isn't shown: a cosine "match" reads as a grade it isn't. */}
+        <span>{SOURCE_ORIGIN_LABELS[source.origin]}</span>
       </figcaption>
       <blockquote className={`font-serif whitespace-pre-line ${compact ? 'text-sm leading-[1.55] sm:text-[15px] sm:leading-[1.6]' : 'text-base leading-[1.65]'}`}>
         {marked ? (
