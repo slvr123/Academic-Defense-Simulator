@@ -125,7 +125,7 @@ export default function App() {
           onSend={() => void flow.sendAnswer()}
           onAutoRetry={() => void flow.sendAnswer(true)}
           onOpenPage={openPage}
-          documentPanel={ownPdf.url && documentPage !== null ? <DocumentPanel url={ownPdf.url} page={documentPage} onClose={() => setOpened(null)} /> : null}
+          documentPanel={ownPdf.url && documentPage !== null ? <DocumentPanel url={ownPdf.url} page={documentPage} onClose={() => setOpened(null)} onBack={phase.last ? () => setOpened(null) : null} /> : null}
         />
       )
       break

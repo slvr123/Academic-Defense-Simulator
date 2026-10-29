@@ -8,7 +8,8 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
 /** `sample`: the recorded demo's bundled capstone (N5), not the candidate's own file. */
-export function DocumentPanel({ url, page, onClose, sample = false }: { url: string; page: number; onClose: () => void; sample?: boolean }) {
+/** `onBack`: there's a revealed passage this panel took the place of; it swaps back. */
+export function DocumentPanel({ url, page, onClose, onBack = null, sample = false }: { url: string; page: number; onClose: () => void; onBack?: (() => void) | null; sample?: boolean }) {
   const root = useRef<HTMLElement>(null)
   // The phone sheet covers the page, so it traps focus; on wide screens the panel sits
   // beside the question and Tab moves freely between them.
@@ -18,12 +19,21 @@ export function DocumentPanel({ url, page, onClose, sample = false }: { url: str
     <section
       ref={root}
       aria-label="Your PDF"
-      className="fixed inset-0 z-40 flex flex-col gap-3 bg-ground p-3 lg:sticky lg:top-4 lg:z-auto lg:h-[calc(100dvh-2rem)] lg:min-w-0 lg:flex-[1_1_420px] lg:rounded-2xl lg:border lg:border-line-strong lg:bg-card lg:p-[18px]"
+      className="fixed inset-0 z-40 flex flex-col gap-3 bg-ground p-3 lg:absolute lg:z-auto lg:min-w-0 lg:rounded-2xl lg:border lg:border-line-strong lg:bg-card lg:p-[18px]"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold">
           {sample ? 'The sample PDF' : 'Your PDF'} <span className="font-mono text-xs font-normal text-muted">· opened at page {page}</span>
         </span>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="ml-auto flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+          >
+            ‹ Back to passage
+          </button>
+        )}
         <button
           type="button"
           aria-label="Close PDF"

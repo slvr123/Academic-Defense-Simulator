@@ -166,7 +166,8 @@ describe('the answer loop', () => {
     await answer(user)
     expect(await screen.findByText(Q2)).toBeInTheDocument()
     expect(document.body).toHaveTextContent(SOURCE_1)
-    expect(screen.getByText('PDF pages 12–13')).toBeInTheDocument()
+    // Page 1 of the paged reveal (the card's hidden measuring copies repeat the label).
+    expect(within(screen.getByRole('group', { name: '1 of 2' })).getByText('PDF pages 12–13')).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent(SOURCE_2)
 
     const reveal = screen.getByRole('complementary', { name: 'Source passage' })

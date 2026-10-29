@@ -16,11 +16,10 @@ import { type QuestionVoice, useQuestionVoice } from '../voice/useQuestionVoice'
 import { Avatar } from './Avatar'
 import { NoticeBanner } from './NoticeBanner'
 import { type ActiveStatus, type Card, PanelGrid } from './PanelGrid'
-import { SourcePassage } from './Sources'
+import { SourceReveal } from './SourceReveal'
 import { TranscriptDrawer } from './TranscriptDrawer'
 import { Button, Card as Surface, DocumentIcon, Eyebrow, Heading, Working } from './ui'
 
-export const SEALED_TEXT = 'Answer recorded. Scores stay sealed until the debrief.'
 export const GROUNDED_TEXT = 'Grounded in a passage from your document - revealed after you answer'
 export const PREPARING_TITLE = 'The panel is reading your paper'
 
@@ -200,50 +199,6 @@ function VoiceControls({ voice, submitting }: { voice: QuestionVoice; submitting
   }
 }
 
-/** The previous question's reveal, once its answer is recorded: the passage the panelist
- * was reading, with the words the question was grounded in highlighted. No scores (K7).
- * `onOpenPage` opens the candidate's own PDF at the passage's first page (N4). */
-export function SourceReveal({ turn, onOpenPage }: { turn: Turn; onOpenPage: ((page: number) => void) | null }) {
-  const { question, answer } = turn
-  const asker = panelistName(question.panelist.name)
-  const page = question.sources[0]?.page_start
-  return (
-    <aside data-reveal aria-label="Source passage" className="flex min-w-0 flex-col gap-4 rounded-2xl border border-accent bg-card p-5 sm:p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-serif text-xl font-semibold">What {asker} was reading</h3>
-        <span className="font-mono text-xs text-muted">Question {question.turn}</span>
-      </div>
-      <p className="flex items-center gap-2 text-sm text-muted">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <rect x="5" y="11" width="14" height="10" rx="2" />
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-        </svg>
-        {SEALED_TEXT}
-      </p>
-      {question.sources.map((source, i) => (
-        <SourcePassage key={i} source={source} />
-      ))}
-      {onOpenPage && page !== undefined && (
-        <Button variant="secondary" className="flex items-center gap-2 self-start" onClick={() => onOpenPage(page)}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M14 3h7v7" />
-            <path d="M10 14 21 3" />
-            <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-          </svg>
-          Open at page {page} in your PDF
-        </Button>
-      )}
-      <details className="rounded-xl border border-line bg-field px-4 py-3 text-sm">
-        <summary className="min-h-11 cursor-pointer content-center text-muted">The question and your answer</summary>
-        <div className="space-y-3 pt-2 pb-1">
-          <p className="font-serif text-base leading-relaxed">{question.question}</p>
-          <p className="leading-relaxed whitespace-pre-line text-ink-dim">{answer}</p>
-        </div>
-      </details>
-    </aside>
-  )
-}
-
 /** Ctrl+Enter, or Cmd+Enter on a Mac (N8). */
 function isSendShortcut(event: { key: string; ctrlKey: boolean; metaKey: boolean }): boolean {
   return event.key === 'Enter' && (event.ctrlKey || event.metaKey)
@@ -307,12 +262,16 @@ export function QuestionScreen(props: QuestionScreenProps) {
   }
 
   const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} />
+  const slot = documentPanel || reveal
 
   return (
     <div ref={root} className="space-y-5">
       <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} />
-      <div className="flex flex-wrap items-start gap-6">
-        <div className={`flex min-w-0 flex-col gap-6 ${documentPanel ? 'flex-[999_1_560px]' : 'flex-[1_1_520px]'}`}>
+      {/* One slot beside the question holds the reveal or the PDF, never both, and never
+          adds height: at lg it fills the row the question column sets (absolute inset-0);
+          below lg the reveal is a fixed 360 px under the answer and the PDF a sheet. */}
+      <div className={`grid items-stretch gap-6 ${slot ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
+        <div className="flex min-w-0 flex-col gap-6">
           <section
             data-question
             aria-label={`Question ${question.turn}`}
@@ -404,9 +363,8 @@ export function QuestionScreen(props: QuestionScreenProps) {
               </>
             )}
           </section>
-          {documentPanel && reveal}
         </div>
-        {documentPanel || (reveal && <div className="flex min-w-0 flex-[1_1_420px]">{reveal}</div>)}
+        {slot && <div className="relative min-w-0">{slot}</div>}
       </div>
       {transcriptOpen && <TranscriptDrawer turns={turns} onClose={() => setTranscriptOpen(false)} />}
     </div>

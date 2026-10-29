@@ -1,6 +1,6 @@
 // M10's session comforts through the real App: End session (N2), the voice menu (N9),
 // the answer box (N8), the transcript drawer (N10) and the candidate's own PDF (N4).
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { QuestionScreen } from './components/DefenseScreens'
 import type { FakeServer } from './test/fakeServer'
@@ -264,5 +264,73 @@ describe("the candidate's own PDF (N4)", () => {
     )
     expect(screen.getByRole('complementary', { name: 'Source passage' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Open at page/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('the paged reveal (M10 follow-up)', () => {
+  const reveal = () => screen.getByRole('complementary', { name: 'Source passage' })
+  const counter = () => within(reveal()).getByText(/^\d+ \/ \d+$/)
+
+  it('pages between the passage and the question with your answer, by button, arrow key and swipe', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+
+    expect(counter()).toHaveTextContent('1 / 2')
+    const page = (name: string) => screen.getByRole('group', { name })
+    expect(within(page('1 of 2')).getByText('adapted from ISO/IEC 25010', { selector: 'mark' })).toBeInTheDocument()
+    expect(within(page('1 of 2')).getByRole('button', { name: 'Open at page 12 in your PDF' })).toBeInTheDocument()
+    expect(page('2 of 2')).toHaveAttribute('inert') // off-page content can't take focus
+
+    await user.click(within(reveal()).getByRole('button', { name: 'Next page' }))
+    expect(counter()).toHaveTextContent('2 / 2')
+    expect(page('2 of 2')).toHaveTextContent(Q1)
+    expect(page('2 of 2')).toHaveTextContent('We adapted ISO 25010.')
+    expect(within(reveal()).getByRole('button', { name: 'Next page' })).toBeDisabled()
+
+    reveal().focus()
+    await user.keyboard('{ArrowLeft}')
+    expect(counter()).toHaveTextContent('1 / 2')
+    await user.keyboard('{ArrowRight}')
+    expect(counter()).toHaveTextContent('2 / 2')
+
+    const body = page('1 of 2').parentElement?.parentElement
+    if (!body) throw new Error('no page body')
+    fireEvent.pointerDown(body, { pointerType: 'touch', clientX: 100 })
+    fireEvent.pointerUp(body, { pointerType: 'touch', clientX: 200 }) // swipe right: back
+    expect(counter()).toHaveTextContent('1 / 2')
+    fireEvent.pointerDown(body, { pointerType: 'touch', clientX: 200 })
+    fireEvent.pointerUp(body, { pointerType: 'touch', clientX: 180 }) // too short to count
+    expect(counter()).toHaveTextContent('1 / 2')
+  })
+
+  it('starts each new reveal on page 1', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+    await user.click(within(reveal()).getByRole('button', { name: 'Next page' }))
+    expect(counter()).toHaveTextContent('2 / 2')
+
+    server.on(ANSWERS, { status: 200, body: { evaluation, next_question: { ...nextQuestion.next_question, turn: 3, question: 'Third?' }, done: false } })
+    await user.type(screen.getByLabelText('Your answer'), 'Power analysis.')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    await screen.findByText('Third?', { selector: '.sr-only' })
+    expect(within(reveal()).getByText('Question 2')).toBeInTheDocument()
+    expect(counter()).toHaveTextContent('1 / 2')
+  })
+
+  it('shares one slot with the PDF: opening it swaps the reveal out, Back to passage swaps it back', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+    await user.click(screen.getByRole('button', { name: 'Open at page 12 in your PDF' }))
+    expect(screen.getByRole('region', { name: 'Your PDF' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Source passage' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Back to passage/ }))
+    expect(screen.queryByRole('region', { name: 'Your PDF' })).not.toBeInTheDocument()
+    expect(reveal()).toBeInTheDocument()
   })
 })

@@ -142,7 +142,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
         onSend={next}
         onAutoRetry={() => {}}
         onOpenPage={setPage}
-        documentPanel={page === null ? null : <DocumentPanel url={DEMO_PDF_PATH} page={page} onClose={() => setPage(null)} sample />}
+        documentPanel={page === null ? null : <DocumentPanel url={DEMO_PDF_PATH} page={page} onClose={() => setPage(null)} onBack={turns.length > 0 ? () => setPage(null) : null} sample />}
       />
     )
   } else if (step === 0) {
