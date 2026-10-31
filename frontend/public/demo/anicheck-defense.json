@@ -1,0 +1,648 @@
+{
+  "recorded_at": "2026-10-31T05:21:53+00:00",
+  "document": "sample-capstone-anicheck.pdf",
+  "panel_config": {
+    "defense_type": "capstone",
+    "other_subtype": null,
+    "domain": "Information Technology",
+    "topic": "AniCheck: a mobile app for rice leaf disease identification",
+    "archetype_keys": [
+      "technical_implementation_reviewer",
+      "methodology_expert",
+      "results_conclusions_reviewer"
+    ],
+    "starting_difficulty": 2
+  },
+  "session": {
+    "status": "ready",
+    "defense": "not_started",
+    "progress": 1.0,
+    "chunk_count": 13,
+    "ingest": {
+      "page_count": 16,
+      "citable_passages": 11,
+      "navigation_pages": [],
+      "reference_list": {
+        "start": 16,
+        "end": 16
+      },
+      "literature_review": {
+        "start": 6,
+        "end": 8
+      },
+      "held_back_passages": 2
+    }
+  },
+  "start": {
+    "domain": "Information Technology",
+    "topic": "AniCheck: a mobile app for rice leaf disease identification",
+    "panel": [
+      {
+        "archetype_key": "technical_implementation_reviewer",
+        "name": "Tanaka",
+        "title": "Technical Implementation Reviewer",
+        "icon": "engineer"
+      },
+      {
+        "archetype_key": "methodology_expert",
+        "name": "Okonkwo",
+        "title": "Methodology Expert",
+        "icon": "advisor"
+      },
+      {
+        "archetype_key": "results_conclusions_reviewer",
+        "name": "Dubois",
+        "title": "Results & Conclusions Reviewer",
+        "icon": "scholar"
+      },
+      {
+        "archetype_key": "devils_advocate",
+        "name": "Rodriguez",
+        "title": "Devil's Advocate",
+        "icon": "hacker"
+      }
+    ],
+    "question": {
+      "turn": 1,
+      "panelist": {
+        "archetype_key": "technical_implementation_reviewer",
+        "name": "Tanaka",
+        "title": "Technical Implementation Reviewer",
+        "icon": "engineer"
+      },
+      "question": "Regarding your choice of evaluation metrics, you've focused on accuracy and F1-score to validate your model, but how do these figures account for the actual memory footprint and latency experienced by the farmers' Android devices during these field sessions?",
+      "difficulty": 2,
+      "sources": [
+        {
+          "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "page_start": 10,
+          "page_end": 10,
+          "score": 0.2351,
+          "origin": "new_topic",
+          "highlight": {
+            "start": 3,
+            "end": 180
+          }
+        }
+      ],
+      "grounding_reference": "Evaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix."
+    }
+  },
+  "turns": [
+    {
+      "answer": "Accuracy and F1 only describe the classifier, so we measured the device side separately. Table 5 gives mean inference latency over twenty consecutive classifications on three phones: 312 ms on the Galaxy A54 with 8 GB of RAM, 487 ms on the Redmi 12 with 4 GB, and 894 ms on the Galaxy A12 with 3 GB, all under the one second we set for a capture-and-identify cycle. On memory, the main lever was size: post-training dynamic range quantization took the model from 14.2 MB to 3.8 MB, and it ships inside the APK, so nothing is downloaded at run time. We did not profile peak RAM during inference, and behavior below 3 GB was not established, which we state in the results. Those latency figures are bench measurements; the field sessions were evaluated through the ISO 25010 survey, not instrumented.",
+      "response": {
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 4,
+          "total": 13,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate failed to instrument the devices for real-world memory and latency performance, relying instead on lab benchmarks and subjective survey data for user-perceived performance.",
+          "answer_summary": "The candidate explained that latency was measured via controlled benchmarks on specific devices and model size was optimized through quantization, but admitted they lacked empirical RAM profiling and relied on survey data for field-use validation."
+        },
+        "next_question": {
+          "turn": 2,
+          "panelist": {
+            "archetype_key": "methodology_expert",
+            "name": "Okonkwo",
+            "title": "Methodology Expert",
+            "icon": "advisor"
+          },
+          "question": "I see you've acknowledged the gap in diagnostic reliability, but if you're attributing your 94.7% accuracy specifically to the small dataset scale of 3,240 images, how did you ensure those specific samples weren't just high-quality, clear-condition shots that fail to represent the reality of leaves carrying symptoms of more than one condition?",
+          "difficulty": 3,
+          "sources": [
+            {
+              "text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+              "page_start": 13,
+              "page_end": 13,
+              "score": 0.2868,
+              "origin": "new_topic",
+              "highlight": {
+                "start": 474,
+                "end": 595
+              }
+            }
+          ],
+          "grounding_reference": "3,240 images across five classes is an order of magnitude smaller than the datasets on which those figures were obtained."
+        },
+        "done": false
+      }
+    },
+    {
+      "answer": "We didn't, and the collection procedure works against it. Every leaf was detached, laid flat on white cardboard and photographed between 8 and 10 in the morning, and the municipal technician discarded any image he couldn't confidently classify. That filter removes exactly the ambiguous and multi-condition leaves, so the 94.7% is accuracy on clear, single-condition images, and the test set came from the same 80:20 split of the same collection. The model also always returns one of five classes, so a leaf with two conditions can't be expressed at all; in the respondent sessions that is where the reliability rating of 4.09 came from. That's why Chapter 5 limits the claim to preliminary decision support, and why our third recommendation is a validation study against a technician's judgment on the same field leaves, plus an inconclusive or multiple-condition output.",
+      "response": {
+        "evaluation": {
+          "clarity": 5,
+          "depth": 5,
+          "grounding": 5,
+          "total": 15,
+          "difficulty_delta": 0,
+          "primary_gap": null,
+          "answer_summary": "The candidate admitted that their collection methodology explicitly filtered out ambiguous and multi-condition leaves, acknowledging that the 94.7% accuracy rate is limited to clear, single-condition images."
+        },
+        "next_question": {
+          "turn": 3,
+          "panelist": {
+            "archetype_key": "results_conclusions_reviewer",
+            "name": "Dubois",
+            "title": "Results & Conclusions Reviewer",
+            "icon": "scholar"
+          },
+          "question": "I appreciate your candor about the current limitations, but given your fourth recommendation for a longitudinal evaluation of unsupervised use, how can you justify concluding that the app currently functions as a viable decision support tool when your own proposed validation roadmap suggests it isn't yet ready to be compared against the standard of an agricultural technician?",
+          "difficulty": 3,
+          "sources": [
+            {
+              "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+              "page_start": 15,
+              "page_end": 15,
+              "score": 0.3094,
+              "origin": "new_topic",
+              "highlight": {
+                "start": 481,
+                "end": 729
+              }
+            }
+          ],
+          "grounding_reference": "a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate"
+        },
+        "done": false
+      }
+    },
+    {
+      "answer": "We think viable is fair because the respondents rated it Very Acceptable overall, 4.31, and usability was the highest at 4.42. Farmers could complete a capture-and-identify cycle on their own after one demonstration. The accuracy is also high at 94.7%. The longitudinal study would tell us more, but the results we have show farmers can use it.",
+      "response": {
+        "evaluation": {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate conflates user-centric usability metrics with clinical diagnostic viability, failing to address the fundamental discrepancy between their internal test accuracy and the external standard required for agricultural decision support.",
+          "answer_summary": "The candidate claims the tool is viable based on high user acceptability scores and a 94.7% accuracy rate, arguing that these performance metrics demonstrate current functionality despite the need for future longitudinal validation."
+        },
+        "next_question": {
+          "turn": 4,
+          "panelist": {
+            "archetype_key": "results_conclusions_reviewer",
+            "name": "Dubois",
+            "title": "Results & Conclusions Reviewer",
+            "icon": "scholar"
+          },
+          "question": "That response fundamentally misses the mark; you are conflating user comfort with clinical diagnostic utility. If you acknowledge in your own roadmap that a validation study is required to compare your model against the 'judgment of an agricultural technician' because that is the 'standard the tool is intended to approximate,' how can you logically assert that the tool is already 'viable' for agricultural decision support when that specific benchmark for accuracy hasn't even been met yet?",
+          "difficulty": 4,
+          "sources": [
+            {
+              "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+              "page_start": 15,
+              "page_end": 15,
+              "score": 0.3094,
+              "origin": "follow_up",
+              "highlight": {
+                "start": 469,
+                "end": 790
+              }
+            }
+          ],
+          "grounding_reference": "Third, that a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate rather than against a held-out partition of its own dataset."
+        },
+        "done": false
+      }
+    },
+    {
+      "answer": "I think the app is still useful for farmers because it's better than asking the supply store. Most apps in the literature are tested in labs, and ours was tested with real farmers, so it is more realistic.",
+      "response": {
+        "evaluation": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the logic of the validation gap, instead pivoting to a subjective anecdotal justification for 'usefulness' that avoids the core technical critique.",
+          "answer_summary": "The candidate claims that the application is useful because it is superior to existing alternatives and provides higher ecological validity through real-world testing compared to lab-based studies."
+        },
+        "next_question": {
+          "turn": 5,
+          "panelist": {
+            "archetype_key": "results_conclusions_reviewer",
+            "name": "Dubois",
+            "title": "Results & Conclusions Reviewer",
+            "icon": "scholar"
+          },
+          "question": "Your insistence on comparing this against 'supply store' advice merely highlights your low bar for success rather than justifying the tool's clinical viability. If your own third recommendation explicitly states that a validation study against an agricultural technician is necessary to assess accuracy 'against the standard the tool is intended to approximate,' how can you reconcile that recognized requirement with your claim that the current, unvalidated model is already a viable decision support tool?",
+          "difficulty": 5,
+          "sources": [
+            {
+              "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+              "page_start": 15,
+              "page_end": 15,
+              "score": 0.3094,
+              "origin": "follow_up",
+              "highlight": {
+                "start": 469,
+                "end": 790
+              }
+            }
+          ],
+          "grounding_reference": "Third, that a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate rather than against a held-out partition of its own dataset."
+        },
+        "done": false
+      }
+    },
+    {
+      "answer": "You're right that I overstated it, so let me separate the two claims. What our data supports is the first half of our conclusion: on-device inference is technically viable in Barangay Masagana's conditions, meaning 94.7% on the held-out set, under a second per identification on all three phones, and no connectivity needed. What it does not support is diagnostic accuracy against the standard the tool is meant to approximate, because we never compared its output with a technician's on the same field leaves. Chapter 5 already draws that line: it calls the app a preliminary aid and says it should not replace a technician where a costly treatment decision follows, given the 0.813 recall on bacterial leaf blight and the 4.09 reliability rating. So the honest wording is technically viable and acceptable to users, with its diagnostic value unvalidated until that study is done.",
+      "response": {
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "difficulty_delta": 0,
+          "primary_gap": null,
+          "answer_summary": "The candidate admits to overstating the tool's clinical diagnostic viability, instead reframing their claim to emphasize that the model is technically viable as an on-device inference tool while conceding that diagnostic accuracy remains unvalidated against field technicians."
+        },
+        "next_question": {
+          "turn": 6,
+          "panelist": {
+            "archetype_key": "devils_advocate",
+            "name": "Rodriguez",
+            "title": "Devil's Advocate",
+            "icon": "hacker"
+          },
+          "question": "Moving back to your methodology, I find your defense regarding the 94.7% accuracy rate problematic given the context provided in your own paper. If your system is fundamentally unable to handle multi-condition leaves and your internal results already reveal a significant per-class weakness on bacterial leaf blight, on what empirical basis do you argue that this software overhead provides superior value, rather than simply introducing a layer of digital complexity that yields 'confident' but inherently unvalidated and incomplete diagnostic outputs compared to a simple, low-tech diagnostic chart?",
+          "difficulty": 5,
+          "sources": [
+            {
+              "text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+              "page_start": 13,
+              "page_end": 13,
+              "score": 0.2868,
+              "origin": "devils_advocate",
+              "highlight": {
+                "start": 40,
+                "end": 205
+              }
+            }
+          ],
+          "grounding_reference": "In several such instances the leaf in question carried symptoms of more than one condition, a case the present system cannot express since it returns a single class."
+        },
+        "done": false
+      }
+    },
+    {
+      "answer": "We have no empirical basis for superiority over a chart, because we never tested a chart; that comparison would be a fair addition to the validation study. What we can point to is the baseline we did measure. In the 24 initial interviews, 19 farmers asked a neighbour first, 16 bought pesticide on a supply store's recommendation, and 8 later concluded they'd applied the wrong treatment. A chart has the same weakness the paper describes for early bacterial leaf blight and brown spot: both start as yellowing along the leaf margin, which is hard to tell apart by eye, and that's also where our model is weakest, with 16 of the 125 blight test images predicted as brown spot. The confidence percentage is shown with every result, and the app doesn't recommend a chemical or a dose, so it informs the decision rather than making it. Whether that beats a chart in the field is an open question we'd answer in the validation study.",
+      "response": {
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate admits a lack of empirical evidence for the system's superior utility compared to traditional low-tech diagnostics, effectively conceding that the 'value' proposition remains speculative.",
+          "answer_summary": "The candidate claims that while they lack a direct comparison to low-tech charts, their system provides value by informing farmer decisions with confidence metrics, noting that both the app and human observation struggle similarly with early-stage disease differentiation."
+        },
+        "next_question": null,
+        "done": true
+      }
+    }
+  ],
+  "report": {
+    "domain": "Information Technology",
+    "topic": "AniCheck: a mobile app for rice leaf disease identification",
+    "report": {
+      "difficulty_trajectory": [
+        2,
+        3,
+        3,
+        4,
+        5,
+        5
+      ],
+      "overall_avg_clarity": 3.8333333333333335,
+      "overall_avg_depth": 3.1666666666666665,
+      "overall_avg_grounding": 3.6666666666666665,
+      "panelist_sections": [
+        {
+          "archetype_key": "technical_implementation_reviewer",
+          "panelist_name": "Tanaka",
+          "turns_taken": 1,
+          "avg_clarity": 5.0,
+          "avg_depth": 4.0,
+          "avg_grounding": 4.0,
+          "primary_gaps": [
+            "The candidate failed to instrument the devices for real-world memory and latency performance, relying instead on lab benchmarks and subjective survey data for user-perceived performance."
+          ]
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "panelist_name": "Okonkwo",
+          "turns_taken": 1,
+          "avg_clarity": 5.0,
+          "avg_depth": 5.0,
+          "avg_grounding": 5.0,
+          "primary_gaps": []
+        },
+        {
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist_name": "Dubois",
+          "turns_taken": 3,
+          "avg_clarity": 2.6666666666666665,
+          "avg_depth": 2.0,
+          "avg_grounding": 2.6666666666666665,
+          "primary_gaps": [
+            "The candidate conflates user-centric usability metrics with clinical diagnostic viability, failing to address the fundamental discrepancy between their internal test accuracy and the external standard required for agricultural decision support.",
+            "The candidate completely failed to address the logic of the validation gap, instead pivoting to a subjective anecdotal justification for 'usefulness' that avoids the core technical critique."
+          ]
+        },
+        {
+          "archetype_key": "devils_advocate",
+          "panelist_name": "Rodriguez",
+          "turns_taken": 1,
+          "avg_clarity": 5.0,
+          "avg_depth": 4.0,
+          "avg_grounding": 5.0,
+          "primary_gaps": [
+            "The candidate admits a lack of empirical evidence for the system's superior utility compared to traditional low-tech diagnostics, effectively conceding that the 'value' proposition remains speculative."
+          ]
+        }
+      ],
+      "pushback_events": [
+        {
+          "turn_index": 1,
+          "prior_turn_index": 0,
+          "difficulty_from": 2,
+          "difficulty_to": 3,
+          "quality_sum_prior": 13,
+          "quality_sum_at": 15,
+          "outcome": "recovered"
+        },
+        {
+          "turn_index": 3,
+          "prior_turn_index": 2,
+          "difficulty_from": 3,
+          "difficulty_to": 4,
+          "quality_sum_prior": 5,
+          "quality_sum_at": 3,
+          "outcome": "deteriorated"
+        },
+        {
+          "turn_index": 4,
+          "prior_turn_index": 3,
+          "difficulty_from": 4,
+          "difficulty_to": 5,
+          "quality_sum_prior": 3,
+          "quality_sum_at": 14,
+          "outcome": "recovered"
+        }
+      ],
+      "narrative": "You have successfully concluded your defense. Looking back at the trajectory of the session, your performance showed a clear ability to adapt under pressure, though there remains critical work to be done regarding the depth of your analysis. The session began with moderate difficulty and increased consistently, reaching peak intensity in the final turns. You demonstrated notable resilience, recovering your quality of response after both the first and fourth turns, despite an initial dip in performance when difficulty escalated to level four.\n\nYour panel feedback reveals a polarized reception. You performed very well with Dr. Okonkwo, who rated your clarity, depth, and grounding perfectly, and you maintained strong scores with Dr. Tanaka and Dr. Rodriguez. However, the sessions with Dr. Dubois highlighted significant deficiencies in your work. Specifically, you struggled to reconcile your user-centric usability metrics with clinical diagnostic requirements, failing to address the fundamental discrepancy between internal test accuracy and external standards. Furthermore, your reliance on subjective anecdotal justifications when pressed on validation gaps proved insufficient. Finally, your admission to Dr. Rodriguez regarding the lack of empirical evidence for your system's superior utility confirms that the value proposition currently remains speculative. While your clarity remained generally acceptable, your overall depth score of 63 indicates a recurring need to move beyond subjective framing to provide the rigorous, empirical evidence required by this committee.",
+      "narrative_fallback_used": false,
+      "answer_suggestions": [
+        {
+          "turn_index": 0,
+          "suggestion": "A stronger answer would have explicitly linked the absence of performance instrumentation during field sessions to the chosen method for evaluating \"System acceptability\" via the \"ISO/IEC 25010 survey,\" explaining that the survey focused on user experience rather than technical metrics in that context.",
+          "grounding_reference": "System acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010"
+        },
+        {
+          "turn_index": 1,
+          "suggestion": "A stronger answer would have directly used the acknowledged \"per-class weakness identified on bacterial leaf blight\" as a concrete example of how even with a carefully curated, single-condition dataset, the model still faced specific diagnostic challenges, further underscoring the limitations of the current dataset.",
+          "grounding_reference": "it corresponds directly to the per-class weakness identified on bacterial leaf blight."
+        },
+        {
+          "turn_index": 2,
+          "suggestion": "A stronger answer would have directly addressed the core tension by acknowledging that \"viable\" for decision support requires validation against the \"judgment of an agricultural technician\" as the \"standard the tool is intended to approximate,\" and then clarified that the current viability claim is limited to user acceptance and technical function, not validated diagnostic accuracy.",
+          "grounding_reference": "judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate"
+        },
+        {
+          "turn_index": 3,
+          "suggestion": "A stronger answer would have directly conceded that continuing to claim \"viable\" for decision support, without having conducted the validation study comparing against an \"agricultural technician\" to assess accuracy against the \"standard the tool is intended to approximate,\" presented an internal inconsistency in the argument.",
+          "grounding_reference": "accuracy may be assessed against the standard the tool is intended to approximate"
+        },
+        {
+          "turn_index": 4,
+          "suggestion": "While the answer was strong, to be even stronger, it could have explicitly used the panel's framing by directly stating that the critique of a \"low bar for success\" was valid for the diagnostic claim because the model had not yet been assessed against \"the standard the tool is intended to approximate.\"",
+          "grounding_reference": "accuracy may be assessed against the standard the tool is intended to approximate"
+        },
+        {
+          "turn_index": 5,
+          "suggestion": "A stronger answer, while admitting no empirical basis for superiority over a chart, would have explicitly leveraged the \"per-class weakness identified on bacterial leaf blight\" to argue that despite these challenges, the app provided a more structured and potentially less error-prone initial diagnostic step compared to farmers' current informal methods, thereby justifying its incremental value even without formal chart comparison.",
+          "grounding_reference": "it corresponds directly to the per-class weakness identified on bacterial leaf blight."
+        }
+      ],
+      "suggestions_fallback_used": false
+    },
+    "overall_raw": 3.5555555555555554,
+    "transcript": [
+      {
+        "turn": 1,
+        "panelist": {
+          "archetype_key": "technical_implementation_reviewer",
+          "name": "Tanaka",
+          "title": "Technical Implementation Reviewer",
+          "icon": "engineer"
+        },
+        "question": "Regarding your choice of evaluation metrics, you've focused on accuracy and F1-score to validate your model, but how do these figures account for the actual memory footprint and latency experienced by the farmers' Android devices during these field sessions?",
+        "difficulty": 2,
+        "sources": [
+          {
+            "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+            "page_start": 10,
+            "page_end": 10,
+            "score": 0.2351,
+            "origin": "new_topic",
+            "highlight": {
+              "start": 3,
+              "end": 180
+            }
+          }
+        ],
+        "grounding_reference": "Evaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.",
+        "answer": "Accuracy and F1 only describe the classifier, so we measured the device side separately. Table 5 gives mean inference latency over twenty consecutive classifications on three phones: 312 ms on the Galaxy A54 with 8 GB of RAM, 487 ms on the Redmi 12 with 4 GB, and 894 ms on the Galaxy A12 with 3 GB, all under the one second we set for a capture-and-identify cycle. On memory, the main lever was size: post-training dynamic range quantization took the model from 14.2 MB to 3.8 MB, and it ships inside the APK, so nothing is downloaded at run time. We did not profile peak RAM during inference, and behavior below 3 GB was not established, which we state in the results. Those latency figures are bench measurements; the field sessions were evaluated through the ISO 25010 survey, not instrumented.",
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 4,
+          "total": 13,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate failed to instrument the devices for real-world memory and latency performance, relying instead on lab benchmarks and subjective survey data for user-perceived performance.",
+          "answer_summary": "The candidate explained that latency was measured via controlled benchmarks on specific devices and model size was optimized through quantization, but admitted they lacked empirical RAM profiling and relied on survey data for field-use validation."
+        }
+      },
+      {
+        "turn": 2,
+        "panelist": {
+          "archetype_key": "methodology_expert",
+          "name": "Okonkwo",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        "question": "I see you've acknowledged the gap in diagnostic reliability, but if you're attributing your 94.7% accuracy specifically to the small dataset scale of 3,240 images, how did you ensure those specific samples weren't just high-quality, clear-condition shots that fail to represent the reality of leaves carrying symptoms of more than one condition?",
+        "difficulty": 3,
+        "sources": [
+          {
+            "text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+            "page_start": 13,
+            "page_end": 13,
+            "score": 0.2868,
+            "origin": "new_topic",
+            "highlight": {
+              "start": 474,
+              "end": 595
+            }
+          }
+        ],
+        "grounding_reference": "3,240 images across five classes is an order of magnitude smaller than the datasets on which those figures were obtained.",
+        "answer": "We didn't, and the collection procedure works against it. Every leaf was detached, laid flat on white cardboard and photographed between 8 and 10 in the morning, and the municipal technician discarded any image he couldn't confidently classify. That filter removes exactly the ambiguous and multi-condition leaves, so the 94.7% is accuracy on clear, single-condition images, and the test set came from the same 80:20 split of the same collection. The model also always returns one of five classes, so a leaf with two conditions can't be expressed at all; in the respondent sessions that is where the reliability rating of 4.09 came from. That's why Chapter 5 limits the claim to preliminary decision support, and why our third recommendation is a validation study against a technician's judgment on the same field leaves, plus an inconclusive or multiple-condition output.",
+        "evaluation": {
+          "clarity": 5,
+          "depth": 5,
+          "grounding": 5,
+          "total": 15,
+          "difficulty_delta": 0,
+          "primary_gap": null,
+          "answer_summary": "The candidate admitted that their collection methodology explicitly filtered out ambiguous and multi-condition leaves, acknowledging that the 94.7% accuracy rate is limited to clear, single-condition images."
+        }
+      },
+      {
+        "turn": 3,
+        "panelist": {
+          "archetype_key": "results_conclusions_reviewer",
+          "name": "Dubois",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        "question": "I appreciate your candor about the current limitations, but given your fourth recommendation for a longitudinal evaluation of unsupervised use, how can you justify concluding that the app currently functions as a viable decision support tool when your own proposed validation roadmap suggests it isn't yet ready to be compared against the standard of an agricultural technician?",
+        "difficulty": 3,
+        "sources": [
+          {
+            "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+            "page_start": 15,
+            "page_end": 15,
+            "score": 0.3094,
+            "origin": "new_topic",
+            "highlight": {
+              "start": 481,
+              "end": 729
+            }
+          }
+        ],
+        "grounding_reference": "a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate",
+        "answer": "We think viable is fair because the respondents rated it Very Acceptable overall, 4.31, and usability was the highest at 4.42. Farmers could complete a capture-and-identify cycle on their own after one demonstration. The accuracy is also high at 94.7%. The longitudinal study would tell us more, but the results we have show farmers can use it.",
+        "evaluation": {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate conflates user-centric usability metrics with clinical diagnostic viability, failing to address the fundamental discrepancy between their internal test accuracy and the external standard required for agricultural decision support.",
+          "answer_summary": "The candidate claims the tool is viable based on high user acceptability scores and a 94.7% accuracy rate, arguing that these performance metrics demonstrate current functionality despite the need for future longitudinal validation."
+        }
+      },
+      {
+        "turn": 4,
+        "panelist": {
+          "archetype_key": "results_conclusions_reviewer",
+          "name": "Dubois",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        "question": "That response fundamentally misses the mark; you are conflating user comfort with clinical diagnostic utility. If you acknowledge in your own roadmap that a validation study is required to compare your model against the 'judgment of an agricultural technician' because that is the 'standard the tool is intended to approximate,' how can you logically assert that the tool is already 'viable' for agricultural decision support when that specific benchmark for accuracy hasn't even been met yet?",
+        "difficulty": 4,
+        "sources": [
+          {
+            "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+            "page_start": 15,
+            "page_end": 15,
+            "score": 0.3094,
+            "origin": "follow_up",
+            "highlight": {
+              "start": 469,
+              "end": 790
+            }
+          }
+        ],
+        "grounding_reference": "Third, that a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate rather than against a held-out partition of its own dataset.",
+        "answer": "I think the app is still useful for farmers because it's better than asking the supply store. Most apps in the literature are tested in labs, and ours was tested with real farmers, so it is more realistic.",
+        "evaluation": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate completely failed to address the logic of the validation gap, instead pivoting to a subjective anecdotal justification for 'usefulness' that avoids the core technical critique.",
+          "answer_summary": "The candidate claims that the application is useful because it is superior to existing alternatives and provides higher ecological validity through real-world testing compared to lab-based studies."
+        }
+      },
+      {
+        "turn": 5,
+        "panelist": {
+          "archetype_key": "results_conclusions_reviewer",
+          "name": "Dubois",
+          "title": "Results & Conclusions Reviewer",
+          "icon": "scholar"
+        },
+        "question": "Your insistence on comparing this against 'supply store' advice merely highlights your low bar for success rather than justifying the tool's clinical viability. If your own third recommendation explicitly states that a validation study against an agricultural technician is necessary to assess accuracy 'against the standard the tool is intended to approximate,' how can you reconcile that recognized requirement with your claim that the current, unvalidated model is already a viable decision support tool?",
+        "difficulty": 5,
+        "sources": [
+          {
+            "text": "15\nThe proponents recommend, first, that the dataset be expanded to include images captured in the\nfield under the conditions of actual use, and that images be collected from multiple municipalities\nacross more than one cropping season. Second, that the disease coverage be extended to include\nsheath blight and false smut, and that a mechanism be introduced for expressing multiple\nsimultaneous conditions or an inconclusive result rather than forcing a single class. Third, that a\nvalidation study be conducted in which the application's identifications are compared against the\njudgment of an agricultural technician on the same leaves, so that accuracy may be assessed against\nthe standard the tool is intended to approximate rather than against a held-out partition of its own\ndataset. Fourth, that a longitudinal evaluation be conducted with farmers using the application\nunsupervised across a full cropping season. Fifth, that an iOS version be developed to extend\ncoverage beyond Android users.",
+            "page_start": 15,
+            "page_end": 15,
+            "score": 0.3094,
+            "origin": "follow_up",
+            "highlight": {
+              "start": 469,
+              "end": 790
+            }
+          }
+        ],
+        "grounding_reference": "Third, that a validation study be conducted in which the application's identifications are compared against the judgment of an agricultural technician on the same leaves, so that accuracy may be assessed against the standard the tool is intended to approximate rather than against a held-out partition of its own dataset.",
+        "answer": "You're right that I overstated it, so let me separate the two claims. What our data supports is the first half of our conclusion: on-device inference is technically viable in Barangay Masagana's conditions, meaning 94.7% on the held-out set, under a second per identification on all three phones, and no connectivity needed. What it does not support is diagnostic accuracy against the standard the tool is meant to approximate, because we never compared its output with a technician's on the same field leaves. Chapter 5 already draws that line: it calls the app a preliminary aid and says it should not replace a technician where a costly treatment decision follows, given the 0.813 recall on bacterial leaf blight and the 4.09 reliability rating. So the honest wording is technically viable and acceptable to users, with its diagnostic value unvalidated until that study is done.",
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "difficulty_delta": 0,
+          "primary_gap": null,
+          "answer_summary": "The candidate admits to overstating the tool's clinical diagnostic viability, instead reframing their claim to emphasize that the model is technically viable as an on-device inference tool while conceding that diagnostic accuracy remains unvalidated against field technicians."
+        }
+      },
+      {
+        "turn": 6,
+        "panelist": {
+          "archetype_key": "devils_advocate",
+          "name": "Rodriguez",
+          "title": "Devil's Advocate",
+          "icon": "hacker"
+        },
+        "question": "Moving back to your methodology, I find your defense regarding the 94.7% accuracy rate problematic given the context provided in your own paper. If your system is fundamentally unable to handle multi-condition leaves and your internal results already reveal a significant per-class weakness on bacterial leaf blight, on what empirical basis do you argue that this software overhead provides superior value, rather than simply introducing a layer of digital complexity that yields 'confident' but inherently unvalidated and incomplete diagnostic outputs compared to a simple, low-tech diagnostic chart?",
+        "difficulty": 5,
+        "sources": [
+          {
+            "text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+            "page_start": 13,
+            "page_end": 13,
+            "score": 0.2868,
+            "origin": "devils_advocate",
+            "highlight": {
+              "start": 40,
+              "end": 205
+            }
+          }
+        ],
+        "grounding_reference": "In several such instances the leaf in question carried symptoms of more than one condition, a case the present system cannot express since it returns a single class.",
+        "answer": "We have no empirical basis for superiority over a chart, because we never tested a chart; that comparison would be a fair addition to the validation study. What we can point to is the baseline we did measure. In the 24 initial interviews, 19 farmers asked a neighbour first, 16 bought pesticide on a supply store's recommendation, and 8 later concluded they'd applied the wrong treatment. A chart has the same weakness the paper describes for early bacterial leaf blight and brown spot: both start as yellowing along the leaf margin, which is hard to tell apart by eye, and that's also where our model is weakest, with 16 of the 125 blight test images predicted as brown spot. The confidence percentage is shown with every result, and the app doesn't recommend a chemical or a dose, so it informs the decision rather than making it. Whether that beats a chart in the field is an open question we'd answer in the validation study.",
+        "evaluation": {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "difficulty_delta": 1,
+          "primary_gap": "The candidate admits a lack of empirical evidence for the system's superior utility compared to traditional low-tech diagnostics, effectively conceding that the 'value' proposition remains speculative.",
+          "answer_summary": "The candidate claims that while they lack a direct comparison to low-tech charts, their system provides value by informing farmer decisions with confidence metrics, noting that both the app and human observation struggle similarly with early-stage disease differentiation."
+        }
+      }
+    ]
+  }
+}

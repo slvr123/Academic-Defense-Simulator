@@ -7,6 +7,8 @@ step at a time so each answer can be written after reading its question:
     python scripts/record_demo.py start --session <id>   # resend /start after a 503 (no new reservation)
     python scripts/record_demo.py answer "..."      # once per question, until done
     python scripts/record_demo.py show              # the open question again
+    python scripts/record_demo.py delete            # end the session (M11 P1: refunds a start
+                                                    # that never got its first question)
 
 Every response is kept verbatim: the ready session status (with M10's ingest summary),
 /start, each answer's response with the answer sent, and the report. When the defense is
@@ -88,6 +90,7 @@ def start(args: argparse.Namespace) -> None:
             time.sleep(1)
         if status["status"] != "ready":
             sys.exit(f"ingest failed: {status}")
+        save(args.state, {"base_url": args.base_url, "session_id": session_id})  # for delete, if /start fails
         started = checked(client.post(f"/sessions/{session_id}/start"))
     state = {
         "base_url": args.base_url,
@@ -124,6 +127,14 @@ def answer(args: argparse.Namespace) -> None:
         show_question(response["next_question"])
 
 
+def delete(args: argparse.Namespace) -> None:
+    state = load(args.state)
+    with httpx.Client(base_url=state["base_url"], timeout=60) as client:
+        response = client.delete(f"/sessions/{state['session_id']}")
+        quota = client.get("/quota").json()
+    print(f"DELETE {state['session_id']}: {response.status_code}; quota used {quota['used']} of {quota['cap']}")
+
+
 def write_fixture(state: dict) -> None:
     fixture = {
         "recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -148,11 +159,14 @@ def main() -> None:
     answer_parser = commands.add_parser("answer")
     answer_parser.add_argument("text")
     commands.add_parser("show")
+    commands.add_parser("delete")
     args = parser.parse_args()
     if args.command == "start":
         start(args)
     elif args.command == "answer":
         answer(args)
+    elif args.command == "delete":
+        delete(args)
     else:
         show_question(load(args.state)["open"])
 
