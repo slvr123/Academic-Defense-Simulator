@@ -9,7 +9,8 @@ showing) it prints the page's height with the slot's content and with it removed
 the reveal bar (its whole slot, gap included). Then the page count: at 1280 the card's,
 at 375 the sheet's, opened from the bar. Both for the canned passage and a long one
 (the AniCheck methodology pages plus a long answer). Exit status 1 if a 1280 px page
-grows at all or a 375 px page grows by more than 56 px.
+grows at all, a 375 px page grows by more than 56 px, or the 375 px bar's top edge is
+not above 700 px (M11 P3: it sits under the panel cards).
 """
 
 from __future__ import annotations
@@ -110,11 +111,16 @@ def main() -> int:
                         page.locator('section[aria-label="Your PDF"]').wait_for()
                         element = "document.querySelector('section[aria-label=\"Your PDF\"]')"
                     elif narrow:
-                        element = "document.querySelector('[data-reveal-bar]').parentElement.parentElement"  # the slot cell
+                        element = "document.querySelector('[data-reveal-bar]').closest('[data-bar-row]')"  # the bar's row, gap included
                     else:
                         element = "document.querySelector('[data-reveal]')"
                     with_it, without = heights(page, element)
+                    bar_top = None
                     if narrow:
+                        # M11 P3: the bar sits under the panel cards, on a phone's first screen.
+                        bar_top = page.evaluate("Math.round(document.querySelector('[data-reveal-bar]').getBoundingClientRect().top + scrollY)")
+                        if bar_top >= 700:
+                            grew += 1
                         page.locator("[data-reveal-bar]").click()
                         page.get_by_role("dialog", name="Source passage").wait_for()
                         page.wait_for_timeout(200)
@@ -131,12 +137,13 @@ def main() -> int:
                     if (width >= 1024 and grown > 0) or (narrow and grown > 56):
                         grew += 1
                     shown = "card hidden under the PDF," if pdf else (f"sheet {card}px," if narrow else f"card {card}px,")
-                    print(f"{label}  page {with_it} with, {without} without ({verdict})  {shown} pages {counter}, scrolling boxes {scroll}")
+                    where = f", bar top {bar_top}px" if bar_top is not None else ""
+                    print(f"{label}  page {with_it} with, {without} without ({verdict})  {shown} pages {counter}, scrolling boxes {scroll}{where}")
                     context.close()
             browser.close()
     finally:
         subprocess.run(f"taskkill /F /T /PID {preview.pid}", shell=True, capture_output=True)
-    print(f"{grew} case(s) over the limit (1280: any growth; 375: more than 56 px)")
+    print(f"{grew} case(s) over the limit (1280: any growth; 375: more than 56 px, or the bar's top at 700 px or lower)")
     return 1 if grew else 0
 
 

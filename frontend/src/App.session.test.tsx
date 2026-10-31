@@ -397,6 +397,17 @@ describe('the reveal below 1024 px: a bar that opens a sheet (M10 follow-up)', (
     expect(within(screen.getByRole('dialog')).getByText('1 / 2')).toBeInTheDocument()
   })
 
+  it('puts the bar right under the panel cards, above the question card (M11 P3)', async () => {
+    const server = sessionServer()
+    const user = renderApp()
+    await toQuestion(server, user)
+    await answerFirst(user)
+    const cards = screen.getByRole('region', { name: 'The panel' })
+    const question = screen.getByRole('region', { name: 'Question 2' })
+    expect(cards.compareDocumentPosition(bar()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(bar().compareDocumentPosition(question) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('shows no match score anywhere in the reveal', async () => {
     const server = sessionServer()
     const user = renderApp()

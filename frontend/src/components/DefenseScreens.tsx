@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { limits } from '../api/constraints.gen'
 import type { ArchetypeOption, IngestSummary, PanelistOut, QuestionOut } from '../api/types'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { loadAnswerDraft, saveAnswerDraft, wordCount } from '../lib/answerDrafts'
 import { DEVILS_ADVOCATE_KEY } from '../lib/panel'
@@ -16,7 +17,7 @@ import { type QuestionVoice, useQuestionVoice } from '../voice/useQuestionVoice'
 import { Avatar } from './Avatar'
 import { NoticeBanner } from './NoticeBanner'
 import { type ActiveStatus, type Card, PanelGrid } from './PanelGrid'
-import { SourceReveal } from './SourceReveal'
+import { SourceReveal, WIDE_QUERY } from './SourceReveal'
 import { TranscriptDrawer } from './TranscriptDrawer'
 import { Button, Card as Surface, DocumentIcon, Eyebrow, Heading, Working } from './ui'
 
@@ -264,15 +265,24 @@ export function QuestionScreen(props: QuestionScreenProps) {
   // The reveal stays mounted while the PDF has the slot, so its page (and, on phones, its
   // open sheet) are as they were on "Back to passage".
   const reveal = last && <SourceReveal key={last.question.turn} turn={last} onOpenPage={onOpenPage} suspended={Boolean(documentPanel)} />
-  const slot = documentPanel || reveal
+  // M11 P3: below lg the reveal is a bar, and it sits right under the panel cards, so it's
+  // on screen when the new question appears; at lg it's the card in the slot.
+  const wide = useMediaQuery(WIDE_QUERY)
+  const slotReveal = wide ? reveal : null
+  const slot = documentPanel || slotReveal
 
   return (
     <div ref={root} className="space-y-5">
       <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} />
+      {!wide && reveal && (
+        // 12 px below the cards (-mt-2 against space-y-5), so the bar adds 56 px in all.
+        <div data-bar-row className="-mt-2">
+          {reveal}
+        </div>
+      )}
       {/* One slot beside the question holds the reveal or the PDF, never both, and never
-          adds height: at lg it fills the row the question column sets (absolute inset-0);
-          below lg the reveal is a one-line bar under the answer (its sheet and the PDF's
-          cover the page), 12 px below it. */}
+          adds height: at lg it fills the row the question column sets (absolute inset-0).
+          Below lg the slot holds only the PDF's sheet, which covers the page. */}
       <div className={`grid items-stretch gap-3 lg:gap-6 ${slot ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
         <div className="flex min-w-0 flex-col gap-6">
           <section
@@ -351,7 +361,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
                     )}
                     {!notice && (
                       // On a phone the send bar stays at the bottom of the screen (bench-mobile).
-                      <div className="sticky bottom-0 -mx-5 flex items-center justify-between gap-4 border-t border-line bg-ground px-4 pt-3 pb-6 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
+                      <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center justify-between gap-4 rounded-b-2xl border-t border-line bg-ground px-4 py-3 sm:static sm:mx-0 sm:mb-0 sm:justify-end sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
                         <span className="font-mono text-xs text-subtle" aria-live="off">
                           {wordCount(draft)} {wordCount(draft) === 1 ? 'word' : 'words'}
                           <span className="max-sm:hidden"> · {SHORTCUT_HINT}</span>
@@ -370,9 +380,9 @@ export function QuestionScreen(props: QuestionScreenProps) {
         {slot && (
           <div className="relative min-w-0">
             {documentPanel}
-            {reveal && (
+            {slotReveal && (
               <div hidden={Boolean(documentPanel)} className={documentPanel ? undefined : 'contents'}>
-                {reveal}
+                {slotReveal}
               </div>
             )}
           </div>
