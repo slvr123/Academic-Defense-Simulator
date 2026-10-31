@@ -153,3 +153,14 @@ def test_an_unreachable_database_raises_quota_unavailable():
         assert warm_up(store, attempts=2, sleep=lambda _s: None) is False
     finally:
         store.close()
+
+
+@needs_db
+def test_release_counts_down_and_never_below_zero(store):
+    """M11 P1: the refund's UPDATE, against real Postgres."""
+    day = _day(30)
+    assert store.release(day) == 0  # no row yet
+    assert [store.reserve(day, 5) for _ in range(2)] == [1, 2]
+    assert [store.release(day) for _ in range(3)] == [1, 0, 0]
+    assert store.used(day) == 0
+

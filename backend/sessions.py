@@ -19,7 +19,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -29,6 +29,7 @@ from backend.schemas import IngestErrorCode, PanelConfig
 if TYPE_CHECKING:
     from backend.defense import Defense
     from backend.ingest_summary import SkippedPages
+    from backend.refund import Charge
 
 
 class SessionStatus(str, Enum):
@@ -70,6 +71,7 @@ class Session:
     skipped: SkippedPages | None = None  # set with the chunks (M10 N6)
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk
     defense: Defense | None = None  # from POST /start
+    charge: Charge | None = None  # /start's reservation, until released or final (M11 P1)
     # One defense request at a time per session; a second one gets 409 rather than queueing.
     turn_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -82,16 +84,23 @@ class SessionCapacityError(Exception):
     """The live-session cap is reached."""
 
 
+# Called for each session the store drops, deleted or expired (M11 P1's refund hook).
+DropReason = Literal["deleted", "expired"]
+OnDrop = Callable[[Session, DropReason], object]
+
+
 class SessionStore:
     def __init__(
         self,
         max_live: int,
         ttl_seconds: float,
         clock: Callable[[], float] = time.monotonic,
+        on_drop: OnDrop | None = None,
     ) -> None:
         self._max_live = max_live
         self._ttl_seconds = ttl_seconds
         self._clock = clock
+        self._on_drop = on_drop
         self._sessions: dict[str, Session] = {}
 
     def live_count(self) -> int:
@@ -117,6 +126,7 @@ class SessionStore:
             return None
         if self._is_expired(session, self._clock()):
             del self._sessions[session_id]
+            self._dropped(session, "expired")
             return None
         session.last_access = self._clock()
         return session
@@ -124,6 +134,7 @@ class SessionStore:
     def delete(self, session_id: str) -> Session | None:
         session = self._sessions.pop(session_id, None)
         if session is not None:
+            self._dropped(session, "deleted")
             session.cancelled = True
             session.matrix = None
             session.chunks = []
@@ -135,8 +146,12 @@ class SessionStore:
         now = self._clock()
         expired = [sid for sid, s in self._sessions.items() if self._is_expired(s, now)]
         for session_id in expired:
-            del self._sessions[session_id]
+            self._dropped(self._sessions.pop(session_id), "expired")
         return expired
+
+    def _dropped(self, session: Session, reason: DropReason) -> None:
+        if self._on_drop is not None:
+            self._on_drop(session, reason)
 
     def __len__(self) -> int:
         return len(self._sessions)

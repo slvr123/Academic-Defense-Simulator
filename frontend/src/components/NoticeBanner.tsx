@@ -22,7 +22,7 @@ function limitedText(code: LimitCode | null, limit: number | null, resetsAt: num
 }
 
 /** Counts down to the one automatic retry after a busy 503, then fires it once. */
-function BusyCountdown({ retryAt, onElapsed }: { retryAt: number; onElapsed: () => void }) {
+function BusyCountdown({ retryAt, onElapsed, short = false }: { retryAt: number; onElapsed: () => void; short?: boolean }) {
   const [now, setNow] = useState(() => Date.now())
   const fired = useRef(false)
   const left = Math.max(0, Math.ceil((retryAt - now) / 1000))
@@ -38,7 +38,7 @@ function BusyCountdown({ retryAt, onElapsed }: { retryAt: number; onElapsed: () 
     onElapsed()
   }, [left, onElapsed])
 
-  return <p>The panel is busy - retrying in {left} s.</p>
+  return <p>{short ? `Trying again in ${left} s.` : `The panel is busy - retrying in ${left} s.`}</p>
 }
 
 type Props = {
@@ -49,6 +49,8 @@ type Props = {
   onAutoRetry?: () => void
   /** What a 502 means here: an answer, or the first question. */
   turnFailedText?: string
+  /** What a Gemini overload (panel_busy) means here, in place of the server's text (M11 P1). */
+  panelBusyText?: string
   retryLabel?: string
 }
 
@@ -57,6 +59,7 @@ export function NoticeBanner({
   onRetry,
   onAutoRetry,
   turnFailedText = "That turn didn't go through - nothing was recorded. Send it again.",
+  panelBusyText,
   retryLabel = 'Try again',
 }: Props) {
   const tone =
@@ -95,17 +98,28 @@ export function NoticeBanner({
         </>
       )
       break
-    case 'busy':
-      body =
-        notice.retryAt !== null && onAutoRetry ? (
-          <BusyCountdown retryAt={notice.retryAt} onElapsed={onAutoRetry} />
+    case 'busy': {
+      const own = notice.panelBusy && panelBusyText !== undefined
+      const counting = notice.retryAt !== null && onAutoRetry
+      if (own) {
+        body = (
+          <>
+            <p>{panelBusyText}</p>
+            {counting ? <BusyCountdown retryAt={notice.retryAt ?? 0} onElapsed={onAutoRetry} short /> : retry}
+          </>
+        )
+      } else {
+        body = counting ? (
+          <BusyCountdown retryAt={notice.retryAt ?? 0} onElapsed={onAutoRetry} />
         ) : (
           <>
             <p>{notice.message}</p>
             {retry}
           </>
         )
+      }
       break
+    }
     case 'limited':
       body = <p>{limitedText(notice.code, notice.limit, notice.resetsAt)}</p>
       break

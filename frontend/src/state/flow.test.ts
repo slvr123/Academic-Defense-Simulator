@@ -122,10 +122,10 @@ describe('config and upload', () => {
     const state = run(withFile, { type: 'uploadRequested' }, {
       type: 'uploadFinished',
       panel: initialState().draft.panel,
-      result: fail({ kind: 'busy', message: 'busy', retryAfterS: 60 }),
+      result: fail({ kind: 'busy', message: 'busy', retryAfterS: 60, panelBusy: false }),
       now: NOW,
     })
-    expect(state.phase).toEqual({ kind: 'configuring', notice: { kind: 'busy', message: 'busy', retryAt: null } })
+    expect(state.phase).toEqual({ kind: 'configuring', notice: { kind: 'busy', message: 'busy', retryAt: null, panelBusy: false } })
   })
 
   it('ignores progress and results when not uploading', () => {
@@ -214,19 +214,19 @@ describe('starting the defense', () => {
   })
 
   it('schedules one automatic retry for a busy 503 with Retry-After, and none after it', () => {
-    const busy = fail<typeof startResponse>({ kind: 'busy', message: 'The panel is busy right now.', retryAfterS: 60 })
+    const busy = fail<typeof startResponse>({ kind: 'busy', message: 'The panel is busy right now.', retryAfterS: 60, panelBusy: false })
     expect(startWith(busy).phase).toEqual({
       kind: 'ready',
       sessionId: S,
       chunkCount: null,
       ingest: null,
-      notice: { kind: 'busy', message: 'The panel is busy right now.', retryAt: NOW + 60_000 },
+      notice: { kind: 'busy', message: 'The panel is busy right now.', retryAt: NOW + 60_000, panelBusy: false },
     })
     expect(startWith(busy, true).phase).toMatchObject({ notice: { kind: 'busy', retryAt: null } })
   })
 
   it('keeps a 503 without Retry-After to a button', () => {
-    const state = startWith(fail({ kind: 'busy', message: "The demo's usage counter can't be reached", retryAfterS: null }))
+    const state = startWith(fail({ kind: 'busy', message: "The demo's usage counter can't be reached", retryAfterS: null, panelBusy: false }))
     expect(state.phase).toMatchObject({ notice: { kind: 'busy', retryAt: null } })
   })
 
@@ -321,7 +321,7 @@ describe('answering', () => {
   })
 
   it('schedules one automatic retry for a busy 503, none after the retry itself', () => {
-    const busy = fail<typeof nextQuestion>({ kind: 'busy', message: 'busy', retryAfterS: 60 })
+    const busy = fail<typeof nextQuestion>({ kind: 'busy', message: 'busy', retryAfterS: 60, panelBusy: false })
     expect(finish(busy).phase).toMatchObject({ kind: 'question', draft: 'My answer', notice: { kind: 'busy', retryAt: NOW + 60_000 } })
     expect(finish(busy, true).phase).toMatchObject({ notice: { kind: 'busy', retryAt: null } })
   })

@@ -44,13 +44,16 @@ def test_preflight_allows_only_the_methods_and_headers_the_frontend_uses(client_
             headers={"Origin": FRONTEND, "Access-Control-Request-Method": "POST",
                      "Access-Control-Request-Headers": "content-type"},
         )
+        # M10 N2's End session sends DELETE (and M11 P1's refund rides on it); PUT is unused.
         delete = client.options(
             "/sessions/abc", headers={"Origin": FRONTEND, "Access-Control-Request-Method": "DELETE"}
         )
+        put = client.options("/sessions/abc", headers={"Origin": FRONTEND, "Access-Control-Request-Method": "PUT"})
     assert ok.status_code == 200
     assert ok.headers["access-control-allow-origin"] == FRONTEND
-    assert set(ok.headers["access-control-allow-methods"].split(", ")) == {"GET", "POST"}
-    assert delete.status_code == 400
+    assert set(ok.headers["access-control-allow-methods"].split(", ")) == {"GET", "POST", "DELETE"}
+    assert delete.status_code == 200
+    assert put.status_code == 400
 
 
 def test_retry_after_is_readable_cross_origin(client_factory):

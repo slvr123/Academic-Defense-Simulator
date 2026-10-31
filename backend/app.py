@@ -172,7 +172,10 @@ def create_app(
         logger.info(
             "memory after model load %s load_s=%.2f", memory.describe(), time.perf_counter() - started
         )
-        app.state.store = SessionStore(settings.max_live_sessions, settings.session_ttl_seconds)
+        # M11 P1: a session dropped before its first question gives its slot back.
+        app.state.store = SessionStore(
+            settings.max_live_sessions, settings.session_ttl_seconds, on_drop=app.state.refunder.release
+        )
         app.state.queue = IngestQueue(embedder, settings.queue_max_waiting)
         tasks = [
             asyncio.create_task(app.state.queue.run(), name="ingest-worker"),
@@ -197,7 +200,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "DELETE"],  # DELETE: End session (M10 N2), which refunds (M11 P1)
         allow_headers=["Content-Type"],
         expose_headers=["Retry-After", "X-TTS-Parts"],
     )

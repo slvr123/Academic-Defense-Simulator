@@ -300,7 +300,7 @@ export interface components {
                 [key: string]: unknown;
             }[];
             /** Code */
-            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question" | "already_started") | null;
+            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question" | "already_started" | "panel_busy") | null;
             /** Limit */
             limit?: number | null;
         };

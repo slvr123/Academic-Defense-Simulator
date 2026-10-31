@@ -84,8 +84,8 @@ describe('toApiError maps each status to the error the UI branches on', () => {
   })
 
   it('reads Retry-After on a 503, and null without it', () => {
-    expect(toApiError(503, { detail: 'busy' }, '60')).toEqual({ kind: 'busy', message: 'busy', retryAfterS: 60 })
-    expect(toApiError(503, { detail: 'busy' }, null)).toEqual({ kind: 'busy', message: 'busy', retryAfterS: null })
+    expect(toApiError(503, { detail: 'busy' }, '60')).toEqual({ kind: 'busy', message: 'busy', retryAfterS: 60, panelBusy: false })
+    expect(toApiError(503, { detail: 'busy' }, null)).toEqual({ kind: 'busy', message: 'busy', retryAfterS: null, panelBusy: false })
   })
 })
 
@@ -124,7 +124,7 @@ describe('fetch requests', () => {
     })
     const result = await submitAnswer('s 1', 'My answer', 1)
     expect(sent).toEqual({ text: 'My answer', turn: 1 })
-    expect(result).toEqual({ ok: false, error: { kind: 'busy', message: 'The panel is busy right now.', retryAfterS: 60 } })
+    expect(result).toEqual({ ok: false, error: { kind: 'busy', message: 'The panel is busy right now.', retryAfterS: 60, panelBusy: false } })
   })
 })
 

@@ -222,7 +222,8 @@ LimitCode = Literal["per_ip_limit", "daily_cap"]
 TtsErrorCode = Literal["tts_limit", "tts_failed", "tts_unavailable"]
 AnswerErrorCode = Literal["stale_question"]
 StartErrorCode = Literal["already_started"]
-ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode]
+BusyCode = Literal["panel_busy"]  # a 503 from Gemini's overload or rate limit (M11 P1)
+ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode, BusyCode]
 IngestErrorCode = Literal["scanned_pdf"]
 
 

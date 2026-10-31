@@ -384,3 +384,45 @@ describe('keep-alive (D10)', () => {
     expect(healthCalls(server)).toBe(atReport)
   })
 })
+
+describe("Gemini's overload at start (M11 P1)", () => {
+  const OVERLOADED = /Gemini, the AI behind the panel, is overloaded right now\. This hasn't used one of today's defenses yet\./
+  const panelBusy: Reply = { status: 503, body: { detail: 'The panel is busy right now. Please try again in a minute.', code: 'panel_busy' } }
+
+  it('says so, and Try again resends /start on the same session', async () => {
+    const server = defenseServer()
+    let starts = 0
+    server.on(START, () => (++starts === 1 ? panelBusy : { status: 200, body: startResponse }))
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    expect(await screen.findByText(OVERLOADED)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText(Q1)).toBeInTheDocument()
+    expect(server.count(START)).toBe(2)
+    expect(server.count('POST /sessions')).toBe(1) // the same session, no new upload
+  })
+
+  it('Start over ends the session, so its held slot comes back', async () => {
+    const server = defenseServer()
+    server.on(START, panelBusy)
+    server.on('DELETE /sessions/abc', { status: 204 })
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    await screen.findByText(OVERLOADED)
+    await user.click(screen.getByRole('button', { name: 'Start over' }))
+    expect(await screen.findByText(/Drop your PDF here/)).toBeInTheDocument()
+    expect(server.count('DELETE /sessions/abc')).toBe(1)
+  })
+
+  it("keeps the server's own words for a 503 that isn't Gemini's (the quota store)", async () => {
+    const server = defenseServer()
+    server.on(START, { status: 503, body: { detail: "The demo's usage counter is waking up. Try again in a moment." } })
+    const user = renderApp()
+    await toReady(server, user)
+    await startDefense(user)
+    expect(await screen.findByText("The demo's usage counter is waking up. Try again in a moment.")).toBeInTheDocument()
+    expect(screen.queryByText(OVERLOADED)).not.toBeInTheDocument()
+  })
+})

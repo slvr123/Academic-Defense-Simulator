@@ -100,7 +100,7 @@ export default function App() {
           onChooseVoice={chooseVoice}
           onStart={start}
           onAutoRetry={() => void flow.start(true)}
-          onStartOver={flow.restart}
+          onStartOver={() => void flow.endSession()} // DELETE: a held slot comes back (M11 P1)
         />
       )
       break

@@ -47,6 +47,7 @@ from backend.defense import (
 from backend.errors import CodedHTTPException
 from backend.llm_errors import PANEL_BUSY_MESSAGE, PANEL_BUSY_RETRY_AFTER_S, is_panel_busy
 from backend.quota import QuotaPlan, QuotaUnavailable, pacific_day
+from backend.refund import Charge, Refunder, finalize
 from backend.routing import may_draw_literature
 from backend.schemas import (
     AnswerRequest,
@@ -113,7 +114,9 @@ def gemini_providers_factory(settings: Settings) -> ProvidersFactory:
 
 def llm_failure(exc: LLMProviderError) -> HTTPException:
     if is_panel_busy(exc):
-        return HTTPException(503, PANEL_BUSY_MESSAGE, headers={"Retry-After": str(PANEL_BUSY_RETRY_AFTER_S)})
+        # M11 P1: coded, so the client can tell Gemini's overload from the quota store's 503.
+        headers = {"Retry-After": str(PANEL_BUSY_RETRY_AFTER_S)}
+        return CodedHTTPException(503, PANEL_BUSY_MESSAGE, "panel_busy", headers=headers)
     return HTTPException(502, PANEL_ERROR_MESSAGE)
 
 
@@ -149,10 +152,13 @@ def register_defense_routes(
         return session
 
     limiter = StartLimiter(settings.per_ip_daily_starts)
+    # M11 P1: the session store calls this for every deleted or expired session (app.py).
+    refunder = Refunder(quota=lambda: app.state.quota, limiter=limiter, clock=clock)
+    app.state.refunder = refunder
 
-    def reserve_quota(ip: str) -> None:
+    def reserve_quota(ip: str) -> Charge:
         """The per-IP limit first, then today's slot. A start the quota refuses
-        doesn't count against the IP."""
+        doesn't count against the IP. The charge is the session's until released or final."""
         now = clock()
         day = pacific_day(now)
         if not limiter.take(day, ip):
@@ -170,6 +176,7 @@ def register_defense_routes(
             limiter.give_back(day, ip)
             raise quota_used_up(now)
         logger.info("quota reserved %d/%d for %s", reserved, quota_plan.cap, day)
+        return Charge(day=day, ip=ip)
 
     @app.post(
         "/sessions/{session_id}/start", response_model=StartResponse,
@@ -203,12 +210,17 @@ def register_defense_routes(
                         f"This document has {untagged} passage(s) outside its literature review, too few for {barred} "
                         "panelists to each open a topic there. Choose fewer panelists or upload a longer document.",
                     )
-                reserve_quota(client_ip(request, settings.trusted_proxy_hops))
+                session.charge = reserve_quota(client_ip(request, settings.trusted_proxy_hops))
                 calls = CallCounter()
-                defense = setup_defense(
-                    session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
-                    attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
-                )
+                try:
+                    defense = setup_defense(
+                        session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
+                        attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
+                    )
+                except Exception:
+                    # P1 (a): no defense exists, so a retry would reserve again; give this one back.
+                    refunder.release(session, "setup_failed")
+                    raise
                 session.defense = defense
                 app.state.last_chunk_copy = ChunkCopy(
                     session_id=session.id, chunks=len(defense.chunks), mb=round(defense.chunk_copy_bytes / 2**20, 3)
@@ -226,6 +238,7 @@ def register_defense_routes(
                 panel=[panelist_out(defense.session, p.archetype_key) for p in defense.session.panel],
                 question=question,
             )
+            finalize(session)  # P1: the first question is delivered, so the charge is final
             return defense.start_response
 
     @app.get("/sessions/{session_id}/current", response_model=CurrentQuestion, responses={409: {"model": ErrorBody}})

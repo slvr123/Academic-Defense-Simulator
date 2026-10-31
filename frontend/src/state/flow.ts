@@ -28,7 +28,7 @@ export type Notice =
   | { kind: 'turnFailed' }
   | { kind: 'stillWorking' } // an answer's resends kept getting 409 while the first was running (E13)
   // retryAt: when the one automatic retry fires (epoch ms); null means a "Try again" button only.
-  | { kind: 'busy'; message: string; retryAt: number | null }
+  | { kind: 'busy'; message: string; retryAt: number | null; panelBusy: boolean }
   | { kind: 'limited'; code: LimitCode | null; limit: number | null; resetsAt: number | null }
   | { kind: 'message'; text: string }
 
@@ -138,6 +138,7 @@ export function noticeFor(error: ApiError, now: number, autoRetryAllowed: boolea
         kind: 'busy',
         message: error.message,
         retryAt: autoRetryAllowed && error.retryAfterS !== null ? now + error.retryAfterS * 1000 : null,
+        panelBusy: error.panelBusy,
       }
     case 'limited':
       return {

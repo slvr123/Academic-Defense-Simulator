@@ -23,7 +23,8 @@ export type ApiError =
   | { kind: 'stale'; message: string } // 409 stale_question: that question isn't open any more (E13)
   | { kind: 'alreadyStarted'; message: string } // 409 already_started: /start after the first answer (M6 H4)
   | { kind: 'turnFailed'; message: string } // 502: nothing was recorded, send the same request again
-  | { kind: 'busy'; message: string; retryAfterS: number | null } // 503
+  // 503; panelBusy: Gemini's overload or rate limit (code panel_busy, M11 P1), not the quota store's
+  | { kind: 'busy'; message: string; retryAfterS: number | null; panelBusy: boolean }
   | { kind: 'tooLarge'; message: string } // 413: too many bytes or too many pages
   | { kind: 'invalid'; message: string } // 422
   // 429; limit: the starts a network gets per day, sent with per_ip_limit (M6 H6)
@@ -35,7 +36,7 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError 
 
 // A Record over the generated union: the build fails if the backend adds a code
 // this client hasn't placed.
-const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started'> = {
+const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started' | 'busy'> = {
   per_ip_limit: 'limit',
   daily_cap: 'limit',
   tts_limit: 'tts',
@@ -43,6 +44,7 @@ const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started'> = {
   tts_unavailable: 'tts',
   stale_question: 'stale',
   already_started: 'started',
+  panel_busy: 'busy',
 }
 
 function isErrorCode(value: unknown): value is ErrorCode {
@@ -113,7 +115,7 @@ export function toApiError(status: number, body: unknown, retryAfter: string | n
     case 502:
       return { kind: 'turnFailed', message }
     case 503:
-      return { kind: 'busy', message, retryAfterS: parseRetryAfter(retryAfter) }
+      return { kind: 'busy', message, retryAfterS: parseRetryAfter(retryAfter), panelBusy: code === 'panel_busy' }
     default:
       return { kind: 'unexpected', message }
   }

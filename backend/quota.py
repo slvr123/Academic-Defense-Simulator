@@ -126,6 +126,10 @@ class QuotaStore(Protocol):
         """Takes one slot if fewer than `cap` are used: the new count, or None when full."""
         ...
 
+    def release(self, day: date) -> int:
+        """Gives one slot back (M11 P1), never below 0: the new count."""
+        ...
+
     def close(self) -> None: ...
 
 
@@ -147,6 +151,12 @@ class InMemoryQuotaStore:
                 return None
             self._counts[day] = count + 1
             return count + 1
+
+    def release(self, day: date) -> int:
+        with self._lock:
+            count = max(0, self._counts.get(day, 0) - 1)
+            self._counts[day] = count
+            return count
 
     def close(self) -> None:
         pass
@@ -210,6 +220,19 @@ class PostgresQuotaStore:
                 (day, cap),
             ).fetchone()
         return row[0] if row else None
+
+    def release(self, day: date) -> int:
+        """One UPDATE, as `reserve` is: the row lock makes concurrent releases count
+        down one at a time, and `sessions > 0` keeps the count from going negative."""
+        self.ensure_schema()
+        with self._connection() as conn:
+            row = conn.execute(
+                sql.SQL(
+                    "UPDATE {} SET sessions = sessions - 1 WHERE day = %s AND sessions > 0 RETURNING sessions"
+                ).format(self._table),
+                (day,),
+            ).fetchone()
+        return row[0] if row else 0
 
     def close(self) -> None:
         self._pool.close()

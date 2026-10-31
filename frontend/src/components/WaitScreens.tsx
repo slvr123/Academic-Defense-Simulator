@@ -68,6 +68,11 @@ export function ExpiredScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
+/** M11 P1: a start that met Gemini's overload holds its slot only while the session lives,
+ * and gives it back if the session is ended (Start over) or expires, so this is true. */
+export const PANEL_BUSY_START_TEXT =
+  "Gemini, the AI behind the panel, is overloaded right now. This hasn't used one of today's defenses yet. Try again in a moment."
+
 export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseVoice, onStart, onAutoRetry, onStartOver }: {
   chunkCount: number | null
   notice: Notice | null
@@ -80,6 +85,8 @@ export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseV
 }) {
   // A daily limit, or a document too short for this panel: starting again can't help.
   const stuck = notice?.kind === 'limited' || notice?.kind === 'message'
+  // Gemini's overload: try again on this session, or end it, which gives the slot back.
+  const overloaded = notice?.kind === 'busy' && notice.panelBusy
   return (
     <Card className="space-y-3">
       <Heading>Your document is ready</Heading>
@@ -92,11 +99,12 @@ export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseV
           onRetry={onStart}
           onAutoRetry={onAutoRetry}
           turnFailedText="The panel couldn't ask its first question. Nothing extra was used - start again."
-          retryLabel="Start again"
+          panelBusyText={PANEL_BUSY_START_TEXT}
+          retryLabel={overloaded ? 'Try again' : 'Start again'}
         />
       )}
       {!stuck && <VoiceGate voice={voice} ttsAvailable={ttsAvailable} onChoose={onChooseVoice} />}
-      {stuck ? (
+      {stuck || overloaded ? (
         <Button variant="secondary" onClick={onStartOver}>
           Start over
         </Button>
