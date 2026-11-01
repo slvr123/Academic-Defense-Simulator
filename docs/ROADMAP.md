@@ -184,6 +184,7 @@ All of these changes are planned; the existing version history below records ear
    Streamlit layer orchestrates I/O only (already the 5c rule — now standing). This is
    the seam a future FastAPI wrapper slots into; protect it in every session.
 5. **Design in chat first; Code sessions implement a locked brief.** Unchanged.
+6. **Don't rotate the Gemini key to a new Google project without checking `gemini-2.5-flash`.** It powers the debrief's answer suggestions (`gemini_suggestions_model`), and Google reportedly limits 2.5 models to projects that used them before 2026-09-18, so suggestions may fail on a new project's key (M11 P4).
 
 ---
 

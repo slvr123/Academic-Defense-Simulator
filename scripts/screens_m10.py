@@ -220,6 +220,14 @@ def open_reveal(page: Page) -> None:
         page.get_by_role("dialog", name="Source passage").wait_for()
 
 
+def demo(page: Page, steps: int) -> None:
+    """The recorded defense (frontend/public/demo/), replayed: no API call at all."""
+    page.get_by_role("button", name="Read a recorded defense").click()
+    for _ in range(steps):
+        page.get_by_role("button", name="Next", exact=True).click()
+    page.wait_for_timeout(300)
+
+
 def report(page: Page, api: Api) -> None:
     to_question(page, api)
     api.set(f"POST /sessions/{SID}/answers", ANSWERED[2])
@@ -254,6 +262,11 @@ STATES: list[tuple[str, Callable[[Page, Api], None]]] = [
     ("22-failed-scanned", lambda p, a: (a.set(f"GET /sessions/{SID}", {"status": "failed", "error": "x", "error_code": "scanned_pdf"}), upload(p, a), p.get_by_text("This document couldn't be read").wait_for(timeout=15000))),
     ("24-reveal-sheet-open", lambda p, a: (answer_one(p, a), open_reveal(p), p.wait_for_timeout(300))),
     ("25-reveal-page-2", lambda p, a: (answer_one(p, a), open_reveal(p), p.get_by_role("button", name="Next page").click(), p.wait_for_timeout(400))),
+    ("26-ready-gemini-busy", lambda p, a: (a.set(f"POST /sessions/{SID}/start", {"detail": "The panel is busy right now. Please try again in a minute.", "code": "panel_busy"}, 503), to_ready(p, a), p.get_by_role("radio", name="No voice").check(), p.get_by_role("button", name="Start the defense").click(), p.get_by_text("Gemini, the AI behind the panel").wait_for())),
+    ("27-demo-preparing", lambda p, a: demo(p, 0)),
+    ("28-demo-question-1", lambda p, a: demo(p, 1)),
+    ("29-demo-question-4", lambda p, a: demo(p, 4)),
+    ("30-demo-report", lambda p, a: demo(p, 7)),
     ("23-quota-zero", lambda p, a: p.get_by_text("No defenses left today").wait_for()),
 ]
 
@@ -264,7 +277,7 @@ OVERLAYS = {"14-pdf-open", "15-transcript", "17-voice-disclosure", "18-end-confi
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=FRONTEND / ".screens" / "m10")
-    parser.add_argument("--only", help="capture only states whose name contains this")
+    parser.add_argument("--only", help="capture only states whose name contains one of these (comma-separated)")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     port = free_port()
@@ -284,7 +297,7 @@ def main() -> int:
         with sync_playwright() as p:
             browser = p.chromium.launch(channel="chrome")
             for name, flow in STATES:
-                if args.only and args.only not in name:
+                if args.only and not any(part in name for part in args.only.split(",")):
                     continue
                 for width in WIDTHS:
                     for motion in ("motion", "reduced"):
@@ -304,7 +317,13 @@ def main() -> int:
                         file = args.out / f"{name}-{width}-{motion}.png"
                         # Overlays (sheets, drawers, dialogs) are fixed to the viewport, which a
                         # full-page capture stretches; those states are captured as the screen shows them.
-                        page.screenshot(path=str(file), full_page=name not in OVERLAYS)
+                        full = name not in OVERLAYS
+                        if full:
+                            # A full-page capture places a sticky element against the first
+                            # viewport and then stitches, leaving it mid-page with an empty strip
+                            # below (M11 P3). Static, it sits where it does at the end of a scroll.
+                            page.add_style_tag(content=".sticky { position: static !important; }")
+                        page.screenshot(path=str(file), full_page=full)
                         flag = "OVERFLOW" if wide[0] > wide[1] else "fits"
                         if wide[0] > wide[1] and width == 375:
                             overflowing.append(file.name)
