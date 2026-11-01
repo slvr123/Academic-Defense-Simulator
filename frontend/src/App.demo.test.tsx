@@ -2,12 +2,14 @@
 // real screens with no backend call; the sample-paper button uploads the bundled capstone.
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import gsap from 'gsap'
 import { describe, expect, it, vi } from 'vitest'
 import { DEMO_NOTE, DEMO_PATH, DemoReplay, type DemoRecording, RECORDING_AVAILABLE } from './components/DemoReplay'
+import { MOTION_OK } from './motion/motion'
 import { createPlayer } from './voice/player'
 import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures'
 import { defaultServer, renderApp } from './test/renderApp'
-import { installWide } from './test/setup'
+import { installMatchMedia, installWide, WIDE } from './test/setup'
 import { SAMPLE_PDF_PATH } from './state/useFlow'
 
 vi.setConfig({ testTimeout: 15_000 })
@@ -107,6 +109,26 @@ describe('Read a recorded defense (N5)', () => {
     await user.click(await screen.findByRole('button', { name: 'Open at page 12 in your PDF' }))
     const panel = screen.getByRole('region', { name: 'Your PDF' })
     expect(within(panel).getByTitle('Your PDF, page 12')).toHaveAttribute('src', '/sample/sample-capstone-anicheck.pdf#page=12')
+  })
+
+  // M11.1: with motion on, each step fades the replay in from hidden while the handoff is
+  // built inside it. The lit card's tween used to take that inherited "hidden" as its end
+  // state and finish invisible, leaving an empty slot in the panel.
+  it('ends every replay step with the active panelist card in the DOM and visible, with motion on', async () => {
+    installMatchMedia((query) => query === MOTION_OK || query === WIDE)
+    demoServer()
+    const { user } = renderReplay()
+    const expected = [recording.start.question, nextQuestion.next_question].map((q) => q?.panelist.archetype_key)
+    for (const key of expected) {
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+      await screen.findByRole('region', { name: /^Question/ })
+      for (const tween of gsap.globalTimeline.getChildren(true, true, true)) tween.progress(1) // every timeline played out
+      const lit = document.querySelector<HTMLElement>('[data-lit]')
+      expect(lit).toBeInTheDocument()
+      expect(lit?.dataset.card).toBe(key)
+      expect(lit).toBeVisible() // jest-dom: no visibility hidden or opacity 0 on it or any ancestor
+      expect(lit?.style.opacity).not.toBe('0')
+    }
   })
 })
 

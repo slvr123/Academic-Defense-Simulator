@@ -4,6 +4,11 @@
 // built inside gsap.matchMedia() for "no-preference", so with prefers-reduced-motion no
 // GSAP animation runs and everything is already in its final state. useGSAP reverts it
 // all on unmount or when its dependencies change.
+//
+// Every tween is a fromTo with its end state spelled out. A from() takes the element's
+// current look as its end, and autoAlpha reads a hidden element as 0: inside the demo
+// replay, whose step-in hides the whole screen for a frame, the lit card took that as
+// its end state and finished invisible (M11.1).
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import type { RefObject } from 'react'
@@ -12,6 +17,9 @@ gsap.registerPlugin(useGSAP)
 
 /** Motion runs only when this matches; with reduced motion, nothing is animated. */
 export const MOTION_OK = '(prefers-reduced-motion: no-preference)'
+
+/** Where every tween ends: fully shown, in place. */
+const SHOWN = { autoAlpha: 1, x: 0, y: 0, scale: 1 }
 
 /**
  * The handoff, one timeline per question: the lit card comes up (the card that was lit
@@ -29,9 +37,9 @@ export function useHandoff(scope: RefObject<HTMLElement | null>, turn: number): 
         const question = root.querySelector('[data-question]')
         const reveal = root.querySelector('[data-reveal]')
         const timeline = gsap.timeline({ defaults: { ease: 'power2.out' } })
-        if (lit) timeline.from(lit, { autoAlpha: 0.4, scale: 0.97, duration: 0.35 })
-        if (question) timeline.from(question, { autoAlpha: 0, y: 12, duration: 0.4 }, lit ? '>-0.1' : 0)
-        if (reveal) timeline.from(reveal, { autoAlpha: 0, x: 24, duration: 0.45 }, '<0.1')
+        if (lit) timeline.fromTo(lit, { autoAlpha: 0.4, scale: 0.97 }, { ...SHOWN, duration: 0.35 })
+        if (question) timeline.fromTo(question, { autoAlpha: 0, y: 12 }, { ...SHOWN, duration: 0.4 }, lit ? '>-0.1' : 0)
+        if (reveal) timeline.fromTo(reveal, { autoAlpha: 0, x: 24 }, { ...SHOWN, duration: 0.45 }, '<0.1')
       })
     },
     { scope, dependencies: [turn], revertOnUpdate: true },
@@ -45,7 +53,7 @@ export function useSeatsArrive(scope: RefObject<HTMLElement | null>, count: numb
       const mm = gsap.matchMedia()
       mm.add(MOTION_OK, () => {
         const seats = scope.current?.querySelectorAll('[data-seat]')
-        if (seats && seats.length > 0) gsap.from(seats, { autoAlpha: 0, y: 8, duration: 0.35, stagger: 0.08, ease: 'power2.out' })
+        if (seats && seats.length > 0) gsap.fromTo(seats, { autoAlpha: 0, y: 8 }, { ...SHOWN, duration: 0.35, stagger: 0.08, ease: 'power2.out' })
       })
     },
     { scope, dependencies: [count], revertOnUpdate: true },
@@ -58,7 +66,7 @@ export function useStepIn(scope: RefObject<HTMLElement | null>, step: number): v
     () => {
       const mm = gsap.matchMedia()
       mm.add(MOTION_OK, () => {
-        if (scope.current) gsap.from(scope.current, { autoAlpha: 0, y: 8, duration: 0.3, ease: 'power2.out' })
+        if (scope.current) gsap.fromTo(scope.current, { autoAlpha: 0, y: 8 }, { ...SHOWN, duration: 0.3, ease: 'power2.out' })
       })
     },
     { scope, dependencies: [step], revertOnUpdate: true },
