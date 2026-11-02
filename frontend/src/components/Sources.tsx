@@ -18,7 +18,7 @@ export function SourcePassage({ source, span, compact = false }: { source: Sourc
   const continued = part.start > 0
   const pad = compact ? 'px-4 py-4 sm:px-5' : 'px-5 py-5 sm:px-7 sm:py-7'
   return (
-    <figure className={`rounded-md bg-paper text-paper-ink shadow-[0_1px_0_var(--color-paper-edge),0_18px_40px_rgba(0,0,0,0.35)] ${pad}`}>
+    <figure className={`rounded-md border border-paper-edge bg-paper text-paper-ink ${pad}`}>
       <figcaption className={`flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[11px] text-paper-muted ${compact ? 'mb-2.5' : 'mb-3.5'}`}>
         <span>
           {pageRange(source.page_start, source.page_end)}

@@ -1,14 +1,16 @@
-"""v2.0 M8 K6: WCAG contrast for every text/background pair the Bench theme uses.
+"""WCAG contrast for every text/background pair the themes use: v2.0 M8 K6, rewritten
+for M12 D4's two themes, Paper (light, the @theme block) and Chamber (dark, the
+[data-theme="chamber"] block), plus the print tokens.
 
 Usage (repo root, any Python 3.11+):
 
     python scripts/check_contrast.py
 
-Reads the colour tokens from frontend/src/index.css and prints each pair's ratio
-against its bar: 4.5:1 for body text, 3:1 for text 24 px and up and for the
-non-text marks K6 relies on (the active plate's border, the dashed Devil's Advocate
-plate, the focus ring). The mockup column shows the shade the Bench mockup used where
-this theme changed it. Exit status 1 if any pair fails.
+Reads the colour tokens from frontend/src/index.css and prints each pair's ratio per
+theme against its bar: 4.5:1 for body text, 3:1 for the non-text marks the design relies
+on (the active card's accent border, the focus ring). The Devil's Advocate's dashed
+border is decorative in both themes (its card is also labelled "Speaks last" and by
+name), so it is reported, not required. Exit status 1 if any required pair fails.
 """
 
 from __future__ import annotations
@@ -21,51 +23,33 @@ CSS = Path(__file__).resolve().parents[1] / "frontend" / "src" / "index.css"
 
 BODY, LARGE = 4.5, 3.0
 
-# (foreground token, background token, bar, where it's used)
+# (foreground token, background token, bar, where it's used); bar None: reported only.
 PAIRS = [
     ("ink", "ground", BODY, "page text"),
     ("ink", "card", BODY, "card text, questions"),
     ("ink", "field", BODY, "answer box text"),
-    ("ink", "accent-soft", BODY, "lit name plate"),
-    ("ink-dim", "raised", BODY, "unlit panelist name"),
+    ("ink", "accent-soft", BODY, "selected preset, hovered menu row"),
     ("ink-dim", "field", BODY, "your answer, recorded"),
-    ("ink-dim", "card", BODY, "transcript answers"),
-    ("muted", "card", BODY, "secondary text on cards"),
+    ("muted", "card", BODY, "secondary text on cards, panel card role and status"),
     ("muted", "ground", BODY, "header metadata"),
-    ("muted", "raised", BODY, "lit panelist's title"),
-    ("muted", "field", BODY, "score labels"),
-    ("subtle", "card", BODY, "grounded-in line"),
-    ("subtle", "raised", BODY, "unlit panelist's title"),
-    ("subtle", "field", BODY, "'Your answer' label"),
-    ("faint", "card", BODY, "upcoming turn steps"),
-    ("accent", "card", BODY, "'Dr. X asks', current step"),
-    ("accent", "raised", BODY, "'Reviewing' on the plate"),
-    ("accent", "accent-soft", BODY, "'Overall' label"),
-    ("accent-hover", "card", BODY, "shimmer highlight band"),
-    ("preparing", "raised", BODY, "'Preparing' on the plate"),
+    ("muted", "field", BODY, "score labels, drop zone limits"),
+    ("muted", "accent-soft", BODY, "pressed preset's members"),
+    ("accent-text", "card", BODY, "'Dr. X asks', current step, 'Speaking'"),
+    ("accent-text", "ground", BODY, "'Recorded demo' badge, drop zone 'browse'"),
+    ("accent-text", "accent-soft", BODY, "'Overall' label"),
+    ("ink", "card", BODY, "shimmer band passing over 'Reviewing'"),
     ("on-accent", "accent", BODY, "primary button"),
     ("on-accent", "accent-hover", BODY, "primary button, hover"),
-    ("muted", "rail", BODY, "disabled button (mockup: #9C927F, 4.15:1)"),
+    ("muted", "rail", BODY, "disabled button"),
     ("paper-ink", "paper", BODY, "source passage"),
     ("paper-ink", "highlight", BODY, "highlighted reference"),
     ("paper-muted", "paper", BODY, "passage page label"),
     ("ink", "warn-soft", BODY, "notice text"),
     ("ink", "danger-soft", BODY, "error notice text"),
-    ("danger", "card", BODY, "'no defenses left' line"),
-    ("accent", "card", LARGE, "lit plate border, focus ring (non-text)"),
-    ("devil-line", "raised", LARGE, "Devil's Advocate dashed plate (non-text)"),
-    # v2.0 M10: pairs the new screens added (existing tokens only, N1).
-    ("ink", "surface", BODY, "M10: panel card name, path buttons"),
-    ("muted", "surface", BODY, "M10: panel card role and status, path button detail, demo note"),
-    ("muted", "accent-soft", BODY, "M10: lit card role, pressed preset's members"),
-    ("subtle", "ground", BODY, "M10: 'No paper handy?', word count on the phone send bar"),
-    ("accent", "ground", BODY, "M10: 'Recorded demo' badge, drop zone 'browse'"),
-    ("ink", "raised", BODY, "M10: voice menu items"),
-    ("subtle", "field", BODY, "M10: drop zone limits line"),
-    ("ink", "ground", BODY, "M10: phone PDF sheet title"),
-    ("devil-line", "field", LARGE, "M10: drop zone dashed border (non-text)"),
-    ("devil-line", "surface", LARGE, "M10: Devil's Advocate dashed card (non-text)"),
-    ("subtle", "card", LARGE, "M10: unpressed preset ring (non-text)"),
+    ("danger", "ground", BODY, "'no defenses left' line"),
+    ("accent", "card", LARGE, "lit card border, focus ring (non-text)"),
+    ("accent", "ground", LARGE, "focus ring on the page (non-text)"),
+    ("devil-line", "surface", None, "Devil's Advocate dashed card (decorative)"),
 ]
 
 # M10 N11: the print stylesheet's own tokens (index.css, @media print), black on white.
@@ -82,16 +66,22 @@ PRINT_PAIRS = [
     ("line-strong", "card", LARGE, "print: card borders (non-text)"),
 ]
 
-# Shades the Bench mockup used that this theme changed, with the mockup's value.
-MOCKUP = {"devil-line": "#4A3A36"}
+TOKEN = r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})"
 
 
-def tokens(print_media: bool = False) -> dict[str, str]:
-    """The screen tokens, or with `print_media` the screen tokens overridden by @media print's."""
-    screen, _, printed = CSS.read_text(encoding="utf-8").partition("@media print")
-    found = dict(re.findall(r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})", screen))
-    if print_media:
-        found.update(re.findall(r"--color-([a-z-]+):\s*(#[0-9a-fA-F]{6})", printed))
+def tokens(theme: str) -> dict[str, str]:
+    """'paper': the @theme block; 'chamber': Paper overridden by [data-theme="chamber"];
+    'print': Paper overridden by @media print's."""
+    css = CSS.read_text(encoding="utf-8")
+    screen, _, printed = css.partition("@media print")
+    selector = ':root[data-theme="chamber"] {'
+    paper_block = screen.split(selector)[0]
+    found = dict(re.findall(TOKEN, paper_block))
+    if theme == "chamber":
+        chamber = screen.split(selector, 1)[1].split("}", 1)[0]
+        found.update(re.findall(TOKEN, chamber))
+    elif theme == "print":
+        found.update(re.findall(TOKEN, printed))
     return found
 
 
@@ -111,15 +101,21 @@ def ratio(a: str, b: str) -> float:
 
 def main() -> int:
     failed = 0
-    print(f"{'foreground':13} {'background':12} {'ratio':>6} {'bar':>4}  {'mockup':>12}  use")
-    for pairs, colours in ((PAIRS, tokens()), (PRINT_PAIRS, tokens(print_media=True))):
+    checked = 0
+    print(f"{'theme':8} {'foreground':13} {'background':12} {'ratio':>6} {'bar':>4}  use")
+    for theme, pairs in (("paper", PAIRS), ("chamber", PAIRS), ("print", PRINT_PAIRS)):
+        colours = tokens(theme)
         for fg, bg, bar, use in pairs:
             value = ratio(colours[fg], colours[bg])
-            before = f"{ratio(MOCKUP[fg], colours[bg]):.2f} ({MOCKUP[fg]})" if fg in MOCKUP and pairs is PAIRS else ""
-            verdict = "ok" if value >= bar else "FAIL"
+            if bar is None:
+                verdict, shown = "reported", "  - "
+            else:
+                verdict = "ok" if value >= bar else "FAIL"
+                shown = f"{bar:4.1f}"
+                checked += 1
             failed += verdict == "FAIL"
-            print(f"{fg:13} {bg:12} {value:6.2f} {bar:4.1f}  {before:>12}  {use} {verdict}")
-    print(f"{len(PAIRS) + len(PRINT_PAIRS)} pairs, {failed} failing")
+            print(f"{theme:8} {fg:13} {bg:12} {value:6.2f} {shown}  {use} {verdict}")
+    print(f"{checked} required pairs, {failed} failing")
     return 1 if failed else 0
 
 

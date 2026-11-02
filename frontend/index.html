@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Academic Defense Simulator - Face a panel that has read your paper</title>
     <meta name="description" content="Upload your thesis or capstone and defend it before an AI panel that questions you from your own pages, then shows the exact passage each question came from." />
-    <meta name="theme-color" content="#14120F" />
+    <meta name="theme-color" content="#F4EFE6" />
+    <!-- M12 D4: the theme before first paint. Paper unless the viewer chose Chamber; any storage error means Paper. Keep in step with src/lib/theme.ts. -->
+    <script>
+      try {
+        if (localStorage.getItem('ads-theme') === 'chamber') {
+          document.documentElement.dataset.theme = 'chamber'
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121214')
+        }
+      } catch (e) {}
+    </script>
     <!-- M10 N12: favicon, and the share preview. %SITE_URL% is VITE_SITE_URL at build time (vite.config.ts). -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

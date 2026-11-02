@@ -32,6 +32,7 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.useRealTimers()
-  localStorage.clear() // saved answer drafts (M10 N8) belong to one test
+  localStorage.clear() // saved answer drafts (M10 N8) and the theme (M12 D4) belong to one test
+  delete document.documentElement.dataset.theme
   installMatchMedia()
 })

@@ -13,7 +13,7 @@ export function ScoreRow({ clarity, depth, grounding, overall }: { clarity: numb
     <dl className="grid grid-cols-3 gap-2 text-center sm:grid-cols-4">
       {overall !== undefined && (
         <div className="col-span-3 rounded-xl border border-accent bg-accent-soft p-2 sm:col-span-1">
-          <dt className="font-mono text-xs text-accent">Overall</dt>
+          <dt className="font-mono text-xs text-accent-text">Overall</dt>
           <dd className="font-serif text-xl font-medium text-ink">{toHundred(overall)}/100</dd>
         </div>
       )}

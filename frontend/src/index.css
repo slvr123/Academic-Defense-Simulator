@@ -1,71 +1,66 @@
 @import "tailwindcss";
 
-/* Design tokens: the Bench design (docs/design/bench/, M8 K6), replacing M3 D7's light
-   palette. Each --color-* here becomes utilities such as bg-card or text-muted;
-   components use these, never one-off hex values. Every text/background pair in use
-   passes WCAG AA (docs/v2.0-m8-results.md lists the ratios and the shades changed). */
+/* Design tokens (M12 D4): two themes over one oxblood accent. Paper, the light theme,
+   is the default on every first visit; Chamber is the dark one, chosen with the header
+   toggle (src/lib/theme.ts sets data-theme on <html>). @theme holds Paper, so every
+   --color-* is a CSS variable on :root that utilities such as bg-card or text-muted
+   read; [data-theme="chamber"] below redefines the same variables. Components use these,
+   never one-off hex values. scripts/check_contrast.py checks every pair in both themes.
+   The decisions doc gives eight roles per theme; the older, finer tokens map onto them. */
 @theme {
   /* Loaded from Google Fonts in index.html, with system fallbacks while they arrive. */
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: Newsreader, ui-serif, Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-  /* Ground and surfaces, darkest to lightest. */
-  --color-ground: #14120f;
-  --color-field: #16130f; /* answer box, inner panels */
-  --color-surface: #1a1714; /* the bench */
-  --color-card: #1c1915;
-  --color-raised: #201c17; /* the name-plate rail */
+  /* Page background, and the inset fields (answer box, drop zone) that sit on cards. */
+  --color-ground: #f4efe6;
+  --color-field: #f4efe6;
+  /* Surfaces: cards, the panel cards, the voice menu. */
+  --color-surface: #fbf8f2;
+  --color-card: #fbf8f2;
+  --color-raised: #fbf8f2;
 
   /* Borders. */
-  --color-line: #2e2923;
-  --color-line-strong: #37312a;
-  --color-rail: #3a3125;
-  --color-devil-line: #806a64; /* the Devil's Advocate's dashed plate (mockup #4A3A36 is 1.6:1; 3:1 needed) */
+  --color-line: #dcd3c4;
+  --color-line-strong: #dcd3c4;
+  --color-rail: #eee8dd; /* a disabled primary button */
+  --color-devil-line: #c9bfae; /* the Devil's Advocate's dashed card, the drop zone */
 
   /* Text. */
-  --color-ink: #ede6d6;
-  --color-ink-dim: #c9c0ae; /* an unlit panelist's name */
-  --color-muted: #aba08c;
-  --color-subtle: #9c927f;
-  --color-faint: #8c8270; /* upcoming turn steps */
+  --color-ink: #1f1d1a;
+  --color-ink-dim: #1f1d1a; /* recorded answers */
+  --color-muted: #6e675d;
+  --color-subtle: #6e675d;
+  --color-faint: #6e675d; /* upcoming turn steps */
 
-  /* The one accent: the active panelist, the current step, the primary action. */
-  --color-accent: #e3a75b;
-  --color-accent-hover: #f0c489;
-  --color-accent-soft: #2a2219; /* the lit name plate */
-  --color-on-accent: #1a140c;
-  --color-preparing: #8aa6d6;
+  /* The one accent: CTAs, the active panelist's border, the current step, selections.
+     accent is the fill and border colour; accent-text is the accent used as text. */
+  --color-accent: #7a2e33;
+  --color-accent-hover: #62242a;
+  --color-accent-text: #7a2e33;
+  --color-accent-soft: #f3e9e4; /* a selected preset or option, a hovered menu row */
+  --color-on-accent: #fbf8f2;
 
-  /* The source passage, printed on paper. */
-  --color-paper: #efe7d6;
-  --color-paper-ink: #2a241c;
-  --color-paper-muted: #5e5446;
-  --color-paper-edge: #d9cfb9;
-  --color-highlight: #f0c27e;
+  /* The source passage, printed on a card of its own. */
+  --color-paper: #fbf8f2;
+  --color-paper-ink: #1f1d1a;
+  --color-paper-muted: #6e675d;
+  --color-paper-edge: #dcd3c4;
+  --color-highlight: #ecd6d2;
 
-  /* Notices on the dark ground. */
-  --color-warn: #f0c489;
-  --color-warn-soft: #2a2219;
-  --color-danger: #f2a7a0;
-  --color-danger-soft: #2b1b19;
+  /* Notices. */
+  --color-warn: #8a5a12;
+  --color-warn-soft: #f6ebd6;
+  --color-danger: #9b2c2c;
+  --color-danger-soft: #f6e3df;
 
   /* Motion (M8 K9): only where it shows state, and none under reduced motion (below).
-     The handoff, the source reveal and the seats arriving are GSAP timelines (M10 N13, src/motion). */
-  --animate-speaking: speaking 1.6s ease-in-out infinite;
+     The handoff, the source reveal and the seats arriving are GSAP timelines (M10 N13,
+     src/motion). M12 D3: no glow anywhere; the speaking panelist is shown by the card's
+     1px accent border and its "Speaking" status, not a ring. */
   --animate-shimmer: shimmer 1.8s linear infinite;
   --animate-caret: caret 1s steps(1) infinite;
-
-  /* The speaking panelist's portrait: a soft amber ring that breathes. */
-  @keyframes speaking {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent);
-    }
-    50% {
-      box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 0%, transparent);
-    }
-  }
 
   /* "Reviewing": a band of light moving across the words while the answer is scored. */
   @keyframes shimmer {
@@ -90,21 +85,58 @@
   }
 }
 
+/* Chamber, the dark theme (M12 D4): the same roles, so no component knows which theme is on. */
+:root[data-theme="chamber"] {
+  color-scheme: dark;
+  --color-ground: #121214;
+  --color-field: #121214;
+  --color-surface: #1a1a1d;
+  --color-card: #1a1a1d;
+  --color-raised: #1a1a1d;
+  --color-line: #2c2c30;
+  --color-line-strong: #2c2c30;
+  --color-rail: #202023;
+  --color-devil-line: #2c2c30;
+  --color-ink: #e8e6e1;
+  --color-ink-dim: #e8e6e1;
+  --color-muted: #8b8a86;
+  --color-subtle: #8b8a86;
+  --color-faint: #8b8a86;
+  --color-accent: #a8474d;
+  --color-accent-hover: #963f45;
+  --color-accent-text: #c9676d;
+  --color-accent-soft: #241b1d;
+  --color-on-accent: #f4efea;
+  --color-paper: #1a1a1d;
+  --color-paper-ink: #e8e6e1;
+  --color-paper-muted: #8b8a86;
+  --color-paper-edge: #2c2c30;
+  --color-highlight: #4a2a2e;
+  --color-warn: #e0b76a;
+  --color-warn-soft: #241f16;
+  --color-danger: #e59a92;
+  --color-danger-soft: #2a1a1a;
+}
+
+:root {
+  color-scheme: light;
+}
+
 body {
   /* wrap-anywhere: a long URL or file name in a passage wraps instead of widening the page (D8). */
   @apply bg-ground font-sans text-ink antialiased wrap-anywhere;
 }
 
 /* Text that shimmers while the panel reviews an answer: the words stay readable, a
-   lighter band passes over them. */
+   band of the text colour passes over them. */
 .shimmer-text {
   background-image: linear-gradient(
     90deg,
-    var(--color-accent) 0%,
-    var(--color-accent) 40%,
-    var(--color-accent-hover) 50%,
-    var(--color-accent) 60%,
-    var(--color-accent) 100%
+    var(--color-accent-text) 0%,
+    var(--color-accent-text) 40%,
+    var(--color-ink) 50%,
+    var(--color-accent-text) 60%,
+    var(--color-accent-text) 100%
   );
   background-size: 200% 100%;
   background-clip: text;
@@ -122,19 +154,21 @@ body {
     transition: none !important;
   }
   .shimmer-text {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background-image: none;
   }
 }
 
-/* M10 N11: the debrief printed, or saved as PDF from the print dialog. Black on white,
-   so it reads on a black-and-white printer: the tokens are swapped for print, the
-   passage card loses its shadow for a rule, and the highlight is underlined as well as
+/* M10 N11: the debrief printed, or saved as PDF from the print dialog. Black on white
+   in both themes (print is paper, M12 D4), so it reads on a black-and-white printer:
+   the tokens are swapped for print, and the highlight is underlined as well as
    shaded, since the shade alone can vanish in greyscale. Navigation and buttons are
    hidden where they're drawn (print:hidden); every question card is opened by
    ReportScreen before printing. */
 @media print {
-  :root {
+  :root,
+  :root[data-theme="chamber"] {
+    color-scheme: light;
     --color-ground: #ffffff;
     --color-field: #ffffff;
     --color-surface: #ffffff;
@@ -148,6 +182,7 @@ body {
     --color-subtle: #4a4a4a;
     --color-faint: #4a4a4a;
     --color-accent: #000000;
+    --color-accent-text: #000000;
     --color-accent-soft: #ffffff;
     --color-rail: #6b6b6b;
     --color-warn-soft: #ffffff;
@@ -162,8 +197,6 @@ body {
     background: #ffffff;
   }
   figure {
-    box-shadow: none !important;
-    border: 1px solid var(--color-paper-edge);
     break-inside: avoid;
   }
   mark {

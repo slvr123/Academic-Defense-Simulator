@@ -1,6 +1,6 @@
 // The panel (M10 N2, canvas Main.dc.html): four equal cards, 2×2 on phones. Each card
 // has v1's portrait, the name and role on the left and the status on the right. Only
-// the active card is lit (accent border, soft ground, dot); the Devil's Advocate's card
+// the active card is lit (a 1px accent border and a dot, no glow: M12 D3); the Devil's Advocate's card
 // is dashed. Replaces M8's centred bench row. Statuses use only what the client knows:
 // the API never says who asks next, so there is no "Up next".
 import { DEVILS_ADVOCATE_KEY } from '../lib/panel'
@@ -35,7 +35,7 @@ export function PanelGrid({ cards, active, status, asked }: Props) {
         {cards.map((card) => {
           const lit = card.archetypeKey === active
           const devil = card.archetypeKey === DEVILS_ADVOCATE_KEY
-          const frame = lit ? 'border-solid border-accent bg-accent-soft' : devil ? 'border-dashed border-devil-line bg-surface' : 'border-solid border-line-strong bg-surface'
+          const frame = lit ? 'border-solid border-accent bg-surface' : devil ? 'border-dashed border-devil-line bg-surface' : 'border-solid border-line-strong bg-surface'
           return (
             <li
               key={card.archetypeKey}
@@ -49,7 +49,7 @@ export function PanelGrid({ cards, active, status, asked }: Props) {
                 <span className="truncate text-[15px] font-semibold text-ink">{card.surname ? panelistName(card.surname) : card.title}</span>
                 <span className="truncate text-[12.5px] text-muted" title={card.title}>{shortTitle(card.archetypeKey, card.title)}</span>
               </span>
-              <span className={`flex shrink-0 items-center gap-1.5 font-mono text-xs max-sm:basis-full ${lit ? 'text-accent' : 'text-muted'}`}>
+              <span className={`flex shrink-0 items-center gap-1.5 font-mono text-xs max-sm:basis-full ${lit ? 'text-accent-text' : 'text-muted'}`}>
                 {lit && <span aria-hidden className="size-[7px] rounded-full bg-accent" />}
                 {lit ? (
                   status === 'reviewing' ? (

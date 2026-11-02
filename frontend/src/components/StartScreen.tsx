@@ -243,7 +243,7 @@ function DropZone({ file, onFile }: { file: File | null; onFile: (file: File | n
         over ? 'border-accent bg-accent-soft' : 'border-devil-line bg-field hover:border-accent'
       }`}
     >
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-accent">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-accent-text">
         <path d="M12 16V4" />
         <path d="m6 10 6-6 6 6" />
         <path d="M4 20h16" />
@@ -252,13 +252,13 @@ function DropZone({ file, onFile }: { file: File | null; onFile: (file: File | n
         <>
           <span className="max-w-full truncate font-semibold">{file.name}</span>
           <span className="font-mono text-xs text-subtle">
-            {(file.size / (1024 * 1024)).toFixed(1)} MB · drop another or <span className="text-accent underline underline-offset-[3px]">browse</span> to replace
+            {(file.size / (1024 * 1024)).toFixed(1)} MB · drop another or <span className="text-accent-text underline underline-offset-[3px]">browse</span> to replace
           </span>
         </>
       ) : (
         <>
           <span className="font-semibold">
-            Drop your PDF here, or <span className="text-accent underline underline-offset-[3px]">browse</span>
+            Drop your PDF here, or <span className="text-accent-text underline underline-offset-[3px]">browse</span>
           </span>
           <span className="font-mono text-xs text-subtle">
             PDF with selectable text · up to {MAX_UPLOAD_MB} MB · {MAX_PAGES} pages

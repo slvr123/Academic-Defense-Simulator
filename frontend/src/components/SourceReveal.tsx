@@ -59,7 +59,7 @@ export function SourceReveal({ turn, onOpenPage, suspended = false }: Props) {
         <span className="min-w-0 flex-1 truncate">
           {panelistName(question.panelist.name)} was reading{page !== undefined && ` p. ${page}`}
         </span>
-        <span className="shrink-0 font-medium text-accent">{' '}· See the passage</span>
+        <span className="shrink-0 font-medium text-accent-text">{' '}· See the passage</span>
       </button>
       {open && !suspended && <RevealSheet turn={turn} onOpenPage={onOpenPage} at={at} onAt={setAt} onClose={close} />}
     </>

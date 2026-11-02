@@ -92,7 +92,7 @@ export function PreparingScreen({ seats, ingest, recorded = false }: { seats: Ar
           {seats.map((seat, i) => {
             const first = i === 0
             const devil = seat.archetype_key === DEVILS_ADVOCATE_KEY
-            const frame = first ? 'border-solid border-accent bg-accent-soft' : devil ? 'border-dashed border-devil-line bg-surface' : 'border-solid border-line-strong bg-surface'
+            const frame = first ? 'border-solid border-accent bg-surface' : devil ? 'border-dashed border-devil-line bg-surface' : 'border-solid border-line-strong bg-surface'
             const status = first ? 'Writing question 1' : devil ? 'Speaks last' : 'Seated'
             return (
               <li key={seat.archetype_key} data-seat className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border px-4 py-3.5 ${frame}`}>
@@ -101,7 +101,7 @@ export function PreparingScreen({ seats, ingest, recorded = false }: { seats: Ar
                   <span className="font-semibold">{seat.title}</span>
                   <span className={`text-sm ${first ? 'text-ink' : 'text-muted'}`}>{looksFor(seat.archetype_key)}</span>
                 </span>
-                <span className={`flex shrink-0 items-center gap-2 font-mono text-xs ${first ? 'text-accent' : 'text-muted'}`}>
+                <span className={`flex shrink-0 items-center gap-2 font-mono text-xs ${first ? 'text-accent-text' : 'text-muted'}`}>
                   {first && <span aria-hidden className="size-[7px] animate-pulse rounded-full bg-accent motion-reduce:animate-none" />}
                   {status}
                 </span>
@@ -139,7 +139,7 @@ function Steps({ current }: { current: TurnStep }) {
         }
         if (i === at) {
           return (
-            <li key={step} aria-current="step" className="flex items-center gap-1.5 text-accent">
+            <li key={step} aria-current="step" className="flex items-center gap-1.5 text-accent-text">
               <span aria-hidden className="size-[7px] rounded-full bg-accent" />
               {step === 'Reviewing' ? <span className="shimmer-text animate-shimmer motion-reduce:animate-none">{step}</span> : step}
             </li>
@@ -291,7 +291,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
             className="flex min-w-0 flex-col gap-6 rounded-2xl border border-line-strong bg-card p-5 sm:gap-7 sm:px-9 sm:pt-8 sm:pb-7"
           >
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <Eyebrow className="text-accent">
+              <Eyebrow className="text-accent-text">
                 {asker} {submitting ? 'asked' : 'asks'}
                 <span className="text-muted normal-case"> · {question.panelist.title}</span>
               </Eyebrow>

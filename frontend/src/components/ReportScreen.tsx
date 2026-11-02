@@ -36,7 +36,7 @@ function Headline({ report, overallRaw }: { report: DefenseReport; overallRaw: n
     <section aria-label="Overall" className="space-y-5 rounded-2xl border border-accent bg-card p-5 sm:p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow className="text-accent">Overall</Eyebrow>
+          <Eyebrow className="text-accent-text">Overall</Eyebrow>
           <p className="font-serif text-6xl leading-none font-medium sm:text-7xl">
             {toHundred(overallRaw)}
             <span className="text-2xl text-muted sm:text-3xl">/100</span>
