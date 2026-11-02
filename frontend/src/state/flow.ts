@@ -71,6 +71,7 @@ export type Phase =
 
 export type State = {
   serverAwake: boolean // a flag beside the phase, not a phase (D25)
+  waking: boolean // a wake has gone unanswered for WAKING_NOTICE_MS: the server is likely asleep (M12 D5)
   ttsAvailable: boolean // the server can make panel voices (/status, M3b E6)
   voice: VoiceChoice | null // null until chosen for this defense; never persisted (E9)
   panelDisclosed: boolean // the MiMo disclosure was shown this session (M10 N9)
@@ -82,6 +83,7 @@ export type State = {
 
 export type Action =
   | { type: 'serverAwake'; ttsAvailable: boolean }
+  | { type: 'waking'; on: boolean }
   | { type: 'voiceChosen'; voice: VoiceChoice }
   | { type: 'optionsLoaded'; options: PanelOptions }
   | { type: 'quotaLoaded'; quota: QuotaStatus }
@@ -113,6 +115,7 @@ export function quotaUsedUp(quota: QuotaView): boolean {
 export function initialState(): State {
   return {
     serverAwake: false,
+    waking: false,
     ttsAvailable: false,
     voice: null,
     panelDisclosed: false,
@@ -275,6 +278,8 @@ export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'serverAwake':
       return { ...state, serverAwake: true, ttsAvailable: action.ttsAvailable }
+    case 'waking':
+      return state.waking === action.on ? state : { ...state, waking: action.on }
     case 'voiceChosen':
       // Chosen before the first question, and switchable during the defense (M10 N9).
       if (phase.kind !== 'ready' && phase.kind !== 'question' && phase.kind !== 'submitting') return state

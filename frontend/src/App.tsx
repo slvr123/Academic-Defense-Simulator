@@ -7,11 +7,12 @@ import { DocumentPanel } from './components/DocumentPanel'
 import { QuotaLine } from './components/QuotaLine'
 import { ReportScreen } from './components/ReportScreen'
 import { SessionHeader, WORDMARK } from './components/SessionHeader'
+import { ThemeToggle } from './components/ThemeToggle'
 import { StartScreen } from './components/StartScreen'
-import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen } from './components/WaitScreens'
+import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen, WakingNotice } from './components/WaitScreens'
 import { useObjectUrl } from './hooks/useObjectUrl'
 import { DEFENSE_TYPE_LABELS } from './lib/labels'
-import { seatedPanel } from './lib/panel'
+import { heardFrom, seatedPanel } from './lib/panel'
 import type { VoiceChoice } from './state/flow'
 import { useFlow } from './state/useFlow'
 import { createPlayer } from './voice/player'
@@ -56,22 +57,25 @@ export default function App() {
   switch (phase.kind) {
     case 'configuring':
       screen = (
-        <StartScreen
-          draft={state.draft}
-          options={state.options}
-          quota={state.quota}
-          notice={phase.notice}
-          onTrySample={() => void flow.trySample()}
-          onReadRecording={RECORDING_AVAILABLE ? () => setDemo(true) : null}
-          onChange={flow.editDraft}
-          onSubmit={() => void flow.upload()}
-        />
+        <div className="space-y-5">
+          {state.waking && <WakingNotice />}
+          <StartScreen
+            draft={state.draft}
+            options={state.options}
+            quota={state.quota}
+            notice={phase.notice}
+            onTrySample={() => void flow.trySample()}
+            onReadRecording={RECORDING_AVAILABLE ? () => setDemo(true) : null}
+            onChange={flow.editDraft}
+            onSubmit={() => void flow.upload()}
+          />
+        </div>
       )
       break
     case 'uploading':
       screen = (
         <UploadingScreen
-          serverAwake={state.serverAwake}
+          waking={!state.serverAwake || state.waking}
           fileName={state.draft.file?.name ?? ''}
           loaded={phase.loaded}
           total={phase.total}
@@ -147,6 +151,7 @@ export default function App() {
       <SessionHeader
         subtitle={`${phase.topic} · ${defenseType}`}
         turn={phase.question.turn}
+        heard={heardFrom(phase.panel, [...phase.turns.map((t) => t.question.panelist.archetype_key), phase.question.panelist.archetype_key])}
         voice={state.voice}
         ttsAvailable={state.ttsAvailable}
         panelDisclosed={state.panelDisclosed}
@@ -166,7 +171,10 @@ export default function App() {
             <p className={`min-w-0 truncate ${phase.kind === 'preparing' ? 'font-mono text-xs' : 'text-sm'} text-muted`}>{subtitle}</p>
           )}
         </div>
-        {phase.kind === 'configuring' && <QuotaLine quota={state.quota} />}
+        <div className="flex items-center gap-3">
+          {phase.kind === 'configuring' && <QuotaLine quota={state.quota} />}
+          <ThemeToggle />
+        </div>
       </div>
     )
   }

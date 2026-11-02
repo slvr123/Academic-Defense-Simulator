@@ -7,10 +7,12 @@ import type { AnswerResponse, PanelConfig, ReportResponse, SessionState, StartRe
 import { useStepIn } from '../motion/motion'
 import type { Turn, VoiceChoice } from '../state/flow'
 import { DEFENSE_TYPE_LABELS } from '../lib/labels'
+import { heardFrom } from '../lib/panel'
 import type { Player } from '../voice/player'
 import { PreparingScreen, QuestionScreen } from './DefenseScreens'
 import { DocumentPanel } from './DocumentPanel'
 import { ReportScreen } from './ReportScreen'
+import { ThemeToggle } from './ThemeToggle'
 import { SessionHeader, WORDMARK } from './SessionHeader'
 import { Button, Card, Heading, Working } from './ui'
 
@@ -102,7 +104,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
   const question = step >= 1 && step < lastStep ? questionAt(recording, step) : null
   const typeLabel = `${DEFENSE_TYPE_LABELS[recording.panel_config.defense_type]} defense`
   const badge = (
-    <span className="rounded-md border border-accent px-2 py-0.5 font-mono text-[11px] tracking-[0.08em] text-accent uppercase">Recorded demo</span>
+    <span className="rounded-md border border-accent px-2 py-0.5 font-mono text-[11px] tracking-[0.08em] text-accent-text uppercase">Recorded demo</span>
   )
 
   let header
@@ -113,6 +115,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
       <SessionHeader
         subtitle={`${recording.start.topic} · ${typeLabel}`}
         turn={question.turn}
+        heard={heardFrom(recording.start.panel, [...turns.map((t) => t.question.panelist.archetype_key), question.panelist.archetype_key])}
         badge={badge}
         voice={voice}
         ttsAvailable={false}
@@ -174,12 +177,15 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
 
 function Plain({ subtitle, badge }: { subtitle?: string; badge?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
-        {badge}
-      </span>
-      {subtitle && <p className="min-w-0 truncate font-mono text-xs text-muted">{subtitle}</p>}
+    <div className="flex items-center justify-between gap-x-4 gap-y-1">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
+          {badge}
+        </span>
+        {subtitle && <p className="min-w-0 truncate font-mono text-xs text-muted">{subtitle}</p>}
+      </div>
+      <ThemeToggle />
     </div>
   )
 }

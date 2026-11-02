@@ -44,13 +44,13 @@ async function answerFirst(user: User, text = 'We adapted ISO 25010.') {
 }
 
 describe('the session header (N2)', () => {
-  it('shows the title and type, the question with its progress dots, and no invented total', async () => {
+  it('shows the title and type, the turn and who has been heard, and no invented total (M12 D2)', async () => {
     const server = sessionServer()
     const user = renderApp()
     await toQuestion(server, user)
     const header = screen.getByRole('banner')
     expect(header).toHaveTextContent('Library Management System · Thesis defense')
-    expect(header).toHaveTextContent('Question 1')
+    expect(header).toHaveTextContent(/Turn 1 · 1\/\d heard/)
     expect(header).not.toHaveTextContent(/Round|of \d/)
   })
 

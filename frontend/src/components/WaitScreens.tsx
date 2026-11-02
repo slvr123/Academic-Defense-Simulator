@@ -5,14 +5,37 @@ import { NoticeBanner } from './NoticeBanner'
 import { VoiceGate } from './VoiceGate'
 import { Button, Card, Heading, ProgressBar, Working } from './ui'
 
-export function UploadingScreen({ serverAwake, fileName, loaded, total }: { serverAwake: boolean; fileName: string; loaded: number; total: number }) {
-  if (!serverAwake) {
+// M12 D5: what the page says while a sleeping server wakes. Calm on purpose: no spinner.
+export const WAKING_TEXT = 'Waking the panel - free hosting sleeps when idle. This can take up to a minute.'
+
+function ClockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-0.5 shrink-0">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  )
+}
+
+/** The start screen's line while the page-load wake goes unanswered (M12 D5). The form and
+ * the recorded demo stay usable under it. */
+export function WakingNotice() {
+  return (
+    <p role="status" className="flex items-start gap-2 rounded-xl border border-line-strong bg-surface px-4 py-3 text-sm text-muted">
+      <ClockIcon /> {WAKING_TEXT}
+    </p>
+  )
+}
+
+/** `waking`: the upload is waiting for the server to answer, not sending bytes yet. */
+export function UploadingScreen({ waking, fileName, loaded, total }: { waking: boolean; fileName: string; loaded: number; total: number }) {
+  if (waking) {
     return (
       <Card className="space-y-2">
-        <Heading>
-          <Working /> Waking the server - up to a minute on first visit
-        </Heading>
-        <p className="text-sm text-muted">The demo server sleeps when nobody is using it. Your upload starts as soon as it answers.</p>
+        <Heading>Waking the panel</Heading>
+        <p className="flex items-start gap-2 text-sm text-muted">
+          <ClockIcon /> {WAKING_TEXT} Your upload starts as soon as it answers.
+        </p>
       </Card>
     )
   }

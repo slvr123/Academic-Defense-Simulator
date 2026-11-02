@@ -16,6 +16,9 @@ import { type Draft, initialState, reducer, type State, type VoiceChoice } from 
 export const POLL_INTERVAL_MS = 2000
 // The bundled sample capstone (M10 N5), served by the static site from public/sample/.
 export const SAMPLE_PDF_PATH = '/sample/sample-capstone-anicheck.pdf'
+// M12 D5: a wake still unanswered after this long means the server is asleep, and the
+// page says so. /status answers in well under a second when the server is up.
+export const WAKING_NOTICE_MS = 3000
 export const SAMPLE_FAILED_TEXT = "The sample paper couldn't be loaded. Check your connection and try again."
 
 // A resent answer or start that meets the first one still running gets 409: wait,
@@ -56,9 +59,20 @@ export function useFlow(): Flow {
   const requesting = useRef(false)
   const { phase } = state
 
-  const wake = useCallback(() => waker.wake(), [waker])
+  // Every wake goes through here, so any one that takes over WAKING_NOTICE_MS shows the
+  // waking line, and it goes once the server answers or the wake gives up.
+  const wake = useCallback(() => {
+    const attempt = waker.wake()
+    const slow = setTimeout(() => dispatch({ type: 'waking', on: true }), WAKING_NOTICE_MS)
+    void attempt.finally(() => {
+      clearTimeout(slow)
+      dispatch({ type: 'waking', on: false })
+    })
+    return attempt
+  }, [waker])
 
   // Page load: wake the server, then read the quota and the panel rosters (D15, D21).
+  // Nothing waits on it: the start screen and the recorded demo work while it runs (M12 D5).
   useEffect(() => {
     let cancelled = false
     void wake().then(async (up) => {

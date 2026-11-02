@@ -1,10 +1,13 @@
-// The session header (M10 N2, canvas Main.dc.html), spread across the width: the
-// wordmark and "title · type" on the left, the question and its progress dots in the
-// middle, and the voice menu, "Your document" and "End session" on the right. The API
-// sends no total number of questions (follow-ups vary it), so there's no "of Y".
+// The session header (M10 N2; M12 D2), spread across the width as the start screen's is:
+// the wordmark on the left and the turn status on the right, on one baseline; under them,
+// "title · type" on the left and the voice menu, "Your document", the theme and "End
+// session" on the right. On a phone each row wraps, left-aligned, never centred. The API
+// sends no total number of questions (follow-ups vary it), so the status counts turns
+// and the domain panelists heard from, never "of Y" questions.
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { VoiceChoice } from '../state/flow'
+import { ThemeToggle } from './ThemeToggle'
 import { Button, DocumentIcon } from './ui'
 import { PANEL_VOICE_DISCLOSURE } from './VoiceGate'
 
@@ -13,6 +16,8 @@ export const WORDMARK = 'Academic Defense Simulator'
 type Props = {
   subtitle: string
   turn: number
+  /** Domain panelists who have asked so far, this question included, and how many sit. */
+  heard: { count: number; of: number }
   /** A label beside the wordmark, e.g. "Recorded demo" (N5). */
   badge?: ReactNode
   voice: VoiceChoice | null
@@ -26,39 +31,37 @@ type Props = {
   onEnd: () => void
 }
 
-export function SessionHeader({ subtitle, turn, badge, voice, ttsAvailable, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd }: Props) {
+export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailable, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd }: Props) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="flex flex-col gap-3">
+      <div data-header-row className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
           {badge}
         </span>
+        <p data-turn-status className="font-mono text-xs text-muted">
+          Turn {turn} · {heard.count}/{heard.of} heard
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <p className="min-w-0 truncate font-mono text-xs text-muted">{subtitle}</p>
-      </div>
-      <div className="flex items-center gap-3 font-mono text-xs text-muted">
-        <span>Question {turn}</span>
-        <span aria-hidden className="flex flex-wrap gap-[5px]">
-          {Array.from({ length: turn }, (_, i) => (
-            <span key={i} className={`h-1 w-[18px] rounded-sm ${i + 1 === turn ? 'bg-accent' : 'bg-ink'}`} />
-          ))}
-        </span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <VoiceMenu voice={voice} ttsAvailable={ttsAvailable} panelDisclosed={panelDisclosed} onChoose={onChooseVoice} />
-        {onOpenDocument && (
-          <button
-            type="button"
-            aria-pressed={documentOpen}
-            onClick={onOpenDocument}
-            className={`flex min-h-11 items-center gap-2 rounded-[10px] border px-3.5 text-sm transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
-              documentOpen ? 'border-accent bg-accent-soft' : 'border-line-strong bg-card'
-            }`}
-          >
-            <DocumentIcon size={16} /> Your document
-          </button>
-        )}
-        <EndSession label={endLabel} onEnd={onEnd} />
+        <div className="flex flex-wrap items-center gap-2">
+          <VoiceMenu voice={voice} ttsAvailable={ttsAvailable} panelDisclosed={panelDisclosed} onChoose={onChooseVoice} />
+          {onOpenDocument && (
+            <button
+              type="button"
+              aria-pressed={documentOpen}
+              onClick={onOpenDocument}
+              className={`flex min-h-11 items-center gap-2 rounded-[10px] border px-3.5 text-sm transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
+                documentOpen ? 'border-accent bg-accent-soft' : 'border-line-strong bg-card'
+              }`}
+            >
+              <DocumentIcon size={16} /> Your document
+            </button>
+          )}
+          <ThemeToggle />
+          <EndSession label={endLabel} onEnd={onEnd} />
+        </div>
       </div>
     </div>
   )
@@ -136,7 +139,7 @@ function VoiceMenu({ voice, ttsAvailable, panelDisclosed, onChoose }: { voice: V
         </svg>
       </button>
       {open && (
-        <div id={menuId} className="absolute top-full right-0 z-30 mt-2 w-[min(320px,calc(100vw-32px))] rounded-xl border border-line-strong bg-raised p-2 shadow-[0_18px_40px_rgba(0,0,0,0.45)] max-sm:left-0">
+        <div id={menuId} className="absolute top-full right-0 z-30 mt-2 w-[min(320px,calc(100vw-32px))] rounded-xl border border-line-strong bg-raised p-2 max-sm:left-0">
           {disclosing ? (
             <div className="space-y-3 p-2 text-sm">
               <p className="font-semibold">Use panel voices?</p>

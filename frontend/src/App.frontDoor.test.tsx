@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { pdf, quota } from './test/fixtures'
 import { advance, chooseFile, defaultServer, deferred, HEALTHY, renderApp, submitDocument, uploadAccepted } from './test/renderApp'
 import type { Reply } from './test/fakeServer'
+import { WAKING_TEXT } from './components/WaitScreens'
+import { WAKING_NOTICE_MS } from './state/useFlow'
 
 // M6 H7: App-level tests drive the whole UI with real-time polling, so a slow machine
 // needs more than vitest's 5 s default. No retries: a failing test still fails.
@@ -17,15 +19,42 @@ describe('page load and quota (D15, D25)', () => {
     const user = renderApp()
 
     expect(screen.getByLabelText(/your document/i)).toBeEnabled()
-    expect(screen.queryByText(/waking the server/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/waking the panel/i)).not.toBeInTheDocument()
 
     await submitDocument(user)
-    expect(await screen.findByText('Waking the server - up to a minute on first visit')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Waking the panel' })).toBeInTheDocument()
     expect(server.upload.sent).toBe(0)
 
     await act(async () => health.resolve(HEALTHY))
     expect(await screen.findByText('Uploading your document')).toBeInTheDocument()
     expect(server.upload.sent).toBe(1)
+  })
+
+  it('says the panel is waking only once /status has gone 3 s unanswered, and nothing waits on it (M12 D5)', async () => {
+    const server = defaultServer()
+    const health = deferred<Reply>()
+    server.on('GET /status', () => health.promise)
+    renderApp()
+
+    await advance(WAKING_NOTICE_MS - 100)
+    expect(screen.queryByText(WAKING_TEXT)).not.toBeInTheDocument()
+    await advance(200)
+    expect(screen.getByRole('status')).toHaveTextContent(WAKING_TEXT)
+    // The form and the start screen's paths stay usable while the server wakes.
+    expect(screen.getByLabelText(/your document/i)).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Try it with the sample paper/ })).toBeEnabled()
+
+    await act(async () => health.resolve(HEALTHY))
+    expect(await screen.findByText('7 of 11 defenses left today')).toBeInTheDocument()
+    expect(screen.queryByText(WAKING_TEXT)).not.toBeInTheDocument()
+  })
+
+  it('never shows the waking line when /status answers at once', async () => {
+    defaultServer()
+    renderApp()
+    expect(await screen.findByText('7 of 11 defenses left today')).toBeInTheDocument()
+    await advance(WAKING_NOTICE_MS + 1000)
+    expect(screen.queryByText(WAKING_TEXT)).not.toBeInTheDocument()
   })
 
   it('shows how many defenses are left', async () => {
