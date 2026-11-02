@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { PanelConfig } from '../api/types'
 import { panelOptions } from '../test/fixtures'
 import { DEFENSE_TYPE_LABELS, OTHER_SUBTYPE_LABELS } from './labels'
-import { seatedKeys, seatedPanel, toggleArchetype, withDefenseType, withSubtype } from './panel'
+import { heardFrom, seatedKeys, seatedPanel, toggleArchetype, withDefenseType, withSubtype } from './panel'
+import realOptions from '../test/panelOptions.real.json'
+import type { PanelOptions } from '../api/types'
 
 const thesis: PanelConfig = {
   defense_type: 'thesis',
@@ -58,5 +60,33 @@ describe('labels (D22)', () => {
       expect(label).not.toContain('_')
     }
     expect(OTHER_SUBTYPE_LABELS.oral_comps).toBe('Oral comps')
+  })
+})
+
+describe('the seating order /start uses (M12 D1)', () => {
+  const live = realOptions as PanelOptions
+  const keys = (panel: PanelConfig) => seatedPanel(live, panel).map((a) => a.archetype_key)
+
+  it("seats the thesis recommended panel from Chapter 1 forward, the Devil's Advocate last", () => {
+    const recommended = { ...thesis, archetype_keys: ['methodology_expert', 'problem_objectives_reviewer', 'results_conclusions_reviewer'] }
+    expect(keys(recommended)).toEqual(['problem_objectives_reviewer', 'methodology_expert', 'results_conclusions_reviewer', 'devils_advocate'])
+  })
+
+  it('keeps roster order between panelists of the same home chapter', () => {
+    const capstone: PanelConfig = { ...thesis, defense_type: 'capstone', archetype_keys: ['technical_implementation_reviewer', 'methodology_expert', 'results_conclusions_reviewer'] }
+    expect(keys(capstone)).toEqual(['technical_implementation_reviewer', 'methodology_expert', 'results_conclusions_reviewer', 'devils_advocate'])
+  })
+})
+
+describe('heardFrom (M12 D2)', () => {
+  const panel = ['problem_objectives_reviewer', 'methodology_expert', 'results_conclusions_reviewer', 'devils_advocate'].map((archetype_key) => ({ archetype_key }))
+
+  it('counts distinct domain askers, the open question included, out of the domain seats', () => {
+    expect(heardFrom(panel, ['problem_objectives_reviewer'])).toEqual({ count: 1, of: 3 })
+    // A follow-up from the same panelist hears no one new.
+    expect(heardFrom(panel, ['problem_objectives_reviewer', 'problem_objectives_reviewer'])).toEqual({ count: 1, of: 3 })
+    // The Devil's Advocate counts on neither side.
+    const all = ['problem_objectives_reviewer', 'methodology_expert', 'results_conclusions_reviewer', 'devils_advocate']
+    expect(heardFrom(panel, all)).toEqual({ count: 3, of: 3 })
   })
 })

@@ -39,6 +39,7 @@ from academic_defense_simulator.report import build_report
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.highlight import highlight_span
+from backend.opening_order import opening_order
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
 from backend.routing import LitReviewAccess, routed
 from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
@@ -154,6 +155,7 @@ def setup_defense(
         topic = topic or extracted.topic.strip() or PurePath(session.filename).stem
     profile = config.to_profile(domain=domain, topic=topic, document_id=session.id)
     panel, fallback_used = generate_panel(profile, compose_full_roster(profile), providers.defense)
+    panel = opening_order(panel)  # M12 Decision 1: round one walks forward through the paper
     chunks = engine_chunks(session.matrix, session.chunks, attribution_notes=attribution_notes)
     copy_bytes = chunk_copy_bytes(chunks, session.chunks)
     logger.info(

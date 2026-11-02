@@ -282,6 +282,10 @@ class ArchetypeOption(BaseModel):
     archetype_key: str
     title: str  # e.g. "Methodology Expert"
     icon: str  # the icon a panelist of this archetype gets, as in PanelistOut
+    # M12 D1: the chapter this archetype's questions belong to; /start seats the domain
+    # panel by it (backend/opening_order.py), so the client can show that order before
+    # /start answers. None for the Devil's Advocate, who always speaks last.
+    home_chapter: int | None = None
 
 
 class PanelRoster(BaseModel):

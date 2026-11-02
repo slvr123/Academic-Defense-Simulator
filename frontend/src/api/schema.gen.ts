@@ -243,6 +243,8 @@ export interface components {
             title: string;
             /** Icon */
             icon: string;
+            /** Home Chapter */
+            home_chapter?: number | null;
         };
         /**
          * CurrentQuestion

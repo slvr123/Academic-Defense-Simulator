@@ -10,6 +10,7 @@ from __future__ import annotations
 from academic_defense_simulator.models.defense_profile import DefenseType, OtherSubtype
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION, archetype_default_icon
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
+from backend.opening_order import HOME_CHAPTER
 from backend.schemas import MAX_DOMAIN_PANELISTS, ArchetypeOption, PanelConfig, PanelOptions, PanelRoster
 
 
@@ -18,6 +19,7 @@ def archetype_option(archetype_key: str) -> ArchetypeOption:
         archetype_key=archetype_key,
         title=ARCHETYPE_CONFIG[archetype_key]["archetype_title"],
         icon=archetype_default_icon(archetype_key),
+        home_chapter=HOME_CHAPTER.get(archetype_key),
     )
 
 

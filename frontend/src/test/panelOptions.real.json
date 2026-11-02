@@ -3,7 +3,8 @@
   "devils_advocate": {
     "archetype_key": "devils_advocate",
     "title": "Devil's Advocate",
-    "icon": "hacker"
+    "icon": "hacker",
+    "home_chapter": null
   },
   "rosters": [
     {
@@ -13,37 +14,44 @@
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "literature_theory_specialist",
           "title": "Literature & Theory Specialist",
-          "icon": "dean"
+          "icon": "dean",
+          "home_chapter": 2
         },
         {
           "archetype_key": "problem_objectives_reviewer",
           "title": "Research Problem & Objectives Reviewer",
-          "icon": "professor"
+          "icon": "professor",
+          "home_chapter": 1
         },
         {
           "archetype_key": "results_conclusions_reviewer",
           "title": "Results & Conclusions Reviewer",
-          "icon": "scholar"
+          "icon": "scholar",
+          "home_chapter": 4
         },
         {
           "archetype_key": "statistical_analysis_reviewer",
           "title": "Statistical & Data Analysis Reviewer",
-          "icon": "researcher"
+          "icon": "researcher",
+          "home_chapter": 3
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         },
         {
           "archetype_key": "technical_implementation_reviewer",
           "title": "Technical Implementation Reviewer",
-          "icon": "engineer"
+          "icon": "engineer",
+          "home_chapter": 3
         }
       ]
     },
@@ -54,42 +62,50 @@
         {
           "archetype_key": "technical_implementation_reviewer",
           "title": "Technical Implementation Reviewer",
-          "icon": "engineer"
+          "icon": "engineer",
+          "home_chapter": 3
         },
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "results_conclusions_reviewer",
           "title": "Results & Conclusions Reviewer",
-          "icon": "scholar"
+          "icon": "scholar",
+          "home_chapter": 4
         },
         {
           "archetype_key": "industry_practice_reviewer",
           "title": "Industry & Professional Practice Reviewer",
-          "icon": "student"
+          "icon": "student",
+          "home_chapter": 5
         },
         {
           "archetype_key": "problem_objectives_reviewer",
           "title": "Research Problem & Objectives Reviewer",
-          "icon": "professor"
+          "icon": "professor",
+          "home_chapter": 1
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         },
         {
           "archetype_key": "statistical_analysis_reviewer",
           "title": "Statistical & Data Analysis Reviewer",
-          "icon": "researcher"
+          "icon": "researcher",
+          "home_chapter": 3
         },
         {
           "archetype_key": "literature_theory_specialist",
           "title": "Literature & Theory Specialist",
-          "icon": "dean"
+          "icon": "dean",
+          "home_chapter": 2
         }
       ]
     },
@@ -100,27 +116,32 @@
         {
           "archetype_key": "literature_theory_specialist",
           "title": "Literature & Theory Specialist",
-          "icon": "dean"
+          "icon": "dean",
+          "home_chapter": 2
         },
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "problem_objectives_reviewer",
           "title": "Research Problem & Objectives Reviewer",
-          "icon": "professor"
+          "icon": "professor",
+          "home_chapter": 1
         },
         {
           "archetype_key": "statistical_analysis_reviewer",
           "title": "Statistical & Data Analysis Reviewer",
-          "icon": "researcher"
+          "icon": "researcher",
+          "home_chapter": 3
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         }
       ]
     },
@@ -131,27 +152,32 @@
         {
           "archetype_key": "problem_objectives_reviewer",
           "title": "Research Problem & Objectives Reviewer",
-          "icon": "professor"
+          "icon": "professor",
+          "home_chapter": 1
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         },
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "results_conclusions_reviewer",
           "title": "Results & Conclusions Reviewer",
-          "icon": "scholar"
+          "icon": "scholar",
+          "home_chapter": 4
         },
         {
           "archetype_key": "literature_theory_specialist",
           "title": "Literature & Theory Specialist",
-          "icon": "dean"
+          "icon": "dean",
+          "home_chapter": 2
         }
       ]
     },
@@ -162,22 +188,26 @@
         {
           "archetype_key": "technical_implementation_reviewer",
           "title": "Technical Implementation Reviewer",
-          "icon": "engineer"
+          "icon": "engineer",
+          "home_chapter": 3
         },
         {
           "archetype_key": "industry_practice_reviewer",
           "title": "Industry & Professional Practice Reviewer",
-          "icon": "student"
+          "icon": "student",
+          "home_chapter": 5
         },
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         }
       ]
     },
@@ -188,27 +218,32 @@
         {
           "archetype_key": "problem_objectives_reviewer",
           "title": "Research Problem & Objectives Reviewer",
-          "icon": "professor"
+          "icon": "professor",
+          "home_chapter": 1
         },
         {
           "archetype_key": "ethics_practicality_reviewer",
           "title": "Ethics & Practicality Reviewer",
-          "icon": "gorilla"
+          "icon": "gorilla",
+          "home_chapter": 5
         },
         {
           "archetype_key": "methodology_expert",
           "title": "Methodology Expert",
-          "icon": "advisor"
+          "icon": "advisor",
+          "home_chapter": 3
         },
         {
           "archetype_key": "industry_practice_reviewer",
           "title": "Industry & Professional Practice Reviewer",
-          "icon": "student"
+          "icon": "student",
+          "home_chapter": 5
         },
         {
           "archetype_key": "literature_theory_specialist",
           "title": "Literature & Theory Specialist",
-          "icon": "dean"
+          "icon": "dean",
+          "home_chapter": 2
         }
       ]
     }
