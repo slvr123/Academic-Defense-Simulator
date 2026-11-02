@@ -12,6 +12,17 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M12 pre-launch polish (2026-11-03)
+
+Decisions: [`v2.0-m12-decisions.md`](v2.0-m12-decisions.md); results: [`v2.0-m12-results.md`](v2.0-m12-results.md).
+M12 seats the opening round by home chapter, spreads the session header across the width, removes every glow, replaces Bench with two oxblood themes (Paper, the default, and Chamber), and adds the cold-start pre-wake and waking line.
+The launch assets the handoff called "M12" (screenshots, GIF, README and case-study audit, LinkedIn Post Inspector, handoff items 1 and 2) move to **M13**, because M12 changes what they show.
+
+**M14, parked: a chapter-biased retrieval filter.**
+The opening order alone isn't enough: 5 of 10 measured opening rounds walked forward through the paper, under the 8 of 10 I set before the data.
+On AniCheck the Research Problem & Objectives Reviewer's focus query retrieved Chapter 4-5 passages in all five sessions; on sample3 all five passed.
+I shipped the ordering anyway (it's harmless and it's what a real panel does) and parked the filter as M14, the same pattern as M9's routing.
+
 ## Active work - v2.0 M2 defense API and daily quota guard (2026-10-20)
 
 Closed 2026-10-20: merged into `main` and live on Render.

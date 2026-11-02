@@ -1,0 +1,423 @@
+{
+  "measured_at": "2026-11-02T16:03:20+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "panel": [
+    "methodology_expert",
+    "problem_objectives_reviewer",
+    "results_conclusions_reviewer"
+  ],
+  "passed": 5,
+  "total": 10,
+  "rows": [
+    {
+      "document": "AniCheck",
+      "session_id": "4d5de4a4-4f32-4e7e-8c7a-e478d7d09e68",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 15,
+          "chapter": 5
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 12,
+          "chapter": 4
+        }
+      ],
+      "passes": false,
+      "gemini_calls": 6,
+      "chapter_starts": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "a743a88a-f986-4304-9589-1d4925b79dc3",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 15,
+          "chapter": 5
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 11,
+          "chapter": 4
+        }
+      ],
+      "passes": false,
+      "gemini_calls": 4,
+      "chapter_starts": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "8267f573-5cc8-4970-89d6-f97523afdd48",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 15,
+          "chapter": 5
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 12,
+          "chapter": 4
+        }
+      ],
+      "passes": false,
+      "gemini_calls": 4,
+      "chapter_starts": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "88f7408b-828f-4001-8598-01124939b9a0",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 15,
+          "chapter": 5
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 11,
+          "chapter": 4
+        }
+      ],
+      "passes": false,
+      "gemini_calls": 7,
+      "chapter_starts": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "98b41e2d-a58d-4aff-aeea-b04dd63fcd73",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 15,
+          "chapter": 5
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 11,
+          "chapter": 4
+        }
+      ],
+      "passes": false,
+      "gemini_calls": 4,
+      "chapter_starts": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "59790db6-9caf-432d-92eb-18014ce46b50",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 61,
+          "chapter": 3
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "1118f321-c378-45b0-8d7b-b61c02143c99",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 61,
+          "chapter": 3
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "ad4add7c-f225-4f01-84f5-cc6b6cf1a708",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 6,
+      "chapter_starts": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "b48765ee-64e4-4d12-87b1-d603524320cf",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 7,
+      "chapter_starts": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "f91c6a96-f8c7-4a3b-9409-14d729d88119",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 23,
+      "chapter_starts": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    }
+  ]
+}
