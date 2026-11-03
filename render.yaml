@@ -68,11 +68,11 @@ services:
       - key: VITE_SITE_URL
         value: https://ads-frontend-wpyc.onrender.com
 
-  # M13 D0b: the public address, defense-simulator.onrender.com. A new service beside
+  # M13 D0b: the public address, academic-defense-simulator.onrender.com. New services beside
   # ads-frontend rather than a rename (Render fixes a service's subdomain at creation);
-  # ads-frontend is removed once this one is verified live.
+  # ads-frontend is removed once the new address is verified live.
   - type: web
-    name: defense-simulator
+    name: academic-defense-simulator
     runtime: static
     branch: main
     rootDir: frontend
@@ -91,4 +91,27 @@ services:
         value: https://ads-backend-bv63.onrender.com
       # M10 N12: the static site's own URL, for the absolute og:image and og:url in index.html.
       - key: VITE_SITE_URL
-        value: https://defense-simulator.onrender.com
+        value: https://academic-defense-simulator.onrender.com
+
+  # M13 D0b: a second address, defense-sim.onrender.com, same build.
+  - type: web
+    name: defense-sim
+    runtime: static
+    branch: main
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - frontend/**
+    envVars:
+      # Vite 8 needs Node 20.19+; this is the version the build was tested with.
+      - key: NODE_VERSION
+        value: 24.19.0
+      # Baked into the public JavaScript at build time: never a secret.
+      - key: VITE_API_BASE_URL
+        value: https://ads-backend-bv63.onrender.com
+      # M10 N12: the static site's own URL, for the absolute og:image and og:url in index.html.
+      - key: VITE_SITE_URL
+        value: https://defense-sim.onrender.com
