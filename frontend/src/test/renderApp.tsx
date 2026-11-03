@@ -26,9 +26,17 @@ export function defaultServer(): FakeServer {
   return server
 }
 
-export function renderApp() {
-  // shouldAdvanceTime lets findBy* poll in real time while tests can still jump the clock.
-  vi.useFakeTimers({ shouldAdvanceTime: true })
+/** `clock: 'strict'` (M13 D2): the fake clock moves only when the test advances it, so a
+ * test that counts timer-driven requests can't be pushed past a deadline by a slow
+ * machine. findBy* can't poll on that clock: use advance() and then getBy*. */
+export function renderApp({ clock = 'real-time' }: { clock?: 'real-time' | 'strict' } = {}) {
+  // shouldAdvanceTime lets findBy* poll in real time while tests can still jump the clock;
+  // the price is that real time leaks into the fake clock.
+  vi.useFakeTimers(clock === 'strict' ? {} : { shouldAdvanceTime: true })
+  // Testing Library drains each user-event call with a setTimeout(0) that it advances only
+  // for Jest's fake timers; on a strict clock that timer would never fire. Presenting
+  // Vitest's clock as Jest's lets it advance that 0 ms. setup.ts unstubs it after the test.
+  if (clock === 'strict') vi.stubGlobal('jest', { advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms) })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(
     <StrictMode>
@@ -59,6 +67,7 @@ export async function startDefense(user: ReturnType<typeof userEvent.setup>, voi
 
 /** Sends a document and answers the upload with 202, leaving the session queued. */
 export async function uploadAccepted(server: FakeServer, user: ReturnType<typeof userEvent.setup>, position = 1) {
+  await advance(0) // the page-load calls answer; on a strict clock findBy* would not wait for them
   await screen.findByText(/defenses left today/)
   await submitDocument(user)
   await act(async () => server.upload.current?.respond(202, { session_id: 'abc', status: 'queued', queue_position: position }))

@@ -161,31 +161,35 @@ describe('upload, queue and embedding (D16)', () => {
     expect(screen.getByText('50%')).toBeInTheDocument()
   })
 
+  // M13 D2: the polling tests run on a strict fake clock. On the real-time-leaking one, a
+  // loaded machine let a 2 s poll fire inside advance(1999), and the count check failed.
   it('shows the queue position, then embedding progress, then ready, polling every 2 s', async () => {
     const server = defaultServer()
     let state: unknown = { status: 'queued', queue_position: 1 }
     server.on('GET /sessions/abc', () => ({ status: 200, body: state }))
-    const user = renderApp()
+    const user = renderApp({ clock: 'strict' })
     await uploadAccepted(server, user, 2)
     expect(screen.getByText('In line - position 2')).toBeInTheDocument()
 
     await advance(1999)
     expect(server.count('GET /sessions/abc')).toBe(0)
     await advance(1)
-    expect(await screen.findByText('In line - position 1')).toBeInTheDocument()
+    expect(server.count('GET /sessions/abc')).toBe(1)
+    expect(screen.getByText('In line - position 1')).toBeInTheDocument()
 
     state = { status: 'embedding', progress: 0.4 }
     await advance(2000)
-    expect(await screen.findByText('Reading your document')).toBeInTheDocument()
+    expect(server.count('GET /sessions/abc')).toBe(2)
+    expect(screen.getByText('Reading your document')).toBeInTheDocument()
     expect(screen.getByText('Large documents take about a minute.')).toBeInTheDocument()
     expect(screen.getByText('40%')).toBeInTheDocument()
 
     state = { status: 'ready', chunk_count: 92, defense: 'not_started' }
     await advance(2000)
-    expect(await screen.findByText('Your document is ready')).toBeInTheDocument()
-    const polls = server.count('GET /sessions/abc')
+    expect(server.count('GET /sessions/abc')).toBe(3)
+    expect(screen.getByText('Your document is ready')).toBeInTheDocument()
     await advance(10_000)
-    expect(server.count('GET /sessions/abc')).toBe(polls) // polling stopped
+    expect(server.count('GET /sessions/abc')).toBe(3) // polling stopped
   })
 
   it('shows the scanned-PDF message from error_code', async () => {
@@ -194,34 +198,35 @@ describe('upload, queue and embedding (D16)', () => {
       status: 200,
       body: { status: 'failed', error: 'This PDF looks scanned: (0 characters).', error_code: 'scanned_pdf' },
     })
-    const user = renderApp()
+    const user = renderApp({ clock: 'strict' })
     await uploadAccepted(server, user)
     await advance(2000)
-    expect(await screen.findByText("This PDF needs selectable text - scanned pages can't be read.")).toBeInTheDocument()
+    expect(screen.getByText("This PDF needs selectable text - scanned pages can't be read.")).toBeInTheDocument()
   })
 
   it('shows any other failure reason verbatim', async () => {
     const server = defaultServer()
     server.on('GET /sessions/abc', { status: 200, body: { status: 'failed', error: 'Something went wrong while processing this PDF.' } })
-    const user = renderApp()
+    const user = renderApp({ clock: 'strict' })
     await uploadAccepted(server, user)
     await advance(2000)
-    expect(await screen.findByText('Something went wrong while processing this PDF.')).toBeInTheDocument()
+    expect(screen.getByText('Something went wrong while processing this PDF.')).toBeInTheDocument()
   })
 
   it('pauses polling on a network error and resumes on Try again', async () => {
     const server = defaultServer()
     server.on('GET /sessions/abc', 'network')
-    const user = renderApp()
+    const user = renderApp({ clock: 'strict' })
     await uploadAccepted(server, user)
     await advance(2000)
-    expect(await screen.findByText("Can't reach the server.")).toBeInTheDocument()
+    expect(screen.getByText("Can't reach the server.")).toBeInTheDocument()
     await advance(10_000)
     expect(server.count('GET /sessions/abc')).toBe(1)
     server.on('GET /sessions/abc', { status: 200, body: { status: 'embedding', progress: 0.1 } })
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     await advance(2000)
-    expect(await screen.findByText('Reading your document')).toBeInTheDocument()
+    expect(server.count('GET /sessions/abc')).toBe(2)
+    expect(screen.getByText('Reading your document')).toBeInTheDocument()
   })
 })
 
