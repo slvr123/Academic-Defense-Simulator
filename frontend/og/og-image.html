@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- M10 N12: the share image, 1200x630, in the Bench style. Rendered to
+<!-- M10 N12: the share image, 1200x630; M13 D5 recoloured it in Red Pen, the light theme
+     (src/index.css), layout unchanged. Rendered to
      public/og-image.png (and the favicon PNGs from public/favicon.svg) by
      scripts/render_identity.py; re-run it after changing this file. -->
 <html lang="en">
@@ -18,8 +19,8 @@
         height: 630px;
         box-sizing: border-box;
         padding: 72px 80px 64px;
-        background: #14120f;
-        color: #ede6d6;
+        background: #f5f4f1;
+        color: #161616;
         font-family: "Instrument Sans", sans-serif;
         display: flex;
         flex-direction: column;
@@ -37,25 +38,25 @@
         gap: 12px;
         padding: 14px 16px;
         border-radius: 12px;
-        border: 1.5px solid #37312a;
-        background: #1a1714;
+        border: 1.5px solid #dad8d3;
+        background: #ffffff;
         font-size: 18px;
         font-weight: 600;
-        color: #c9c0ae;
+        color: #625e58;
       }
-      .card img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #2e2923; }
-      .card.lit { border-color: #e3a75b; background: #2a2219; color: #ede6d6; }
-      .card.lit img { border-color: #e3a75b; }
-      .card.devil { border-style: dashed; border-color: #806a64; }
+      .card img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #dad8d3; }
+      .card.lit { border-color: #a8201a; background: #ffffff; color: #161616; }
+      .card.lit img { border-color: #a8201a; }
+      .card.devil { border-style: dashed; border-color: #c4c1ba; }
     </style>
   </head>
   <body>
     <div class="mark">
       <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect width="64" height="64" rx="14" fill="#1c1915" />
-        <path d="M37 13H22a4 4 0 0 0-4 4v30a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V22z" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round" />
-        <path d="M37 13v9h9" fill="none" stroke="#E3A75B" stroke-width="3.5" stroke-linejoin="round" />
-        <path d="M24 33h16M24 40h10" stroke="#EDE6D6" stroke-width="3.5" stroke-linecap="round" />
+        <rect width="64" height="64" rx="14" fill="#A8201A" />
+        <path d="M37 13H22a4 4 0 0 0-4 4v30a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V22z" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linejoin="round" />
+        <path d="M37 13v9h9" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linejoin="round" />
+        <path d="M24 33h16M24 40h10" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
       </svg>
       <span class="wordmark">Academic Defense Simulator</span>
     </div>
