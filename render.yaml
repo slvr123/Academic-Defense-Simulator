@@ -1,4 +1,4 @@
-# Render Blueprint for v2.0: the backend and the frontend static site. v1 (Streamlit)
+# Render Blueprint for v2.0: the backend, the frontend static site, and a redirect site. v1 (Streamlit)
 # does not deploy from here. Each service's build filter keeps the other from redeploying it.
 services:
   - type: web
@@ -46,31 +46,9 @@ services:
       - key: MIMO_API_KEY
         sync: false
 
-  - type: web
-    name: ads-frontend
-    runtime: static
-    branch: main
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    autoDeploy: true
-    buildFilter:
-      paths:
-        - frontend/**
-    envVars:
-      # Vite 8 needs Node 20.19+; this is the version the build was tested with.
-      - key: NODE_VERSION
-        value: 24.19.0
-      # Baked into the public JavaScript at build time: never a secret.
-      - key: VITE_API_BASE_URL
-        value: https://ads-backend-bv63.onrender.com
-      # M10 N12: the static site's own URL, for the absolute og:image and og:url in index.html.
-      - key: VITE_SITE_URL
-        value: https://ads-frontend-wpyc.onrender.com
-
-  # M13 D0b: the public address, academic-defense-simulator.onrender.com. New services beside
-  # ads-frontend rather than a rename (Render fixes a service's subdomain at creation);
-  # ads-frontend is removed once the new address is verified live.
+  # The public site (M13 D0b): academic-defense-simulator.onrender.com. It replaced
+  # ads-frontend as a new service, not a rename, since Render fixes a service's subdomain
+  # when it's created.
   - type: web
     name: academic-defense-simulator
     runtime: static
@@ -93,25 +71,20 @@ services:
       - key: VITE_SITE_URL
         value: https://academic-defense-simulator.onrender.com
 
-  # M13 D0b: a second address, defense-sim.onrender.com, same build.
+  # M13 D0b: defense-sim.onrender.com is a pure redirect. Every path answers 301 with the same
+  # path on the public site. Render skips a route wherever a file exists at that path, so this
+  # site publishes an empty directory: nothing is built from the repo, nothing can shadow the rule.
   - type: web
     name: defense-sim
     runtime: static
     branch: main
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    buildCommand: mkdir -p redirect-only
+    staticPublishPath: redirect-only
     autoDeploy: true
     buildFilter:
       paths:
-        - frontend/**
-    envVars:
-      # Vite 8 needs Node 20.19+; this is the version the build was tested with.
-      - key: NODE_VERSION
-        value: 24.19.0
-      # Baked into the public JavaScript at build time: never a secret.
-      - key: VITE_API_BASE_URL
-        value: https://ads-backend-bv63.onrender.com
-      # M10 N12: the static site's own URL, for the absolute og:image and og:url in index.html.
-      - key: VITE_SITE_URL
-        value: https://defense-sim.onrender.com
+        - render.yaml
+    routes:
+      - type: redirect
+        source: /*
+        destination: https://academic-defense-simulator.onrender.com/*
