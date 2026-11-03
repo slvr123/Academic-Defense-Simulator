@@ -83,6 +83,23 @@ My first user-facing slice makes panel selection prominent through selectable ca
 The remaining slices cover retrieval quality, scoring, a complete short demo, recovery, public-operation controls, and a small usability pilot.
 All of these changes are planned; the existing version history below records earlier work.
 
+## Operations
+
+Facts about how the v2 deployment runs, recorded in M13 (Decision 6).
+Nothing here is a milestone.
+
+- **Backend:** Render's free tier.
+  It spins down after 15 idle minutes and takes about a minute to wake.
+- **Pinger:** cron-job.org calls `/status` every 10 minutes, 06:00-23:59 Asia/Singapore.
+  That's about 558 of the 750 free instance hours a month.
+- **What I saw on 2026-11-03:** M14 went live at 13:33.
+  Pings at 13:50, 14:00 and 14:10 got `503` in about 1 s.
+  A browser visit at about 14:13 woke the service, and every ping from 14:20 on returned `200`.
+- **Working conclusion, to confirm against the 2026-11-04 06:00-06:30 runs:** the pinger keeps an awake service awake but may not wake a sleeping one.
+  The first real visit does that, through the frontend's pre-wake `/status` call.
+- **Neon:** the quota pool holds no idle connection (`min_size=0`, M14), so nothing reconnects in the background.
+- **Real-database tests:** with `TEST_DATABASE_URL` set, `test_quota_db.py` and the M14 pool tests ran 12 passed, 0 skipped on 2026-11-04 (10 in `test_quota_db.py`, 2 in `test_quota_pool.py`); output in [`v2.0-m14-results.md`](v2.0-m14-results.md) section 7.
+
 ## Current position
 
 - **v0.2 complete.** Multi-turn agent loop, adaptive difficulty, follow-up branching,
