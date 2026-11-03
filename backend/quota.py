@@ -166,7 +166,15 @@ class PostgresQuotaStore:
     """daily_usage in `schema` (tests use a throwaway one). The table is created on
     first use, so a database that was asleep at startup is picked up later."""
 
-    def __init__(self, conninfo: str, *, schema: str = "public", max_size: int = 3, timeout_s: float = 10.0) -> None:
+    def __init__(
+        self,
+        conninfo: str,
+        *,
+        schema: str = "public",
+        max_size: int = 3,
+        timeout_s: float = 10.0,
+        max_idle_s: float = 600.0,
+    ) -> None:
         self._timeout_s = timeout_s
         self._table = sql.Identifier(schema, "daily_usage")
         self._schema = sql.Identifier(schema)
@@ -177,8 +185,13 @@ class PostgresQuotaStore:
         # check: Neon suspends after 5 idle minutes and the pool's connections go
         # dead without the pool knowing, so every checkout first tests the connection
         # and, if it's dead, replaces it before handing one out.
+        # min_size=0 (M14 D5): no connection is held while idle. With one held, the pool
+        # replaced it about hourly (max_lifetime), and each new connection through Neon's
+        # proxy could wake a suspended compute; the keep-alive pinger keeps this process
+        # up 18 hours a day. Now idle connections close after max_idle_s and nothing
+        # reconnects until a quota call needs one.
         self._pool = ConnectionPool(
-            conninfo, min_size=1, max_size=max_size, open=False, timeout=timeout_s,
+            conninfo, min_size=0, max_size=max_size, open=False, timeout=timeout_s, max_idle=max_idle_s,
             check=ConnectionPool.check_connection,
             kwargs={"autocommit": True, "prepare_threshold": None, "connect_timeout": int(timeout_s)},
         )
