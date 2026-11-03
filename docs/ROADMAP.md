@@ -12,13 +12,23 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M14 opening-question chapter filter (2026-11-03)
+
+Closed 2026-11-03; **M13 (launch assets) is next.**
+Decisions: [`v2.0-m14-decisions.md`](v2.0-m14-decisions.md); results: [`v2.0-m14-results.md`](v2.0-m14-results.md).
+M14 ran before M13 on purpose, so M13's screenshots show the result; the numbering stays as it was.
+Chapters are now detected at ingest from the PDF's own headings, and each domain panelist's first question draws only from its home chapter, on top of M9's routing.
+With the filter, 10 of 10 measured opening rounds walked forward through the paper, against 5 of 10 in M12, so `ADS_OPENING_CHAPTER_FILTER` defaults to on.
+The recorded demo was re-recorded on the recommended thesis preset and now opens at Chapter 1.
+The quota pool no longer holds an idle connection to Neon (`min_size=0`), so the keep-alive pinger can't keep waking it.
+
 ## Active work - v2.0 M12 pre-launch polish (2026-11-03)
 
 Decisions: [`v2.0-m12-decisions.md`](v2.0-m12-decisions.md); results: [`v2.0-m12-results.md`](v2.0-m12-results.md).
 M12 seats the opening round by home chapter, spreads the session header across the width, removes every glow, replaces Bench with two oxblood themes (Paper, the default, and Chamber), and adds the cold-start pre-wake and waking line.
 The launch assets the handoff called "M12" (screenshots, GIF, README and case-study audit, LinkedIn Post Inspector, handoff items 1 and 2) move to **M13**, because M12 changes what they show.
 
-**M14, parked: a chapter-biased retrieval filter.**
+**M14, parked here and done the same day (see the M14 entry above): a chapter-biased retrieval filter.**
 The opening order alone isn't enough: 5 of 10 measured opening rounds walked forward through the paper, under the 8 of 10 I set before the data.
 On AniCheck the Research Problem & Objectives Reviewer's focus query retrieved Chapter 4-5 passages in all five sessions; on sample3 all five passed.
 I shipped the ordering anyway (it's harmless and it's what a real panel does) and parked the filter as M14, the same pattern as M9's routing.
