@@ -8,7 +8,9 @@ Usage (repo root, any Python 3.11+):
 
 Reads the colour tokens from frontend/src/index.css and prints each pair's ratio per
 theme against its bar: 4.5:1 for body text, 3:1 for the non-text marks the design relies
-on (the active card's accent border, the focus ring). The Devil's Advocate's dashed
+on (the lit card's red border, the ink focus ring and selected borders). M13 D0 split the
+one accent into two roles: ink (action-*) for what the user operates, panel red (accent)
+for the panel only. The Devil's Advocate's dashed
 border is decorative in both themes (its card is also labelled "Speaks last" and by
 name), so it is reported, not required. Exit status 1 if any required pair fails.
 """
@@ -28,28 +30,44 @@ PAIRS = [
     ("ink", "ground", BODY, "page text"),
     ("ink", "card", BODY, "card text, questions"),
     ("ink", "field", BODY, "answer box text"),
-    ("ink", "accent-soft", BODY, "selected preset, hovered menu row"),
+    ("ink", "action-soft", BODY, "selected preset, hovered menu row"),
     ("ink-dim", "field", BODY, "your answer, recorded"),
     ("muted", "card", BODY, "secondary text on cards, panel card role and status"),
     ("muted", "ground", BODY, "header metadata"),
     ("muted", "field", BODY, "score labels, drop zone limits"),
-    ("muted", "accent-soft", BODY, "pressed preset's members"),
-    ("accent-text", "card", BODY, "'Dr. X asks', current step, 'Speaking'"),
-    ("accent-text", "ground", BODY, "'Recorded demo' badge, drop zone 'browse'"),
-    ("accent-text", "accent-soft", BODY, "'Overall' label"),
-    ("ink", "card", BODY, "shimmer band passing over 'Reviewing'"),
-    ("on-accent", "accent", BODY, "primary button"),
-    ("on-accent", "accent-hover", BODY, "primary button, hover"),
+    ("muted", "action-soft", BODY, "pressed preset's members"),
+    # Ink (M13 D0): what the user operates.
+    ("on-action", "action", BODY, "primary button"),
+    ("on-action", "action-hover", BODY, "primary button, hover"),
+    ("on-action", "action-pressed", BODY, "primary button, pressed"),
+    ("action-text", "card", BODY, "current step, 'See the passage', 'Overall' heading"),
+    ("action-text", "ground", BODY, "'Recorded demo' badge"),
+    ("action-text", "field", BODY, "drop zone 'browse' link"),
+    ("action-text", "action-soft", BODY, "'Overall' score tile label"),
+    ("action-band", "card", BODY, "shimmer band over the current step 'Reviewing'"),
     ("muted", "rail", BODY, "disabled button"),
+    ("action", "card", LARGE, "selected border, focus ring, radio dot (non-text)"),
+    ("action", "ground", LARGE, "focus ring on the page (non-text)"),
+    # Panel red: only the panel.
+    ("accent-text", "card", BODY, "'Dr. X asks', 'Speaking'"),
+    ("accent-text", "ground", BODY, "red text on the page background"),
+    ("ink", "card", BODY, "shimmer band passing over the lit card's 'Reviewing'"),
+    ("accent", "card", LARGE, "lit card border, cited passage card (non-text)"),
+    ("accent", "ground", LARGE, "lit card border on the page (non-text)"),
     ("paper-ink", "paper", BODY, "source passage"),
     ("paper-ink", "highlight", BODY, "highlighted reference"),
+    ("ink", "highlight", BODY, "text on the highlight"),
     ("paper-muted", "paper", BODY, "passage page label"),
     ("ink", "warn-soft", BODY, "notice text"),
     ("ink", "danger-soft", BODY, "error notice text"),
     ("danger", "ground", BODY, "'no defenses left' line"),
-    ("accent", "card", LARGE, "lit card border, focus ring (non-text)"),
-    ("accent", "ground", LARGE, "focus ring on the page (non-text)"),
     ("devil-line", "surface", None, "Devil's Advocate dashed card (decorative)"),
+]
+
+# M13 D0's own checks for Red Pen that no element draws today; Paper only, since Chamber
+# never puts its red on the highlight.
+PAPER_ONLY_PAIRS = [
+    ("accent-text", "highlight", BODY, "decision check: red over the passage highlight"),
 ]
 
 # M10 N11: the print stylesheet's own tokens (index.css, @media print), black on white.
@@ -60,9 +78,10 @@ PRINT_PAIRS = [
     ("paper-ink", "paper", BODY, "print: source passage"),
     ("paper-ink", "highlight", BODY, "print: highlighted reference (also underlined)"),
     ("paper-muted", "paper", BODY, "print: passage page label"),
-    ("accent", "card", BODY, "print: 'Overall' label"),
-    ("ink", "accent-soft", BODY, "print: a question's Overall score tile"),
-    ("accent", "accent-soft", BODY, "print: the tile's 'Overall' label"),
+    ("action-text", "card", BODY, "print: 'Overall' label"),
+    ("ink", "action-soft", BODY, "print: a question's Overall score tile"),
+    ("action-text", "action-soft", BODY, "print: the tile's 'Overall' label"),
+    ("accent-text", "card", BODY, "print: a panelist's red label"),
     ("line-strong", "card", LARGE, "print: card borders (non-text)"),
 ]
 
@@ -103,7 +122,7 @@ def main() -> int:
     failed = 0
     checked = 0
     print(f"{'theme':8} {'foreground':13} {'background':12} {'ratio':>6} {'bar':>4}  use")
-    for theme, pairs in (("paper", PAIRS), ("chamber", PAIRS), ("print", PRINT_PAIRS)):
+    for theme, pairs in (("paper", PAIRS + PAPER_ONLY_PAIRS), ("chamber", PAIRS), ("print", PRINT_PAIRS)):
         colours = tokens(theme)
         for fg, bg, bar, use in pairs:
             value = ratio(colours[fg], colours[bg])

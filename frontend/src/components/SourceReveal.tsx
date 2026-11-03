@@ -54,12 +54,12 @@ export function SourceReveal({ turn, onOpenPage, suspended = false }: Props) {
         data-reveal-bar
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-accent bg-card px-4 text-left text-sm transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-action bg-card px-4 text-left text-sm transition-colors hover:bg-action-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none"
       >
         <span className="min-w-0 flex-1 truncate">
           {panelistName(question.panelist.name)} was reading{page !== undefined && ` p. ${page}`}
         </span>
-        <span className="shrink-0 font-medium text-accent-text">{' '}· See the passage</span>
+        <span className="shrink-0 font-medium text-action-text">{' '}· See the passage</span>
       </button>
       {open && !suspended && <RevealSheet turn={turn} onOpenPage={onOpenPage} at={at} onAt={setAt} onClose={close} />}
     </>
@@ -168,7 +168,7 @@ function RevealCard({ turn, onOpenPage, mode, at, onAt, onClose }: CardProps) {
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
-      className={`flex min-w-0 touch-pan-y flex-col gap-3 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`flex min-w-0 touch-pan-y flex-col gap-3 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action ${
         sheet ? 'h-full rounded-t-2xl p-4' : 'absolute inset-0 rounded-2xl border border-accent bg-card p-5'
       }`}
     >
@@ -281,7 +281,7 @@ function PageButton({ label, disabled = false, onClick, children }: { label: str
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-line-strong text-lg text-ink transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:border-line disabled:text-faint motion-reduce:transition-none"
+      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-line-strong text-lg text-ink transition-colors hover:border-action focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:border-line disabled:text-faint motion-reduce:transition-none"
     >
       {children}
     </button>

@@ -104,7 +104,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
   const question = step >= 1 && step < lastStep ? questionAt(recording, step) : null
   const typeLabel = `${DEFENSE_TYPE_LABELS[recording.panel_config.defense_type]} defense`
   const badge = (
-    <span className="rounded-md border border-accent px-2 py-0.5 font-mono text-[11px] tracking-[0.08em] text-accent-text uppercase">Recorded demo</span>
+    <span className="rounded-md border border-action px-2 py-0.5 font-mono text-[11px] tracking-[0.08em] text-action-text uppercase">Recorded demo</span>
   )
 
   let header

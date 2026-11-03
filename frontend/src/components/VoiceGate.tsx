@@ -24,7 +24,7 @@ export function VoiceGate({ voice, ttsAvailable, onChoose }: { voice: VoiceChoic
       {options.map((option) => (
         <label
           key={option.value}
-          className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${voice === option.value ? 'border-accent bg-accent-soft' : 'border-line bg-card'}`}
+          className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${voice === option.value ? 'border-action bg-action-soft' : 'border-line bg-card'}`}
         >
           <input
             type="radio"
@@ -32,7 +32,7 @@ export function VoiceGate({ voice, ttsAvailable, onChoose }: { voice: VoiceChoic
             value={option.value}
             checked={voice === option.value}
             onChange={() => onChoose(option.value)}
-            className="mt-0.5 accent-accent"
+            className="mt-0.5 accent-action"
           />
           <span>
             <span className="block font-medium">{option.label}</span>

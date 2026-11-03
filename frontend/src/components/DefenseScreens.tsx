@@ -139,9 +139,9 @@ function Steps({ current }: { current: TurnStep }) {
         }
         if (i === at) {
           return (
-            <li key={step} aria-current="step" className="flex items-center gap-1.5 text-accent-text">
-              <span aria-hidden className="size-[7px] rounded-full bg-accent" />
-              {step === 'Reviewing' ? <span className="shimmer-text animate-shimmer motion-reduce:animate-none">{step}</span> : step}
+            <li key={step} aria-current="step" className="flex items-center gap-1.5 text-action-text">
+              <span aria-hidden className="size-[7px] rounded-full bg-action" />
+              {step === 'Reviewing' ? <span className="shimmer-text shimmer-ink animate-shimmer motion-reduce:animate-none">{step}</span> : step}
             </li>
           )
         }
@@ -339,7 +339,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
                       event.preventDefault()
                       if (canSend) onSend()
                     }}
-                    className="w-full resize-y rounded-xl border border-line-strong bg-field p-4 text-base leading-relaxed text-ink placeholder:text-subtle focus:border-accent focus:outline-none"
+                    className="w-full resize-y rounded-xl border border-line-strong bg-field p-4 text-base leading-relaxed text-ink placeholder:text-subtle focus:border-action focus:outline-none"
                   />
                   {notice && (
                     <NoticeBanner notice={notice} onRetry={onSend} onAutoRetry={onAutoRetry} retryLabel={notice.kind === 'turnFailed' ? 'Send it again' : 'Try again'} />
@@ -349,7 +349,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
                       <button
                         type="button"
                         onClick={() => setTranscriptOpen(true)}
-                        className="flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+                        className="flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
                           <path d="M4 6h16M4 12h16M4 18h10" />

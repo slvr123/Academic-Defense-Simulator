@@ -19,12 +19,12 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primar
 export function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
   const look =
     variant === 'primary'
-      ? 'bg-accent font-semibold text-on-accent hover:bg-accent-hover disabled:bg-rail disabled:text-muted'
-      : 'border border-line-strong bg-card text-ink hover:border-accent disabled:text-subtle'
+      ? 'bg-action font-semibold text-on-action hover:bg-action-hover active:bg-action-pressed disabled:bg-rail disabled:text-muted'
+      : 'border border-line-strong bg-card text-ink hover:border-action disabled:text-subtle'
   return (
     <button
       type="button"
-      className={`min-h-11 rounded-xl px-5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed motion-reduce:transition-none ${look} ${className}`}
+      className={`min-h-11 rounded-xl px-5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:cursor-not-allowed motion-reduce:transition-none ${look} ${className}`}
       {...props}
     />
   )
@@ -43,7 +43,7 @@ export function ProgressBar({ value, label }: { value: number; label: string }) 
         aria-valuenow={percent}
         className="h-2 w-full overflow-hidden rounded-full bg-line"
       >
-        <div className="h-full rounded-full bg-accent transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-action transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${percent}%` }} />
       </div>
       <p className="mt-2 font-mono text-xs text-muted">{percent}%</p>
     </div>
@@ -52,7 +52,7 @@ export function ProgressBar({ value, label }: { value: number; label: string }) 
 
 /** A slow pulse that says "working" next to the words that say what. Never shown alone. */
 export function Working() {
-  return <span aria-hidden className="inline-block size-2.5 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
+  return <span aria-hidden className="inline-block size-2.5 animate-pulse rounded-full bg-action motion-reduce:animate-none" />
 }
 
 /** The document icon the Bench design puts beside anything about the candidate's paper. */

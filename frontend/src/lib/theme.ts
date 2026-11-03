@@ -11,7 +11,7 @@ export const THEME_STORAGE_KEY = 'ads-theme'
 export const DEFAULT_THEME: Theme = 'paper'
 
 /** The browser chrome colour per theme: each theme's page background. */
-export const THEME_COLOR: Record<Theme, string> = { paper: '#F4EFE6', chamber: '#121214' }
+export const THEME_COLOR: Record<Theme, string> = { paper: '#F5F4F1', chamber: '#121214' }
 
 type ThemeStorage = Pick<Storage, 'getItem' | 'setItem'>
 

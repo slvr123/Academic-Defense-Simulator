@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
-/* Design tokens (M12 D4): two themes over one oxblood accent. Paper, the light theme,
-   is the default on every first visit; Chamber is the dark one, chosen with the header
-   toggle (src/lib/theme.ts sets data-theme on <html>). @theme holds Paper, so every
-   --color-* is a CSS variable on :root that utilities such as bg-card or text-muted
-   read; [data-theme="chamber"] below redefines the same variables. Components use these,
-   never one-off hex values. scripts/check_contrast.py checks every pair in both themes.
-   The decisions doc gives eight roles per theme; the older, finer tokens map onto them. */
+/* Design tokens. Two themes over one set of roles. Paper, the light theme, is the default on
+   every first visit; its values are Red Pen (M13 D0): your thesis being marked up, black
+   ink for everything the user operates, red only for the panel. Chamber is the dark one
+   (M12 D4), chosen with the header toggle (src/lib/theme.ts sets data-theme on <html>).
+   @theme holds Paper, so every --color-* is a CSS variable on :root that utilities such
+   as bg-card or text-muted read; [data-theme="chamber"] below redefines the same
+   variables. Components use these, never one-off hex values.
+   scripts/check_contrast.py checks every pair in both themes. */
 @theme {
   /* Loaded from Google Fonts in index.html, with system fallbacks while they arrive. */
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -14,40 +15,52 @@
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
   /* Page background, and the inset fields (answer box, drop zone) that sit on cards. */
-  --color-ground: #f4efe6;
-  --color-field: #f4efe6;
-  /* Surfaces: cards, the panel cards, the voice menu. */
-  --color-surface: #fbf8f2;
-  --color-card: #fbf8f2;
-  --color-raised: #fbf8f2;
+  --color-ground: #f5f4f1;
+  --color-field: #f5f4f1;
+  /* Surfaces: cards, the question, the panel cards, the voice menu. */
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-raised: #ffffff;
 
   /* Borders. */
-  --color-line: #dcd3c4;
-  --color-line-strong: #dcd3c4;
-  --color-rail: #eee8dd; /* a disabled primary button */
-  --color-devil-line: #c9bfae; /* the Devil's Advocate's dashed card, the drop zone */
+  --color-line: #dad8d3;
+  --color-line-strong: #dad8d3;
+  --color-rail: #ebe9e5; /* a disabled primary button */
+  --color-devil-line: #c4c1ba; /* the Devil's Advocate's dashed card, the drop zone */
 
   /* Text. */
-  --color-ink: #1f1d1a;
-  --color-ink-dim: #1f1d1a; /* recorded answers */
-  --color-muted: #6e675d;
-  --color-subtle: #6e675d;
-  --color-faint: #6e675d; /* upcoming turn steps */
+  --color-ink: #161616;
+  --color-ink-dim: #161616; /* recorded answers */
+  --color-muted: #625e58;
+  --color-subtle: #625e58;
+  --color-faint: #625e58; /* upcoming turn steps */
 
-  /* The one accent: CTAs, the active panelist's border, the current step, selections.
-     accent is the fill and border colour; accent-text is the accent used as text. */
-  --color-accent: #7a2e33;
-  --color-accent-hover: #62242a;
-  --color-accent-text: #7a2e33;
-  --color-accent-soft: #f3e9e4; /* a selected preset or option, a hovered menu row */
-  --color-on-accent: #fbf8f2;
+  /* Ink (M13 D0): everything the user operates. Primary buttons, selected pills and
+     presets, links, the upload icon, focus rings, the current turn step. action is the
+     fill and border colour; action-text is it used as text; action-soft is the faint
+     neutral fill behind a selected, unfilled choice; action-band is the light passing
+     over the current step while it shimmers. */
+  --color-action: #1c1c1c;
+  --color-action-hover: #3a3a3a;
+  --color-action-pressed: #000000;
+  --color-action-text: #1c1c1c;
+  --color-action-soft: #efeeea;
+  --color-action-band: #625e58;
+  --color-on-action: #ffffff;
 
-  /* The source passage, printed on a card of its own. */
-  --color-paper: #fbf8f2;
-  --color-paper-ink: #1f1d1a;
-  --color-paper-muted: #6e675d;
-  --color-paper-edge: #dcd3c4;
-  --color-highlight: #ecd6d2;
+  /* Panel red: only the panel. The speaking card's border and "Speaking" label, "Dr. X
+     asks", the cited passage's card, the panel's portraits. Never on anything the user
+     clicks. accent is the fill and border colour; accent-text is it used as text. */
+  --color-accent: #a8201a;
+  --color-accent-text: #a8201a;
+
+  /* The source passage, printed on a card of its own; the highlight is a fill behind the
+     cited words. */
+  --color-paper: #ffffff;
+  --color-paper-ink: #161616;
+  --color-paper-muted: #625e58;
+  --color-paper-edge: #dad8d3;
+  --color-highlight: #f6dcd9;
 
   /* Notices. */
   --color-warn: #8a5a12;
@@ -102,11 +115,17 @@
   --color-muted: #8b8a86;
   --color-subtle: #8b8a86;
   --color-faint: #8b8a86;
+  /* Chamber keeps one accent for both roles (M13 D0 changes Paper only): ink is its
+     M12 accent, so nothing in the dark theme moves. */
+  --color-action: #a8474d;
+  --color-action-hover: #963f45;
+  --color-action-pressed: #963f45;
+  --color-action-text: #c9676d;
+  --color-action-soft: #241b1d;
+  --color-action-band: #e8e6e1;
+  --color-on-action: #f4efea;
   --color-accent: #a8474d;
-  --color-accent-hover: #963f45;
   --color-accent-text: #c9676d;
-  --color-accent-soft: #241b1d;
-  --color-on-accent: #f4efea;
   --color-paper: #1a1a1d;
   --color-paper-ink: #e8e6e1;
   --color-paper-muted: #8b8a86;
@@ -128,19 +147,26 @@ body {
 }
 
 /* Text that shimmers while the panel reviews an answer: the words stay readable, a
-   band of the text colour passes over them. */
+   band of the text colour passes over them. Panel red on the lit card; ink in the turn
+   steps (.shimmer-ink), which the user reads as progress, not as the panel. */
 .shimmer-text {
+  --shimmer-base: var(--color-accent-text);
+  --shimmer-band: var(--color-ink);
   background-image: linear-gradient(
     90deg,
-    var(--color-accent-text) 0%,
-    var(--color-accent-text) 40%,
-    var(--color-ink) 50%,
-    var(--color-accent-text) 60%,
-    var(--color-accent-text) 100%
+    var(--shimmer-base) 0%,
+    var(--shimmer-base) 40%,
+    var(--shimmer-band) 50%,
+    var(--shimmer-base) 60%,
+    var(--shimmer-base) 100%
   );
   background-size: 200% 100%;
   background-clip: text;
   color: transparent;
+}
+.shimmer-ink {
+  --shimmer-base: var(--color-action-text);
+  --shimmer-band: var(--color-action-band);
 }
 
 /* M8 K9: every animation and transition stops under reduced motion. Components also
@@ -154,7 +180,7 @@ body {
     transition: none !important;
   }
   .shimmer-text {
-    color: var(--color-accent-text);
+    color: var(--shimmer-base);
     background-image: none;
   }
 }
@@ -183,7 +209,9 @@ body {
     --color-faint: #4a4a4a;
     --color-accent: #000000;
     --color-accent-text: #000000;
-    --color-accent-soft: #ffffff;
+    --color-action: #000000;
+    --color-action-text: #000000;
+    --color-action-soft: #ffffff;
     --color-rail: #6b6b6b;
     --color-warn-soft: #ffffff;
     --color-danger-soft: #ffffff;

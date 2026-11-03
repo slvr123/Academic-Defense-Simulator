@@ -33,10 +33,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function Headline({ report, overallRaw }: { report: DefenseReport; overallRaw: number }) {
   return (
-    <section aria-label="Overall" className="space-y-5 rounded-2xl border border-accent bg-card p-5 sm:p-8">
+    <section aria-label="Overall" className="space-y-5 rounded-2xl border border-action bg-card p-5 sm:p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow className="text-accent-text">Overall</Eyebrow>
+          <Eyebrow className="text-action-text">Overall</Eyebrow>
           <p className="font-serif text-6xl leading-none font-medium sm:text-7xl">
             {toHundred(overallRaw)}
             <span className="text-2xl text-muted sm:text-3xl">/100</span>

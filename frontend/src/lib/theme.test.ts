@@ -53,7 +53,7 @@ describe('theme persistence (M12 D4)', () => {
     expect(meta.content).toBe('#121214')
     applyTheme('paper')
     expect(currentTheme()).toBe('paper')
-    expect(meta.content).toBe('#F4EFE6')
+    expect(meta.content).toBe('#F5F4F1')
     meta.remove()
   })
 })

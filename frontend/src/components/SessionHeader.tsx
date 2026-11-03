@@ -52,8 +52,8 @@ export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailabl
               type="button"
               aria-pressed={documentOpen}
               onClick={onOpenDocument}
-              className={`flex min-h-11 items-center gap-2 rounded-[10px] border px-3.5 text-sm transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
-                documentOpen ? 'border-accent bg-accent-soft' : 'border-line-strong bg-card'
+              className={`flex min-h-11 items-center gap-2 rounded-[10px] border px-3.5 text-sm transition-colors hover:border-action focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none ${
+                documentOpen ? 'border-action bg-action-soft' : 'border-line-strong bg-card'
               }`}
             >
               <DocumentIcon size={16} /> Your document
@@ -131,7 +131,7 @@ function VoiceMenu({ voice, ttsAvailable, panelDisclosed, onChoose }: { voice: V
         aria-controls={menuId}
         aria-label={`Voice: ${VOICE_LABELS[current]}. Change voice`}
         onClick={() => (open ? close() : setOpen(true))}
-        className="flex min-h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-card px-3.5 text-sm transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        className="flex min-h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-card px-3.5 text-sm transition-colors hover:border-action focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none"
       >
         <SpeakerIcon /> {VOICE_LABELS[current]}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -162,8 +162,8 @@ function VoiceMenu({ voice, ttsAvailable, panelDisclosed, onChoose }: { voice: V
             <fieldset>
               <legend className="sr-only">Voice</legend>
               {choices.map((choice) => (
-                <label key={choice} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-sm hover:bg-accent-soft">
-                  <input type="radio" name={menuId} checked={current === choice} onChange={() => choose(choice)} className="accent-accent" />
+                <label key={choice} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-sm hover:bg-action-soft">
+                  <input type="radio" name={menuId} checked={current === choice} onChange={() => choose(choice)} className="accent-action" />
                   {VOICE_LABELS[choice]}
                 </label>
               ))}
@@ -183,7 +183,7 @@ function EndSession({ label, onEnd }: { label: string; onEnd: () => void }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="min-h-11 rounded-[10px] border border-transparent px-3 text-sm text-muted transition-colors hover:border-line-strong hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        className="min-h-11 rounded-[10px] border border-transparent px-3 text-sm text-muted transition-colors hover:border-line-strong hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none"
       >
         {label}
       </button>

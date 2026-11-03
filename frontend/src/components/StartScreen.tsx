@@ -30,7 +30,7 @@ type Props = {
   onSubmit: () => void
 }
 
-const fieldClass = 'mt-1 w-full rounded-lg border border-line-strong bg-field px-3 py-2 text-base focus:border-accent focus:outline-none'
+const fieldClass = 'mt-1 w-full rounded-lg border border-line-strong bg-field px-3 py-2 text-base focus:border-action focus:outline-none'
 const legendClass = 'pb-2.5 text-sm font-semibold text-muted'
 
 export function StartScreen({ draft, options, quota, notice, onTrySample, onReadRecording, onChange, onSubmit }: Props) {
@@ -191,7 +191,7 @@ function PathButton({ icon, title, detail, onClick, disabled = false }: { icon: 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-16 items-center gap-3.5 rounded-xl border border-line-strong bg-surface px-[18px] py-3.5 text-left transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+      className="flex min-h-16 items-center gap-3.5 rounded-xl border border-line-strong bg-surface px-[18px] py-3.5 text-left transition-colors hover:border-action focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
         {icon}
@@ -211,9 +211,9 @@ function Toggle({ pressed, onClick, square = false, children }: { pressed: boole
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`min-h-11 rounded-[10px] border font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
+      className={`min-h-11 rounded-[10px] border font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none ${
         square ? 'size-11 px-0' : 'px-[18px]'
-      } ${pressed ? 'border-accent bg-accent-soft text-ink' : 'border-line-strong text-ink hover:border-accent'}`}
+      } ${pressed ? 'border-action bg-action-soft text-ink' : 'border-line-strong text-ink hover:border-action'}`}
     >
       {children}
     </button>
@@ -239,11 +239,11 @@ function DropZone({ file, onFile }: { file: File | null; onFile: (file: File | n
       }}
       onDragLeave={() => setOver(false)}
       onDrop={onDrop}
-      className={`relative flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed p-5 text-center transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent motion-reduce:transition-none ${
-        over ? 'border-accent bg-accent-soft' : 'border-devil-line bg-field hover:border-accent'
+      className={`relative flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed p-5 text-center transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-action motion-reduce:transition-none ${
+        over ? 'border-action bg-action-soft' : 'border-devil-line bg-field hover:border-action'
       }`}
     >
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-accent-text">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-action-text">
         <path d="M12 16V4" />
         <path d="m6 10 6-6 6 6" />
         <path d="M4 20h16" />
@@ -252,13 +252,13 @@ function DropZone({ file, onFile }: { file: File | null; onFile: (file: File | n
         <>
           <span className="max-w-full truncate font-semibold">{file.name}</span>
           <span className="font-mono text-xs text-subtle">
-            {(file.size / (1024 * 1024)).toFixed(1)} MB · drop another or <span className="text-accent-text underline underline-offset-[3px]">browse</span> to replace
+            {(file.size / (1024 * 1024)).toFixed(1)} MB · drop another or <span className="text-action-text underline underline-offset-[3px]">browse</span> to replace
           </span>
         </>
       ) : (
         <>
           <span className="font-semibold">
-            Drop your PDF here, or <span className="text-accent-text underline underline-offset-[3px]">browse</span>
+            Drop your PDF here, or <span className="text-action-text underline underline-offset-[3px]">browse</span>
           </span>
           <span className="font-mono text-xs text-subtle">
             PDF with selectable text · up to {MAX_UPLOAD_MB} MB · {MAX_PAGES} pages
@@ -329,7 +329,7 @@ function PanelPresets({ options, draft, onChange }: { options: PanelOptions | nu
                       onChange={() =>
                         onChange({ panel: { ...panel, archetype_keys: toggleArchetype(options, panel, archetype.archetype_key) } })
                       }
-                      className="mt-0.5 size-[18px] shrink-0 accent-accent"
+                      className="mt-0.5 size-[18px] shrink-0 accent-action"
                     />
                     <span>
                       {archetype.title}
@@ -354,11 +354,11 @@ function PresetRow({ pressed, label, members, onClick }: { pressed: boolean; lab
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`flex min-h-14 w-full items-center gap-3.5 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
-        pressed ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-accent'
+      className={`flex min-h-14 w-full items-center gap-3.5 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none ${
+        pressed ? 'border-action bg-action-soft' : 'border-line-strong hover:border-action'
       }`}
     >
-      <span aria-hidden className={`size-[18px] shrink-0 rounded-full ${pressed ? 'border-[5px] border-accent' : 'border-[1.5px] border-subtle'}`} />
+      <span aria-hidden className={`size-[18px] shrink-0 rounded-full ${pressed ? 'border-[5px] border-action' : 'border-[1.5px] border-subtle'}`} />
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="font-semibold">{label}</span>
         <span className="text-[13px] text-muted">{members}</span>
