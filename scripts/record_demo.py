@@ -3,7 +3,7 @@
 One real defense on the bundled AniCheck sample against a running backend, driven a
 step at a time so each answer can be written after reading its question:
 
-    python scripts/record_demo.py start --base-url http://127.0.0.1:8010
+    python scripts/record_demo.py start --base-url http://127.0.0.1:8010 [--panel thesis|capstone]
     python scripts/record_demo.py start --session <id>   # resend /start after a 503 (no new reservation)
     python scripts/record_demo.py answer "..."      # once per question, until done
     python scripts/record_demo.py show              # the open question again
@@ -35,15 +35,25 @@ SAMPLE = REPO_ROOT / "academic_defense_simulator" / "sample" / "sample-capstone-
 FIXTURE = REPO_ROOT / "frontend" / "public" / "demo" / "anicheck-defense.json"
 DEFAULT_STATE = Path(tempfile.gettempdir()) / "ads-record-demo.json"
 
-# The Recommended capstone preset (M10 N7), in its seating order; domain and topic are
-# given, as the start form's optional details allow, so no extraction call is spent.
-PANEL = {
-    "defense_type": "capstone",
+# The panels a recording can seat: the Recommended thesis preset (M14 D4, the default: it
+# seats the Research Problem & Objectives Reviewer, so the defense opens at Chapter 1) and
+# the Recommended capstone preset M11 recorded (M10 N7). Domain and topic are given, as
+# the start form's optional details allow, so no extraction call is spent.
+_DETAILS = {
     "other_subtype": None,
     "domain": "Information Technology",
     "topic": "AniCheck: a mobile app for rice leaf disease identification",
-    "archetype_keys": ["technical_implementation_reviewer", "methodology_expert", "results_conclusions_reviewer"],
     "starting_difficulty": 2,
+}
+PANELS = {
+    "thesis": {
+        "defense_type": "thesis", **_DETAILS,
+        "archetype_keys": ["methodology_expert", "problem_objectives_reviewer", "results_conclusions_reviewer"],
+    },
+    "capstone": {
+        "defense_type": "capstone", **_DETAILS,
+        "archetype_keys": ["technical_implementation_reviewer", "methodology_expert", "results_conclusions_reviewer"],
+    },
 }
 
 
@@ -78,7 +88,7 @@ def start(args: argparse.Namespace) -> None:
                 created = checked(client.post(
                     "/sessions",
                     files={"file": (SAMPLE.name, handle, "application/pdf")},
-                    data={"panel": json.dumps(PANEL)},
+                    data={"panel": json.dumps(PANELS[args.panel])},
                 ))
             session_id = created["session_id"]
         else:
@@ -95,7 +105,7 @@ def start(args: argparse.Namespace) -> None:
     state = {
         "base_url": args.base_url,
         "session_id": session_id,
-        "panel_config": PANEL,
+        "panel_config": PANELS[args.panel],
         "session": status,
         "start": started,
         "turns": [],
@@ -156,6 +166,7 @@ def main() -> None:
     start_parser = commands.add_parser("start")
     start_parser.add_argument("--base-url", default="http://127.0.0.1:8010")
     start_parser.add_argument("--session", help="an uploaded session whose /start failed")
+    start_parser.add_argument("--panel", choices=sorted(PANELS), default="thesis")
     answer_parser = commands.add_parser("answer")
     answer_parser.add_argument("text")
     commands.add_parser("show")
