@@ -32,16 +32,17 @@ from academic_defense_simulator.engine import (
 from academic_defense_simulator.llm.provider import CallCounter, LLMProvider
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
-from academic_defense_simulator.panel import compose_full_roster, generate_panel
+from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, compose_full_roster, generate_panel
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
+from backend.chapter_filter import ChapterRetriever, is_opening, off_chapter, target_chapter
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.highlight import highlight_span
 from backend.opening_order import opening_order
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
-from backend.routing import LitReviewAccess, routed
+from backend.routing import LitReviewAccess, Retriever, routed
 from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
 from backend.sessions import Session
 
@@ -95,6 +96,8 @@ class Defense:
     model: str  # the defense model's name, which v1's engine passes to its grounding check
     other_subtype_line: str
     lit_review_access: LitReviewAccess = "none"  # settings.lit_review_access (M9 L2)
+    opening_chapter_filter: bool = False  # settings.opening_chapter_filter (M14 D2); setup_defense sets it
+    chapter_starts: dict[int, int] | None = None  # the session's chapter map (M14 D1)
     chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
     pending_source: Source | None = None
@@ -140,12 +143,14 @@ def setup_defense(
     *,
     attribution_notes: bool = False,
     lit_review_access: LitReviewAccess = "none",
+    opening_chapter_filter: bool = False,
 ) -> Defense:
     """Extraction (only when the client sent no domain or topic) and persona
     generation. Neither raises on a Gemini failure: v1 falls back to blank
     fields and to the static panel, and so does this. `attribution_notes` is
     settings.attribution_notes (M7 J3); `lit_review_access` is
-    settings.lit_review_access (M9 L2)."""
+    settings.lit_review_access (M9 L2); `opening_chapter_filter` is
+    settings.opening_chapter_filter (M14 D2)."""
     assert session.matrix is not None
     config: PanelConfig = session.panel
     domain, topic = config.domain, config.topic
@@ -175,6 +180,8 @@ def setup_defense(
         calls=calls,
         model=model,
         lit_review_access=lit_review_access,
+        opening_chapter_filter=opening_chapter_filter,
+        chapter_starts=session.chapter_starts,
         other_subtype_line=(
             f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
         ),
@@ -248,12 +255,47 @@ def _next_question(
         NearTieRetriever(turn_seed(session.profile.document_id, len(session.turns) + 1)),
         defense.tracker.chunks, panelist.archetype_key, defense.lit_review_access,
     )
+    opening = _opening_filter(defense, session, panelist.archetype_key, retriever)
     turn = _generate_question(
         defense.providers.defense, session, defense.chunks, defense.encoder, panelist,
-        defense.other_subtype_line, defense.model, retriever=retriever,
+        defense.other_subtype_line, defense.model, retriever=opening or retriever,
     )
     source = tracker.source_for(turn, defense.encoder.take_query())
+    _log_opening(defense, session, panelist.archetype_key, opening, source.page_start)
     return turn, source.model_copy(update={"highlight": highlight_span(turn.grounding_reference, source.text)})
+
+
+def _opening_filter(
+    defense: Defense, session: DefenseSession, archetype_key: str, routed_retriever: Retriever
+) -> ChapterRetriever | None:
+    """M14 D2: a domain panelist's first question draws from its target chapter, on top
+    of M9's routing. None (retrieve exactly as before) when the flag is off, the document
+    has no chapter map, or this isn't a domain panelist's first question."""
+    if not defense.opening_chapter_filter or defense.chapter_starts is None:
+        return None
+    if archetype_key == DEVILS_ADVOCATE_KEY or not is_opening(session.turns, archetype_key):
+        return None
+    chapter = target_chapter(archetype_key, defense.chapter_starts)
+    return ChapterRetriever(routed_retriever, off_chapter(defense.tracker.chunks, chapter, defense.chapter_starts))
+
+
+def _log_opening(
+    defense: Defense, session: DefenseSession, archetype_key: str, opening: ChapterRetriever | None, page: int
+) -> None:
+    """One line per domain panelist's opening question; pages only, never passage text."""
+    if archetype_key == DEVILS_ADVOCATE_KEY or not is_opening(session.turns, archetype_key):
+        return
+    if not defense.opening_chapter_filter:
+        reason, chapter = "flag_off", None
+    elif defense.chapter_starts is None:
+        reason, chapter = "no_chapter_map", None
+    else:
+        assert opening is not None
+        reason, chapter = opening.outcome, target_chapter(archetype_key, defense.chapter_starts)
+    logger.info(
+        "opening question session=%s archetype=%s target_chapter=%s chapter_filter=%s page=%d",
+        session.profile.document_id, archetype_key, chapter, reason, page,
+    )
 
 
 def current_question(defense: Defense) -> QuestionOut | None:

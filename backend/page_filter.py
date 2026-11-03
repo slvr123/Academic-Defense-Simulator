@@ -76,6 +76,16 @@ _CHAPTER_THREE_HEADING = re.compile(
     r"^(?i:chapter)\s+(?i:3|iii|three)(?:[.:]|(?P<title>\s*[-–:.]\s*\S.*|\s+[^a-z]*[A-Z][^a-z]*))?$"
 )
 _METHODOLOGY_HEADING = re.compile(rf"(?i)^{_SECTION_NUMBER}methodology[.:]?$")
+# M14 D1: _CHAPTER_THREE_HEADING's test for any chapter number, arabic, roman or a word.
+_WORD_NUMERALS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+_CHAPTER_HEADING = re.compile(
+    r"^(?i:chapter)\s+(?P<number>\d{1,2}|(?i:[ivxl]{1,6})|(?i:one|two|three|four|five|six|seven|eight|nine|ten))"
+    r"(?:[.:]|(?P<title>\s*[-–:.]\s*\S.*|\s+[^a-z]*[A-Z][^a-z]*))?$"
+)
+# The fewest chapters a usable map has (M14 D1).
+MIN_MAPPED_CHAPTERS = 3
 # What makes a chunk cite a specific study: "Reyes et al.", "(Reyes, 2021)",
 # "(Reyes & Cruz, 2021a; Lim, 2019)", a numbered reference like "[12]" or "[3, 7]", or
 # a narrative citation: "Reyes (2021)", "Reyes and Cruz (2021)", "J. P. Reyes (2021)".
@@ -224,6 +234,64 @@ def cited_authors(text: str) -> list[str]:
     return list(dict.fromkeys(citation for _, citation in sorted(found, key=lambda f: f[0])))
 
 
+def _roman_value(numeral: str) -> int | None:
+    values = {"i": 1, "v": 5, "x": 10, "l": 50}
+    total, previous = 0, 0
+    for char in reversed(numeral.lower()):
+        value = values[char]
+        total += -value if value < previous else value
+        previous = max(previous, value)
+    return total if total > 0 else None
+
+
+def chapter_heading_number(line: str) -> int | None:
+    """The chapter a heading line starts, or None when the line isn't a chapter heading:
+    prose ("Chapter 3 describes ...") and contents lines (dotted leaders, or a title
+    ending in a page number) aren't."""
+    match = _CHAPTER_HEADING.match(line)
+    if match is None or _DOTTED_LEADERS.search(line):
+        return None
+    if match.group("title") and _TRAILING_PAGE_NUMBER.search(line):
+        return None
+    number = match.group("number").lower()
+    if number.isdigit():
+        return int(number)
+    return _WORD_NUMERALS.get(number) or _roman_value(number)
+
+
+def chapter_starts(page_texts: list[str]) -> dict[int, int] | None:
+    """M14 D1: chapter number -> 0-based start page. A non-navigation page with exactly
+    one chapter heading line starts that chapter; only a number's first page counts.
+    None unless chapter 1 is present, at least MIN_MAPPED_CHAPTERS are, and start pages
+    strictly increase with the chapter number: without a trustworthy map nothing uses it."""
+    starts: dict[int, int] = {}
+    for index, text in enumerate(page_texts):
+        if is_navigation_page(text):
+            continue
+        numbers = [n for n in (chapter_heading_number(line) for line in _lines(text)) if n is not None]
+        if len(numbers) == 1:
+            starts.setdefault(numbers[0], index)
+    if 1 not in starts or len(starts) < MIN_MAPPED_CHAPTERS:
+        return None
+    ordered = [starts[n] for n in sorted(starts)]
+    if any(a >= b for a, b in zip(ordered, ordered[1:])):
+        return None
+    return starts
+
+
+def chapter_pdf_map(path: str | Path) -> dict[int, int] | None:
+    """`chapter_starts` for a PDF on disk (the eval scripts' entry point)."""
+    import fitz  # PyMuPDF
+
+    with fitz.open(str(path)) as document:
+        return chapter_starts([page.get_text("text") for page in document])
+
+
+def chapter_of(page: int, starts: dict[int, int]) -> int:
+    """The chapter a 0-based page falls in; 0 before Chapter 1."""
+    return max((n for n, first in starts.items() if first <= page), default=0)
+
+
 def _set_as_heading(line: str) -> bool:
     """All capitals, or every word of four letters or more capitalised."""
     words = re.findall(r"[A-Za-z]+", line)
@@ -318,6 +386,7 @@ class FilteredChunks:
     references: ReferenceRange | None
     literature_review: LiteratureReviewRange | None
     attributions: list[Attribution | None]  # parallel to chunks
+    chapter_starts: dict[int, int] | None = None  # M14 D1: chapter -> 0-based start page
 
 
 def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) -> FilteredChunks:
@@ -379,4 +448,5 @@ def chunk_pdf_filtered(path: str | Path, *, trim_reference_list: bool = True) ->
             _attribution(paragraph_positions[start], paragraph_positions[end - 1], review, chunk.text)
             for (start, end), chunk in zip(spans, chunks)
         ],
+        chapter_starts=chapter_starts(page_texts),
     )

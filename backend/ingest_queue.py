@@ -45,6 +45,7 @@ class IngestResult:
     matrix: np.ndarray
     chunks: list[ChunkMeta]
     skipped: SkippedPages
+    chapter_starts: dict[int, int] | None  # M14 D1
     parse_s: float
     embed_s: float
 
@@ -140,6 +141,7 @@ class IngestQueue:
             session.matrix = result.matrix
             session.chunks = result.chunks
             session.skipped = result.skipped
+            session.chapter_starts = result.chapter_starts
             session.progress = 1.0
             session.status = SessionStatus.READY
         result_chunks = len(result.chunks) if result else None
@@ -201,6 +203,7 @@ class IngestQueue:
             matrix=matrix,
             chunks=chunks,
             skipped=skipped_pages(filtered, job.page_count),
+            chapter_starts=filtered.chapter_starts,
             parse_s=parsed - started,
             embed_s=time.perf_counter() - parsed,
         )

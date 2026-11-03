@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     # M9 L2: who may retrieve a literature-review chunk. "literature" is only the
     # Literature & Theory Specialist; "none" is nobody. The default is L5's verdict.
     lit_review_access: LitReviewAccess = "none"
+    # M14 D2: each domain panelist's first question draws only from its home chapter
+    # (backend/chapter_filter.py). On by M14 E2's verdict: 10 of 10 opening rounds walked
+    # forward, against 5 of 10 without it. ADS_OPENING_CHAPTER_FILTER=false on Render
+    # turns it off without a deploy.
+    opening_chapter_filter: bool = True
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

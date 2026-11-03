@@ -216,6 +216,7 @@ def register_defense_routes(
                     defense = setup_defense(
                         session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
                         attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
+                        opening_chapter_filter=settings.opening_chapter_filter,
                     )
                 except Exception:
                     # P1 (a): no defense exists, so a retry would reserve again; give this one back.

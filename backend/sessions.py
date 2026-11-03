@@ -69,6 +69,9 @@ class Session:
     matrix: np.ndarray | None = None  # (chunk_count, 384) float32, unit rows
     chunks: list[ChunkMeta] = field(default_factory=list)
     skipped: SkippedPages | None = None  # set with the chunks (M10 N6)
+    # M14 D1: chapter -> 0-based start page, from the PDF's own headings; None without a
+    # trustworthy map, and then no opening question is filtered by chapter.
+    chapter_starts: dict[int, int] | None = None
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk
     defense: Defense | None = None  # from POST /start
     charge: Charge | None = None  # /start's reservation, until released or final (M11 P1)
