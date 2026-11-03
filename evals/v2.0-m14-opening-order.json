@@ -1,0 +1,500 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "chapter_filter": true,
+  "panel": [
+    "methodology_expert",
+    "problem_objectives_reviewer",
+    "results_conclusions_reviewer"
+  ],
+  "lit_review_access": "none",
+  "measured_at": "2026-11-03T05:07:31+00:00",
+  "passed": 10,
+  "total": 10,
+  "rows": [
+    {
+      "document": "AniCheck",
+      "session_id": "f18bdabb-b030-4516-9811-0faab66bc429",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 5,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied",
+          "question": "Regarding your decision to exclude sheath blight and false smut because they do not present visible foliar symptoms, how does this limitation impact the practical value of AniCheck for a farmer whose primary concern might be those specific, high-impact diseases?"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 10,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied",
+          "question": "Regarding your approach to usability testing, you mentioned that you guided each respondent through capturing three to five identifications during the session. I'm concerned that this level of direct assistance might have introduced a Hawthorne effect; how can you be certain that the reported functional suitability scores reflect the actual user experience rather than the researchers' active guidance?"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4,
+          "target_chapter": 4,
+          "chapter_filter": "applied",
+          "question": "I see you've highlighted the discrepancy between your usability and reliability scores, but if respondents are fundamentally questioning the correctness of the diagnostic output, how can you justify the conclusion that the system is truly useful for their diagnostic needs?"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 4,
+      "chapter_starts_1_based": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "6d510bb2-e611-45e9-8144-bb880cb2c5c6",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 5,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied",
+          "question": "Regarding the decision to exclude chemical recommendations, how does the system actually provide economic value to the smallholder farmer if it stops at mere identification without connecting the user to actionable remediation steps?"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 10,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied",
+          "question": "Moving to the evaluation phase, I appreciate the transparency regarding your purposive sampling approach. However, regarding the procedure where proponents read each statement aloud and recorded the responses themselves, how did you mitigate the risk of social desirability bias or interviewer effect on the participants' ratings, particularly given the potential for farmers to provide inflated scores to be polite?"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4,
+          "target_chapter": 4,
+          "chapter_filter": "applied",
+          "question": "Regarding the gap between the usability rating and the reliability rating, you highlight a discrepancy where users are more confident in operating the app than in its actual diagnostic output; given that your system currently returns only a single class, how do you reconcile this lack of confidence with your conclusion that the system is overall acceptable for field use?"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 4,
+      "chapter_starts_1_based": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "4d6ba53d-3d92-49a1-b067-a54a1225d8f0",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 5,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied",
+          "question": "Regarding the decision to exclude disease diagnosis for the panicle, stem, or root, why should this mobile application be prioritized as a solution for rice leaf diseases if the most significant agricultural impacts often occur in parts of the plant your system cannot assess?"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 10,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied",
+          "question": "Regarding the evaluation of system acceptability, I notice you conducted your survey immediately after a guided thirty-minute demonstration. Don't you think that evaluating usability and functional suitability under such controlled, guided conditions introduces significant observer bias and masks how the application would actually perform in the field without your supervision?"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4,
+          "target_chapter": 4,
+          "chapter_filter": "applied",
+          "question": "I see you have acknowledged that the system struggles with multi-symptom leaves, but given that this limitation causes diagnostic errors in the field, is it truly responsible to characterize the system as a reliable tool for agricultural intervention based on these findings?"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 4,
+      "chapter_starts_1_based": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "dda50d1b-cc09-448a-9693-8e629a89c2eb",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 5,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied",
+          "question": "Regarding the decision to exclude chemical recommendations, how does the application provide actionable value to a farmer who receives a positive identification for a disease like bacterial leaf blight if the tool stops at mere diagnosis?"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 10,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied",
+          "question": "Regarding your data collection in Barangay Masagana, you had respondents capture three to five identifications on leaves available at the session. How did you ensure these leaves represented the full range of disease symptoms and varying field lighting conditions necessary to validate your model's performance beyond controlled, static environments?"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4,
+          "target_chapter": 4,
+          "chapter_filter": "applied",
+          "question": "Fair enough on the usability metrics, but I am troubled by the leap you've made regarding the system's performance. You suggest that the lower accuracy is merely a function of dataset scale, yet you also admit the app cannot handle multiple simultaneous conditions. Given that real-world rice samples frequently present with concurrent diseases, isn't it premature to focus on scale as the primary cause for the accuracy gap when the model's fundamental class-limitation seems to be the much larger obstacle to clinical validity?"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 4,
+      "chapter_starts_1_based": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "AniCheck",
+      "session_id": "639c735c-cadd-4d6d-b973-3bb9760cd518",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 5,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied",
+          "question": "Regarding the exclusion of diseases like sheath blight and false smut, how does limiting the system to only four disease classes align with the practical diagnostic needs of farmers who face a much wider range of pathogens in the field?"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 10,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied",
+          "question": "Moving on to your validation process, I notice you had participants capture three to five identifications on leaves available at the session. How did you ensure the images captured during these thirty-minute sessions actually represent the visual variety and lighting conditions a farmer would encounter in the field, rather than just the controlled environment you provided?"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 13,
+          "chapter": 4,
+          "target_chapter": 4,
+          "chapter_filter": "applied",
+          "question": "The gap between the usability rating and the reliability rating you mentioned is quite telling. Given that your respondents expressed lower confidence in the correctness of the results than in the application's usability, how can you claim that the current system is fit for diagnostic purpose despite the acknowledged per-class weakness on bacterial leaf blight?"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 4,
+      "chapter_starts_1_based": {
+        "1": 4,
+        "2": 6,
+        "3": 8,
+        "4": 11,
+        "5": 14
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "eaac57d1-e6f1-41aa-b86f-1cc4081cb41d",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 61,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts_1_based": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "c17152e2-9ae1-4bc8-83a5-36d6dd4e402d",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts_1_based": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "35a06770-138f-4a7c-9ee8-3b0846b7c521",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts_1_based": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "5a99a2ed-e7d3-44d7-bf83-05d363c1dfa8",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 43,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts_1_based": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    },
+    {
+      "document": "sample3",
+      "session_id": "bfe6459d-e352-4b19-9a7a-494b6cac9000",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer",
+        "devils_advocate"
+      ],
+      "questions": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "origin": "new_topic",
+          "page": 6,
+          "chapter": 1,
+          "target_chapter": 1,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "origin": "new_topic",
+          "page": 70,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        },
+        {
+          "turn": 3,
+          "archetype_key": "results_conclusions_reviewer",
+          "origin": "new_topic",
+          "page": 56,
+          "chapter": 3,
+          "target_chapter": 3,
+          "chapter_filter": "applied"
+        }
+      ],
+      "passes": true,
+      "gemini_calls": 5,
+      "chapter_starts_1_based": {
+        "1": 5,
+        "2": 13,
+        "3": 43
+      }
+    }
+  ]
+}
