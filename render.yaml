@@ -73,12 +73,13 @@ services:
 
   # M13 D0b: defense-sim.onrender.com is a pure redirect. Every path answers 301 with the same
   # path on the public site. Render skips a route wherever a file exists at that path, so this
-  # site publishes an empty directory: nothing is built from the repo, nothing can shadow the rule.
+  # site publishes nothing from the repo: one placeholder file (a publish directory can't be
+  # empty), at a path no visitor uses. That one path is the only one that doesn't redirect.
   - type: web
     name: defense-sim
     runtime: static
     branch: main
-    buildCommand: mkdir -p redirect-only
+    buildCommand: mkdir -p redirect-only && echo redirect-only > redirect-only/_redirect-only.txt
     staticPublishPath: redirect-only
     autoDeploy: true
     buildFilter:
