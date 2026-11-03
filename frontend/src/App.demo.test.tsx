@@ -11,6 +11,7 @@ import { lastAnswer, nextQuestion, report, startResponse } from './test/fixtures
 import { defaultServer, renderApp } from './test/renderApp'
 import { installMatchMedia, installWide, WIDE } from './test/setup'
 import { SAMPLE_PDF_PATH } from './state/useFlow'
+import { allPresets } from './lib/presets'
 
 vi.setConfig({ testTimeout: 15_000 })
 
@@ -133,7 +134,9 @@ describe('Read a recorded defense (N5)', () => {
 })
 
 describe('Try it with the sample paper (N5)', () => {
-  it('uploads the bundled capstone as a capstone defense on its Recommended preset', async () => {
+  // M13 D1: the button sets up the panel the recorded demo shows, a thesis defense on the
+  // recommended thesis preset, so it opens with the Problem & Objectives Reviewer at Chapter 1.
+  it('uploads the bundled capstone as a thesis defense on the recommended thesis preset', async () => {
     const server = defaultServer()
     server.on(`GET ${SAMPLE_PDF_PATH}`, { status: 200, bytes: new TextEncoder().encode('%PDF-1.7 sample') })
     const user = renderApp()
@@ -143,7 +146,15 @@ describe('Try it with the sample paper (N5)', () => {
     const form = server.upload.current?.form
     const file = form?.get('file')
     expect(file instanceof File && file.name).toBe('sample-capstone-anicheck.pdf')
-    expect(JSON.parse(String(form?.get('panel')))).toMatchObject({ defense_type: 'capstone' })
+    expect(JSON.parse(String(form?.get('panel')))).toMatchObject({
+      defense_type: 'thesis',
+      archetype_keys: allPresets('thesis').find((preset) => preset.id === 'recommended')?.keys,
+    })
+    expect(JSON.parse(String(form?.get('panel'))).archetype_keys).toEqual([
+      'methodology_expert',
+      'problem_objectives_reviewer',
+      'results_conclusions_reviewer',
+    ])
   })
 
   it('says so when the sample paper cannot be loaded', async () => {

@@ -32,7 +32,8 @@ export type Flow = {
   state: State
   editDraft: (draft: Partial<Draft>) => void
   upload: () => Promise<void>
-  /** "Try it with the sample paper": loads the bundled capstone and uploads it as a capstone defense (N5). */
+  /** "Try it with the sample paper": loads the bundled capstone and uploads it as a thesis
+   * defense on the recommended thesis preset, the panel the recorded demo shows (N5, M13 D1). */
   trySample: () => Promise<void>
   resumePolling: () => void
   chooseVoice: (voice: VoiceChoice) => void
@@ -210,7 +211,7 @@ export function useFlow(): Flow {
       dispatch({ type: 'startNotice', notice: { kind: 'message', text: SAMPLE_FAILED_TEXT } })
       return
     }
-    const draft: Draft = { ...state.draft, file, panel: withDefenseType(state.draft.panel, 'capstone'), preset: 'recommended' }
+    const draft: Draft = { ...state.draft, file, panel: withDefenseType(state.draft.panel, 'thesis'), preset: 'recommended' }
     dispatch({ type: 'draftChanged', draft })
     await upload(draft)
   }
