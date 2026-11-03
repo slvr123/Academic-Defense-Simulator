@@ -26,7 +26,7 @@ export function panelistName(surname: string): string {
 export const SOURCE_ORIGIN_LABELS: Record<Source['origin'], string> = {
   new_topic: 'New topic',
   follow_up: 'Follow-up on an earlier passage',
-  devils_advocate: "Devil's Advocate, contesting an earlier passage",
+  devils_advocate: 'Terror Panelist, contesting an earlier passage',
 }
 
 /** Pages as a PDF viewer numbers them (1-based, as the API sends them), labelled "PDF" because

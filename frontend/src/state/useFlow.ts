@@ -58,6 +58,9 @@ export function useFlow(): Flow {
   )
   // Guards a second click landing before the first one's re-render disables the button.
   const requesting = useRef(false)
+  // Counts End sessions (M13 D0c): an upload whose count moved on while it was in flight
+  // was left from the header, so the session it made is deleted, not shown.
+  const ended = useRef(0)
   const { phase } = state
 
   // Every wake goes through here, so any one that takes over WAKING_NOTICE_MS shows the
@@ -142,9 +145,14 @@ export function useFlow(): Flow {
         }
       }
       panel = { ...panel, archetype_keys: options === null ? null : resolvedKeys(options, panel, preset) }
+      const sent = ended.current
       const result = await api.createSession(file, panel, (loaded, total) =>
         dispatch({ type: 'uploadProgress', loaded, total }),
       )
+      if (ended.current !== sent) {
+        if (result.ok) await api.deleteSession(result.data.session_id)
+        return
+      }
       dispatch({ type: 'uploadFinished', result, panel, now: Date.now() })
     })
 
@@ -229,6 +237,7 @@ export function useFlow(): Flow {
     retryReport,
     restart: () => dispatch({ type: 'restart' }),
     endSession: async () => {
+      ended.current += 1
       const sessionId = 'sessionId' in phase ? phase.sessionId : null
       if (sessionId !== null) await api.deleteSession(sessionId) // a 404 or a network error still ends it here
       dispatch({ type: 'restart' })

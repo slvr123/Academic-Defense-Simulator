@@ -58,7 +58,7 @@
       {
         "archetype_key": "devils_advocate",
         "name": "O'Sullivan",
-        "title": "Devil's Advocate",
+        "title": "Terror Panelist",
         "icon": "hacker"
       }
     ],
@@ -226,7 +226,7 @@
           "panelist": {
             "archetype_key": "devils_advocate",
             "name": "O'Sullivan",
-            "title": "Devil's Advocate",
+            "title": "Terror Panelist",
             "icon": "hacker"
           },
           "question": "You concede that the field accuracy remains untested, yet your evaluation design claims to have measured the 'reliability' characteristic of the system via the ISO/IEC 25010 survey instrument. If the model's diagnostic performance is unproven in uncontrolled environments, how can you justify labeling the system as 'reliable' based solely on the subjective feedback of farmers who only tested the app under your immediate guidance during a single thirty-minute session?",
@@ -514,7 +514,7 @@
         "panelist": {
           "archetype_key": "devils_advocate",
           "name": "O'Sullivan",
-          "title": "Devil's Advocate",
+          "title": "Terror Panelist",
           "icon": "hacker"
         },
         "question": "You concede that the field accuracy remains untested, yet your evaluation design claims to have measured the 'reliability' characteristic of the system via the ISO/IEC 25010 survey instrument. If the model's diagnostic performance is unproven in uncontrolled environments, how can you justify labeling the system as 'reliable' based solely on the subjective feedback of farmers who only tested the app under your immediate guidance during a single thirty-minute session?",

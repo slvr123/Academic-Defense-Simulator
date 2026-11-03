@@ -340,10 +340,10 @@ function PanelPresets({ options, draft, onChange }: { options: PanelOptions | nu
               )
             })}
           </ul>
-          <p className="font-mono text-xs text-subtle">Pick up to {options.max_domain_panelists} · the Devil's Advocate always joins</p>
+          <p className="font-mono text-xs text-subtle">Pick up to {options.max_domain_panelists} · the Terror Panelist always joins</p>
         </div>
       )}
-      <p className="pt-1 text-[13px] text-subtle">Every panel also seats a Devil's Advocate, who speaks last.</p>
+      <p className="pt-1 text-[13px] text-subtle">Every panel also seats a Terror Panelist, who speaks last and challenges your earlier answers.</p>
     </fieldset>
   )
 }

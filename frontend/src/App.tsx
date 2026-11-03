@@ -6,7 +6,7 @@ import { DemoReplay, RECORDING_AVAILABLE } from './components/DemoReplay'
 import { DocumentPanel } from './components/DocumentPanel'
 import { QuotaLine } from './components/QuotaLine'
 import { ReportScreen } from './components/ReportScreen'
-import { SessionHeader, WORDMARK } from './components/SessionHeader'
+import { HomeTitle, SessionHeader } from './components/SessionHeader'
 import { ThemeToggle } from './components/ThemeToggle'
 import { StartScreen } from './components/StartScreen'
 import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen, WakingNotice } from './components/WaitScreens'
@@ -162,11 +162,16 @@ export default function App() {
       />
     )
   } else {
+    // M13 D0c: the wordmark goes home. Where a session or an upload is under way, it asks
+    // first and then does exactly what End session does (the DELETE, refund rules as they
+    // are); where nothing is lost (the debrief, a failed or expired upload), it goes at once.
+    const leaving = phase.kind === 'uploading' || phase.kind === 'queued' || phase.kind === 'embedding' || phase.kind === 'ready' || phase.kind === 'preparing' || phase.kind === 'finishing'
+    const home = phase.kind === 'configuring' ? null : leaving ? () => void flow.endSession() : flow.restart
     const subtitle = phase.kind === 'preparing' ? `${state.draft.panel.topic ?? state.draft.file?.name ?? 'Your paper'} · ${defenseType}` : TAGLINE
     header = (
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
+          <HomeTitle onHome={home} confirm={leaving} />
           {phase.kind !== 'configuring' && (
             <p className={`min-w-0 truncate ${phase.kind === 'preparing' ? 'font-mono text-xs' : 'text-sm'} text-muted`}>{subtitle}</p>
           )}

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION, image_icon_path
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
+from backend.display_titles import DISPLAY_TITLES
 from backend.schemas import MAX_DOMAIN_PANELISTS, PanelConfig
 
 
@@ -24,13 +25,26 @@ def test_every_composition_key_has_its_roster_in_v1_order(client_factory, gemini
 
 
 def test_titles_and_icons_come_from_v1(client_factory):
+    """v1's titles, except the M13 D0c display overrides (backend/display_titles.py)."""
     with client_factory() as client:
         body = client.get("/panel-options").json()
     options = [a for r in body["rosters"] for a in r["archetypes"]] + [body["devils_advocate"]]
     for option in options:
-        assert option["title"] == ARCHETYPE_CONFIG[option["archetype_key"]]["archetype_title"]
+        expected = DISPLAY_TITLES.get(option["archetype_key"], ARCHETYPE_CONFIG[option["archetype_key"]]["archetype_title"])
+        assert option["title"] == expected
         assert image_icon_path(option["icon"]) is not None, option  # an image, not the emoji fallback
     assert body["devils_advocate"]["archetype_key"] == DEVILS_ADVOCATE_KEY
+
+
+def test_the_devils_advocate_is_shown_as_the_terror_panelist(client_factory):
+    """M13 D0c: display only. The key stays, and v1's own title (which feeds the prompts)
+    is unchanged."""
+    with client_factory() as client:
+        body = client.get("/panel-options").json()
+    assert body["devils_advocate"] == {**body["devils_advocate"], "archetype_key": "devils_advocate", "title": "Terror Panelist"}
+    assert ARCHETYPE_CONFIG[DEVILS_ADVOCATE_KEY]["archetype_title"] == "Devil's Advocate"
+    titles = [a["title"] for r in body["rosters"] for a in r["archetypes"]]
+    assert "Devil's Advocate" not in titles
 
 
 def test_the_other_type_is_split_by_subtype_and_the_rest_have_none(client_factory):

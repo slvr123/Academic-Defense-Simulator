@@ -349,3 +349,19 @@ def test_the_gemini_key_is_never_logged_or_shown(monkeypatch, caplog):
     assert client_cls.call_args.kwargs["api_key"] == key  # it does reach the client
     assert key not in caplog.text and key not in repr(settings) and key not in repr(providers)
     assert key not in settings.model_dump_json()
+
+
+def test_the_devils_advocate_is_shown_as_the_terror_panelist(client_factory, gemini, long_pdf):
+    """M13 D0c: /start's panel and every question the API returns name it "Terror
+    Panelist"; the key and the prompts keep v1's "Devil's Advocate"."""
+    with client_factory() as client:
+        session_id = _ready_session(client, long_pdf)
+        start = _start(client, session_id).json()
+        answers = _run_to_end(client, session_id)
+    [devil] = [p for p in start["panel"] if p["archetype_key"] == "devils_advocate"]
+    assert devil["title"] == "Terror Panelist"
+    asked = [a["next_question"] for a in answers if a["next_question"] is not None]
+    [devils_question] = [q for q in asked if q["panelist"]["archetype_key"] == "devils_advocate"]
+    assert devils_question["panelist"]["title"] == "Terror Panelist"
+    assert all("Terror Panelist" not in prompt for prompt in gemini.question_prompts)
+    assert any("Devil's Advocate" in prompt for prompt in gemini.question_prompts)

@@ -22,7 +22,7 @@ const option = (archetype_key: string, title: string, icon: string) => ({ archet
 
 export const panelOptions: PanelOptions = {
   max_domain_panelists: 3,
-  devils_advocate: option('devils_advocate', "Devil's Advocate", 'researcher'),
+  devils_advocate: option('devils_advocate', "Terror Panelist", 'researcher'),
   rosters: [
     {
       defense_type: 'thesis',
@@ -46,7 +46,7 @@ export const panelOptions: PanelOptions = {
 }
 
 export const reyes: PanelistOut = { archetype_key: 'methodology_expert', name: 'Reyes', title: 'Methodology Expert', icon: 'engineer' }
-export const santos: PanelistOut = { archetype_key: 'devils_advocate', name: 'Santos', title: "Devil's Advocate", icon: 'researcher' }
+export const santos: PanelistOut = { archetype_key: 'devils_advocate', name: 'Santos', title: "Terror Panelist", icon: 'researcher' }
 
 // The question's grounding_reference, which the backend highlights in its passage (M8 K6).
 export const GROUNDING_REFERENCE = 'adapted from ISO/IEC 25010'

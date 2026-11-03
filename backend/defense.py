@@ -33,10 +33,10 @@ from academic_defense_simulator.llm.provider import CallCounter, LLMProvider
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, compose_full_roster, generate_panel
-from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.chapter_filter import ChapterRetriever, is_opening, off_chapter, target_chapter
+from backend.display_titles import display_title
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.highlight import highlight_span
@@ -310,7 +310,7 @@ def panelist_out(session: DefenseSession, archetype_key: str) -> PanelistOut:
     return PanelistOut(
         archetype_key=panelist.archetype_key,
         name=panelist.panelist_name,
-        title=ARCHETYPE_CONFIG[panelist.archetype_key]["archetype_title"],
+        title=display_title(panelist.archetype_key),
         icon=panelist.icon,
     )
 

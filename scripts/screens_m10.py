@@ -49,7 +49,7 @@ PANEL = [
     {"archetype_key": "technical_implementation_reviewer", "name": "Navarro", "title": "Technical Implementation Reviewer", "icon": "engineer"},
     {"archetype_key": "methodology_expert", "name": "Lacson", "title": "Methodology Expert", "icon": "advisor"},
     {"archetype_key": "results_conclusions_reviewer", "name": "Ferrer", "title": "Results & Conclusions Reviewer", "icon": "scholar"},
-    {"archetype_key": "devils_advocate", "name": "Abad", "title": "Devil's Advocate", "icon": "hacker"},
+    {"archetype_key": "devils_advocate", "name": "Abad", "title": "Terror Panelist", "icon": "hacker"},
 ]
 PASSAGES = [
     (9, 9, "The trained model was converted to TensorFlow Lite with post-training dynamic range quantization, reducing the model file from 14.2 MB to 3.8 MB. The quantized model was embedded directly in the application package.", "post-training dynamic range quantization"),

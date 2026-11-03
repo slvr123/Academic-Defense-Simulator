@@ -13,7 +13,7 @@ import { PreparingScreen, QuestionScreen } from './DefenseScreens'
 import { DocumentPanel } from './DocumentPanel'
 import { ReportScreen } from './ReportScreen'
 import { ThemeToggle } from './ThemeToggle'
-import { SessionHeader, WORDMARK } from './SessionHeader'
+import { HomeTitle, SessionHeader } from './SessionHeader'
 import { Button, Card, Heading, Working } from './ui'
 
 export const DEMO_PATH = '/demo/anicheck-defense.json'
@@ -82,7 +82,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
 
   if (load.kind !== 'ready') {
     return (
-      <Frame header={<Plain />}>
+      <Frame header={<Plain onExit={onExit} />}>
         <Card className="space-y-3">
           {load.kind === 'loading' ? (
             <Heading>
@@ -125,6 +125,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
         documentOpen={page !== null}
         endLabel="Leave the demo"
         onEnd={onExit}
+        homeConfirm={false}
       />
     )
     screen = (
@@ -148,7 +149,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
       />
     )
   } else if (step === 0) {
-    header = <Plain subtitle={`${recording.start.topic} · ${typeLabel}`} badge={badge} />
+    header = <Plain subtitle={`${recording.start.topic} · ${typeLabel}`} badge={badge} onExit={onExit} />
     const seats = recording.start.panel.map((p) => ({ archetype_key: p.archetype_key, title: p.title, icon: p.icon }))
     screen = (
       <div className="space-y-5">
@@ -161,7 +162,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
       </div>
     )
   } else {
-    header = <Plain subtitle={`${recording.start.topic} · ${typeLabel}`} badge={badge} />
+    header = <Plain subtitle={`${recording.start.topic} · ${typeLabel}`} badge={badge} onExit={onExit} />
     screen = <ReportScreen result={recording.report} options={null} onRestart={onExit} restartLabel="Leave the demo" />
   }
 
@@ -175,12 +176,12 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
   )
 }
 
-function Plain({ subtitle, badge }: { subtitle?: string; badge?: ReactNode }) {
+function Plain({ subtitle, badge, onExit }: { subtitle?: string; badge?: ReactNode; onExit: () => void }) {
   return (
     <div className="flex items-center justify-between gap-x-4 gap-y-1">
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
+          <HomeTitle onHome={onExit} />
           {badge}
         </span>
         {subtitle && <p className="min-w-0 truncate font-mono text-xs text-muted">{subtitle}</p>}

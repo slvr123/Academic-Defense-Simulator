@@ -12,6 +12,36 @@ import { Button, DocumentIcon } from './ui'
 import { PANEL_VOICE_DISCLOSURE } from './VoiceGate'
 
 export const WORDMARK = 'Academic Defense Simulator'
+export const HOME_LABEL = `${WORDMARK}, back to start`
+
+/** The wordmark, a control in every header (M13 D0c): it goes back to the start screen.
+ * `onHome` null: already there, so it does nothing. `confirm`: leaving would end a
+ * defense or an upload, so it first asks with End session's own dialog, and confirming
+ * does exactly what End session does. */
+export function HomeTitle({ onHome, confirm = false, endLabel = 'End session' }: { onHome: (() => void) | null; confirm?: boolean; endLabel?: string }) {
+  const [confirming, setConfirming] = useState(false)
+  const go = () => {
+    if (onHome === null) return
+    if (confirm) setConfirming(true)
+    else onHome()
+  }
+  return (
+    <>
+      <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">
+        <button
+          type="button"
+          aria-label={HOME_LABEL}
+          aria-current={onHome === null ? 'page' : undefined}
+          onClick={go}
+          className={`rounded-md text-left underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action ${onHome === null ? 'cursor-default' : 'cursor-pointer hover:underline'}`}
+        >
+          {WORDMARK}
+        </button>
+      </h1>
+      {confirming && onHome && <ConfirmEnd label={endLabel} onCancel={() => setConfirming(false)} onConfirm={onHome} />}
+    </>
+  )
+}
 
 type Props = {
   subtitle: string
@@ -29,14 +59,17 @@ type Props = {
   documentOpen: boolean
   endLabel?: string
   onEnd: () => void
+  /** The wordmark asks before leaving, with End session's dialog (M13 D0c). The demo
+   * leaves at once: nothing is lost there. */
+  homeConfirm?: boolean
 }
 
-export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailable, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd }: Props) {
+export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailable, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd, homeConfirm = true }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div data-header-row className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="font-serif text-lg font-semibold tracking-[-0.01em] sm:text-xl">{WORDMARK}</h1>
+          <HomeTitle onHome={onEnd} confirm={homeConfirm} endLabel={endLabel} />
           {badge}
         </span>
         <p data-turn-status className="font-mono text-xs text-muted">

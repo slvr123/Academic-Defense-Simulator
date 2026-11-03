@@ -1,15 +1,16 @@
 """GET /panel-options: v1's panel rosters, read straight from v1's own tables.
 
 Nothing here calls a model. The rosters come from PANEL_COMPOSITION, titles from
-ARCHETYPE_CONFIG, icons from archetype_default_icon(), the same sources /start's
-PanelistOut uses, so the picker and the seated panel can't disagree.
+ARCHETYPE_CONFIG through backend.display_titles (M13 D0c), icons from
+archetype_default_icon(), the same sources /start's PanelistOut uses, so the picker
+and the seated panel can't disagree.
 """
 
 from __future__ import annotations
 
 from academic_defense_simulator.models.defense_profile import DefenseType, OtherSubtype
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION, archetype_default_icon
-from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
+from backend.display_titles import display_title
 from backend.opening_order import HOME_CHAPTER
 from backend.schemas import MAX_DOMAIN_PANELISTS, ArchetypeOption, PanelConfig, PanelOptions, PanelRoster
 
@@ -17,7 +18,7 @@ from backend.schemas import MAX_DOMAIN_PANELISTS, ArchetypeOption, PanelConfig, 
 def archetype_option(archetype_key: str) -> ArchetypeOption:
     return ArchetypeOption(
         archetype_key=archetype_key,
-        title=ARCHETYPE_CONFIG[archetype_key]["archetype_title"],
+        title=display_title(archetype_key),
         icon=archetype_default_icon(archetype_key),
         home_chapter=HOME_CHAPTER.get(archetype_key),
     )

@@ -57,7 +57,7 @@ describe('the speaking card (M12 D3)', () => {
       <PanelGrid
         cards={[
           { archetypeKey: 'methodology_expert', surname: 'Reyes', title: 'Methodology Expert', icon: 'advisor' },
-          { archetypeKey: 'devils_advocate', surname: 'Cruz', title: "Devil's Advocate", icon: 'hacker' },
+          { archetypeKey: 'devils_advocate', surname: 'Cruz', title: 'Terror Panelist', icon: 'hacker' },
         ]}
         active="methodology_expert"
         status="speaking"

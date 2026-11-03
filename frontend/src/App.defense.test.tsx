@@ -87,7 +87,7 @@ describe('preparing (D16, /start in flight)', () => {
     expect(seats[0]).toHaveTextContent('Writing question 1')
     expect(seats[0]).toHaveTextContent('whether your approach answers your question')
     expect(seats[1]).toHaveTextContent('Seated')
-    expect(seats[3]).toHaveTextContent("Devil's Advocate")
+    expect(seats[3]).toHaveTextContent('Terror Panelist')
     expect(seats[3]).toHaveTextContent('Speaks last')
     expect(document.body).not.toHaveTextContent(/Reading Chapter/)
 
