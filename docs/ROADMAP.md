@@ -12,6 +12,15 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M13 launch assets (2026-11-04)
+
+Closed 2026-11-04; **next: the README, case study and LinkedIn post, written in chat from M13's fact audit.**
+Decisions: [`v2.0-m13-decisions.md`](v2.0-m13-decisions.md); results: [`v2.0-m13-results.md`](v2.0-m13-results.md).
+The light theme is now Red Pen: black ink for everything the user operates, red only for the panel; Chamber is unchanged.
+The public address is https://academic-defense-simulator.onrender.com, and https://defense-sim.onrender.com redirects to it with a 301; `ads-frontend` left the Blueprint.
+The sample-paper button now sets up the thesis panel the recorded demo shows, and the `App.frontDoor` polling flake is fixed in the tests (it was test timing, not a product race).
+Screenshots, `demo.gif` and `demo.mp4` from the live demo are in `docs/img/v2/`, and the share image is in Red Pen.
+
 ## Active work - v2.0 M14 opening-question chapter filter (2026-11-03)
 
 Closed 2026-11-03; **M13 (launch assets) is next.**
