@@ -16,12 +16,21 @@ Your last question to the candidate was:
 
 The candidate answered:
 "{answer}"
-
+{earlier_lines}
 Rules for your closing line:
 1. Speak as yourself, closing your own line of questioning before a colleague takes over.
-2. Do not evaluate the answer in any way. No praise and no criticism. Never use words like "good", "great", "excellent", "strong", "impressive", "weak", "unconvincing", "concerning" or "disappointing", and do not imply the answer satisfied or worried you. The candidate's scores stay hidden until the end of the defense.
+2. Do not evaluate the answer. You may say a plain 'thank you', but never thank them for clarifying, explaining, justifying or addressing anything, and never mention concerns, reservations, doubts or how convincing it was. Close by saying your questions on this topic are done, in your own words; vary the phrasing naturally.
 3. You may name the topic you covered, such as "your sampling" or "the scope you set", but never its quality.
 4. Do not ask anything, and do not name or introduce the next panelist.
 5. One or two short sentences, in a natural spoken register, at most 30 words in all.
 
 Return only the closing line in the line field."""
+
+# Filled into {earlier_lines} only when the session has had a hand-off already (M15
+# amendment): the lines said so far, verbatim and in order, so a panel doesn't sound
+# like one template. Empty otherwise.
+EARLIER_LINES = """
+Earlier in this defense, these closing lines were already said, in this order:
+{lines}
+Do not begin your closing line with the same opening words as any of them.
+"""

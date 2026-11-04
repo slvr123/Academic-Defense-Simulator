@@ -285,7 +285,8 @@ def _start_closing(
     ADS_CLOSING_LINES isn't "llm"."""
     if speaker.archetype_key == outgoing.archetype_key or defense.closing_lines != "llm":
         return None
-    prompt = closing_prompt(outgoing, session.profile, turn.question, turn.answer or "")
+    earlier = [c.line for _, c in sorted(defense.closings.items())]
+    prompt = closing_prompt(outgoing, session.profile, turn.question, turn.answer or "", earlier)
     return ClosingCall(defense.providers.defense, prompt).start()
 
 

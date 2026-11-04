@@ -85,6 +85,30 @@ def test_the_prompt_carries_the_outgoing_voice_and_the_exchange():
     for part in ("Dr. Lim", "Methodology Expert", "thesis defense", "A patient statistician.", "AniCheck", "How did you sample?", "We used thirty farmers."):
         assert part in prompt
     assert "Do not evaluate the answer" in prompt and "Do not ask anything" in prompt
+    assert "already said" not in prompt  # no earlier lines, no block
+
+
+def test_each_closing_prompt_sees_the_sessions_earlier_lines_verbatim_and_in_order(client_factory, gemini, long_pdf):
+    """M15 amendment: so a panel doesn't open every closing line the same way."""
+    gemini.strong_answers = False
+    with client_factory() as client:
+        session_id, _start_body = _start(client, long_pdf)
+        lines = iter(["First, about the scope.", "Second, on sampling.", "Third, on results."])
+        said = []
+        gemini.closing_line = next(lines)
+        while True:
+            response = _answer(client, session_id)
+            if response["closing"] is not None:
+                said.append(response["closing"]["line"])
+                gemini.closing_line = next(lines, "unused")
+            if response["done"]:
+                break
+    first, second, third = gemini.closing_prompts
+    assert said == ["First, about the scope.", "Second, on sampling.", "Third, on results."]
+    assert "already said" not in first
+    assert '- "First, about the scope."' in second and "Second, on sampling." not in second
+    assert '- "First, about the scope."\n- "Second, on sampling."' in third
+    assert "Do not begin your closing line with the same opening words as any of them." in third
 
 
 # --- Decision 2: concurrency ---

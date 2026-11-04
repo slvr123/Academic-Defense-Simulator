@@ -17,6 +17,7 @@ import logging
 import re
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -26,7 +27,7 @@ from academic_defense_simulator.llm.provider import LLMProvider
 from academic_defense_simulator.models.defense_profile import DefenseProfile
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
-from backend.prompts.closing_prompts import CLOSING_PROMPT
+from backend.prompts.closing_prompts import CLOSING_PROMPT, EARLIER_LINES
 
 logger = logging.getLogger("backend.closing")
 
@@ -74,9 +75,14 @@ def problem(line: str) -> str | None:
     return None
 
 
-def closing_prompt(panelist: Panelist, profile: DefenseProfile, question: str, answer: str) -> str:
+def closing_prompt(
+    panelist: Panelist, profile: DefenseProfile, question: str, answer: str, earlier: Sequence[str] = ()
+) -> str:
     """The closing prompt for the outgoing `panelist`. v1's own archetype title, as its
-    question prompts use, so the voice matches; the display title is the API's concern."""
+    question prompts use, so the voice matches; the display title is the API's concern.
+    `earlier`: the closing lines already said in this session, in order (fallbacks
+    included, since they were said too)."""
+    earlier_lines = EARLIER_LINES.format(lines="\n".join(f'- "{line}"' for line in earlier)) if earlier else ""
     return CLOSING_PROMPT.format(
         panelist_name=panelist.panelist_name,
         archetype_title=ARCHETYPE_CONFIG[panelist.archetype_key]["archetype_title"],
@@ -85,6 +91,7 @@ def closing_prompt(panelist: Panelist, profile: DefenseProfile, question: str, a
         topic=profile.topic,
         question=question,
         answer=answer,
+        earlier_lines=earlier_lines,
     )
 
 
