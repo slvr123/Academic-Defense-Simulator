@@ -14,12 +14,14 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ## Active work - v2.0 M13 launch assets (2026-11-04)
 
-Closed 2026-11-04; **next: the README, case study and LinkedIn post, written in chat from M13's fact audit.**
+Closed 2026-11-04, except Decision 4's captures; **next: M15/M16 (new UI features), then those captures, then the README, case study and LinkedIn post, written in chat from M13's fact audit.**
 Decisions: [`v2.0-m13-decisions.md`](v2.0-m13-decisions.md); results: [`v2.0-m13-results.md`](v2.0-m13-results.md).
 The light theme is now Red Pen: black ink for everything the user operates, red only for the panel; Chamber is unchanged.
 The public address is https://academic-defense-simulator.onrender.com, and https://defense-sim.onrender.com redirects to it with a 301; `ads-frontend` left the Blueprint.
 The sample-paper button now sets up the thesis panel the recorded demo shows, and the `App.frontDoor` polling flake is fixed in the tests (it was test timing, not a product race).
-Screenshots, `demo.gif` and `demo.mp4` from the live demo are in `docs/img/v2/`, and the share image is in Red Pen.
+The wordmark in every header now goes back to the start screen, asking first wherever leaving would end a defense, and the Devil's Advocate is shown as the "Terror Panelist" (display only: the key and the prompts are unchanged).
+The share image is in Red Pen.
+**Deferred:** the screenshots, `demo.gif` and `demo.mp4` (Decision 4) are retaken after M15/M16, since new UI features come first; the first-pass captures in `docs/img/v2/` predate Decision 0c.
 
 ## Active work - v2.0 M14 opening-question chapter filter (2026-11-03)
 
@@ -104,8 +106,12 @@ Nothing here is a milestone.
 - **What I saw on 2026-11-03:** M14 went live at 13:33.
   Pings at 13:50, 14:00 and 14:10 got `503` in about 1 s.
   A browser visit at about 14:13 woke the service, and every ping from 14:20 on returned `200`.
-- **Working conclusion, to confirm against the 2026-11-04 06:00-06:30 runs:** the pinger keeps an awake service awake but may not wake a sleeping one.
-  The first real visit does that, through the frontend's pre-wake `/status` call.
+- **Confirmed 2026-11-04:** every cron-job.org ping from 06:00 to 10:10 SGT (26 in a row) got `503` while the backend slept, and cron-job.org auto-disabled the job after 25 consecutive failures.
+  The pinger keeps an awake service awake, but it does not wake a sleeping one.
+- **Operating rule:** the first real visit each day wakes the backend, through the frontend's pre-wake `/status` call or a browser visit.
+  The pinger then keeps it awake until 23:59 SGT.
+  If cron-job.org has auto-disabled the job, wake the backend first, then re-enable the job.
+  The recorded demo is unaffected: it makes zero backend calls.
 - **Neon:** the quota pool holds no idle connection (`min_size=0`, M14), so nothing reconnects in the background.
 - **Real-database tests:** with `TEST_DATABASE_URL` set, `test_quota_db.py` and the M14 pool tests ran 12 passed, 0 skipped on 2026-11-04 (10 in `test_quota_db.py`, 2 in `test_quota_pool.py`); output in [`v2.0-m14-results.md`](v2.0-m14-results.md) section 7.
 
