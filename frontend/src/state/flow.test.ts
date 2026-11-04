@@ -269,9 +269,20 @@ describe('answering', () => {
       ...question,
       question: nextQuestion.next_question,
       draft: '',
-      last: { question: startResponse.question, answer: 'My answer', evaluation },
-      turns: [{ question: startResponse.question, answer: 'My answer', evaluation }],
+      last: { question: startResponse.question, answer: 'My answer', evaluation, closing: null },
+      turns: [{ question: startResponse.question, answer: 'My answer', evaluation, closing: null }],
+      closing: null,
     })
+  })
+
+  it('keeps a hand-off\'s closing line with the turn it followed and before the next question (M15)', () => {
+    const closing = { panelist: startResponse.question.panelist, line: 'Alright, I will leave the sampling there.' }
+    run(at(question), { type: 'answerRequested', auto: false })
+    const phase = finish(ok({ ...nextQuestion, closing })).phase
+    if (phase.kind !== 'question') throw new Error('expected the next question')
+    expect(phase.closing).toEqual(closing)
+    expect(phase.last?.closing).toEqual(closing)
+    expect(phase.turns.map((t) => t.closing)).toEqual([closing])
   })
 
   it('goes to finishing after the last answer, then to the report', () => {
@@ -305,9 +316,16 @@ describe('answering', () => {
         ...question,
         question: third,
         last: null,
+        closing: null,
         notice: { kind: 'message', text: resyncedText(3) },
       })
       expect(resyncedText(3)).toBe("This answer was for an earlier question. You're now on question 3.")
+    })
+
+    it('takes the closing line /current says came before the open question (M15)', () => {
+      const closing = { panelist: startResponse.question.panelist, line: 'That is all from me on scope.' }
+      const phase = resync(ok({ done: false, question: third, closing })).phase
+      expect(phase.kind === 'question' && phase.closing).toEqual(closing)
     })
 
     it('goes to finishing when the defense is done', () => {

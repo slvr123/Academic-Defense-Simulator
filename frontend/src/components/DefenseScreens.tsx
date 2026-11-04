@@ -1,8 +1,8 @@
 // The answer loop (M8 K6, M10 N2): preparing, the question, the review, and the
 // previous answer's source reveal. Scores stay sealed until the report (K7).
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { limits } from '../api/constraints.gen'
-import type { ArchetypeOption, IngestSummary, PanelistOut, QuestionOut } from '../api/types'
+import type { ArchetypeOption, ClosingOut, IngestSummary, PanelistOut, QuestionOut } from '../api/types'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { loadAnswerDraft, saveAnswerDraft, wordCount } from '../lib/answerDrafts'
@@ -13,6 +13,7 @@ import { pageSpan, panelistName } from '../lib/labels'
 import { currentStep, TURN_STEPS, type TurnStep } from '../lib/turnSteps'
 import type { Notice, Turn, VoiceChoice } from '../state/flow'
 import type { Player } from '../voice/player'
+import { closingVoiced, useClosingVoice } from '../voice/useClosingVoice'
 import { type QuestionVoice, useQuestionVoice } from '../voice/useQuestionVoice'
 import { Avatar } from './Avatar'
 import { NoticeBanner } from './NoticeBanner'
@@ -207,6 +208,30 @@ function isSendShortcut(event: { key: string; ctrlKey: boolean; metaKey: boolean
 
 const SHORTCUT_HINT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘+Enter to send' : 'Ctrl+Enter to send'
 
+/** M15: how long the outgoing panelist's closing line stays alone before the question. */
+export const CLOSING_HOLD_MS = 1600
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
+
+/** The outgoing panelist's closing line on a hand-off (M15): spoken, quieter and shorter
+ * than a question, with no answer box. Shown in the question's place until it's said. */
+function ClosingLine({ closing }: { closing: ClosingOut }) {
+  return (
+    <section
+      data-closing
+      aria-label={`${panelistName(closing.panelist.name)} closes`}
+      aria-live="polite"
+      className="flex min-w-0 flex-col gap-4 rounded-2xl border border-line-strong bg-card p-5 sm:px-9 sm:py-8"
+    >
+      <Eyebrow className="text-accent-text">
+        {panelistName(closing.panelist.name)}
+        <span className="text-muted normal-case"> · {closing.panelist.title}</span>
+      </Eyebrow>
+      <p className="max-w-[56ch] font-serif text-[17px] leading-[1.5] text-ink-dim sm:text-[21px]">{closing.line}</p>
+      <p className="font-mono text-xs text-subtle">Click or press any key to go on</p>
+    </section>
+  )
+}
+
 type QuestionScreenProps = {
   sessionId: string
   voiceChoice: VoiceChoice | null
@@ -227,15 +252,41 @@ type QuestionScreenProps = {
   documentPanel: ReactNode
   /** The recorded demo (N5): the answer is read-only and the send button says "Next". */
   replay?: boolean
+  /** M15: the outgoing panelist's closing line, said before this question on a hand-off. */
+  closing?: ClosingOut | null
 }
 
 export function QuestionScreen(props: QuestionScreenProps) {
   const { sessionId, voiceChoice, player, panel, question, draft, last, turns, submitting, notice, onChange, onSend, onAutoRetry, onOpenPage, documentPanel } = props
-  const { replay = false } = props
+  const { replay = false, closing = null } = props
   const root = useRef<HTMLDivElement>(null)
-  useHandoff(root, question.turn)
+
+  // M15: on a hand-off the outgoing panelist's card stays lit while its closing line is
+  // said, alone, for CLOSING_HOLD_MS, until the line has been spoken when voice is on, or
+  // until a click or key. Under reduced motion there's no timed hold: the line is shown
+  // with the question at once (with voice on, the question still waits for it to be said).
+  const reduced = useMediaQuery(REDUCED_MOTION)
+  const voicedClosing = closingVoiced(voiceChoice)
+  const [closedFor, setClosedFor] = useState(0) // the question whose closing line has been said
+  const holding = closing !== null && closedFor !== question.turn && !submitting && (!reduced || voicedClosing)
+  const finishClosing = useCallback(() => setClosedFor(question.turn), [question.turn])
+  useClosingVoice({ player, choice: voiceChoice, sessionId, turn: question.turn - 1, closing, active: holding, offline: replay, onDone: finishClosing })
+  useEffect(() => {
+    if (!holding) return
+    const timer = voicedClosing ? null : window.setTimeout(finishClosing, CLOSING_HOLD_MS)
+    window.addEventListener('pointerdown', finishClosing)
+    window.addEventListener('keydown', finishClosing)
+    return () => {
+      if (timer !== null) window.clearTimeout(timer)
+      window.removeEventListener('pointerdown', finishClosing)
+      window.removeEventListener('keydown', finishClosing)
+    }
+  }, [holding, voicedClosing, finishClosing])
+  // The source comes in with the closing line, so not again when the question follows it.
+  useHandoff(root, holding ? `closing-${question.turn}` : question.turn, holding || closing === null)
+
   const answerId = useId()
-  const voice = useQuestionVoice({ player, choice: voiceChoice, sessionId, question, submitting })
+  const voice = useQuestionVoice({ player, choice: voiceChoice, sessionId, question, submitting, held: holding })
   const [typed, setTyped] = useState(false)
   const [transcriptOpen, setTranscriptOpen] = useState(false)
   const counting = notice?.kind === 'busy' && notice.retryAt !== null
@@ -243,7 +294,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
   const asking = !typed || voice.status === 'loading' || voice.status === 'speaking'
   const step = currentStep({ submitting, asking })
   const canSend = draft.trim() !== '' && !counting && !submitting
-  const status: ActiveStatus = submitting ? 'reviewing' : voice.status === 'speaking' ? 'speaking' : 'asking'
+  const status: ActiveStatus = holding ? 'closing' : submitting ? 'reviewing' : voice.status === 'speaking' ? 'speaking' : 'asking'
   const asked: Record<string, number> = {}
   for (const turn of turns) asked[turn.question.panelist.archetype_key] = (asked[turn.question.panelist.archetype_key] ?? 0) + 1
 
@@ -273,7 +324,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
 
   return (
     <div ref={root} className="space-y-5">
-      <PanelGrid cards={cardsFromPanel(panel)} active={question.panelist.archetype_key} status={status} asked={asked} />
+      <PanelGrid cards={cardsFromPanel(panel)} active={holding && closing ? closing.panelist.archetype_key : question.panelist.archetype_key} status={status} asked={asked} />
       {!wide && reveal && (
         // 12 px below the cards (-mt-2 against space-y-5), so the bar adds 56 px in all.
         <div data-bar-row className="-mt-2">
@@ -285,11 +336,20 @@ export function QuestionScreen(props: QuestionScreenProps) {
           Below lg the slot holds only the PDF's sheet, which covers the page. */}
       <div className={`grid items-stretch gap-3 lg:gap-6 ${slot ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
         <div className="flex min-w-0 flex-col gap-6">
+          {holding && closing ? (
+            <ClosingLine closing={closing} />
+          ) : (
           <section
             data-question
             aria-label={`Question ${question.turn}`}
             className="flex min-w-0 flex-col gap-6 rounded-2xl border border-line-strong bg-card p-5 sm:gap-7 sm:px-9 sm:pt-8 sm:pb-7"
           >
+            {closing && !submitting && reduced && !voicedClosing && (
+              // Reduced motion with no voice: no hold, so the closing line is shown at once, above the question.
+              <p data-closing-said className="-mb-2 border-l-2 border-line-strong pl-3 font-serif text-[15px] leading-normal text-muted">
+                {panelistName(closing.panelist.name)}: {closing.line}
+              </p>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <Eyebrow className="text-accent-text">
                 {asker} {submitting ? 'asked' : 'asks'}
@@ -376,6 +436,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
               </>
             )}
           </section>
+          )}
         </div>
         {slot && (
           <div className="relative min-w-0">

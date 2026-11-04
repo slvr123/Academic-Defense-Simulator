@@ -81,6 +81,11 @@ class Settings(BaseSettings):
     # forward, against 5 of 10 without it. ADS_OPENING_CHAPTER_FILTER=false on Render
     # turns it off without a deploy.
     opening_chapter_filter: bool = True
+    # M15: the outgoing panelist's closing line on a hand-off (backend/closing.py).
+    # "llm" writes it with one defense-model call per hand-off, counted in the daily cap;
+    # "fixed" says a fixed neutral line with no call; "off" says nothing. Switchable on
+    # Render with no deploy: ADS_CLOSING_LINES.
+    closing_lines: Literal["llm", "fixed", "off"] = "llm"
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

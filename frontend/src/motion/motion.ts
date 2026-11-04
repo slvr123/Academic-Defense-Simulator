@@ -22,11 +22,14 @@ export const MOTION_OK = '(prefers-reduced-motion: no-preference)'
 const SHOWN = { autoAlpha: 1, x: 0, y: 0, scale: 1 }
 
 /**
- * The handoff, one timeline per question: the lit card comes up (the card that was lit
- * has already dimmed through its CSS colour transition), then the question, then the
- * previous answer's source slides in. Targets are found by data attribute inside `scope`.
+ * The handoff, one timeline per stage: the lit card comes up (the card that was lit
+ * has already dimmed through its CSS colour transition), then the question, or the
+ * outgoing panelist's closing line (M15), then the previous answer's source slides in.
+ * `stage` changes once per question, and once more when a closing line gives way to the
+ * question; `revealIn` false skips the source, which came in with the closing line.
+ * Targets are found by data attribute inside `scope`.
  */
-export function useHandoff(scope: RefObject<HTMLElement | null>, turn: number): void {
+export function useHandoff(scope: RefObject<HTMLElement | null>, stage: number | string, revealIn = true): void {
   useGSAP(
     () => {
       const mm = gsap.matchMedia()
@@ -34,15 +37,15 @@ export function useHandoff(scope: RefObject<HTMLElement | null>, turn: number): 
         const root = scope.current
         if (root === null) return
         const lit = root.querySelector('[data-lit]')
-        const question = root.querySelector('[data-question]')
-        const reveal = root.querySelector('[data-reveal]')
+        const question = root.querySelector('[data-closing], [data-question]')
+        const reveal = revealIn ? root.querySelector('[data-reveal]') : null
         const timeline = gsap.timeline({ defaults: { ease: 'power2.out' } })
         if (lit) timeline.fromTo(lit, { autoAlpha: 0.4, scale: 0.97 }, { ...SHOWN, duration: 0.35 })
         if (question) timeline.fromTo(question, { autoAlpha: 0, y: 12 }, { ...SHOWN, duration: 0.4 }, lit ? '>-0.1' : 0)
         if (reveal) timeline.fromTo(reveal, { autoAlpha: 0, x: 24 }, { ...SHOWN, duration: 0.45 }, '<0.1')
       })
     },
-    { scope, dependencies: [turn], revertOnUpdate: true },
+    { scope, dependencies: [stage], revertOnUpdate: true },
   )
 }
 

@@ -34,6 +34,7 @@ from backend.client_ip import StartLimiter, client_ip
 from backend.defense import (
     AnsweredTurn,
     Defense,
+    closing_before,
     current_question,
     Providers,
     ProvidersFactory,
@@ -217,6 +218,7 @@ def register_defense_routes(
                         session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
                         attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
                         opening_chapter_filter=settings.opening_chapter_filter,
+                        closing_lines=settings.closing_lines,
                     )
                 except Exception:
                     # P1 (a): no defense exists, so a retry would reserve again; give this one back.
@@ -254,7 +256,7 @@ def register_defense_routes(
             question = current_question(defense)
             if question is None:  # the first question failed; /start asks it again
                 raise HTTPException(409, NOT_STARTED_MESSAGE)
-            return CurrentQuestion(done=False, question=question)
+            return CurrentQuestion(done=False, question=question, closing=closing_before(defense, question.turn))
 
     @app.post("/sessions/{session_id}/answers", response_model=AnswerResponse, responses={409: {"model": ErrorBody}})
     def submit_answer(session_id: str, body: AnswerRequest) -> AnswerResponse:
@@ -279,7 +281,9 @@ def register_defense_routes(
             except LLMProviderError as exc:
                 logger.warning("turn failed session=%s busy=%s: %s", session_id, is_panel_busy(exc), exc)
                 raise llm_failure(exc) from exc
-            response = AnswerResponse(evaluation=result.evaluation, next_question=result.next_question, done=defense.done)
+            response = AnswerResponse(
+                evaluation=result.evaluation, next_question=result.next_question, done=defense.done, closing=result.closing
+            )
             defense.last_answer = AnsweredTurn(turn=turn, response=response)
         return response
 
@@ -307,7 +311,9 @@ def register_defense_routes(
         if session is None:
             raise not_found()
         defense = session.defense
-        asked = defense.asked.get(body.turn) if defense is not None else None
+        # M15: `closing` speaks the closing line said after `turn`, in its panelist's voice.
+        said = (defense.closings_asked if body.closing else defense.asked) if defense is not None else {}
+        asked = said.get(body.turn)
         if defense is None or asked is None:
             raise HTTPException(404, QUESTION_NOT_FOUND_MESSAGE)
         parts = [asked.text]
@@ -316,11 +322,11 @@ def register_defense_routes(
         if body.part is not None and body.part >= len(parts):
             raise HTTPException(404, QUESTION_NOT_FOUND_MESSAGE)
         text = parts[body.part or 0]
-        if not defense.take_tts_call(body.turn, body.part):
+        if not defense.take_tts_call(body.turn, body.part, closing=body.closing):
             raise CodedHTTPException(429, TTS_LIMIT_MESSAGE, "tts_limit")
         started = time.perf_counter()
         # Timings, sizes and positions only: the question's text is never logged (H8).
-        part_label = "-" if body.part is None else f"{body.part}/{len(parts)}"
+        part_label = ("closing" if body.closing else "-") if body.part is None else f"{body.part}/{len(parts)}"
         try:
             audio = synthesize_wav(synthesize, text, asked.archetype_key, key)
         except TtsFailed as exc:
@@ -359,6 +365,7 @@ def register_defense_routes(
                     grounding_reference=turn.grounding_reference,
                     answer=turn.answer or "",
                     evaluation=evaluation_out(turn),
+                    closing=defense.closings.get(i + 1),
                 )
                 for i, (turn, source) in enumerate(zip(state.turns, defense.sources, strict=True))
             ],

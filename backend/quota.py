@@ -84,12 +84,29 @@ def role_models(settings: Settings) -> dict[CallRole, str]:
     }
 
 
+# M15 Decision 3: one closing call per hand-off, on the defense model. v1's engine gives
+# each panelist one unbroken block (follow-ups keep the floor, a new topic goes only to a
+# domain panelist who hasn't opened one, the Devil's Advocate speaks once, last, with no
+# second round), so a full panel hands off exactly once between blocks. Counted here,
+# on the v2 side; v1's call_budget is unchanged.
+CLOSING_CALLS_PER_SESSION = MAX_PANEL_SIZE - 1
+
+
+def closing_calls(settings: Settings) -> int:
+    """The closing calls one session can make: 3 when ADS_CLOSING_LINES is "llm", else
+    none ("fixed" and "off" call nothing)."""
+    return CLOSING_CALLS_PER_SESSION if settings.closing_lines == "llm" else 0
+
+
 def plan_quota(settings: Settings) -> QuotaPlan:
     """Worst case: the largest panel, and extraction runs (a client may omit
-    domain and topic). The backend skips v1's relevance check."""
+    domain and topic). The backend skips v1's relevance check, and adds M15's
+    closing calls on the defense model."""
     calls = calls_per_model(
         worst_case_calls(MAX_PANEL_SIZE, extraction=True, relevance_check=False), role_models(settings)
     )
+    if closing_calls(settings):
+        calls[settings.gemini_model] = calls.get(settings.gemini_model, 0) + closing_calls(settings)
     shares = tuple(
         ModelShare(model=model, calls_per_session=n, rpd=settings.gemini_limits[model].rpd)
         for model, n in sorted(calls.items())

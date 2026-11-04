@@ -14,6 +14,7 @@ from academic_defense_simulator.models.document_profile_extraction import Docume
 from academic_defense_simulator.models.panelist import GeneratedPanelist, PanelGeneration
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.report import AnswerSuggestion, AnswerSuggestionList
+from backend.closing import ClosingLine
 from backend.defense import Providers
 
 # In every paragraph of conftest.make_pdf, so every question passes is_grounded.
@@ -22,6 +23,7 @@ ROLES = {
     DocumentProfileExtraction: "extraction",
     PanelGeneration: "persona",
     PanelistQuestion: "question",
+    ClosingLine: "closing",  # M15
     AnswerScore: "scoring",
     AnswerSuggestionList: "suggestions",
 }
@@ -38,6 +40,8 @@ class FakeGemini:
         self.entered: dict[str, threading.Event] = defaultdict(threading.Event)
         self.questions_asked = 0
         self.question_prompts: list[str] = []  # every question prompt, in call order
+        self.closing_line = "Alright, I'll leave the evaluation there."  # M15: what each closing call says
+        self.closing_prompts: list[str] = []  # every closing prompt, in call order
 
     def fail_next(self, role: str, *errors: Exception) -> None:
         self.failures[role].extend(errors)
@@ -72,6 +76,9 @@ class FakeGemini:
                 clarity=points, depth=points, grounding=points, difficulty_delta=1 if self.strong_answers else 0,
                 primary_gap="no evidence offered", answer_summary="The candidate claimed the instrument is valid.",
             )
+        if role == "closing":
+            self.closing_prompts.append(prompt)
+            return ClosingLine(line=self.closing_line)
         if role == "suggestions":
             return AnswerSuggestionList(
                 suggestions=[AnswerSuggestion(turn_index=0, suggestion="Cite the evaluation.", grounding_reference=GROUNDING)]

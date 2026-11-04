@@ -123,6 +123,7 @@ export default function App() {
           draft={phase.draft}
           last={phase.last}
           turns={phase.turns}
+          closing={phase.closing ?? null}
           submitting={phase.kind === 'submitting'}
           notice={phase.kind === 'question' ? phase.notice : null}
           onChange={flow.editAnswer}

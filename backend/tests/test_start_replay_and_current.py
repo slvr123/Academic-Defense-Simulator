@@ -68,7 +68,8 @@ def test_current_follows_the_defense_from_start_to_done(client_factory, long_pdf
         before = _current(client, session_id)
         start = client.post(f"/sessions/{session_id}/start").json()
         at_one = _current(client, session_id).json()
-        next_question = _answer(client, session_id, 1).json()["next_question"]
+        first = _answer(client, session_id, 1).json()
+        next_question = first["next_question"]
         at_two = _current(client, session_id).json()
         while True:
             body = _answer(client, session_id).json()
@@ -76,9 +77,11 @@ def test_current_follows_the_defense_from_start_to_done(client_factory, long_pdf
                 break
         done = _current(client, session_id).json()
     assert (before.status_code, before.json()["detail"]) == (409, NOT_STARTED_MESSAGE)
-    assert at_one == {"done": False, "question": start["question"]}
-    assert at_two == {"done": False, "question": next_question} and next_question["turn"] == 2
-    assert done == {"done": True, "question": None}
+    assert at_one == {"done": False, "question": start["question"], "closing": None}
+    # M15: a resync after a hand-off gets the closing line said before the open question.
+    assert first["closing"] is not None
+    assert at_two == {"done": False, "question": next_question, "closing": first["closing"]} and next_question["turn"] == 2
+    assert done == {"done": True, "question": None, "closing": None}
 
 
 def test_after_a_stale_answer_current_names_the_open_question(client_factory, long_pdf):

@@ -48,6 +48,7 @@ function answeredBefore(recording: DemoRecording, step: number): Turn[] {
     question: questionAt(recording, i + 1) ?? recording.start.question,
     answer: turn.answer,
     evaluation: turn.response.evaluation,
+    closing: turn.response.closing ?? null, // M15: absent from recordings made before it
   }))
 }
 
@@ -139,6 +140,7 @@ export function DemoReplay({ player, onExit }: { player: Player; onExit: () => v
         draft={recording.turns[step - 1].answer}
         last={turns.at(-1) ?? null}
         turns={turns}
+        closing={turns.at(-1)?.closing ?? null}
         submitting={false}
         notice={null}
         onChange={() => {}}

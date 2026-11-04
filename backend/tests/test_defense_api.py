@@ -106,6 +106,7 @@ def test_a_full_defense_runs_start_to_report(client_factory, gemini, quota_store
     # extraction, persona, 4 questions, 4 scores, narrative, suggestions
     assert dict(gemini.calls_by_role) == {
         "extraction": 1, "persona": 1, "question": 4, "scoring": 4, "narrative": 1, "suggestions": 1,
+        "closing": 3,  # M15: one per hand-off, three in a four-seat panel
     }
 
 
@@ -123,7 +124,9 @@ def test_weak_answers_draw_follow_ups_up_to_the_turn_cap(client_factory, gemini,
     worst = calls_per_model(
         worst_case_calls(4, extraction=True, relevance_check=False), {r: "defense" for r in CallRole}
     )["defense"]
-    assert sum(gemini.calls_by_role.values()) == 1 + 1 + 12 + 12 + 1 + 1 <= worst
+    # M15: even at the 12-turn worst case, only the 3 hand-offs make a closing call.
+    assert gemini.calls_by_role["closing"] == 3
+    assert sum(gemini.calls_by_role.values()) == 1 + 1 + 12 + 12 + 3 + 1 + 1 <= worst
 
 
 def test_sent_domain_and_topic_skip_extraction(client_factory, gemini, long_pdf):

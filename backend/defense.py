@@ -31,11 +31,13 @@ from academic_defense_simulator.engine import (
 )
 from academic_defense_simulator.llm.provider import CallCounter, LLMProvider
 from academic_defense_simulator.models.report import DefenseReport
+from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, compose_full_roster, generate_panel
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.chapter_filter import ChapterRetriever, is_opening, off_chapter, target_chapter
+from backend.closing import FALLBACK_LINE, Closing, ClosingCall, ClosingMode, closing_prompt, log_closing
 from backend.display_titles import display_title
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
@@ -43,7 +45,16 @@ from backend.highlight import highlight_span
 from backend.opening_order import opening_order
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
 from backend.routing import LitReviewAccess, Retriever, routed
-from backend.schemas import AnswerResponse, Evaluation, PanelistOut, PanelConfig, QuestionOut, Source, StartResponse
+from backend.schemas import (
+    AnswerResponse,
+    ClosingOut,
+    Evaluation,
+    PanelistOut,
+    PanelConfig,
+    QuestionOut,
+    Source,
+    StartResponse,
+)
 from backend.sessions import Session
 
 logger = logging.getLogger("backend.defense")
@@ -97,6 +108,7 @@ class Defense:
     other_subtype_line: str
     lit_review_access: LitReviewAccess = "none"  # settings.lit_review_access (M9 L2)
     opening_chapter_filter: bool = False  # settings.opening_chapter_filter (M14 D2); setup_defense sets it
+    closing_lines: ClosingMode = "off"  # settings.closing_lines (M15); setup_defense sets it
     chapter_starts: dict[int, int] | None = None  # the session's chapter map (M14 D1)
     chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
@@ -105,12 +117,17 @@ class Defense:
     # Every question the client has been sent, by turn. Written when a question
     # becomes pending, never changed after, so /tts reads it without the turn lock.
     asked: dict[int, AskedQuestion] = field(default_factory=dict)
+    # M15: the closing line said after each answered turn that a hand-off followed, by
+    # that turn; and what /tts speaks for it. Written when the turn commits, never changed.
+    closings: dict[int, ClosingOut] = field(default_factory=dict)
+    closings_asked: dict[int, AskedQuestion] = field(default_factory=dict)
     last_answer: AnsweredTurn | None = None  # only the last; set under the turn lock
     # The /start response as first sent, replayed to a resent /start until the first
     # answer is in (M6 H4). Set under the turn lock.
     start_response: StartResponse | None = None
-    # (turn, part) -> synth calls made; part None is the whole question.
-    tts_calls: dict[tuple[int, int | None], int] = field(default_factory=dict)
+    # (turn, part, closing) -> synth calls made; part None is the whole question, and
+    # closing True is the closing line said after that turn (M15).
+    tts_calls: dict[tuple[int, int | None, bool], int] = field(default_factory=dict)
     tts_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
@@ -122,10 +139,11 @@ class Defense:
         """The pending question's turn, or None when none is pending."""
         return len(self.session.turns) + 1 if self.pending is not None else None
 
-    def take_tts_call(self, turn: int, part: int | None = None) -> bool:
-        """Counts one synth call for `turn` (and `part`); False once its calls are used
-        up. Under its own lock, so two /tts requests can't both take the last one."""
-        key = (turn, part)
+    def take_tts_call(self, turn: int, part: int | None = None, *, closing: bool = False) -> bool:
+        """Counts one synth call for `turn` (and `part`, or its closing line); False once
+        its calls are used up. Under its own lock, so two /tts requests can't both take
+        the last one."""
+        key = (turn, part, closing)
         with self.tts_lock:
             made = self.tts_calls.get(key, 0)
             if made >= TTS_CALLS_PER_QUESTION:
@@ -144,13 +162,14 @@ def setup_defense(
     attribution_notes: bool = False,
     lit_review_access: LitReviewAccess = "none",
     opening_chapter_filter: bool = False,
+    closing_lines: ClosingMode = "off",
 ) -> Defense:
     """Extraction (only when the client sent no domain or topic) and persona
     generation. Neither raises on a Gemini failure: v1 falls back to blank
     fields and to the static panel, and so does this. `attribution_notes` is
     settings.attribution_notes (M7 J3); `lit_review_access` is
     settings.lit_review_access (M9 L2); `opening_chapter_filter` is
-    settings.opening_chapter_filter (M14 D2)."""
+    settings.opening_chapter_filter (M14 D2); `closing_lines` is settings.closing_lines (M15)."""
     assert session.matrix is not None
     config: PanelConfig = session.panel
     domain, topic = config.domain, config.topic
@@ -181,6 +200,7 @@ def setup_defense(
         model=model,
         lit_review_access=lit_review_access,
         opening_chapter_filter=opening_chapter_filter,
+        closing_lines=closing_lines,
         chapter_starts=session.chapter_starts,
         other_subtype_line=(
             f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
@@ -202,6 +222,7 @@ def ask(defense: Defense) -> QuestionOut:
 class AnswerResult:
     evaluation: Evaluation
     next_question: QuestionOut | None
+    closing: ClosingOut | None = None  # M15: on a hand-off, said before next_question
 
 
 def answer(defense: Defense, text: str) -> AnswerResult:
@@ -219,10 +240,22 @@ def answer(defense: Defense, text: str) -> AnswerResult:
 
     next_turn: ConversationTurn | None = None
     next_source: Source | None = None
+    closing: Closing | None = None
     if session_is_complete(working):
         working.report = build_report(working, defense.providers.defense, defense.providers.suggestions)
     else:
-        next_turn, next_source = _next_question(defense, working, tracker)
+        # M15 Decision 1: the engine's own "who speaks next", decided once. A different
+        # panelist from the one just answered is a hand-off, and the outgoing one closes;
+        # its call runs alongside the next question's generation (Decision 2).
+        speaker = select_active_panelist(working)
+        call = _start_closing(defense, working, turn, panelist, speaker)
+        next_turn, next_source = _next_question(defense, working, tracker, speaker)
+        if call is not None:
+            closing, waited_ms = call.take()
+            log_closing(working.profile.document_id, len(working.turns), panelist.archetype_key, closing, call.call_ms, waited_ms)
+        elif speaker.archetype_key != panelist.archetype_key and defense.closing_lines == "fixed":
+            closing = Closing(FALLBACK_LINE, "fixed", "flag")
+            log_closing(working.profile.document_id, len(working.turns), panelist.archetype_key, closing, None, 0)
 
     # Every call succeeded: commit.
     defense.sources.append(defense.pending_source)
@@ -236,7 +269,30 @@ def answer(defense: Defense, text: str) -> AnswerResult:
     next_question = question_out(working, next_turn, next_source) if next_turn and next_source else None
     if next_question is not None and next_turn is not None:
         _record_asked(defense, next_question, next_turn)
-    return AnswerResult(evaluation=evaluation_out(turn), next_question=next_question)
+    closing_out = None
+    if closing is not None:
+        answered = len(working.turns)
+        closing_out = ClosingOut(panelist=panelist_out(working, panelist.archetype_key), line=closing.line)
+        defense.closings[answered] = closing_out
+        defense.closings_asked[answered] = AskedQuestion(text=closing.line, archetype_key=panelist.archetype_key)
+    return AnswerResult(evaluation=evaluation_out(turn), next_question=next_question, closing=closing_out)
+
+
+def _start_closing(
+    defense: Defense, session: DefenseSession, turn: ConversationTurn, outgoing: Panelist, speaker: Panelist
+) -> ClosingCall | None:
+    """The outgoing panelist's closing call, started now, or None: not a hand-off, or
+    ADS_CLOSING_LINES isn't "llm"."""
+    if speaker.archetype_key == outgoing.archetype_key or defense.closing_lines != "llm":
+        return None
+    earlier = [c.line for _, c in sorted(defense.closings.items())]
+    prompt = closing_prompt(outgoing, session.profile, turn.question, turn.answer or "", earlier)
+    return ClosingCall(defense.providers.defense, prompt).start()
+
+
+def closing_before(defense: Defense, turn: int) -> ClosingOut | None:
+    """The closing line said just before question `turn`, if a hand-off led to it."""
+    return defense.closings.get(turn - 1)
 
 
 def _record_asked(defense: Defense, question: QuestionOut, turn: ConversationTurn) -> None:
@@ -244,9 +300,11 @@ def _record_asked(defense: Defense, question: QuestionOut, turn: ConversationTur
 
 
 def _next_question(
-    defense: Defense, session: DefenseSession, tracker: SourceTracker
+    defense: Defense, session: DefenseSession, tracker: SourceTracker, panelist: Panelist | None = None
 ) -> tuple[ConversationTurn, Source]:
-    panelist = select_active_panelist(session)
+    """`panelist`: the speaker already chosen by `select_active_panelist` (M15), so the
+    hand-off check and the question can't disagree; None chooses it here."""
+    panelist = panelist or select_active_panelist(session)
     defense.encoder.take_query()  # drop a query left by an earlier failed attempt
     # M6 H3: a new topic picks among near-ties, seeded by (session, turn), so a retried
     # attempt and any replay of this defense land on the same chunk. M9 L2: among the
