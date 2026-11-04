@@ -1,0 +1,1361 @@
+{
+  "recorded_at": "2026-11-04T04:03:55+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "document": "sample-capstone-anicheck.pdf",
+  "panel": [
+    "methodology_expert",
+    "problem_objectives_reviewer",
+    "results_conclusions_reviewer"
+  ],
+  "sessions": [
+    {
+      "session": 1,
+      "session_id": "cda7a661-7be2-409a-9c82-66baf49d37a2",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "strong",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "weak"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 10,
+          "answer_ms": 34406
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 7,
+          "answer_ms": 3558
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 4,
+          "answer_ms": 3047
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 43380
+        },
+        {
+          "turn": 5,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 3643
+        },
+        {
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2669
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 2383
+        },
+        {
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 6104
+        },
+        {
+          "turn": 9,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 52081
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 1,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "O'Sullivan",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "I understand your intent is to strictly bound the technical scope, but referencing your document's list of exclusions doesn't answer the behavioral concern: if the tool serves as a 'decision-support tool' for a farmer in the field, how do you reconcile the fact that your current objectives focus exclusively on model accuracy and system acceptability while remaining silent on mitigating the potential for user misinterpretation when the tool is confronted with the very diseases—like sheath blight—that you have explicitly deemed outside its capabilities?",
+          "answer": "The general objective was an offline app that identifies common rice leaf diseases, and each specific objective maps to a research question: the dataset and transfer learning answer question 3 on accuracy, and the ISO/IEC 25010 evaluation answers question 4 on acceptability. Question 1 on farmer practices is answered by the 24 interviews in Chapter 4, where 19 farmers relied on a neighbor and 8 had applied a wrong treatment.",
+          "total": 4,
+          "band": "weak",
+          "planned": "strong",
+          "answer_summary": "The candidate claimed that their specific research objectives and the inclusion of interview findings on farmer practices inherently account for the system's limitations and intended function.",
+          "closing": "I have noted your focus on system metrics and user evaluation regarding those diagnostic boundaries.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 925,
+          "waited_ms": 0,
+          "answer_ms": 3047,
+          "incoming": "methodology_expert",
+          "incoming_name": "Al-Farsi",
+          "incoming_question": "I see the logistical constraints you faced, but I am troubled by the methodology here; you performed a test using only three to five image captures per user session in a controlled environment. How can you possibly claim these results provide a statistically valid assessment of your model's robustness, especially considering you didn't evaluate performance across the diverse, uncontrolled lighting conditions that are endemic to field-based rice farming?"
+        },
+        {
+          "session": 1,
+          "turn": 6,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Methodology Expert",
+          "question": "That logic is fundamentally circular; you are asserting that synthetic post-processing justifies the inherent lack of ecological variance in your primary data collection. If your methodology section states that respondents were 'guided through capturing between three and five identifications on leaves available at the session,' how can you scientifically defend the model’s reliability when your testing protocol systematically eliminated the very environmental stochasticity—such as variable shadow, glare, or varying moisture—that defines the user’s actual field conditions?",
+          "answer": "We used purposive sampling because we needed farmers who grow rice and have phones. A bigger sample would be better but we had limited time.",
+          "total": 3,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate stated that purposive sampling was used to reach smartphone-owning rice farmers and cited time constraints as the reason for the sample size.",
+          "closing": "I have concluded my questions regarding your sampling methodology.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 973,
+          "waited_ms": 0,
+          "answer_ms": 2669,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Tanaka",
+          "incoming_question": "I see you've highlighted the discrepancy between your 94.7% accuracy and the higher figures found in other literature. Given that you explicitly acknowledge your system cannot express multiple conditions on a single leaf, how do you justify claiming the tool is 'useful' when that fundamental limitation creates a diagnostic blind spot during the very field conditions—where overlapping disease symptoms are common—that your target users face?"
+        },
+        {
+          "session": 1,
+          "turn": 9,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Tanaka",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That statistic, while noted, does nothing to resolve the logical disconnect between a 94.7% accuracy rate and the fact that your system cannot, by design, express multiple conditions on a single leaf. If the tool is fundamentally incapable of classifying multi-symptom leaves, how can you claim it is a 'useful' diagnostic tool for field conditions where such co-infections are common, without that utility claim being fundamentally misleading to the end user?",
+          "answer": "We did not have time to analyze that part in detail.",
+          "total": 3,
+          "band": "weak",
+          "planned": "weak",
+          "answer_summary": "The candidate stated that they did not have sufficient time to analyze the limitations regarding the tool's inability to classify multi-symptom leaves.",
+          "closing": "I have concluded my questions regarding the practical utility of your diagnostic scope.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1797,
+          "waited_ms": 0,
+          "answer_ms": 52081,
+          "incoming": "devils_advocate",
+          "incoming_name": "Muller",
+          "incoming_question": "You claim the app is a helpful diagnostic aid for farmers, but how can you defend its utility as a decision-support tool when your scope explicitly excludes critical diseases like sheath blight, essentially ensuring the app will fail to provide actionable data for common, economically devastating infections in the field?"
+        }
+      ],
+      "gemini_calls": 28
+    },
+    {
+      "session": 2,
+      "session_id": "923c45b5-5c9a-4eff-b203-79b115e4b15f",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "mid",
+        "methodology_expert": "weak",
+        "results_conclusions_reviewer": "strong"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 5844
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 2682
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 5,
+          "answer_ms": 3160
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 4368
+        },
+        {
+          "turn": 5,
+          "archetype_key": "methodology_expert",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 50939
+        },
+        {
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 6079
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "strong",
+          "total": 7,
+          "answer_ms": 2729
+        },
+        {
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "strong",
+          "total": 9,
+          "answer_ms": 3011
+        },
+        {
+          "turn": 9,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "strong",
+          "total": 4,
+          "answer_ms": 2905
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 2,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "O'Sullivan",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "That response still treats the user's safety as an afterthought to project scoping; if you acknowledge in your own scope that the system 'does not recommend a specific chemical product' and is 'not as a replacement for consultation,' how can you justify the objective of launching a tool that provides a false sense of security for farmers while explicitly ignoring root and panicle diseases that could cause total crop failure before a technician is ever consulted?",
+          "answer": "I agree it is a limitation. Our objective was mainly to show that the app works offline on the phone, so we kept the scope small for the capstone.",
+          "total": 5,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate conceded that the safety concern is a valid limitation but explained that the system's narrow scope was necessary to satisfy the primary objective of demonstrating offline mobile functionality within a capstone project timeline.",
+          "closing": "I have concluded my questions regarding the scope and safety limitations of the application.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 957,
+          "waited_ms": 0,
+          "answer_ms": 3160,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "Fair enough, though let's turn to your evaluation methodology. Given that you rely on a 648-image test set to compute your precision and recall metrics, how do you justify the validity of these performance scores when your purposive sampling in the field only required participants to capture between three and five identifications per session, essentially bypassing the rigorous cross-validation or hold-out procedures required to ensure your model's accuracy, precision, and recall are representative of real-world variability in rice leaf conditions?"
+        },
+        {
+          "session": 2,
+          "turn": 6,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "Answering that you don't recall the specific field count is not a substitute for a methodological justification, especially when your document explicitly notes that 'thirty respondents were selected through purposive sampling' and that 'each respondent... was guided through capturing between three and five identifications'. If you cannot justify the sample size or the variance captured during those sessions, how can you claim that this 648-image test set—derived from such a constrained, non-random collection process—is statistically sufficient to represent the actual variability of rice diseases found across the diverse, real-world conditions in Barangay Masagana?",
+          "answer": "We followed what our adviser told us to do.",
+          "total": 3,
+          "band": "weak",
+          "planned": "weak",
+          "answer_summary": "The candidate stated that they performed the study exactly as instructed by their adviser.",
+          "closing": "I have completed my inquiry regarding your sampling methodology and the resulting test set composition.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 999,
+          "waited_ms": 0,
+          "answer_ms": 6079,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Al-Farsi",
+          "incoming_question": "Regarding your observation that respondents were more confident in operating the app than in the correctness of its output, you acknowledge that this gap in reliability is the more consequential dimension for a diagnostic tool. Since you know the system cannot express multiple concurrent symptoms, how do you reconcile this known limitation with your claim that the system is nonetheless 'useful' for farmers who may be dealing with complex, multi-symptom field conditions?"
+        },
+        {
+          "session": 2,
+          "turn": 9,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That explanation simply reclassifies the risk rather than addressing my point; if you acknowledge the system struggles with multi-symptom leaves and creates a confidence gap, how exactly does the data support your conclusion that users found it 'useful' rather than merely 'convenient', given that their stated skepticism regarding the tool's correctness suggests they already distrusted the very diagnostic utility you are claiming?",
+          "answer": "Our 94.7% is below the 99% reported on PlantVillage, and we attribute that mainly to scale: 3,240 images across five classes is an order of magnitude smaller. We don't claim the field accuracy is 94.7%; the limitations say the transfer to attached leaves, complex backgrounds and variable light was not established.",
+          "total": 4,
+          "band": "weak",
+          "planned": "strong",
+          "answer_summary": "The candidate asserts that the 94.7% accuracy metric is lower than literature standards due to the smaller scale of their dataset and clarifies that their claims do not extend to accuracy in complex field conditions.",
+          "closing": "I have noted your clarification regarding the scope of the diagnostic accuracy and the dataset limitations.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1000,
+          "waited_ms": 0,
+          "answer_ms": 2905,
+          "incoming": "devils_advocate",
+          "incoming_name": "Schmidt",
+          "incoming_question": "If we look closely at your own findings, you admit a stark disconnect where respondents were specifically less confident in the 'correctness of what it told them' compared to their ability to operate the interface; how then can you empirically justify labeling this tool as 'useful' in your conclusion when the very users you surveyed expressed foundational skepticism toward its diagnostic output, and how does your reliance on 'high recall for healthy leaves' compensate for the failure to correctly diagnose the actual diseased plants that represent the primary economic threat to these farmers?"
+        }
+      ],
+      "gemini_calls": 24
+    },
+    {
+      "session": 3,
+      "session_id": "d1b7af46-bf9f-444e-b9ef-dd301158ab01",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "weak",
+        "methodology_expert": "strong",
+        "results_conclusions_reviewer": "mid"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 20328
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 5599
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 3287
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "strong",
+          "total": 7,
+          "answer_ms": 24213
+        },
+        {
+          "turn": 5,
+          "archetype_key": "methodology_expert",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 3310
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 3249
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2479
+        },
+        {
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 3962
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 3,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Fayed",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Deferring to your teammates on the fundamental justification of your research scope is insufficient at this stage of the defense; if you claim this is a decision-support tool, how can you justify the objective of creating a diagnostic aid that provides incomplete information, potentially misleading a farmer into a false sense of security regarding the health of their crop?",
+          "answer": "I think it's fine because the farmers liked the app.",
+          "total": 3,
+          "band": "weak",
+          "planned": "weak",
+          "answer_summary": "The candidate claimed that the diagnostic tool is acceptable because farmers indicated they liked the application during evaluation.",
+          "closing": "I will leave the matter of your research scope there and move on.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 938,
+          "waited_ms": 0,
+          "answer_ms": 3287,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "User satisfaction is one thing, but let's talk about your data collection process. Since you used purposive sampling to select thirty respondents who only captured between three and five identifications on leaves available at that specific session, how can you argue that this limited, controlled interaction provides a robust enough dataset to validate the model's reliability in a real-world, uncontrolled environment?"
+        },
+        {
+          "session": 3,
+          "turn": 5,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "I appreciate your transparency regarding the constraints of your training data, but that response conflates technical precision with the human element of your evaluation; given that your system acceptability score for 'reliability' was derived from these thirty respondents capturing only three to five identifications in a thirty-minute guided session, how can you definitively claim the application is 'reliable' based on such an artificial, short-term exposure that fails to mimic the longitudinal performance a farmer would actually experience?",
+          "answer": "On sampling: the thirty respondents were purposively chosen, active rice growers who own an Android phone, from the same barangay as the dataset, and each used the app once for about thirty minutes right after a demonstration. That design measures first impressions from people close to the data source, not independent long-term use, and we state it in the limitations; a longitudinal, unsupervised study across a full season is our fourth recommendation.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate clarifies that the study measured user first impressions rather than long-term reliability and identifies the need for a longitudinal, unsupervised study as a future recommendation.",
+          "closing": "I have concluded my inquiry regarding your sampling strategy.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 846,
+          "waited_ms": 0,
+          "answer_ms": 3310,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "O'Sullivan",
+          "incoming_question": "Fair point on the sampling limitations, though I want to pivot to the implications of your accuracy findings. You mentioned that the overall accuracy of 94.7% is lower than literature standards, yet you still frame the system as a useful diagnostic tool. How do you reconcile this lower performance with the fact that users reported lower confidence in the reliability of the system's output—are you concerned that this performance gap actively undermines the tool's core utility for a farmer?"
+        },
+        {
+          "session": 3,
+          "turn": 8,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "O'Sullivan",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That is an optimistic projection, but it dismisses the core architectural flaw I am asking you to address: if you acknowledge that the system's failure to handle multi-symptom leaves is what drives the user's lack of trust in the output, how can you maintain the conclusion that the system is a useful diagnostic aid without fundamentally changing the system's design to account for those multiple conditions?",
+          "answer": "The accuracy is lower than the PlantVillage studies because our dataset is smaller.",
+          "total": 3,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate claimed that the system's lower accuracy compared to PlantVillage studies is due to the smaller size of their dataset.",
+          "closing": "I will leave the discussion of your model architecture there for now.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 954,
+          "waited_ms": 0,
+          "answer_ms": 3962,
+          "incoming": "devils_advocate",
+          "incoming_name": "Yamamoto",
+          "incoming_question": "I must push back on the assertion that this study effectively measures even 'first impressions' of system reliability; if your methodology involved the proponents reading survey statements aloud to farmers and conducting a guided, thirty-minute session, how can you claim that the 'reliability' rating reflects a genuine, independent user impression rather than a data point heavily influenced by the presence and guidance of the researchers themselves?"
+        }
+      ],
+      "gemini_calls": 24
+    },
+    {
+      "session": 4,
+      "session_id": "d6362eef-f60b-42b5-9d53-9e4b143e5bb0",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "strong",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "strong"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 15,
+          "answer_ms": 5690
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 8412
+        },
+        {
+          "turn": 3,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 5452
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 13,
+          "answer_ms": 4193
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "strong",
+          "total": 15,
+          "answer_ms": 3887
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 4,
+          "turn": 1,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Regarding your decision not to include chemical product or dosage recommendations, how does this choice square with the stated objective of providing a decision-support tool for smallholder farmers who may have limited access to agricultural technicians?",
+          "answer": "It squares because we defined the decision the tool supports as the identification, not the treatment. The problem in Chapter 1 is a farmer guessing what the disease is: 19 of the 24 farmers we interviewed asked a neighbor, 16 bought whatever the supply store recommended, and 8 later realized they had applied the wrong treatment. The four diseases need different responses, since blight is bacterial, brown spot is fungal and tungro is viral and spread by the leafhopper, so a correct identification already rules out the most costly mistake, such as spraying fungicide on tungro. Naming a product and a dosage is prescribing a pesticide, which neither we nor the app are qualified to do, and with bacterial leaf blight recall at 0.813 a wrong prescription would compound a wrong identification. So the app gives the class and a confidence percentage and leaves the chemical decision to the technician or the label, which is why the Scope says it is decision support and not a replacement for a technician.",
+          "total": 15,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate argues that the app functions as a diagnostic tool rather than a prescription service, noting that limiting the scope to identification prevents the high risks of recommending incorrect treatments for misclassified diseases.",
+          "closing": "I see, thank you for clarifying the scope of your decision-support framework.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 4159,
+          "waited_ms": 486,
+          "answer_ms": 5690,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "That logic regarding the diagnostic scope is clear enough, but I am concerned about your evaluation design, specifically when you mention that the thirty respondents were guided through capturing between three and five identifications on leaves available at the session. How did you control for potential bias or overfitting in your assessment given that the participants were limited to a set of leaves provided at the session rather than their own naturally occurring field samples?"
+        },
+        {
+          "session": 4,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "Your assumption that basic geometric and brightness augmentations are sufficient to bridge the performance gap between controlled laboratory settings and the stochastic reality of a farm is theoretically thin. Given that your evaluation design specifically states that each respondent was guided through capturing identifications on 'leaves available at the session', how do you defend the ecological validity of these results when your testing methodology systematically excluded the complex, uncurated environmental variables—such as varying occlusion, non-uniform field lighting, and plant physiological diversity—that characterize the actual conditions your users will face in their daily operations?",
+          "answer": "We can't fully defend it, and we say so in the limitations: the 94.7% comes from detached leaves on a white background, and the session leaves were the ones available that day. The augmentation, rotation within 25 degrees, flips, zoom and brightness within 20%, was meant to make the model less sensitive to how a photo is taken, but it doesn't add occlusion or cluttered backgrounds. The acceptability survey measured whether farmers could use the app, more than whether it is accurate in their fields, so field accuracy is still open.",
+          "total": 13,
+          "band": "strong",
+          "planned": "mid",
+          "answer_summary": "The candidate acknowledged that the model performance is limited to controlled conditions and that the usability survey did not measure accuracy in real-world field settings.",
+          "closing": "Thank you. That's all from me for now.",
+          "source": "fixed",
+          "reason": "timeout",
+          "call_ms": null,
+          "waited_ms": 1007,
+          "answer_ms": 4193,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Sørensen",
+          "incoming_question": "Fair enough, though I am concerned by your framing here; you characterize the 94.7% accuracy as lower than literature norms due to dataset scale, yet you simultaneously report that users were less confident in the correctness of the system's output than its usability. If the system's inability to express multi-condition symptoms forces a single-class classification on complex leaves, how can you maintain that the 94.7% accuracy metric is an appropriate proxy for diagnostic performance, rather than an artifact of a design that essentially ignores the prevalence of co-occurring symptoms in the field?"
+        },
+        {
+          "session": 4,
+          "turn": 5,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Sørensen",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "Fair enough, though I am concerned by your framing here; you characterize the 94.7% accuracy as lower than literature norms due to dataset scale, yet you simultaneously report that users were less confident in the correctness of the system's output than its usability. If the system's inability to express multi-condition symptoms forces a single-class classification on complex leaves, how can you maintain that the 94.7% accuracy metric is an appropriate proxy for diagnostic performance, rather than an artifact of a design that essentially ignores the prevalence of co-occurring symptoms in the field?",
+          "answer": "We don't maintain that, and the paper doesn't either. The 94.7% is accuracy on 648 held-out images that a technician had labeled with one confident class; leaves he couldn't classify confidently were discarded at collection, so mixed-symptom leaves are largely absent from the test set by construction. It answers research question 3, how well the model separates five classes on clean single-condition leaves, and nothing more. The multi-condition problem shows up instead in the field sessions: reliability was the one characteristic below Very Acceptable, at 4.09, and the session comments tie it to leaves with more than one condition. That's why Chapter 5 calls the app a preliminary decision-support aid, and why the second and third recommendations are an inconclusive or multi-condition output and a validation against a technician's judgment on the same field leaves.",
+          "total": 15,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate clarified that the 94.7% accuracy metric is intended only as a measure of model performance on clean, single-condition leaves, while acknowledging that the system's inability to handle multi-condition inputs is a documented limitation currently addressed by the proposed future work.",
+          "closing": "I have noted your clarification regarding the scope of the test set and the limitations of the current classification architecture.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1241,
+          "waited_ms": 0,
+          "answer_ms": 3887,
+          "incoming": "devils_advocate",
+          "incoming_name": "Okoro",
+          "incoming_question": "I must push back on your assertion that restricting the scope to identification inherently prevents the risks associated with misclassification; if your stated 'significance of the study' relies on the app providing a 'preliminary identification at the moment of observation' to guide decisions, how can you claim that providing an incorrect diagnostic label to a farmer—who you acknowledge lacks access to an agricultural technician—is any less dangerous than a misinformed prescription, given that your system provides no mechanism to verify the model's confidence or mitigate the fallout of a false positive in a field setting?"
+        }
+      ],
+      "gemini_calls": 15
+    },
+    {
+      "session": 5,
+      "session_id": "1bc6898e-0bdb-4d2f-b368-0cbb446f8a6c",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "mid",
+        "methodology_expert": "strong",
+        "results_conclusions_reviewer": "mid"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 6,
+          "answer_ms": 3909
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 7580
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 6,
+          "answer_ms": 6557
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 10864
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 32325
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2364
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 6,
+          "answer_ms": 4248
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 5,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "That response still treats the user's safety as a secondary detail to be addressed in a future version, rather than a core requirement for a tool that claims to offer 'preliminary disease identification.' If your stated objective is to serve as a decision-support tool that provides actionable data for farmers, how can you define that objective as a success when the system's design explicitly creates a blind spot for critical, yield-limiting diseases that could cause a farmer to make an informed but ultimately devastating decision based on your tool's incomplete output?",
+          "answer": "I think it can still count as a success for what we set out to do, which was to identify the four diseases farmers see most on the leaves. The diseases on the stem and panicle are left out, that's true, and a farmer could miss them if they only rely on the app. We wrote that it isn't a replacement for the technician, so the farmer should still ask someone for the other diseases.",
+          "total": 6,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate maintains that the application is a success because it achieves its specific objective of identifying four common leaf diseases, noting that the tool is intended to supplement rather than replace agricultural technicians.",
+          "closing": "I have noted your position on the scope you set for this tool. Please proceed to the next member of the panel.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 714,
+          "waited_ms": 0,
+          "answer_ms": 6557,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "Fair enough, though let's turn to your evaluation methodology. You mention using purposive sampling for your thirty respondents in Barangay Masagana, but you also state that they were guided through capturing between three and five identifications on leaves available at the session. How can you claim that your system acceptability scores represent genuine reliability or functional suitability when your methodology forced an artificial interaction where the environment and samples were curated by the proponents rather than being encountered naturally by the farmers?"
+        },
+        {
+          "session": 5,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "Fair enough, though let's turn to your evaluation methodology. You mention using purposive sampling for your thirty respondents in Barangay Masagana, but you also state that they were guided through capturing between three and five identifications on leaves available at the session. How can you claim that your system acceptability scores represent genuine reliability or functional suitability when your methodology forced an artificial interaction where the environment and samples were curated by the proponents rather than being encountered naturally by the farmers?",
+          "answer": "We don't claim the scores represent reliability in natural use, and the Limitations section says the opposite: the evaluation measures initial impression rather than sustained use. The design was chosen for research question 4, whether the intended users find the app acceptable, and the guided session was needed because the respondents were first-time users, many with limited formal schooling, and the survey was read aloud in Filipino. The curation does bias the result upward, and two things in the data show where: usability scored 4.42 because people could finish a capture after one demonstration, but reliability scored lowest, at 4.09, even under these favorable conditions, driven by leaves with more than one symptom. So the scores are an upper bound on acceptability, and the fourth recommendation, a full cropping season of unsupervised use, is what would measure reliability in the field.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate claims that the system acceptability scores are intended to measure initial impression rather than naturalistic reliability, noting that the study design accounts for this bias by acknowledging the scores as an upper bound on performance.",
+          "closing": "That clarifies the scope you set for your acceptability study. I will move on and yield the floor.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1267,
+          "waited_ms": 0,
+          "answer_ms": 10864,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Schmidt",
+          "incoming_question": "Fair enough, though you link the lower reliability score to the system's inability to express more than one condition on a single leaf. If you recognize that your system cannot handle multi-symptom cases, how do you justify the conclusion that the system is useful to farmers when it fundamentally fails to report on the complex, co-occurring disease states that are causing your users' reliability concerns?"
+        },
+        {
+          "session": 5,
+          "turn": 7,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Schmidt",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That explanation simply deflects to dataset scale rather than addressing the logic gap I am pointing out; if you acknowledge that the 'present system cannot express' multi-symptom conditions and returns a single class, how can you maintain that the system is 'useful' to a farmer in the field when your own evaluation confirms that the system's output is fundamentally decoupled from the complex reality of crop pathology?",
+          "answer": "It's still useful for the common case, where a leaf has one disease. The model was right on most of the test images, and the farmers rated it 4.31 overall. For leaves with more than one condition it will give only one answer, which we admit is a weakness, and that's part of why reliability was the lowest rating. We think the farmer can still use it as a first check and then ask a technician if the result looks wrong.",
+          "total": 6,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate maintains the system is useful as a preliminary diagnostic check for common single-condition cases, noting that users can consult human technicians if the output appears incorrect.",
+          "closing": "I have completed my line of questioning regarding the scope of your diagnostic model.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1195,
+          "waited_ms": 0,
+          "answer_ms": 4248,
+          "incoming": "devils_advocate",
+          "incoming_name": "O'Sullivan",
+          "incoming_question": "You claim that your methodology treats these acceptability scores merely as an 'upper bound' by virtue of the controlled testing environment, but your document classifies these findings under 'Functional Suitability'—an ISO/IEC 25010 characteristic defined by the degree to which a system provides functions that meet stated and implied needs. If your study design relies on proponents curating the samples and guiding the interaction, how can you formally categorize these metrics as 'Functional Suitability' when the data inherently reflects a guided demonstration rather than the system's ability to fulfill the operational needs of a farmer working independently in the field?"
+        }
+      ],
+      "gemini_calls": 19
+    },
+    {
+      "session": 6,
+      "session_id": "89ae84f4-90f5-49af-9298-e5ea06cc78e1",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "strong",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "mid"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 3560
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 2164
+        },
+        {
+          "turn": 3,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 25096
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 12,
+          "answer_ms": 6796
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 2892
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 13716
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 9,
+          "answer_ms": 7015
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 6,
+          "turn": 1,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Regarding your objective to provide a decision-support tool for farmers, how can this application meaningfully improve their management decisions if it explicitly avoids recommending any chemical products or dosages while also lacking the capability to transmit data to the local government unit for regional advisory campaigns?",
+          "answer": "It improves the decision that goes wrong today, which is the diagnosis. In our 24 interviews, 16 farmers bought whatever the supply store recommended and 8 had applied a treatment they later found was wrong for the problem. Because the four diseases call for different responses, bacterial blight doesn't respond to fungicide and tungro has to be controlled through the leafhopper, a correct class tells the farmer which kind of response is even worth paying for, before anyone sells him a product. It also tells him when to spend a technician's visit, since a low-confidence or blight result is the case worth confirming. The data link to the LGU is listed in Significance only as something the aggregate could do in principle; the current app stores history on the phone and sends nothing, which was a privacy choice and a connectivity reality, so we don't claim that benefit for this version.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate claims that the application aids decision-making by improving diagnosis accuracy, which helps farmers avoid incorrect treatments and selectively allocate expert technician time. Regarding the LGU integration, the candidate clarifies that this was an aspirational goal noted in the significance section rather than a functional requirement of the current version.",
+          "closing": "I have noted your position on the decision-support scope and the data limitations.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1142,
+          "waited_ms": 0,
+          "answer_ms": 3560,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "It's clear you've prioritized user accessibility with this survey approach, but I am concerned about the training data's representativeness given the purposive sampling from a single locale. Since you only conducted testing with Barangay Masagana farmers using leaves available at the session, how can you verify that the model's performance on the 648-image test set will generalize to the broader environmental variations and pathogen strains found outside that specific barangay?"
+        },
+        {
+          "session": 6,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "Your reliance on rotation and brightness to simulate environmental complexity is theoretically insufficient; if your entire dataset relies on images collected by thirty respondents who only captured leaves available during a single, thirty-minute session in Barangay Masagana, how do you defend against the statistical certainty of selection bias, and what mechanisms in your evaluation design actually account for the fact that your training data lacks the longitudinal and geographical variance inherent in real-world rice cultivation?",
+          "answer": "The training images weren't taken by the respondents; we collected them ourselves from eleven fields over six weeks, and a technician labeled them. The thirty-minute sessions were only for the acceptability survey. But you're right that everything comes from one barangay and one season, so there is no geographic or year-to-year variance, and our evaluation doesn't correct for that. We listed it as a limitation and recommended collecting from more municipalities over more than one season.",
+          "total": 12,
+          "band": "strong",
+          "planned": "mid",
+          "answer_summary": "The candidate clarified that the training data was collected by the research team over six weeks rather than by the survey respondents, but conceded that the study lacks longitudinal and geographic diversity, noting this as an acknowledged limitation.",
+          "closing": "I have noted your clarifications regarding the provenance of your sampling and the scope you set.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 3456,
+          "waited_ms": 0,
+          "answer_ms": 6796,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Schmidt",
+          "incoming_question": "I appreciate the transparency regarding your comparative performance, but let's look at your discussion on user trust. You note a distinct gap where users found the app usable but lacked confidence in its diagnostic output, particularly for bacterial leaf blight. Given that your conclusions position this as a viable diagnostic tool, how can you justify the claim of practical utility when your primary users' lack of confidence directly aligns with the system's demonstrated inability to handle multi-class symptoms?"
+        },
+        {
+          "session": 6,
+          "turn": 7,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Schmidt",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That response essentially sidesteps the structural reality; merely collecting more images of single-class leaves will never enable your model to output multiple concurrent conditions. If your system is hard-coded to return only a single class, how can you maintain the conclusion that this is a 'diagnostic tool' when your own discussion explicitly admits that it lacks the architectural capacity to express symptoms of 'more than one condition' that farmers are encountering in the field?",
+          "answer": "We call it a diagnostic aid rather than a full diagnostic tool. You're right that more single-class images won't let it output two conditions; that would need a change to the model, like a multi-label output or an inconclusive result, and that's in our recommendations. For most leaves there is one main disease, so the single class is still helpful, but we agree the conclusion should be read as preliminary.",
+          "total": 9,
+          "band": "mid",
+          "planned": "mid",
+          "answer_summary": "The candidate reframes the system as a 'diagnostic aid' rather than a 'tool,' acknowledges that multi-label capability is a necessary future improvement, and defends the current single-class approach by asserting that most field cases present with only one primary disease.",
+          "closing": "I have concluded my questions regarding your architectural scope and the limitations of the model's diagnostic capacity.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 2836,
+          "waited_ms": 0,
+          "answer_ms": 7015,
+          "incoming": "devils_advocate",
+          "incoming_name": "O'Sullivan",
+          "incoming_question": "You argue that the application aids decision-making by improving diagnosis accuracy, yet you simultaneously concede that your system lacks the architectural capacity to transmit or aggregate diagnostic data. If your own 'Significance of the Study' section admits that the primary mechanism for LGU-led regional advisory campaigns is this very data aggregation—a feature you have failed to implement—how can you justify the claim that this tool provides any meaningful, systemic utility to the agricultural management process rather than serving as a static, isolated repository of localized classifications?"
+        }
+      ],
+      "gemini_calls": 20
+    },
+    {
+      "session": 7,
+      "session_id": "98edf4ba-04f5-4736-84ed-06d5ac7801fb",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "mid",
+        "methodology_expert": "strong",
+        "results_conclusions_reviewer": "strong"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 16039
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 3719
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 9,
+          "answer_ms": 31355
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 6288
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 5057
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 7,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Redirecting me to your initial interview findings simply restates your design constraint rather than justifying why a 'decision-support tool' remains useful to a smallholder when it explicitly strips away the actionable output that would actually support a decision. If the ultimate significance of your study is to offer farmers a means of 'obtaining a preliminary disease identification at the moment of observation', how can you claim to be providing 'decision-support' when the system deliberately leaves the farmer at the exact same point of uncertainty they were in before they opened your application?",
+          "answer": "I don't think it leaves them at the same point. Before, they didn't know which disease it was; with the app they at least know whether it's blight, brown spot, leaf smut or tungro, and those need different treatments, so they can ask the store or the technician a more specific question. It doesn't tell them what to buy, I accept that part is still up to them.",
+          "total": 9,
+          "band": "mid",
+          "planned": "mid",
+          "answer_summary": "The candidate argues that providing specific disease identification empowers farmers to ask more targeted questions of experts, thereby serving as a form of support despite the lack of direct treatment recommendations.",
+          "closing": "I have noted your position on the scope of the decision-support functionality. I will move on and let the rest of the panel proceed.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1148,
+          "waited_ms": 0,
+          "answer_ms": 31355,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "I follow your logic regarding the user sessions, but I have significant reservations about your methodology here. You mention that the survey was administered immediately after a thirty-minute session where you guided participants through image captures; how can you claim to be evaluating system acceptability under ISO/IEC 25010 standards when your data collection relies on a highly curated, short-term demonstration rather than autonomous, longitudinal field usage?"
+        },
+        {
+          "session": 7,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "I follow your logic regarding the user sessions, but I have significant reservations about your methodology here. You mention that the survey was administered immediately after a thirty-minute session where you guided participants through image captures; how can you claim to be evaluating system acceptability under ISO/IEC 25010 standards when your data collection relies on a highly curated, short-term demonstration rather than autonomous, longitudinal field usage?",
+          "answer": "We claim less than that. ISO/IEC 25010 gave us the four characteristics and the twenty statements, five each for functional suitability, usability, reliability and portability; it doesn't prescribe how long users must use a system before rating it, so the instrument is valid for what we asked, which is a first-use judgment by the intended users. The Limitations section says exactly that: the survey measures initial impression rather than sustained use, and the respondents are from the barangay that supplied the training images. Two design choices limit the damage: the proponents read every statement aloud and recorded answers without prompting, and the result isn't uniformly flattering, since reliability came in below Very Acceptable at 4.09. For autonomous field use, our fourth recommendation is a longitudinal, unsupervised evaluation across a full cropping season, which is the study that would answer your question.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate argues that their survey measures first-use impressions rather than sustained performance, noting that the ISO/IEC 25010 standard does not mandate a specific duration and that the study design explicitly acknowledges these limitations.",
+          "closing": "I have noted your justification regarding the scope you set for the usability assessment.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 2866,
+          "waited_ms": 755,
+          "answer_ms": 6288,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "O'Sullivan",
+          "incoming_question": "Regarding the gap where respondents were more confident in their ability to operate the application than in the correctness of what it told them, how can you justify the conclusion that the system is useful when the users themselves identify a lack of confidence in the primary output of the tool?"
+        },
+        {
+          "session": 7,
+          "turn": 5,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "O'Sullivan",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "Regarding the gap where respondents were more confident in their ability to operate the application than in the correctness of what it told them, how can you justify the conclusion that the system is useful when the users themselves identify a lack of confidence in the primary output of the tool?",
+          "answer": "The data doesn't show a lack of confidence in the output; it shows less confidence in the output than in the operation. Reliability was 4.09, which is still Acceptable on our scale, against 4.42 for usability, and overall 4.31 is Very Acceptable, so the respondents found it useful while trusting its answers less than its interface. That gap is the right one to have for a diagnostic aid, and the discussion says it is the more consequential dimension. It also matches the measured weakness: bacterial leaf blight recall is 0.813, with 16 of its 125 test images called brown spot, and the session comments tied the low reliability ratings to leaves with more than one condition. So the conclusion we draw is a qualified one: useful as preliminary decision support, not as a substitute for a technician where a costly treatment follows, which is exactly the scope a user's partial distrust supports.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate argued that the system's utility is justified because the reliability score remains high on their scale and the gap between usability and reliability is both expected and appropriate for a preliminary diagnostic tool. They further claimed that the measured distrust reflects a logical user awareness of the system's limitations regarding multi-condition leaves.",
+          "closing": "That covers my questions regarding the tool's perceived utility and its diagnostic scope.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1033,
+          "waited_ms": 0,
+          "answer_ms": 5057,
+          "incoming": "devils_advocate",
+          "incoming_name": "Zuberi",
+          "incoming_question": "I must push back on your reliance on this 'first-impression' defense; if your methodology relied on the proponents themselves reading survey statements aloud to farmers immediately after a researcher-guided demonstration, how can you genuinely claim the resulting ISO/IEC 25010 data measures 'system acceptability' rather than merely reflecting the Hawthorne effect and social desirability bias inherent in such a highly curated, non-autonomous environment?"
+        }
+      ],
+      "gemini_calls": 16
+    },
+    {
+      "session": 8,
+      "session_id": "a97ef84b-7f76-4a77-a6bb-efdd86050aec",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "strong",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "mid"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 15,
+          "answer_ms": 17478
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 3323
+        },
+        {
+          "turn": 3,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 6531
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 12,
+          "answer_ms": 4871
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 6253
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 20792
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "mid",
+          "total": 5,
+          "answer_ms": 6535
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 8,
+          "turn": 1,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Regarding the decision that the application does not recommend a specific chemical product or dosage, why should a farmer prioritize using this app if it stops at identification rather than providing actionable, on-the-spot management advice?",
+          "answer": "Because identification is where farmers in Barangay Masagana actually lose money, and it is available at the moment they see the symptom, offline, which a technician seen once a season is not. Our interviews found 8 of 24 farmers had already applied a treatment they later judged wrong for the problem, and Chapter 1 explains why that happens: fungicide does nothing for bacterial blight, and spraying a tungro plant is futile because the control has to target the green leafhopper. Knowing the class tells the farmer which category of response to pursue and what to ask the supply store, which is a recommendation source with a commercial interest. On-the-spot product and dosage advice would mean the app prescribing agricultural chemicals, which the Scope rules out as beyond our team's competence, and at 94.7% overall and 0.813 recall on blight, a wrong dosage would turn a misclassification into a costly mistake.",
+          "total": 15,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate argues that identification is the primary economic pain point for farmers and that omitting chemical advice prevents both dangerous misapplication and liability issues that exceed the team's technical competence.",
+          "closing": "I have noted your justification regarding the operational scope of AniCheck. I yield the floor.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 16020,
+          "waited_ms": 0,
+          "answer_ms": 17478,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "I understand your focus on the economic impact of misdiagnosis, but let’s look at your evaluation design. You report using a 648-image test set to validate your model, yet your field sessions only involved capturing three to five identifications on leaves available at the session. How can you be certain that the model’s performance on that static test set generalizes to the uncontrolled, variable lighting conditions present in the actual field environment where these farmers are working?"
+        },
+        {
+          "session": 8,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "Relying on augmentation to bridge the gap between laboratory consistency and field variability is a significant methodological leap that lacks empirical support. Since your evaluation design restricted testing to a '648-image test set' and a highly controlled, guided field session where you oversaw the capture of only three to five identifications, how can you definitively claim these performance metrics represent the model's reliability under the unpredictable, real-world noise conditions of uncontrolled agriculture when your study protocol provides no quantitative validation against a broader, diverse set of field-acquired images?",
+          "answer": "We can't claim that definitively, you're right. The augmentation was the best we could do with the time we had, and it makes the model a bit more robust, but we never tested it on field photos with complex backgrounds. The guided session wasn't meant to measure accuracy, only whether farmers could use it. A proper field validation would be the next step.",
+          "total": 12,
+          "band": "strong",
+          "planned": "mid",
+          "answer_summary": "The candidate conceded that the model's reliability in uncontrolled field conditions was not definitively proven and clarified that the guided field session was designed to test usability rather than diagnostic accuracy.",
+          "closing": "Thank you. That's all from me for now.",
+          "source": "fixed",
+          "reason": "timeout",
+          "call_ms": null,
+          "waited_ms": 1009,
+          "answer_ms": 4871,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Sørensen",
+          "incoming_question": "I appreciate your candor regarding the limitations, but let's look at the dissonance you've highlighted in your discussion: you note that respondents were more confident in their ability to operate the application than in the correctness of its output. Given that you explicitly recognize the system's inability to handle overlapping symptoms as a core design limitation, how can you justify concluding that the application is 'useful' when your own findings show that the users themselves are signaling a lack of trust in the diagnostic integrity of the results?"
+        },
+        {
+          "session": 8,
+          "turn": 7,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Sørensen",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That is an optimistic assumption, but simply stating that 'more data' will resolve the issue fails to reconcile the structural flaw you have already identified. If your system is architecturally incapable of handling overlapping symptoms, how do you defend the conclusion that the tool is 'useful' when your own findings document that this specific design limitation directly undermines the very diagnostic reliability your users are questioning?",
+          "answer": "I think it's still useful because most leaves farmers bring in only have one disease, and for those the model was right most of the time. The overlapping case is less common, so it doesn't undermine the whole tool, just some results. Farmers rated it Very Acceptable overall, so they did find it useful even with that issue.",
+          "total": 5,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate argues the tool remains useful because the majority of instances encountered by farmers involve single-disease leaves and users rated the tool's overall acceptability highly.",
+          "closing": "I have concluded my review of your model's structural limitations. I will now yield the floor.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 894,
+          "waited_ms": 0,
+          "answer_ms": 6535,
+          "incoming": "devils_advocate",
+          "incoming_name": "O'Sullivan",
+          "incoming_question": "You claim that omitting chemical advice is a strategic choice to avoid liability, yet you position this as a tool for farmers to obtain identification at the 'moment of observation' to avoid the delay of professional consultation. If your system is explicitly limited to only four foliar diseases and ignores panicle or root-based pathologies—while simultaneously failing to aggregate data for broader advisory oversight—how is this tool anything more than a dangerous diagnostic bottleneck that provides farmers with a false sense of security while actively withholding the actionable context required to prevent the very crop loss you claim to be mitigating?"
+        }
+      ],
+      "gemini_calls": 19
+    },
+    {
+      "session": 9,
+      "session_id": "3059da4c-d47b-4a15-a23b-7f3d9b233e4c",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "mid",
+        "methodology_expert": "strong",
+        "results_conclusions_reviewer": "weak"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2426
+        },
+        {
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 4,
+          "answer_ms": 2391
+        },
+        {
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "mid",
+          "total": 5,
+          "answer_ms": 36392
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "strong",
+          "total": 15,
+          "answer_ms": 2973
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 2183
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 2701
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 7568
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 9,
+          "turn": 3,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "Osei",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "I must insist, that response ignores the core contradiction in your work: you define this as a 'decision-support tool' in your objectives, yet you explicitly state it provides no actionable guidance. If the application identifies a disease but leaves the farmer without a treatment pathway, how can you claim this serves as an 'intervention' rather than merely a digital diagnostic catalog, and what evidence supports the assertion that this specific, incomplete information offers any meaningful improvement to a farmer's existing decision-making process?",
+          "answer": "I'd say knowing the disease is already part of the treatment pathway, because the farmer can then look up or ask about the right treatment instead of guessing. Some farmers in our interviews used the wrong treatment, so getting the identification right should help. We don't have evidence yet that their decisions actually improved, since we didn't follow them after the session.",
+          "total": 5,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate argues that disease identification alone aids decision-making by preventing farmers from choosing incorrect treatments. They acknowledge, however, that they have no data regarding actual improvements in farmer decision-making.",
+          "closing": "That covers my concerns regarding the functional objectives and the intended impact of your application.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 893,
+          "waited_ms": 0,
+          "answer_ms": 36392,
+          "incoming": "methodology_expert",
+          "incoming_name": "Tanaka",
+          "incoming_question": "I see you've acknowledged that there's no follow-up data, but let's shift to your methodology, specifically regarding the image acquisition in your evaluation. You had respondents capture only three to five images under guided conditions during a thirty-minute session. Given that these images were captured in a controlled environment, how can you argue that this dataset represents the environmental noise or physiological variability of rice leaves that the app will encounter in a real-world field setting?"
+        },
+        {
+          "session": 9,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Tanaka",
+          "outgoing_title": "Methodology Expert",
+          "question": "I see you've acknowledged that there's no follow-up data, but let's shift to your methodology, specifically regarding the image acquisition in your evaluation. You had respondents capture only three to five images under guided conditions during a thirty-minute session. Given that these images were captured in a controlled environment, how can you argue that this dataset represents the environmental noise or physiological variability of rice leaves that the app will encounter in a real-world field setting?",
+          "answer": "We don't argue that, because the session captures were never a dataset. They weren't stored, labeled or scored; they existed so each of the thirty respondents had used a full capture-and-identify cycle before answering the twenty ISO/IEC 25010 statements. The model's numbers come from a different set: 648 test images held out, stratified, from the 3,240 the technician labeled across eleven fields, and those were deliberately controlled, detached leaves on white cardboard between 8 and 10 AM. So neither source represents field noise, and Chapter 5's Limitations says the transfer of the 94.7% to attached leaves, complex backgrounds and variable light was not established. The study that would establish it is our third recommendation: run the app on field leaves and compare its calls with a technician's judgment on the same leaves.",
+          "total": 15,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate clarified that the session images were not part of the model dataset and admitted that the model's high accuracy performance does not account for real-world environmental variability. They stated that this limitation is explicitly addressed in Chapter 5 and suggested a future field study as the necessary verification step.",
+          "closing": "I have concluded my inquiry regarding your sampling methodology.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 1015,
+          "waited_ms": 0,
+          "answer_ms": 2973,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Schmidt",
+          "incoming_question": "I see you've framed the lower 94.7% accuracy as a consequence of dataset scale compared to the literature, but I'm concerned about the deeper implication for your conclusions. If you acknowledge that your system cannot express multiple concurrent conditions, why do you characterize the system as 'useful' in your Discussion when your own findings show that the model's inability to handle overlapping disease symptoms significantly undermines the reliability for the user?"
+        },
+        {
+          "session": 9,
+          "turn": 7,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Schmidt",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "That is a non-sequitur; quoting an accuracy percentage does nothing to reconcile your system's inability to handle overlapping symptoms with your conclusion that it is 'useful.' Given that you explicitly document that the 'leaf in question carried symptoms of more than one condition, a case the present system cannot express,' how can you logically justify describing this tool as 'useful' in your conclusion when your own data proves it is inherently blind to the biological complexity of real-world field conditions?",
+          "answer": "We did not have time to analyze that part in detail.",
+          "total": 3,
+          "band": "weak",
+          "planned": "weak",
+          "answer_summary": "The candidate stated they did not have sufficient time to analyze the specific issue of overlapping symptoms in detail.",
+          "closing": "That concludes my questions regarding the limitations of your system's field applicability.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 730,
+          "waited_ms": 0,
+          "answer_ms": 7568,
+          "incoming": "devils_advocate",
+          "incoming_name": "Rodriguez",
+          "incoming_question": "I must push back on your reliance on this 'future study' as a buffer, because if your evaluation of 'system acceptability' was based on a thirty-minute session where researchers guided the farmers through the entire process, how can you claim the system is truly 'acceptable' or 'usable' when those results completely decouple the app's performance from the unpredictable, unguided realities of actual field use described in your own methodology?"
+        }
+      ],
+      "gemini_calls": 20
+    },
+    {
+      "session": 10,
+      "session_id": "b161b11b-dfa7-40b2-834c-3dc334bf9d0f",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "strong",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "weak"
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "planned": "strong",
+          "total": 14,
+          "answer_ms": 30222
+        },
+        {
+          "turn": 2,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2461
+        },
+        {
+          "turn": 3,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 3,
+          "answer_ms": 2551
+        },
+        {
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "planned": "mid",
+          "total": 5,
+          "answer_ms": 3814
+        },
+        {
+          "turn": 5,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 12184
+        },
+        {
+          "turn": 6,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 17880
+        },
+        {
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "planned": "weak",
+          "total": 3,
+          "answer_ms": 15292
+        }
+      ],
+      "hand_offs": [
+        {
+          "session": 10,
+          "turn": 1,
+          "outgoing": "problem_objectives_reviewer",
+          "outgoing_name": "O'Sullivan",
+          "outgoing_title": "Research Problem & Objectives Reviewer",
+          "question": "Regarding your objective to design an interface for users with limited formal schooling, how does this specific design choice address the practical barrier of identifying diseases in the field compared to existing, more traditional agricultural extension methods?",
+          "answer": "The barrier with extension is access, not literacy: our interviews found farmers saw a technician a median of once per cropping season, so most diagnoses came from a neighbor or the supply store. The app moves the first identification to the moment the farmer sees the symptom, on their own phone, with no data connection needed, and the interface objective is what makes that usable by the farmers who actually face the barrier. We constrained it to three screens, a camera, a result showing the class with a confidence percentage, and the on-device history, and kept text to a minimum. The evaluation supports the choice: usability was the highest-rated characteristic at 4.42, and respondents completed a full capture-and-identify cycle without help after a single demonstration. It complements extension rather than replacing it, since the Scope keeps the technician for the cases where a costly treatment follows.",
+          "total": 14,
+          "band": "strong",
+          "planned": "strong",
+          "answer_summary": "The candidate claims that the app addresses the barrier of limited technician access by enabling immediate on-device diagnosis, and that its simplified three-screen interface is effective for users with low formal schooling as evidenced by high usability ratings.",
+          "closing": "That covers my questions regarding the design rationale for this application.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 11728,
+          "waited_ms": 0,
+          "answer_ms": 30222,
+          "incoming": "methodology_expert",
+          "incoming_name": "Nguyen",
+          "incoming_question": "That's a helpful clarification on the field deployment, but I need to pull us back to the methodology behind the data itself. Regarding your test set of 648 images, how did you establish inter-observer reliability when labeling these samples, and what specific steps did you take to ensure that your data augmentation techniques didn't introduce classification bias into the training pipeline?"
+        },
+        {
+          "session": 10,
+          "turn": 4,
+          "outgoing": "methodology_expert",
+          "outgoing_name": "Nguyen",
+          "outgoing_title": "Methodology Expert",
+          "question": "I am afraid that response conflates image standardization with ground-truth validation; simply capturing images against a uniform background does not account for the subjective classification errors inherent in having a single technician label your entire dataset. Given that your evaluation relied on the '648-image test set' to compute metrics like accuracy and F1-score, can you explain how you intend to demonstrate the robustness of these metrics against the potential label noise or individual bias introduced by that single observer?",
+          "answer": "We trusted the technician because he's from the municipal agriculture office and he threw out any leaf he wasn't sure about. We didn't have a second labeler, so we can't measure his bias. I think the metrics are still reasonable, but checking a sample of labels with another technician would make them stronger.",
+          "total": 5,
+          "band": "weak",
+          "planned": "mid",
+          "answer_summary": "The candidate stated that they relied on a single agricultural technician to label the dataset and justified this by noting the technician's professional background and exclusionary criteria for ambiguous images. They acknowledged that they did not measure potential bias but suggested that post-hoc validation could improve the study's robustness.",
+          "closing": "That covers my questions regarding the methodology and data labeling processes for AniCheck.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 751,
+          "waited_ms": 0,
+          "answer_ms": 3814,
+          "incoming": "results_conclusions_reviewer",
+          "incoming_name": "Al-Farsi",
+          "incoming_question": "I see you've identified that your users trust their ability to operate the app more than the diagnostic output itself. Given that you explicitly link this confidence gap to the poor performance on bacterial leaf blight, why would you conclude that the system is ready for real-world deployment when your evidence shows the users themselves lack confidence in the core diagnostic accuracy?"
+        },
+        {
+          "session": 10,
+          "turn": 7,
+          "outgoing": "results_conclusions_reviewer",
+          "outgoing_name": "Al-Farsi",
+          "outgoing_title": "Results & Conclusions Reviewer",
+          "question": "Citing a ninety percent accuracy figure does not resolve the contradiction between user distrust and your claims of readiness; how can you maintain that the system is ready for deployment when your own discussion acknowledges that 'for a diagnostic tool this is the more consequential of the two dimensions' and that user confidence in the output is critically low?",
+          "answer": "We did not have time to analyze that part in detail.",
+          "total": 3,
+          "band": "weak",
+          "planned": "weak",
+          "answer_summary": "The candidate stated that they did not have sufficient time to analyze the contradiction between the system's accuracy and the low user confidence in its diagnostic output.",
+          "closing": "That covers my questions regarding the deployment readiness and diagnostic confidence of the system.",
+          "source": "llm",
+          "reason": "-",
+          "call_ms": 955,
+          "waited_ms": 0,
+          "answer_ms": 15292,
+          "incoming": "devils_advocate",
+          "incoming_name": "Schmidt",
+          "incoming_question": "You claim that your app successfully enables 'immediate on-device diagnosis' for farmers with limited schooling, yet your own documentation admits the system is explicitly 'not as a replacement for consultation with a qualified agricultural technician' and fails to cover essential diseases like sheath blight and false smut; how can you justify labeling this a viable decision-support tool when the app’s inherent diagnostic omissions and lack of expert oversight could lead a farmer to misidentify a non-covered, yield-destroying infection as a common leaf disease?"
+        }
+      ],
+      "gemini_calls": 19
+    }
+  ],
+  "hand_offs": 30,
+  "gemini_calls": 204
+}

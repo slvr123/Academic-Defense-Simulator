@@ -20,6 +20,13 @@ its answer and the report add nothing to E1. No daily slot is used (no quota sto
 the Gemini calls are spent on the shared key, and printed. On a failed turn it waits
 and sends the same answer again; it never changes the model.
 
+With --live DIR, the answer a hand-off follows is written live, to the question actually
+asked: every answer in a strong block, and the third answer in a mid block. The script
+writes DIR/question.json and waits for DIR/answer-<session>-<turn>.txt. Pre-written
+answers didn't fit the live questions closely enough to score strong or mid (the first
+three sessions, all pre-written, gave 8 weak hand-offs of 9). --plans sets each
+session's planned bands, e.g. "strong,mid,strong;mid,strong,mid".
+
 The output is AniCheck only (the public sample): questions, answers, closing lines and
 the incoming openers, with the closing call's own log fields (source, reason, call_ms,
 waited_ms). Classification is done by hand afterwards, in the results doc.
@@ -152,7 +159,23 @@ def answer_with_retries(defense, text: str):
     raise AssertionError("unreachable")
 
 
-def one_session(index: int, matrix, chunks, starts, settings: Settings, embedder, log: ClosingLog) -> dict:
+def live_answer(live: Path, session: int, question, planned: str) -> str:
+    """Hands the question over and waits for the answer written to it."""
+    answer_file = live / f"answer-{session}-{question.turn}.txt"
+    (live / "question.json").write_text(json.dumps({
+        "session": session, "turn": question.turn, "archetype_key": question.panelist.archetype_key,
+        "planned": planned, "pages": [question.sources[0].page_start, question.sources[0].page_end],
+        "question": question.question, "answer_file": str(answer_file),
+    }, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"    waiting for {answer_file.name}", flush=True)
+    while not answer_file.exists():
+        time.sleep(1)
+    time.sleep(0.5)  # let the writer finish
+    return answer_file.read_text(encoding="utf-8").strip()
+
+
+def one_session(index: int, matrix, chunks, starts, settings: Settings, embedder, log: ClosingLog,
+                plans: list[list[str]] | None = None, live: Path | None = None) -> dict:
     session = Session(
         id=str(uuid.uuid4()),
         panel=PanelConfig(defense_type="thesis", domain=ANICHECK.domain, topic=ANICHECK.topic, archetype_keys=THESIS_PANEL),
@@ -166,7 +189,8 @@ def one_session(index: int, matrix, chunks, starts, settings: Settings, embedder
         opening_chapter_filter=settings.opening_chapter_filter, closing_lines="llm",
     )
     seated = [p.archetype_key for p in defense.session.panel if p.archetype_key != DEVILS_ADVOCATE_KEY]
-    plan = dict(zip(seated, PLANS[index % len(PLANS)], strict=True))
+    chosen = plans[index % len(plans)] if plans else PLANS[index % len(PLANS)]
+    plan = dict(zip(seated, chosen, strict=True))
     log.lines.clear()
     question = ask_with_retries(defense)
     hand_offs, turns = [], []
@@ -175,6 +199,8 @@ def one_session(index: int, matrix, chunks, starts, settings: Settings, embedder
         key = question.panelist.archetype_key
         texts = ANSWERS[key][plan[key]]
         text = texts[min(used.get(key, 0), len(texts) - 1)]
+        if live is not None and (plan[key] == "strong" or (plan[key] == "mid" and used.get(key, 0) >= 2)):
+            text = live_answer(live, index + 1, question, plan[key])
         used[key] = used.get(key, 0) + 1
         result, answer_ms = answer_with_retries(defense, text)
         evaluation = result.evaluation
@@ -216,6 +242,8 @@ def main() -> int:
     parser.add_argument("--sessions", type=int, default=10)
     parser.add_argument("--start", type=int, default=0, help="the plan index of the first session, to continue a run")
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "evals" / "v2.0-m15-closing-lines.json")
+    parser.add_argument("--plans", help='each session\'s planned bands, e.g. "strong,mid,strong;mid,strong,mid"')
+    parser.add_argument("--live", type=Path, help="write the hand-off answers live through this directory")
     args = parser.parse_args()
     if args.sessions > 12:
         raise SystemExit("M15 E1's budget is 12 defenses")
@@ -224,13 +252,14 @@ def main() -> int:
     logging.getLogger("backend.closing").addHandler(log)
     logging.getLogger("backend.closing").setLevel(logging.INFO)
     settings = Settings()
-    embedder = OnnxEmbedder(settings.model_dir)
+    embedder = OnnxEmbedder.load(settings.model_dir, threads=settings.ort_threads)
     matrix, chunks, starts = ingest(ANICHECK.path, embedder)
     print(f"model={settings.gemini_model} closing_lines=llm sessions={args.sessions}", flush=True)
     results = []
     for i in range(args.start, args.start + args.sessions):
         print(f"  session {i + 1}", flush=True)
-        results.append(one_session(i, matrix, chunks, starts, settings, embedder, log))
+        plans = [p.split(",") for p in args.plans.split(";")] if args.plans else None
+        results.append(one_session(i, matrix, chunks, starts, settings, embedder, log, plans and [plans[(i - args.start) % len(plans)]], args.live))
         print(f"  session {i + 1}: {len(results[-1]['hand_offs'])} hand-offs, {results[-1]['gemini_calls']} Gemini calls", flush=True)
     previous = json.loads(args.out.read_text(encoding="utf-8"))["sessions"] if args.start and args.out.exists() else []
     sessions = previous + results
