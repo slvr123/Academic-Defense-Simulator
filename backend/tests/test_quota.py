@@ -11,6 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from backend.quota import (
+    CLOSING_CALLS_PER_SESSION,
     MAX_PANEL_SIZE,
     InMemoryQuotaStore,
     QuotaUnavailable,
@@ -31,9 +32,22 @@ UTC = timezone.utc
 def test_default_plan_is_bound_by_the_defense_model():
     plan = plan_quota(make_settings())
     shares = {s.model: (s.calls_per_session, s.rpd, s.sessions) for s in plan.shares}
-    assert shares == {"gemini-3.1-flash-lite": (40, 500, 12), "gemini-2.5-flash": (1, 20, 20)}
+    # M15: v1's 40 plus 3 closing calls, one per hand-off (Sean's option 1, 2026-11-04).
+    assert shares == {"gemini-3.1-flash-lite": (43, 500, 11), "gemini-2.5-flash": (1, 20, 20)}
     assert plan.binding.model == "gemini-3.1-flash-lite"
-    assert plan.cap == 11  # floor(500 / 40) - margin 1
+    assert plan.cap == 10  # floor(500 / 43) - margin 1
+
+
+@pytest.mark.parametrize("mode", ["fixed", "off"])
+def test_closing_lines_without_the_model_add_no_calls(mode):
+    """M15: "fixed" and "off" make no closing call, so the cap is v1's own 11."""
+    plan = plan_quota(make_settings(closing_lines=mode))
+    shares = {s.model: s.calls_per_session for s in plan.shares}
+    assert shares["gemini-3.1-flash-lite"] == 40 and plan.cap == 11
+
+
+def test_closing_calls_are_one_per_hand_off():
+    assert CLOSING_CALLS_PER_SESSION == MAX_PANEL_SIZE - 1 == 3
 
 
 def test_the_suggestions_model_binds_when_its_rpd_is_lower():
@@ -45,7 +59,7 @@ def test_the_suggestions_model_binds_when_its_rpd_is_lower():
 def test_one_model_for_everything_adds_its_calls_together():
     plan = plan_quota(make_settings(gemini_suggestions_model="gemini-3.1-flash-lite"))
     [share] = plan.shares
-    assert (share.calls_per_session, plan.cap) == (41, 500 // 41 - 1)
+    assert (share.calls_per_session, plan.cap) == (44, 500 // 44 - 1)  # 40 + 1 suggestions + 3 closing
 
 
 def test_cap_never_goes_below_zero_and_warns_when_low(caplog):
@@ -74,7 +88,7 @@ def test_limits_come_from_json_in_the_environment(monkeypatch):
     )
     settings = make_settings()
     assert settings.gemini_limits["gemini-3.1-flash-lite"].rpd == 1000
-    assert plan_quota(settings).cap == 1000 // 40 - 1
+    assert plan_quota(settings).cap == 1000 // 43 - 1
 
 
 def test_rpm_ceiling_is_the_limit_less_the_verified_margin():

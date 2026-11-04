@@ -121,6 +121,14 @@ class QuestionOut(BaseModel):
     grounding_reference: str  # the words the question was grounded in (M8 K6); shown only after answering
 
 
+class ClosingOut(BaseModel):
+    """M15: the outgoing panelist's closing line on a hand-off, said before the next
+    panelist's question. The display title, as everywhere the API names a panelist."""
+
+    panelist: PanelistOut
+    line: str
+
+
 class StartResponse(BaseModel):
     domain: str
     topic: str
@@ -134,6 +142,7 @@ class CurrentQuestion(BaseModel):
 
     done: bool
     question: QuestionOut | None  # the open question; None once the defense is done
+    closing: ClosingOut | None = None  # M15: the closing line said just before that question
 
 
 class AnswerRequest(BaseModel):
@@ -169,6 +178,9 @@ class AnswerResponse(BaseModel):
     evaluation: Evaluation
     next_question: QuestionOut | None
     done: bool
+    # M15: on a hand-off, the outgoing panelist's closing line, said before next_question.
+    # None on a follow-up, at the end of the defense, or with ADS_CLOSING_LINES=off.
+    closing: ClosingOut | None = None
 
 
 class TranscriptTurn(BaseModel):
@@ -180,6 +192,7 @@ class TranscriptTurn(BaseModel):
     grounding_reference: str
     answer: str
     evaluation: Evaluation
+    closing: ClosingOut | None = None  # M15: the closing line said after this answer, if a hand-off followed
 
 
 class ReportResponse(BaseModel):
@@ -209,6 +222,9 @@ class TtsRequest(BaseModel):
     # M6 H9: one sentence of the question, 0-based; the response's X-TTS-Parts says how
     # many there are. Omitted: the whole question, as before.
     part: int | None = Field(default=None, ge=0, lt=MAX_PARTS)
+    # M15: the closing line said after `turn` instead of its question. Still a turn the
+    # backend generated, never text, so the endpoint stays closed to anything else.
+    closing: bool = False
 
 
 class SessionCreated(BaseModel):

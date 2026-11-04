@@ -1,5 +1,6 @@
-// Earlier turns (M10 N10): each question, the answer and the source pages. No scores:
-// they stay sealed until the debrief (M8 K7). Focus is trapped while it's open; Esc closes.
+// Earlier turns (M10 N10): each question, the answer and the source pages, then the
+// closing line its panelist said on a hand-off (M15). No scores: they stay sealed until
+// the debrief (M8 K7). Focus is trapped while it's open; Esc closes.
 import { useId, useRef } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { pageRange, panelistName } from '../lib/labels'
@@ -35,7 +36,7 @@ export function TranscriptDrawer({ turns, onClose }: { turns: Turn[]; onClose: (
           </button>
         </div>
         <ol className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
-          {turns.map(({ question, answer }) => (
+          {turns.map(({ question, answer, closing }) => (
             <li key={question.turn} className="space-y-2">
               <p className="font-mono text-xs text-muted">
                 Question {question.turn} · {panelistName(question.panelist.name)} · {question.panelist.title}
@@ -45,6 +46,11 @@ export function TranscriptDrawer({ turns, onClose }: { turns: Turn[]; onClose: (
               <p className="font-mono text-xs text-subtle">
                 {question.sources.map((s) => pageRange(s.page_start, s.page_end)).join(' · ')}
               </p>
+              {closing && (
+                <p data-transcript-closing className="font-serif text-sm text-muted">
+                  {panelistName(closing.panelist.name)} closes: {closing.line}
+                </p>
+              )}
             </li>
           ))}
         </ol>

@@ -53,6 +53,9 @@ export const defaults = {
   "SessionCreated": {
     "status": "queued"
   },
+  "TtsRequest": {
+    "closing": false
+  },
   "PanelConfig": {
     "defense_type": "thesis",
     "other_subtype": null,

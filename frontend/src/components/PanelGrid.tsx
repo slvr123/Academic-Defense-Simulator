@@ -11,9 +11,10 @@ import { Avatar } from './Avatar'
 export type Card = { archetypeKey: string; surname: string | null; title: string; icon: string }
 
 /** What the lit panelist is doing. */
-export type ActiveStatus = 'asking' | 'speaking' | 'reviewing'
+export type ActiveStatus = 'asking' | 'speaking' | 'reviewing' | 'closing'
 
-const ACTIVE_TEXT: Record<ActiveStatus, string> = { asking: 'Asking', speaking: 'Speaking', reviewing: 'Reviewing' }
+// 'closing': the outgoing panelist on a hand-off, saying its closing line (M15).
+const ACTIVE_TEXT: Record<ActiveStatus, string> = { asking: 'Asking', speaking: 'Speaking', reviewing: 'Reviewing', closing: 'Closing' }
 
 type Props = {
   cards: Card[]

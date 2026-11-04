@@ -149,7 +149,7 @@ describe('fetchTts reads binary audio and can be cancelled (E3, E7)', () => {
       return { status: 200, bytes: wav, headers: { 'Content-Type': 'audio/wav' } }
     })
     const result = await fetchTts('abc', 2, 0, new AbortController().signal)
-    expect(sent).toEqual({ session_id: 'abc', turn: 2, part: 0 })
+    expect(sent).toEqual({ session_id: 'abc', turn: 2, part: 0, closing: false })
     if (!result.ok) throw new Error('expected audio')
     expect(result.data.audio.type).toBe('audio/wav')
     expect(new Uint8Array(await result.data.audio.arrayBuffer())).toEqual(wav)

@@ -4,6 +4,8 @@
 // the browser voice for that turn, silently. The text is always on screen regardless.
 // M6 H9: the clip comes in parts (one, while the server's split flag is off); each part
 // plays in turn, and the next one is fetched while the current one plays.
+// M15: while `held` (the outgoing panelist is still closing), the clip is fetched but
+// nothing speaks; it starts the moment the hold ends.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchTts } from '../api/client'
 import type { QuestionOut } from '../api/types'
@@ -28,9 +30,10 @@ type Args = {
   sessionId: string
   question: QuestionOut
   submitting: boolean
+  held?: boolean
 }
 
-export function useQuestionVoice({ player, choice, sessionId, question, submitting }: Args): QuestionVoice {
+export function useQuestionVoice({ player, choice, sessionId, question, submitting, held = false }: Args): QuestionVoice {
   const { turn, question: text } = question
   const archetypeKey = question.panelist.archetype_key
   const voiced = choice === 'panel' || choice === 'browser'
@@ -39,11 +42,21 @@ export function useQuestionVoice({ player, choice, sessionId, question, submitti
   const [reported, setReported] = useState<{ turn: number; status: VoiceStatus }>({ turn: 0, status: 'off' })
   const submitted = useRef(submitting)
   const say = useRef<(() => void) | null>(null)
+  const holding = useRef(held)
+  const waiting = useRef<(() => void) | null>(null) // the first speak, kept until the hold ends
 
   useEffect(() => {
     submitted.current = submitting
     if (submitting) player.stop() // the panel listens to the answer, not to itself
   }, [submitting, player])
+
+  useEffect(() => {
+    holding.current = held
+    if (held || waiting.current === null) return
+    const start = waiting.current
+    waiting.current = null
+    start()
+  }, [held])
 
   useEffect(() => {
     if (!voiced) return
@@ -108,9 +121,14 @@ export function useQuestionVoice({ player, choice, sessionId, question, submitti
       playPart(0, first)
     }
     say.current = speak
+    // The first time it speaks, unless the closing line is still being said (M15).
+    const begin = () => {
+      if (holding.current) waiting.current = speak
+      else speak()
+    }
 
     if (useBrowser) {
-      if (!submitted.current) speak()
+      if (!submitted.current) begin()
     } else {
       void fetchPart(0).then((url) => {
         if (controller.signal.aborted) return // the turn moved on, or the screen closed
@@ -121,13 +139,14 @@ export function useQuestionVoice({ player, choice, sessionId, question, submitti
         if (url !== null) first = url
         else useBrowser = true // E8: any /tts failure, the browser voice for this turn
         report('idle')
-        speak()
+        begin()
       })
     }
 
     return () => {
       controller.abort()
       say.current = null
+      waiting.current = null
       player.stop()
       for (const url of made) URL.revokeObjectURL(url) // an object URL holds its Blob until revoked
     }

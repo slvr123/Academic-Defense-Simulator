@@ -219,6 +219,7 @@ export interface components {
             next_question: components["schemas"]["QuestionOut"] | null;
             /** Done */
             done: boolean;
+            closing?: components["schemas"]["ClosingOut"] | null;
         };
         /**
          * AnswerSuggestion
@@ -247,6 +248,16 @@ export interface components {
             home_chapter?: number | null;
         };
         /**
+         * ClosingOut
+         * @description M15: the outgoing panelist's closing line on a hand-off, said before the next
+         *     panelist's question. The display title, as everywhere the API names a panelist.
+         */
+        ClosingOut: {
+            panelist: components["schemas"]["PanelistOut"];
+            /** Line */
+            line: string;
+        };
+        /**
          * CurrentQuestion
          * @description GET /sessions/{id}/current (M6 H5): where the defense is now, so a client whose
          *     answer was refused as stale can move to the open question without reloading.
@@ -255,6 +266,7 @@ export interface components {
             /** Done */
             done: boolean;
             question: components["schemas"]["QuestionOut"] | null;
+            closing?: components["schemas"]["ClosingOut"] | null;
         };
         /** DefenseReport */
         DefenseReport: {
@@ -584,6 +596,7 @@ export interface components {
             /** Answer */
             answer: string;
             evaluation: components["schemas"]["Evaluation"];
+            closing?: components["schemas"]["ClosingOut"] | null;
         };
         /**
          * TtsRequest
@@ -597,6 +610,11 @@ export interface components {
             turn: number;
             /** Part */
             part?: number | null;
+            /**
+             * Closing
+             * @default false
+             */
+            closing: boolean;
         };
         /** ValidationError */
         ValidationError: {

@@ -184,13 +184,15 @@ function readParts(header: string | null): number {
  * part (M6 H9). `signal` cancels it when the turn moves on (E7); a cancelled request
  * resolves to a network error, and callers check `signal.aborted` before acting on it.
  */
-export async function fetchTts(sessionId: string, turn: number, part: number, signal: AbortSignal): Promise<ApiResult<TtsPart>> {
+/** One part of a question's audio; with `closing`, the closing line said after `turn`
+ * instead (M15), whole, so `part` is null. */
+export async function fetchTts(sessionId: string, turn: number, part: number | null, signal: AbortSignal, closing = false): Promise<ApiResult<TtsPart>> {
   let response: Response
   try {
     response = await fetch(`${baseUrl()}/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, turn, part }),
+      body: JSON.stringify({ session_id: sessionId, turn, part, closing }),
       signal,
     })
   } catch {

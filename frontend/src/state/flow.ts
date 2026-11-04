@@ -5,6 +5,7 @@ import type { ApiError, ApiResult } from '../api/client'
 import { defaults } from '../api/constraints.gen'
 import type {
   AnswerResponse,
+  ClosingOut,
   CurrentQuestion,
   Evaluation,
   IngestSummary,
@@ -42,7 +43,8 @@ export type QuotaView = { kind: 'loading' } | { kind: 'hidden' } | { kind: 'know
 export type VoiceChoice = 'panel' | 'browser' | 'none'
 
 /** An answered question, shown with its evaluation and, now that it's answered, its sources (D18). */
-export type Turn = { question: QuestionOut; answer: string; evaluation: Evaluation }
+/** `closing`: the outgoing panelist's line said after this answer, on a hand-off (M15). */
+export type Turn = { question: QuestionOut; answer: string; evaluation: Evaluation; closing?: ClosingOut | null }
 
 type Defense = {
   sessionId: string
@@ -52,6 +54,7 @@ type Defense = {
   draft: string // the answer box; kept through a failed send (D16, 502)
   last: Turn | null
   turns: Turn[] // every answered question, oldest first, for the transcript drawer (M10 N10)
+  closing?: ClosingOut | null // M15: the closing line said just before `question`, on a hand-off
 }
 
 export type Phase =
@@ -241,9 +244,10 @@ function answered(state: State, sessionId: string, result: ApiResult<AnswerRespo
     const text = 'The panel answered without a next question. Try sending your answer again.'
     return { ...state, phase: { ...defense, kind: 'question', notice: { kind: 'message', text } } }
   }
-  const last: Turn = { question: defense.question, answer: defense.draft, evaluation }
+  const closing = result.data.closing ?? null
+  const last: Turn = { question: defense.question, answer: defense.draft, evaluation, closing }
   const turns = [...defense.turns, last]
-  return { ...state, phase: { ...defense, kind: 'question', question: next_question, draft: '', last, turns, notice: null } }
+  return { ...state, phase: { ...defense, kind: 'question', question: next_question, draft: '', last, turns, closing, notice: null } }
 }
 
 function resynced(state: State, sessionId: string, stale: ApiError, current: ApiResult<CurrentQuestion>, now: number): State {
@@ -260,7 +264,7 @@ function resynced(state: State, sessionId: string, stale: ApiError, current: Api
   if (question === null) return { ...state, phase: { ...defense, kind: 'question', notice: noticeFor(stale, now, false) } }
   // The typed text stays in the box; the last evaluation was for a question this screen never saw answered.
   const notice: Notice = { kind: 'message', text: resyncedText(question.turn) }
-  return { ...state, phase: { ...defense, kind: 'question', question, last: null, notice } }
+  return { ...state, phase: { ...defense, kind: 'question', question, last: null, closing: current.data.closing ?? null, notice } }
 }
 
 function reported(state: State, sessionId: string, result: ApiResult<ReportResponse>, now: number): State {

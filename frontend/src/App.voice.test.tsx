@@ -95,7 +95,7 @@ describe('panel voices (MiMo)', () => {
     const user = renderApp()
     await toQuestion(server, user, /^Panel voices/)
 
-    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 1, part: 0 }) // never the text
+    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 1, part: 0, closing: false }) // never the text
     expect(screen.getByText('Voice loading')).toBeInTheDocument()
     expect(audio.plays).toEqual([])
 
@@ -132,7 +132,7 @@ describe('panel voices (MiMo)', () => {
     await screen.findByText(Q2)
     await vi.waitFor(() => expect(audio.plays).toEqual(['blob:clip-1', 'blob:clip-2']))
     expect(audio.revoked).toContain('blob:clip-1')
-    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 2, part: 0 })
+    expect(bodies.at(-1)).toEqual({ session_id: 'abc', turn: 2, part: 0, closing: false })
   })
 
   it('discards a clip that arrives after the answer was sent (E7)', async () => {

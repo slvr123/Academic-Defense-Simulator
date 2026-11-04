@@ -20,18 +20,18 @@ def test_quota_reports_used_cap_remaining_and_the_pacific_reset(client_factory, 
     _fill(quota_store, TODAY, 4)
     with client_factory() as client:
         body = client.get("/quota").json()
-    assert body == {"used": 4, "cap": 11, "remaining": 7, "resets_at": "2026-10-21T00:00:00-07:00"}
+    assert body == {"used": 4, "cap": 10, "remaining": 6, "resets_at": "2026-10-21T00:00:00-07:00"}
 
 
 def test_quota_starts_over_after_midnight_pacific(client_factory, quota_store, clock):
-    _fill(quota_store, TODAY, 11)
+    _fill(quota_store, TODAY, 10)
     with client_factory() as client:
         assert client.get("/quota").json()["remaining"] == 0
         clock.now += timedelta(hours=11, minutes=59, seconds=59)  # 23:59:59 PDT
         assert client.get("/quota").json()["remaining"] == 0
         clock.now += timedelta(seconds=1)
         body = client.get("/quota").json()
-    assert (body["used"], body["remaining"], body["resets_at"]) == (0, 11, "2026-10-22T00:00:00-07:00")
+    assert (body["used"], body["remaining"], body["resets_at"]) == (0, 10, "2026-10-22T00:00:00-07:00")
 
 
 def test_upload_is_refused_once_the_day_is_used_up(client_factory, quota_store, embedder, pdf):
@@ -48,12 +48,12 @@ def test_upload_is_refused_once_the_day_is_used_up(client_factory, quota_store, 
 
 
 def test_upload_with_one_slot_left_goes_through_and_reserves_nothing(client_factory, quota_store, pdf):
-    _fill(quota_store, TODAY, 10)
+    _fill(quota_store, TODAY, 9)
     with client_factory() as client:
         response = upload(client, pdf)
         assert response.status_code == 202
         wait_for(client, response.json()["session_id"], lambda s: s.get("status") == "ready")
-        assert client.get("/quota").json()["used"] == 10  # only starting a defense reserves
+        assert client.get("/quota").json()["used"] == 9  # only starting a defense reserves
 
 
 def test_a_cap_of_zero_refuses_every_upload(client_factory, pdf):
