@@ -75,6 +75,7 @@ def test_rendered_full_prompt_has_no_unfilled_placeholders_same_asker():
         difficulty_level=3,
         digest_block="",
         high_difficulty_guard="",
+        language_line="",
     )
 
     for placeholder in (
@@ -101,6 +102,7 @@ def test_rendered_full_prompt_has_no_unfilled_placeholders_colleague():
         difficulty_level=3,
         digest_block="",
         high_difficulty_guard=HIGH_DIFFICULTY_GROUNDING_GUARD,
+        language_line="",
     )
 
     for placeholder in (

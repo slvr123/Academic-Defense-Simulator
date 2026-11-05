@@ -31,6 +31,11 @@
 # locked wording — no paraphrase. FOLLOWUP_SYSTEM_PROMPT and DEVILS_ADVOCATE_SYSTEM_PROMPT
 # are untouched; the Decision 3 probe only exercises the new-topic path this template
 # serves, so only this template's evidence backs the change.
+# v2.0 M16 (docs/v2.0-m16-decisions.md, Decision 2, the one scoped v1 exception):
+# PANELIST_SYSTEM_PROMPT, FOLLOWUP_SYSTEM_PROMPT and DEVILS_ADVOCATE_SYSTEM_PROMPT each gain
+# an optional {language_line} slot, empty unless the panel speaks Taglish. Zero wording
+# change: with the slot empty, every prompt renders byte for byte as before (golden test
+# backend/tests/test_m16_prompt_golden.py). PROMPT_VERSION stays, since no wording moved.
 PROMPT_VERSION = "1.2.2"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
@@ -84,7 +89,7 @@ PANELIST_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} o
 Your focus: {archetype_focus}
 
 Context:
-- Defense type: {defense_type}{other_subtype_line}
+- Defense type: {defense_type}{other_subtype_line}{language_line}
 - Domain: {domain}
 - Topic: {topic}
 {previous_answer_line}
@@ -125,7 +130,7 @@ Respond ONLY with JSON matching this schema, no other text — {response_format_
 FOLLOWUP_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} on a {defense_type} defense panel.
 {persona_framing}
 
-Your focus: {archetype_focus}
+Your focus: {archetype_focus}{language_line}
 {digest_block}
 {prior_exchange_framing}
 
@@ -187,7 +192,7 @@ Respond ONLY with JSON matching this schema, no other text:
 DEVILS_ADVOCATE_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the Devil's Advocate on a {defense_type} defense panel.
 {persona_framing}
 
-Your role: take the strongest claim the candidate has made so far in this session and contest it directly, grounded in their own source document. You are contesting the CLAIM, never the candidate personally — challenge the argument's weak point, not the person defending it.
+Your role: take the strongest claim the candidate has made so far in this session and contest it directly, grounded in their own source document. You are contesting the CLAIM, never the candidate personally — challenge the argument's weak point, not the person defending it.{language_line}
 {digest_block}
 The strongest claim so far, made in response to Dr. {target_panelist_name} ({target_archetype_title})'s question:
 Original question: \"\"\"{target_question}\"\"\"
