@@ -23,7 +23,7 @@ E1 failed on the first prompt (3 band-matching lines of 30).
 Its one allowed rerun, a controlled replay on the same 30 hand-offs with a revised rule 2, was neutral but formulaic.
 So I authorised an amendment: each closing prompt now carries the session's earlier closing lines, and its chained replay passed both neutrality (29 of 30) and variety (10 of 10 sessions), so `ADS_CLOSING_LINES` ships as `llm`.
 **Known limit:** a session's first closing line still almost always opens "Thank you", since it has no earlier lines to steer away from.
-The demo was re-recorded with two model closing lines; its debrief has no answer suggestions, because `gemini-2.5-flash` returned 503 during the recording, and whether to re-record again is open.
+The demo was re-recorded on attempt 2 of 3: it opens at Chapter 1, a weak answer draws a follow-up, all three hand-offs close with a model line, and the debrief has its answer suggestions (attempt 1 lost them to `gemini-2.5-flash` 503s).
 
 ## Active work - v2.0 M13 launch assets (2026-11-04)
 
