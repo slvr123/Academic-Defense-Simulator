@@ -14,7 +14,7 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ## Active work - v2.0 M15 the outgoing panelist closes (2026-11-05)
 
-Built and merged 2026-11-05; **the demo re-record (Decision 7) waits on my push, then M16 (Taglish), then M13's deferred captures.**
+Built, merged and live 2026-11-05; **next: M16 (Taglish), then M13's deferred captures.**
 Decisions: [`v2.0-m15-decisions.md`](v2.0-m15-decisions.md); results: [`v2.0-m15-results.md`](v2.0-m15-results.md).
 On every hand-off, the outgoing panelist now says one short closing line, in its own voice, before the next panelist asks.
 The line comes from its own Gemini call, run alongside the next question's generation, so a hand-off waits a median of 0 ms; past a 1 s grace, or on any failure, a fixed neutral line stands in.
@@ -23,6 +23,7 @@ E1 failed on the first prompt (3 band-matching lines of 30).
 Its one allowed rerun, a controlled replay on the same 30 hand-offs with a revised rule 2, was neutral but formulaic.
 So I authorised an amendment: each closing prompt now carries the session's earlier closing lines, and its chained replay passed both neutrality (29 of 30) and variety (10 of 10 sessions), so `ADS_CLOSING_LINES` ships as `llm`.
 **Known limit:** a session's first closing line still almost always opens "Thank you", since it has no earlier lines to steer away from.
+The demo was re-recorded with two model closing lines; its debrief has no answer suggestions, because `gemini-2.5-flash` returned 503 during the recording, and whether to re-record again is open.
 
 ## Active work - v2.0 M13 launch assets (2026-11-04)
 

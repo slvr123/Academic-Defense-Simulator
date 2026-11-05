@@ -3,6 +3,7 @@
 import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import realRecording from '../public/demo/anicheck-defense.json'
+import { CLOSING_HOLD_MS } from './components/DefenseScreens'
 import { DEMO_PATH } from './components/DemoReplay'
 import { HOME_LABEL } from './components/SessionHeader'
 import { lastAnswer, report, startResponse } from './test/fixtures'
@@ -170,6 +171,10 @@ describe('the Terror Panelist (M13 D0c)', () => {
     for (;;) {
       await advance(50)
       expect(document.body.textContent).not.toMatch(/devil.s advocate/i)
+      if (screen.queryByRole('region', { name: /closes$/ }) !== null) {
+        await advance(CLOSING_HOLD_MS) // M15: a recorded closing line holds as it does live
+        continue
+      }
       const next = screen.queryByRole('button', { name: 'Next' })
       if (next === null) break
       await user.click(next)

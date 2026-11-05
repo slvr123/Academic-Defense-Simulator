@@ -130,6 +130,11 @@ def answer(args: argparse.Namespace) -> None:
         if response["done"]:
             state["report"] = checked(client.get(f"/sessions/{state['session_id']}/report"))
     save(args.state, state)
+    evaluation = response["evaluation"]
+    print(f"score {evaluation['total']}/15")
+    if response.get("closing"):  # M15: a hand-off, closed by the outgoing panelist
+        closing = response["closing"]
+        print(f"Dr. {closing['panelist']['name']} closes: {closing['line']}")
     if response["done"]:
         write_fixture(state)
         print(f"done after {len(state['turns'])} answers; fixture written to {FIXTURE.relative_to(REPO_ROOT)}")

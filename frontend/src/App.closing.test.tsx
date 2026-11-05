@@ -161,7 +161,7 @@ describe('the outgoing panelist closes (M15)', () => {
   })
 
   it('replays a recorded closing line with the same pacing as live (Decision 7)', async () => {
-    // The shipped recording predates M15; give its first hand-off a closing line.
+    // Set the first hand-off's closing line, so the test doesn't depend on what the recording says.
     const recording = structuredClone(realRecording) as typeof realRecording & { turns: { response: { closing?: unknown } }[] }
     const outgoing = recording.start.question.panelist
     recording.turns[0].response.closing = { panelist: outgoing, line: LINE }

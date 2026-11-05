@@ -1,5 +1,5 @@
 {
-  "recorded_at": "2026-11-03T05:14:33+00:00",
+  "recorded_at": "2026-11-05T13:00:10+00:00",
   "document": "sample-capstone-anicheck.pdf",
   "panel_config": {
     "defense_type": "thesis",
@@ -39,7 +39,7 @@
     "panel": [
       {
         "archetype_key": "problem_objectives_reviewer",
-        "name": "Al-Farsi",
+        "name": "O'Sullivan",
         "title": "Research Problem & Objectives Reviewer",
         "icon": "professor"
       },
@@ -51,13 +51,13 @@
       },
       {
         "archetype_key": "results_conclusions_reviewer",
-        "name": "Schmidt",
+        "name": "Abara",
         "title": "Results & Conclusions Reviewer",
         "icon": "scholar"
       },
       {
         "archetype_key": "devils_advocate",
-        "name": "O'Sullivan",
+        "name": "Zimmermann",
         "title": "Terror Panelist",
         "icon": "hacker"
       }
@@ -66,11 +66,11 @@
       "turn": 1,
       "panelist": {
         "archetype_key": "problem_objectives_reviewer",
-        "name": "Al-Farsi",
+        "name": "O'Sullivan",
         "title": "Research Problem & Objectives Reviewer",
         "icon": "professor"
       },
-      "question": "Regarding your objective to provide a decision-support tool, how does an application that strictly excludes any data aggregation or transmission fulfill the broader goal of informing local agricultural advisory campaigns?",
+      "question": "Regarding the decision not to recommend a specific chemical product or dosage, why should a farmer prioritize using AniCheck over simply waiting for an agricultural technician who can provide both the identification and a actionable treatment plan?",
       "difficulty": 2,
       "sources": [
         {
@@ -80,17 +80,17 @@
           "score": 0.1397,
           "origin": "new_topic",
           "highlight": {
-            "start": 2477,
-            "end": 2695
+            "start": 1716,
+            "end": 1949
           }
         }
       ],
-      "grounding_reference": "For the local government unit, the aggregate pattern of identifications could in principle inform the targeting of advisory campaigns, although the present version of the system does not transmit or aggregate any data."
+      "grounding_reference": "it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid."
     }
   },
   "turns": [
     {
-      "answer": "Informing advisory campaigns isn't one of our objectives. Our objectives on page 5 are to build the dataset, train the model with transfer learning, embed it in an offline Android app, and evaluate accuracy and acceptability. The advisory point appears only in Significance, and we worded it as something the aggregate pattern could do in principle. We kept the app fully on-device for two reasons in Chapter 1: mobile data coverage in Barangay Masagana is unreliable, so a server round-trip would fail exactly where farmers stand in the field, and keeping the identification history only on the farmer's own phone avoids collecting data about their farms without a consent process we haven't designed. Sending anonymous counts to the municipal agriculture office would be a separate study, with its own consent and data-handling design.",
+      "answer": "Because the farmer usually can't wait for one. In our interviews, farmers saw a technician about once per cropping season, so 19 of the 24 relied on a neighbor or the supply store for a diagnosis, and 8 had applied a treatment that turned out to be wrong. AniCheck doesn't compete with the technician; it changes what happens at the moment the farmer first sees the symptom. It gives an identification and a confidence percentage on the phone, offline, so the farmer knows whether this looks like bacterial leaf blight or brown spot before buying anything. We left out chemicals and doses on purpose: prescribing pesticides is outside our competence, and a wrong dose after a misclassification costs more than no advice. So the app is the first step, and the Scope keeps the technician for the cases where a costly treatment follows.",
       "response": {
         "evaluation": {
           "clarity": 5,
@@ -98,8 +98,8 @@
           "grounding": 5,
           "total": 14,
           "difficulty_delta": 0,
-          "primary_gap": "The candidate narrowly interpreted 'objectives' as only the bulleted list on page 5, ignoring the logical tension between the stated purpose of the tool (as defined in Significance) and its technical implementation constraints.",
-          "answer_summary": "The candidate clarified that their defined research objectives are strictly technical/developmental, noting that the mention of informing agricultural campaigns is an auxiliary possibility mentioned in the Significance section rather than a functional requirement of the current prototype."
+          "primary_gap": "The candidate cited specific interview statistics that appear nowhere in the provided document, suggesting a reliance on external knowledge not present in the study's stated methodology.",
+          "answer_summary": "The candidate argued that AniCheck provides immediate diagnostic support to address the critical latency in technician availability and serves as a triage tool rather than a replacement for expert advice."
         },
         "next_question": {
           "turn": 2,
@@ -109,7 +109,7 @@
             "title": "Methodology Expert",
             "icon": "advisor"
           },
-          "question": "I see your rationale for the on-device storage constraint, but let's look at the sampling method used to validate this. You mention that respondents captured between three and five identifications on leaves available at the session; given that the model's reliability is being tested against these specific images, how can you ensure the leaves provided during these thirty-minute sessions offer enough morphological diversity to truly validate the model's accuracy, or are you just testing for usability here?",
+          "question": "I appreciate the triage approach you've outlined, but regarding the test set of 648 images, were these captured under the same controlled conditions as your evaluation sessions, or does this dataset include the variance in lighting and environmental noise found in actual field conditions?",
           "difficulty": 2,
           "sources": [
             {
@@ -119,27 +119,36 @@
               "score": 0.3055,
               "origin": "new_topic",
               "highlight": {
-                "start": 824,
-                "end": 1061
+                "start": 21,
+                "end": 180
               }
             }
           ],
-          "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session."
+          "grounding_reference": "Model performance was evaluated on the 648-image test set using accuracy, precision, recall, and F1-score computed per class, together with a confusion matrix."
         },
-        "done": false
+        "done": false,
+        "closing": {
+          "panelist": {
+            "archetype_key": "problem_objectives_reviewer",
+            "name": "O'Sullivan",
+            "title": "Research Problem & Objectives Reviewer",
+            "icon": "professor"
+          },
+          "line": "Thank you. That's all from me for now."
+        }
       }
     },
     {
-      "answer": "I think the leaves were diverse enough, because the farmers were in their own barangay and the leaves came from around the area. And the model already got 94.7% accuracy, so we know it works on those kinds of leaves.",
+      "answer": "I think they were similar to the field, because we took the pictures in the actual rice fields of the barangay. The augmentation also adds brightness changes, so it should cover the lighting.",
       "response": {
         "evaluation": {
-          "clarity": 2,
-          "depth": 1,
-          "grounding": 1,
-          "total": 4,
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 2,
+          "total": 7,
           "difficulty_delta": 1,
-          "primary_gap": "The candidate conflated model training accuracy with validation sampling rigor and failed to address the difference between morphological diversity and geographic location.",
-          "answer_summary": "The candidate claimed the leaf samples were sufficiently diverse because they were sourced locally within the farmers' barangay and asserted that the model's 94.7% accuracy rate proves its reliability on those specific samples."
+          "primary_gap": "The candidate failed to provide empirical evidence or a formal justification for the representativeness of the dataset, relying instead on a vague assertion of similarity and the assumption that synthetic augmentations compensate for environmental noise.",
+          "answer_summary": "The candidate claims that the 648-image test set reflects field conditions because the images were taken in actual rice fields, supplemented by brightness-related data augmentation."
         },
         "next_question": {
           "turn": 3,
@@ -149,8 +158,49 @@
             "title": "Methodology Expert",
             "icon": "advisor"
           },
-          "question": "That response conflates your system's post-training accuracy with the actual rigor of your field-testing environment; if your validation relies on samples captured in a single thirty-minute window per user, how do you account for variations in disease morphology, lighting, and leaf health that exist beyond those convenience samples to ensure the model isn't just overfitting to the specific conditions of your session?",
+          "question": "That explanation is unfortunately anecdotal and fails to account for the technical limitations of synthetic augmentation in replicating complex field interference. Since you mention the images were captured in Barangay Masagana, how specifically did you categorize or quantify the environmental noise—such as motion blur, varying leaf occlusion, or specular reflection—to ensure the 648-image test set truly serves as a robust proxy for the diverse conditions mentioned in your evaluation design?",
           "difficulty": 3,
+          "sources": [
+            {
+              "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+              "page_start": 10,
+              "page_end": 10,
+              "score": 0.3055,
+              "origin": "follow_up",
+              "highlight": {
+                "start": 3,
+                "end": 180
+              }
+            }
+          ],
+          "grounding_reference": "Evaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix."
+        },
+        "done": false,
+        "closing": null
+      }
+    },
+    {
+      "answer": "We didn't really measure that. The pictures looked clear to us, so we think it's fine.",
+      "response": {
+        "evaluation": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate failed to address the technical methodology behind dataset validation and relied entirely on subjective visual inspection, demonstrating a lack of rigor in experimental design.",
+          "answer_summary": "The candidate stated that they did not quantify environmental noise factors, relying instead on subjective visual assessment to determine the quality of their test set."
+        },
+        "next_question": {
+          "turn": 4,
+          "panelist": {
+            "archetype_key": "methodology_expert",
+            "name": "Nguyen",
+            "title": "Methodology Expert",
+            "icon": "advisor"
+          },
+          "question": "Subjective visual assessment is insufficient for validating a model intended for real-world agricultural deployment; if you did not quantify variables like occlusion or motion blur, how can you claim that your evaluation design—which only guided farmers through capturing three to five images each—is sufficient to represent the actual variance in conditions they encounter in their daily practice?",
+          "difficulty": 2,
           "sources": [
             {
               "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
@@ -166,30 +216,31 @@
           ],
           "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session."
         },
-        "done": false
+        "done": false,
+        "closing": null
       }
     },
     {
-      "answer": "You're right, and I conflated two different things. The 94.7% on page 11 comes from the 648-image test set, which was split from the same collection as the training set: detached leaves photographed flat on white cardboard between 8 and 10 AM, about 25 cm from the leaf. So it tells us the model separates the five classes under those controlled conditions, not that it holds up in the field. The session identifications were part of the acceptability survey, and we never scored them against a technician's label, so they don't validate accuracy at all. The honest claim is that field accuracy is untested. Closing that gap means a second test set of attached leaves photographed in the field at different times of day, labeled by the municipal technician, and reporting per-class recall on it, especially bacterial leaf blight, our weakest class at 0.813.",
+      "answer": "We can't claim that, and I should correct my earlier answer. The 3,240 images came from eleven fields, but each leaf was detached and photographed on white cardboard between 8 and 10 AM, so occlusion, blur and glare were controlled out rather than measured. The 648 test images are a stratified 20% held out from that same collection, so the 94.7% is an in-distribution figure for detached leaves in morning light. The three to five captures in the evaluation sessions were never a dataset either; they only let each of the thirty respondents complete a full capture-and-identify cycle before rating the app. Our Limitations say the transfer to attached leaves and variable light was not established, and the study that would establish it is our recommendation to compare the app's calls with a technician's judgment on field leaves.",
       "response": {
         "evaluation": {
           "clarity": 5,
           "depth": 5,
           "grounding": 5,
           "total": 15,
-          "difficulty_delta": 0,
-          "primary_gap": "The candidate lacks any quantitative evidence or baseline performance data for the model in uncontrolled, real-world conditions.",
-          "answer_summary": "The candidate acknowledges that the 94.7% accuracy metric is limited to controlled lab conditions and admits that field accuracy remains untested, proposing a future methodology to address this gap."
+          "difficulty_delta": 1,
+          "primary_gap": "The methodology admits to a complete lack of real-world environmental validation (occlusion, blur, dynamic lighting), rendering the field deployment aspect of the research largely theoretical.",
+          "answer_summary": "The candidate clarifies that the test dataset consisted of controlled, detached leaves in optimal lighting, admitting that the system's performance on attached leaves under variable field conditions was not established and remains a recommendation for future study."
         },
         "next_question": {
-          "turn": 4,
+          "turn": 5,
           "panelist": {
             "archetype_key": "results_conclusions_reviewer",
-            "name": "Schmidt",
+            "name": "Abara",
             "title": "Results & Conclusions Reviewer",
             "icon": "scholar"
           },
-          "question": "I appreciate the transparency regarding your error cases, but you mention the system cannot express multiple conditions while maintaining a single-class output. Since you acknowledge this architectural limitation, why did you conclude the system is a useful diagnostic tool when it is fundamentally unable to represent the diagnostic reality of comorbid leaf infections observed in the field?",
+          "question": "I appreciate your candor regarding the discrepancy in model reliability, but if the respondents were fundamentally more confident in the application's usability than in its diagnostic accuracy, on what basis can you conclude that the system is a useful triage tool? If the primary users themselves express skepticism about the correctness of the findings, aren't you over-generalizing the clinical value of the system by labeling it as acceptable?",
           "difficulty": 3,
           "sources": [
             {
@@ -199,37 +250,46 @@
               "score": 0.3338,
               "origin": "new_topic",
               "highlight": {
-                "start": 40,
-                "end": 205
+                "start": 691,
+                "end": 892
               }
             }
           ],
-          "grounding_reference": "In several such instances the leaf in question carried symptoms of more than one condition, a case the present system cannot express since it returns a single class."
+          "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them."
         },
-        "done": false
+        "done": false,
+        "closing": {
+          "panelist": {
+            "archetype_key": "methodology_expert",
+            "name": "Nguyen",
+            "title": "Methodology Expert",
+            "icon": "advisor"
+          },
+          "line": "My questions regarding the methodology of your data collection are complete."
+        }
       }
     },
     {
-      "answer": "We didn't conclude that it's a diagnostic tool in that sense. The usefulness on page 13 is the respondents' acceptability rating, and our Conclusion on page 14 deliberately calls the system a preliminary decision-support aid that shouldn't replace a technician where a costly treatment follows. The single-class output is the reason for that wording: our Limitations say we never established its behaviour on a leaf with two conditions, and the error cases on page 13 show that's where respondents caught it out. So the claim is narrow. It gives a first identification at the moment of observation for the common single-disease case, with a confidence percentage. Our second recommendation addresses exactly your point: a way to express multiple simultaneous conditions, or an inconclusive result, instead of forcing one class.",
+      "answer": "We don't conclude it's a reliable diagnostic, and the reliability score is the reason. Reliability was the only ISO/IEC 25010 characteristic below Very Acceptable, at 4.09 against 4.42 for usability, and it lines up with the confusion matrix: bacterial leaf blight has the lowest recall, 0.813, with 16 of its 125 test images called brown spot, and several respondents' leaves carried more than one condition, which a single-class answer can't express. So the respondents' skepticism is consistent with the model's real weakness, not a contradiction of it. That's why the conclusion is narrow: the app is acceptable as a preliminary identification aid that is easy to use offline, and it should not replace a technician where a costly treatment follows. 'Acceptable' there is the ISO rating of the app as a whole, not a claim of clinical accuracy.",
       "response": {
         "evaluation": {
           "clarity": 5,
-          "depth": 4,
+          "depth": 5,
           "grounding": 5,
-          "total": 14,
+          "total": 15,
           "difficulty_delta": 0,
           "primary_gap": null,
-          "answer_summary": "The candidate clarified that the system is positioned as a preliminary decision-support tool rather than a comprehensive diagnostic instrument, noting that they explicitly framed the system's narrow scope and acknowledged its limitations regarding multi-condition leaves in their conclusions and recommendations."
+          "answer_summary": "The candidate argues that the app's 'acceptable' status refers to its utility as a preliminary aid rather than clinical diagnostic accuracy, and posits that user skepticism regarding reliability is a logical reflection of the system's known multi-class limitations."
         },
         "next_question": {
-          "turn": 5,
+          "turn": 6,
           "panelist": {
             "archetype_key": "devils_advocate",
-            "name": "O'Sullivan",
+            "name": "Zimmermann",
             "title": "Terror Panelist",
             "icon": "hacker"
           },
-          "question": "You concede that the field accuracy remains untested, yet your evaluation design claims to have measured the 'reliability' characteristic of the system via the ISO/IEC 25010 survey instrument. If the model's diagnostic performance is unproven in uncontrolled environments, how can you justify labeling the system as 'reliable' based solely on the subjective feedback of farmers who only tested the app under your immediate guidance during a single thirty-minute session?",
+          "question": "If your methodology relies on controlled, detached leaves for the 648-image test set, how can you realistically claim this system provides functional suitability for farmers when the evaluation design only tested their ability to capture images of leaves under your direct guidance, rather than assessing how the system handles the inherent noise of real field conditions where misdiagnosis could lead to the immediate, improper application of chemicals?",
           "difficulty": 3,
           "sources": [
             {
@@ -239,30 +299,40 @@
               "score": 0.3055,
               "origin": "devils_advocate",
               "highlight": {
-                "start": 181,
-                "end": 365
+                "start": 824,
+                "end": 1061
               }
             }
           ],
-          "grounding_reference": "System acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010, covering four characteristics: functional suitability, usability, reliability, and portability."
+          "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session."
         },
-        "done": false
+        "done": false,
+        "closing": {
+          "panelist": {
+            "archetype_key": "results_conclusions_reviewer",
+            "name": "Abara",
+            "title": "Results & Conclusions Reviewer",
+            "icon": "scholar"
+          },
+          "line": "Those are all the inquiries I have regarding your conclusions and the scope of your findings."
+        }
       }
     },
     {
-      "answer": "The 4.09 is the respondents' perceived reliability, not a measurement of the model, and we report it that way. Our Limitations on page 14 say the evaluation came right after a guided session and measures initial impression rather than sustained use, with respondents from the same barangay that supplied the training images. Even under those favourable conditions reliability was the lowest-rated characteristic, below usability at 4.42, and we read that gap as the farmers telling us they weren't sure the answers were right, which matches the bacterial leaf blight recall of 0.813. That's why the conclusion stops at a preliminary aid. Measured reliability needs the two studies we recommend: the app's identifications compared against a technician on the same leaves, and farmers using it unsupervised across a full cropping season.",
+      "answer": "We don't claim field suitability for the model's accuracy; the functional suitability rating is what thirty farmers reported after using the app, and it measures whether the features did what they expected, not field accuracy. The design deliberately keeps a misdiagnosis from turning straight into a chemical application: the app shows an identification with a confidence percentage and never a product or a dose, and the Scope keeps the technician for any costly treatment. What's not established is how the 94.7% holds on attached leaves in field light, and we say so in the Limitations. Until the field validation in our recommendations is done, the honest reading is a preliminary aid that narrows what the farmer asks the technician, not a substitute for one.",
       "response": {
         "evaluation": {
           "clarity": 5,
           "depth": 4,
           "grounding": 5,
           "total": 14,
-          "difficulty_delta": 1,
-          "primary_gap": "The candidate admits the survey measures only initial perception but fails to address the inherent contradiction of using an ISO/IEC 25010 'reliability' metric when the underlying system performance remains unvalidated.",
-          "answer_summary": "The candidate clarifies that the 4.09 reliability score reflects subjective user perception during an initial guided session rather than objective system performance, and argues that this result, when contextualized alongside recall metrics and future research recommendations, serves as a preliminary aid rather than a definitive claim of system reliability."
+          "difficulty_delta": 0,
+          "primary_gap": "The candidate admits the functional suitability rating is based on guided, non-field conditions, which calls into question the validity of using that metric to claim real-world system utility.",
+          "answer_summary": "The candidate clarifies that functional suitability ratings were based on user experience surveys rather than field accuracy, and acknowledges that the system is intended as a preliminary diagnostic aid requiring expert verification rather than a replacement for field technicians."
         },
         "next_question": null,
-        "done": true
+        "done": true,
+        "closing": null
       }
     }
   ],
@@ -274,54 +344,56 @@
         2,
         2,
         3,
+        2,
         3,
         3
       ],
-      "overall_avg_clarity": 4.4,
-      "overall_avg_depth": 3.6,
-      "overall_avg_grounding": 4.2,
+      "overall_avg_clarity": 4.0,
+      "overall_avg_depth": 3.5,
+      "overall_avg_grounding": 3.8333333333333335,
       "panelist_sections": [
         {
           "archetype_key": "problem_objectives_reviewer",
-          "panelist_name": "Al-Farsi",
-          "turns_taken": 1,
-          "avg_clarity": 5.0,
-          "avg_depth": 4.0,
-          "avg_grounding": 5.0,
-          "primary_gaps": [
-            "The candidate narrowly interpreted 'objectives' as only the bulleted list on page 5, ignoring the logical tension between the stated purpose of the tool (as defined in Significance) and its technical implementation constraints."
-          ]
-        },
-        {
-          "archetype_key": "methodology_expert",
-          "panelist_name": "Nguyen",
-          "turns_taken": 2,
-          "avg_clarity": 3.5,
-          "avg_depth": 3.0,
-          "avg_grounding": 3.0,
-          "primary_gaps": [
-            "The candidate conflated model training accuracy with validation sampling rigor and failed to address the difference between morphological diversity and geographic location.",
-            "The candidate lacks any quantitative evidence or baseline performance data for the model in uncontrolled, real-world conditions."
-          ]
-        },
-        {
-          "archetype_key": "results_conclusions_reviewer",
-          "panelist_name": "Schmidt",
-          "turns_taken": 1,
-          "avg_clarity": 5.0,
-          "avg_depth": 4.0,
-          "avg_grounding": 5.0,
-          "primary_gaps": []
-        },
-        {
-          "archetype_key": "devils_advocate",
           "panelist_name": "O'Sullivan",
           "turns_taken": 1,
           "avg_clarity": 5.0,
           "avg_depth": 4.0,
           "avg_grounding": 5.0,
           "primary_gaps": [
-            "The candidate admits the survey measures only initial perception but fails to address the inherent contradiction of using an ISO/IEC 25010 'reliability' metric when the underlying system performance remains unvalidated."
+            "The candidate cited specific interview statistics that appear nowhere in the provided document, suggesting a reliance on external knowledge not present in the study's stated methodology."
+          ]
+        },
+        {
+          "archetype_key": "methodology_expert",
+          "panelist_name": "Nguyen",
+          "turns_taken": 3,
+          "avg_clarity": 3.0,
+          "avg_depth": 2.6666666666666665,
+          "avg_grounding": 2.6666666666666665,
+          "primary_gaps": [
+            "The candidate failed to provide empirical evidence or a formal justification for the representativeness of the dataset, relying instead on a vague assertion of similarity and the assumption that synthetic augmentations compensate for environmental noise.",
+            "The candidate failed to address the technical methodology behind dataset validation and relied entirely on subjective visual inspection, demonstrating a lack of rigor in experimental design.",
+            "The methodology admits to a complete lack of real-world environmental validation (occlusion, blur, dynamic lighting), rendering the field deployment aspect of the research largely theoretical."
+          ]
+        },
+        {
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist_name": "Abara",
+          "turns_taken": 1,
+          "avg_clarity": 5.0,
+          "avg_depth": 5.0,
+          "avg_grounding": 5.0,
+          "primary_gaps": []
+        },
+        {
+          "archetype_key": "devils_advocate",
+          "panelist_name": "Zimmermann",
+          "turns_taken": 1,
+          "avg_clarity": 5.0,
+          "avg_depth": 4.0,
+          "avg_grounding": 5.0,
+          "primary_gaps": [
+            "The candidate admits the functional suitability rating is based on guided, non-field conditions, which calls into question the validity of using that metric to claim real-world system utility."
           ]
         }
       ],
@@ -331,53 +403,36 @@
           "prior_turn_index": 1,
           "difficulty_from": 2,
           "difficulty_to": 3,
-          "quality_sum_prior": 4,
+          "quality_sum_prior": 7,
+          "quality_sum_at": 3,
+          "outcome": "deteriorated"
+        },
+        {
+          "turn_index": 4,
+          "prior_turn_index": 3,
+          "difficulty_from": 2,
+          "difficulty_to": 3,
+          "quality_sum_prior": 15,
           "quality_sum_at": 15,
           "outcome": "recovered"
         }
       ],
-      "narrative": "You have successfully completed your defense session. Across the five turns of the examination, the panel steadily increased the difficulty of their inquiry, moving from an initial level of 2 to a sustained level of 3 in the final three turns. Your overall performance was particularly strong in clarity and grounding, where you achieved averages of 88 and 84, respectively, though your depth of response averaged 72.\n\nOne notable moment occurred during the second turn, where you faced significant pushback that escalated the difficulty. It is to your credit that you recovered effectively, as your answer quality improved significantly compared to the prior turn.\n\nThe panel identified several areas for your consideration. Dr. Al-Farsi noted that you interpreted your objectives too narrowly, overlooking the tension between your tool’s stated purpose and its technical constraints. Dr. Nguyen identified gaps regarding your methodology, specifically concerning your conflation of training accuracy with sampling rigor and the distinction between morphological diversity and geographic location. Furthermore, you lacked quantitative baselines for real-world conditions. Finally, Dr. O’Sullivan highlighted a contradiction in your work, noting that you applied an ISO/IEC 25010 reliability metric despite your system's lack of performance validation. While Dr. Schmidt offered no specific gaps, your cumulative feedback centers on the need to better align your technical implementations with your broader project objectives and methodological rigor.",
+      "narrative": "You have now completed your defense session, which saw a fluctuating difficulty trajectory across six turns. Your performance metrics reflect an overall average clarity of 80, a depth of 70, and grounding of 77.\n\nThe session was marked by two significant pushback events. At turn two, the panel increased the difficulty from a level 2 to a level 3, during which your response quality deteriorated compared to your previous turn. However, you demonstrated resilience during the second pushback at turn four; after the difficulty escalated back to level 3, your response quality recovered, matching the performance level you held prior to the challenge.\n\nReviewing the feedback by panelist, O'Sullivan noted that you cited statistics absent from your stated methodology. Zimmermann highlighted that your reliance on non-field condition testing undermines your claims regarding real-world system utility. Most critically, Nguyen identified significant gaps in your experimental rigor, specifically regarding the representativeness of your dataset, the lack of formal methodology for dataset validation, and the absence of real-world environmental validation. These critiques suggest that your field deployment conclusions currently remain largely theoretical. While you achieved strong clarity and depth scores with Abara, addressing the methodological concerns raised by Nguyen will be essential for the future development of your research.",
       "narrative_fallback_used": false,
-      "answer_suggestions": [
-        {
-          "turn_index": 0,
-          "suggestion": "A stronger answer would have briefly elaborated on *how* an \"aggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\" perhaps by describing the type of insights the municipal agriculture office could gain (e.g., identifying disease hotspots or prevalence trends), before reiterating the current system's limitations regarding data transmission.",
-          "grounding_reference": "the aggregate pattern of identifications could in principle inform the targeting of advisory campaigns"
-        },
-        {
-          "turn_index": 1,
-          "suggestion": "A stronger answer would have explicitly acknowledged that the method of \"capturing between three and five identifications on leaves available at the session\" was primarily designed for usability evaluation, not for rigorous validation of the model's accuracy against diverse real-world conditions, before offering a plan for how such validation could be conducted.",
-          "grounding_reference": "capturing between three and five identifications on leaves available at the session"
-        },
-        {
-          "turn_index": 2,
-          "suggestion": "While the answer is strong, it could have been made even stronger by explicitly stating upfront that the \"capturing between three and five identifications on leaves available at the session\" was never intended to validate field accuracy, and thus was inherently insufficient to account for variations or test for overfitting to uncontrolled field conditions, before detailing the model's actual test set conditions and future plans.",
-          "grounding_reference": "capturing between three and five identifications on leaves available at the session"
-        },
-        {
-          "turn_index": 3,
-          "suggestion": "A stronger answer would have, after clarifying the system's preliminary role, more explicitly detailed the practical diagnostic implications of the system's inability to \"express multiple conditions since it returns a single class,\" explaining how this limitation directly affects its utility when comorbid infections are present in the field.",
-          "grounding_reference": "a case the present system cannot express since it returns a single class"
-        },
-        {
-          "turn_index": 4,
-          "suggestion": "A stronger answer would have explicitly clarified that \"reliability\" as assessed by the ISO/IEC 25010 survey measures user *perception* and satisfaction with the system's consistency, distinguishing it clearly from an empirical measurement of the model's diagnostic accuracy in uncontrolled environments, before discussing the survey results and future plans.",
-          "grounding_reference": "reliability"
-        }
-      ],
-      "suggestions_fallback_used": false
+      "answer_suggestions": [],
+      "suggestions_fallback_used": true
     },
-    "overall_raw": 4.066666666666666,
+    "overall_raw": 3.777777777777778,
     "transcript": [
       {
         "turn": 1,
         "panelist": {
           "archetype_key": "problem_objectives_reviewer",
-          "name": "Al-Farsi",
+          "name": "O'Sullivan",
           "title": "Research Problem & Objectives Reviewer",
           "icon": "professor"
         },
-        "question": "Regarding your objective to provide a decision-support tool, how does an application that strictly excludes any data aggregation or transmission fulfill the broader goal of informing local agricultural advisory campaigns?",
+        "question": "Regarding the decision not to recommend a specific chemical product or dosage, why should a farmer prioritize using AniCheck over simply waiting for an agricultural technician who can provide both the identification and a actionable treatment plan?",
         "difficulty": 2,
         "sources": [
           {
@@ -387,21 +442,30 @@
             "score": 0.1397,
             "origin": "new_topic",
             "highlight": {
-              "start": 2477,
-              "end": 2695
+              "start": 1716,
+              "end": 1949
             }
           }
         ],
-        "grounding_reference": "For the local government unit, the aggregate pattern of identifications could in principle inform the targeting of advisory campaigns, although the present version of the system does not transmit or aggregate any data.",
-        "answer": "Informing advisory campaigns isn't one of our objectives. Our objectives on page 5 are to build the dataset, train the model with transfer learning, embed it in an offline Android app, and evaluate accuracy and acceptability. The advisory point appears only in Significance, and we worded it as something the aggregate pattern could do in principle. We kept the app fully on-device for two reasons in Chapter 1: mobile data coverage in Barangay Masagana is unreliable, so a server round-trip would fail exactly where farmers stand in the field, and keeping the identification history only on the farmer's own phone avoids collecting data about their farms without a consent process we haven't designed. Sending anonymous counts to the municipal agriculture office would be a separate study, with its own consent and data-handling design.",
+        "grounding_reference": "it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+        "answer": "Because the farmer usually can't wait for one. In our interviews, farmers saw a technician about once per cropping season, so 19 of the 24 relied on a neighbor or the supply store for a diagnosis, and 8 had applied a treatment that turned out to be wrong. AniCheck doesn't compete with the technician; it changes what happens at the moment the farmer first sees the symptom. It gives an identification and a confidence percentage on the phone, offline, so the farmer knows whether this looks like bacterial leaf blight or brown spot before buying anything. We left out chemicals and doses on purpose: prescribing pesticides is outside our competence, and a wrong dose after a misclassification costs more than no advice. So the app is the first step, and the Scope keeps the technician for the cases where a costly treatment follows.",
         "evaluation": {
           "clarity": 5,
           "depth": 4,
           "grounding": 5,
           "total": 14,
           "difficulty_delta": 0,
-          "primary_gap": "The candidate narrowly interpreted 'objectives' as only the bulleted list on page 5, ignoring the logical tension between the stated purpose of the tool (as defined in Significance) and its technical implementation constraints.",
-          "answer_summary": "The candidate clarified that their defined research objectives are strictly technical/developmental, noting that the mention of informing agricultural campaigns is an auxiliary possibility mentioned in the Significance section rather than a functional requirement of the current prototype."
+          "primary_gap": "The candidate cited specific interview statistics that appear nowhere in the provided document, suggesting a reliance on external knowledge not present in the study's stated methodology.",
+          "answer_summary": "The candidate argued that AniCheck provides immediate diagnostic support to address the critical latency in technician availability and serves as a triage tool rather than a replacement for expert advice."
+        },
+        "closing": {
+          "panelist": {
+            "archetype_key": "problem_objectives_reviewer",
+            "name": "O'Sullivan",
+            "title": "Research Problem & Objectives Reviewer",
+            "icon": "professor"
+          },
+          "line": "Thank you. That's all from me for now."
         }
       },
       {
@@ -412,7 +476,7 @@
           "title": "Methodology Expert",
           "icon": "advisor"
         },
-        "question": "I see your rationale for the on-device storage constraint, but let's look at the sampling method used to validate this. You mention that respondents captured between three and five identifications on leaves available at the session; given that the model's reliability is being tested against these specific images, how can you ensure the leaves provided during these thirty-minute sessions offer enough morphological diversity to truly validate the model's accuracy, or are you just testing for usability here?",
+        "question": "I appreciate the triage approach you've outlined, but regarding the test set of 648 images, were these captured under the same controlled conditions as your evaluation sessions, or does this dataset include the variance in lighting and environmental noise found in actual field conditions?",
         "difficulty": 2,
         "sources": [
           {
@@ -422,22 +486,23 @@
             "score": 0.3055,
             "origin": "new_topic",
             "highlight": {
-              "start": 824,
-              "end": 1061
+              "start": 21,
+              "end": 180
             }
           }
         ],
-        "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
-        "answer": "I think the leaves were diverse enough, because the farmers were in their own barangay and the leaves came from around the area. And the model already got 94.7% accuracy, so we know it works on those kinds of leaves.",
+        "grounding_reference": "Model performance was evaluated on the 648-image test set using accuracy, precision, recall, and F1-score computed per class, together with a confusion matrix.",
+        "answer": "I think they were similar to the field, because we took the pictures in the actual rice fields of the barangay. The augmentation also adds brightness changes, so it should cover the lighting.",
         "evaluation": {
-          "clarity": 2,
-          "depth": 1,
-          "grounding": 1,
-          "total": 4,
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 2,
+          "total": 7,
           "difficulty_delta": 1,
-          "primary_gap": "The candidate conflated model training accuracy with validation sampling rigor and failed to address the difference between morphological diversity and geographic location.",
-          "answer_summary": "The candidate claimed the leaf samples were sufficiently diverse because they were sourced locally within the farmers' barangay and asserted that the model's 94.7% accuracy rate proves its reliability on those specific samples."
-        }
+          "primary_gap": "The candidate failed to provide empirical evidence or a formal justification for the representativeness of the dataset, relying instead on a vague assertion of similarity and the assumption that synthetic augmentations compensate for environmental noise.",
+          "answer_summary": "The candidate claims that the 648-image test set reflects field conditions because the images were taken in actual rice fields, supplemented by brightness-related data augmentation."
+        },
+        "closing": null
       },
       {
         "turn": 3,
@@ -447,8 +512,44 @@
           "title": "Methodology Expert",
           "icon": "advisor"
         },
-        "question": "That response conflates your system's post-training accuracy with the actual rigor of your field-testing environment; if your validation relies on samples captured in a single thirty-minute window per user, how do you account for variations in disease morphology, lighting, and leaf health that exist beyond those convenience samples to ensure the model isn't just overfitting to the specific conditions of your session?",
+        "question": "That explanation is unfortunately anecdotal and fails to account for the technical limitations of synthetic augmentation in replicating complex field interference. Since you mention the images were captured in Barangay Masagana, how specifically did you categorize or quantify the environmental noise—such as motion blur, varying leaf occlusion, or specular reflection—to ensure the 648-image test set truly serves as a robust proxy for the diverse conditions mentioned in your evaluation design?",
         "difficulty": 3,
+        "sources": [
+          {
+            "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+            "page_start": 10,
+            "page_end": 10,
+            "score": 0.3055,
+            "origin": "follow_up",
+            "highlight": {
+              "start": 3,
+              "end": 180
+            }
+          }
+        ],
+        "grounding_reference": "Evaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.",
+        "answer": "We didn't really measure that. The pictures looked clear to us, so we think it's fine.",
+        "evaluation": {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "difficulty_delta": -1,
+          "primary_gap": "The candidate failed to address the technical methodology behind dataset validation and relied entirely on subjective visual inspection, demonstrating a lack of rigor in experimental design.",
+          "answer_summary": "The candidate stated that they did not quantify environmental noise factors, relying instead on subjective visual assessment to determine the quality of their test set."
+        },
+        "closing": null
+      },
+      {
+        "turn": 4,
+        "panelist": {
+          "archetype_key": "methodology_expert",
+          "name": "Nguyen",
+          "title": "Methodology Expert",
+          "icon": "advisor"
+        },
+        "question": "Subjective visual assessment is insufficient for validating a model intended for real-world agricultural deployment; if you did not quantify variables like occlusion or motion blur, how can you claim that your evaluation design—which only guided farmers through capturing three to five images each—is sufficient to represent the actual variance in conditions they encounter in their daily practice?",
+        "difficulty": 2,
         "sources": [
           {
             "text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
@@ -463,26 +564,35 @@
           }
         ],
         "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
-        "answer": "You're right, and I conflated two different things. The 94.7% on page 11 comes from the 648-image test set, which was split from the same collection as the training set: detached leaves photographed flat on white cardboard between 8 and 10 AM, about 25 cm from the leaf. So it tells us the model separates the five classes under those controlled conditions, not that it holds up in the field. The session identifications were part of the acceptability survey, and we never scored them against a technician's label, so they don't validate accuracy at all. The honest claim is that field accuracy is untested. Closing that gap means a second test set of attached leaves photographed in the field at different times of day, labeled by the municipal technician, and reporting per-class recall on it, especially bacterial leaf blight, our weakest class at 0.813.",
+        "answer": "We can't claim that, and I should correct my earlier answer. The 3,240 images came from eleven fields, but each leaf was detached and photographed on white cardboard between 8 and 10 AM, so occlusion, blur and glare were controlled out rather than measured. The 648 test images are a stratified 20% held out from that same collection, so the 94.7% is an in-distribution figure for detached leaves in morning light. The three to five captures in the evaluation sessions were never a dataset either; they only let each of the thirty respondents complete a full capture-and-identify cycle before rating the app. Our Limitations say the transfer to attached leaves and variable light was not established, and the study that would establish it is our recommendation to compare the app's calls with a technician's judgment on field leaves.",
         "evaluation": {
           "clarity": 5,
           "depth": 5,
           "grounding": 5,
           "total": 15,
-          "difficulty_delta": 0,
-          "primary_gap": "The candidate lacks any quantitative evidence or baseline performance data for the model in uncontrolled, real-world conditions.",
-          "answer_summary": "The candidate acknowledges that the 94.7% accuracy metric is limited to controlled lab conditions and admits that field accuracy remains untested, proposing a future methodology to address this gap."
+          "difficulty_delta": 1,
+          "primary_gap": "The methodology admits to a complete lack of real-world environmental validation (occlusion, blur, dynamic lighting), rendering the field deployment aspect of the research largely theoretical.",
+          "answer_summary": "The candidate clarifies that the test dataset consisted of controlled, detached leaves in optimal lighting, admitting that the system's performance on attached leaves under variable field conditions was not established and remains a recommendation for future study."
+        },
+        "closing": {
+          "panelist": {
+            "archetype_key": "methodology_expert",
+            "name": "Nguyen",
+            "title": "Methodology Expert",
+            "icon": "advisor"
+          },
+          "line": "My questions regarding the methodology of your data collection are complete."
         }
       },
       {
-        "turn": 4,
+        "turn": 5,
         "panelist": {
           "archetype_key": "results_conclusions_reviewer",
-          "name": "Schmidt",
+          "name": "Abara",
           "title": "Results & Conclusions Reviewer",
           "icon": "scholar"
         },
-        "question": "I appreciate the transparency regarding your error cases, but you mention the system cannot express multiple conditions while maintaining a single-class output. Since you acknowledge this architectural limitation, why did you conclude the system is a useful diagnostic tool when it is fundamentally unable to represent the diagnostic reality of comorbid leaf infections observed in the field?",
+        "question": "I appreciate your candor regarding the discrepancy in model reliability, but if the respondents were fundamentally more confident in the application's usability than in its diagnostic accuracy, on what basis can you conclude that the system is a useful triage tool? If the primary users themselves express skepticism about the correctness of the findings, aren't you over-generalizing the clinical value of the system by labeling it as acceptable?",
         "difficulty": 3,
         "sources": [
           {
@@ -492,32 +602,41 @@
             "score": 0.3338,
             "origin": "new_topic",
             "highlight": {
-              "start": 40,
-              "end": 205
+              "start": 691,
+              "end": 892
             }
           }
         ],
-        "grounding_reference": "In several such instances the leaf in question carried symptoms of more than one condition, a case the present system cannot express since it returns a single class.",
-        "answer": "We didn't conclude that it's a diagnostic tool in that sense. The usefulness on page 13 is the respondents' acceptability rating, and our Conclusion on page 14 deliberately calls the system a preliminary decision-support aid that shouldn't replace a technician where a costly treatment follows. The single-class output is the reason for that wording: our Limitations say we never established its behaviour on a leaf with two conditions, and the error cases on page 13 show that's where respondents caught it out. So the claim is narrow. It gives a first identification at the moment of observation for the common single-disease case, with a confidence percentage. Our second recommendation addresses exactly your point: a way to express multiple simultaneous conditions, or an inconclusive result, instead of forcing one class.",
+        "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them.",
+        "answer": "We don't conclude it's a reliable diagnostic, and the reliability score is the reason. Reliability was the only ISO/IEC 25010 characteristic below Very Acceptable, at 4.09 against 4.42 for usability, and it lines up with the confusion matrix: bacterial leaf blight has the lowest recall, 0.813, with 16 of its 125 test images called brown spot, and several respondents' leaves carried more than one condition, which a single-class answer can't express. So the respondents' skepticism is consistent with the model's real weakness, not a contradiction of it. That's why the conclusion is narrow: the app is acceptable as a preliminary identification aid that is easy to use offline, and it should not replace a technician where a costly treatment follows. 'Acceptable' there is the ISO rating of the app as a whole, not a claim of clinical accuracy.",
         "evaluation": {
           "clarity": 5,
-          "depth": 4,
+          "depth": 5,
           "grounding": 5,
-          "total": 14,
+          "total": 15,
           "difficulty_delta": 0,
           "primary_gap": null,
-          "answer_summary": "The candidate clarified that the system is positioned as a preliminary decision-support tool rather than a comprehensive diagnostic instrument, noting that they explicitly framed the system's narrow scope and acknowledged its limitations regarding multi-condition leaves in their conclusions and recommendations."
+          "answer_summary": "The candidate argues that the app's 'acceptable' status refers to its utility as a preliminary aid rather than clinical diagnostic accuracy, and posits that user skepticism regarding reliability is a logical reflection of the system's known multi-class limitations."
+        },
+        "closing": {
+          "panelist": {
+            "archetype_key": "results_conclusions_reviewer",
+            "name": "Abara",
+            "title": "Results & Conclusions Reviewer",
+            "icon": "scholar"
+          },
+          "line": "Those are all the inquiries I have regarding your conclusions and the scope of your findings."
         }
       },
       {
-        "turn": 5,
+        "turn": 6,
         "panelist": {
           "archetype_key": "devils_advocate",
-          "name": "O'Sullivan",
+          "name": "Zimmermann",
           "title": "Terror Panelist",
           "icon": "hacker"
         },
-        "question": "You concede that the field accuracy remains untested, yet your evaluation design claims to have measured the 'reliability' characteristic of the system via the ISO/IEC 25010 survey instrument. If the model's diagnostic performance is unproven in uncontrolled environments, how can you justify labeling the system as 'reliable' based solely on the subjective feedback of farmers who only tested the app under your immediate guidance during a single thirty-minute session?",
+        "question": "If your methodology relies on controlled, detached leaves for the 648-image test set, how can you realistically claim this system provides functional suitability for farmers when the evaluation design only tested their ability to capture images of leaves under your direct guidance, rather than assessing how the system handles the inherent noise of real field conditions where misdiagnosis could lead to the immediate, improper application of chemicals?",
         "difficulty": 3,
         "sources": [
           {
@@ -527,22 +646,23 @@
             "score": 0.3055,
             "origin": "devils_advocate",
             "highlight": {
-              "start": 181,
-              "end": 365
+              "start": 824,
+              "end": 1061
             }
           }
         ],
-        "grounding_reference": "System acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010, covering four characteristics: functional suitability, usability, reliability, and portability.",
-        "answer": "The 4.09 is the respondents' perceived reliability, not a measurement of the model, and we report it that way. Our Limitations on page 14 say the evaluation came right after a guided session and measures initial impression rather than sustained use, with respondents from the same barangay that supplied the training images. Even under those favourable conditions reliability was the lowest-rated characteristic, below usability at 4.42, and we read that gap as the farmers telling us they weren't sure the answers were right, which matches the bacterial leaf blight recall of 0.813. That's why the conclusion stops at a preliminary aid. Measured reliability needs the two studies we recommend: the app's identifications compared against a technician on the same leaves, and farmers using it unsupervised across a full cropping season.",
+        "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+        "answer": "We don't claim field suitability for the model's accuracy; the functional suitability rating is what thirty farmers reported after using the app, and it measures whether the features did what they expected, not field accuracy. The design deliberately keeps a misdiagnosis from turning straight into a chemical application: the app shows an identification with a confidence percentage and never a product or a dose, and the Scope keeps the technician for any costly treatment. What's not established is how the 94.7% holds on attached leaves in field light, and we say so in the Limitations. Until the field validation in our recommendations is done, the honest reading is a preliminary aid that narrows what the farmer asks the technician, not a substitute for one.",
         "evaluation": {
           "clarity": 5,
           "depth": 4,
           "grounding": 5,
           "total": 14,
-          "difficulty_delta": 1,
-          "primary_gap": "The candidate admits the survey measures only initial perception but fails to address the inherent contradiction of using an ISO/IEC 25010 'reliability' metric when the underlying system performance remains unvalidated.",
-          "answer_summary": "The candidate clarifies that the 4.09 reliability score reflects subjective user perception during an initial guided session rather than objective system performance, and argues that this result, when contextualized alongside recall metrics and future research recommendations, serves as a preliminary aid rather than a definitive claim of system reliability."
-        }
+          "difficulty_delta": 0,
+          "primary_gap": "The candidate admits the functional suitability rating is based on guided, non-field conditions, which calls into question the validity of using that metric to claim real-world system utility.",
+          "answer_summary": "The candidate clarifies that functional suitability ratings were based on user experience surveys rather than field accuracy, and acknowledges that the system is intended as a preliminary diagnostic aid requiring expert verification rather than a replacement for field technicians."
+        },
+        "closing": null
       }
     ]
   }
