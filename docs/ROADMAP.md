@@ -12,6 +12,21 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M16 Taglish mode (2026-11-06)
+
+Built and merged to `main` 2026-11-06; **next: my push (stop point C), my rating of the 15 lines, then Decision 7's captures.**
+Decisions: [`v2.0-m16-decisions.md`](v2.0-m16-decisions.md); results: [`v2.0-m16-results.md`](v2.0-m16-results.md).
+A "Panel language" choice (English or Taglish) on the start screen puts the panel's questions, follow-ups, Terror Panelist challenges and closing lines in Taglish; scoring, the debrief and the interface stay English.
+The v1 exception is in, behind a byte-identical golden test, with one amendment I authorised: two v1 test `.format` calls pass `language_line=""`.
+Scoring is fair to Taglish answers by the rule set in advance: a mean difference of +0.50 of 15, and the largest pair +2.00, right on the limit.
+`ADS_TAGLISH_MODE` ships off until I've rated the lines.
+**Open:** 7 of the 15 Taglish lines came out all English, mostly opening questions, where the language line sits highest in the prompt.
+
+**Known harness bug, for later:** a backend test whose `TestClient` shuts down while an upload is still ingesting hangs forever in the app's lifespan shutdown.
+It's there on the pre-M16 parent: `backend/tests/test_api.py::test_valid_panel_is_stored` hangs 4 runs of 4 when run on its own, though it passes inside the full suite.
+The hang is in app code (cancelling the ingest worker mid-`asyncio.to_thread`), so it may also hold up a real shutdown during an ingest; it needs its own end-to-end reproduction before a fix.
+Until then, new tests wait for every accepted upload to finish ingesting.
+
 ## Active work - v2.0 M15 the outgoing panelist closes (2026-11-05)
 
 Built, merged and live 2026-11-05; **next: M16 (Taglish), then M13's deferred captures.**

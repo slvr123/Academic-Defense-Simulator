@@ -76,6 +76,7 @@ export type State = {
   serverAwake: boolean // a flag beside the phase, not a phase (D25)
   waking: boolean // a wake has gone unanswered for WAKING_NOTICE_MS: the server is likely asleep (M12 D5)
   ttsAvailable: boolean // the server can make panel voices (/status, M3b E6)
+  taglishMode: boolean // ADS_TAGLISH_MODE: the start screen may offer a Taglish panel (/status, M16)
   voice: VoiceChoice | null // null until chosen for this defense; never persisted (E9)
   panelDisclosed: boolean // the MiMo disclosure was shown this session (M10 N9)
   options: PanelOptions | null
@@ -85,7 +86,7 @@ export type State = {
 }
 
 export type Action =
-  | { type: 'serverAwake'; ttsAvailable: boolean }
+  | { type: 'serverAwake'; ttsAvailable: boolean; taglishMode: boolean }
   | { type: 'waking'; on: boolean }
   | { type: 'voiceChosen'; voice: VoiceChoice }
   | { type: 'optionsLoaded'; options: PanelOptions }
@@ -120,6 +121,7 @@ export function initialState(): State {
     serverAwake: false,
     waking: false,
     ttsAvailable: false,
+    taglishMode: false,
     voice: null,
     panelDisclosed: false,
     options: null,
@@ -281,7 +283,14 @@ export function reducer(state: State, action: Action): State {
   const { phase } = state
   switch (action.type) {
     case 'serverAwake':
-      return { ...state, serverAwake: true, ttsAvailable: action.ttsAvailable }
+      // M16: with the flag off the choice is hidden, so the draft can only be English.
+      return {
+        ...state,
+        serverAwake: true,
+        ttsAvailable: action.ttsAvailable,
+        taglishMode: action.taglishMode,
+        draft: action.taglishMode ? state.draft : { ...state.draft, panel: { ...state.draft.panel, panel_language: 'english' } },
+      }
     case 'waking':
       return state.waking === action.on ? state : { ...state, waking: action.on }
     case 'voiceChosen':

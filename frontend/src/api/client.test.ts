@@ -11,6 +11,7 @@ const panel: PanelConfig = {
   topic: null,
   archetype_keys: null,
   starting_difficulty: 2,
+  panel_language: 'english',
 }
 
 describe('toApiError maps each status to the error the UI branches on', () => {

@@ -8,3 +8,6 @@
 # prevent. Marking these binary is what makes the committed SHA-256 meaningful.
 academic_defense_simulator/sample/*.pdf binary
 academic_defense_simulator/sample/*.npy binary
+# v2.0 M16 Decision 2: the golden prompt renderings are compared byte for byte, so a
+# CRLF checkout must not rewrite them.
+backend/tests/fixtures/m16_prompt_golden/*.txt binary

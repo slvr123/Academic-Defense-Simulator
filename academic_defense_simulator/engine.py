@@ -303,6 +303,7 @@ def _generate_da_question(
     session: DefenseSession,
     panelist: Panelist,
     model: str,
+    language_line: str = "",
 ) -> ConversationTurn:
     """Devil's Advocate's distinct question path (Decision 2): no retrieval, no
     follow-up-on-own-topic — it selects the highest-scored prior claim from another
@@ -329,6 +330,7 @@ def _generate_da_question(
         target_answer_summary=target_turn.score.answer_summary,
         retrieved_chunk=target_turn.chunk_text,
         difficulty_level=session.difficulty_current,
+        language_line=language_line,
     )
     print(
         f"[branch: devils-advocate — contesting {target_turn.panelist_archetype_key}'s "
@@ -365,11 +367,14 @@ def _generate_question(
     other_subtype_line: str,
     model: str,
     retriever: Callable[..., list[tuple[int, Chunk]]] | None = None,
+    language_line: str = "",
 ) -> ConversationTurn:
     """`retriever` (v2.0 M6 H3) replaces `retrieve` for the new-topic lookup and takes
-    the same arguments; None, the default, is `retrieve` itself, looked up at call time."""
+    the same arguments; None, the default, is `retrieve` itself, looked up at call time.
+    `language_line` (v2.0 M16) fills every question template's {language_line} slot, the
+    same way `other_subtype_line` fills its own; "", the default, is today's prompt."""
     if panelist.archetype_key == DEVILS_ADVOCATE_KEY:
-        return _generate_da_question(provider, session, panelist, model)
+        return _generate_da_question(provider, session, panelist, model, language_line)
 
     archetype = ARCHETYPE_CONFIG[panelist.archetype_key]
     previous_turn = session.turns[-1] if session.turns else None
@@ -416,6 +421,7 @@ def _generate_question(
             archetype_lane=archetype["archetype_lane"],
             defense_type=session.profile.defense_type.value,
             other_subtype_line=other_subtype_line,
+            language_line=language_line,
             domain=session.profile.domain,
             topic=session.profile.topic,
             difficulty_level=session.difficulty_current,
@@ -444,6 +450,7 @@ def _generate_question(
             difficulty_level=session.difficulty_current,
             digest_block=digest_block,
             high_difficulty_guard=high_difficulty_guard,
+            language_line=language_line,
         )
         print(f"[branch: follow-up — primary_gap: \"{previous_turn.score.primary_gap}\" — reusing chunk {chunk_index}]")
 

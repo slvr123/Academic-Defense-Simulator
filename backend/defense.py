@@ -37,11 +37,12 @@ from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, compose_full_r
 from academic_defense_simulator.rag.retrieval import Chunk
 from academic_defense_simulator.report import build_report
 from backend.chapter_filter import ChapterRetriever, is_opening, off_chapter, target_chapter
-from backend.closing import FALLBACK_LINE, Closing, ClosingCall, ClosingMode, closing_prompt, log_closing
+from backend.closing import Closing, ClosingCall, ClosingMode, closing_prompt, fallback_line, log_closing
 from backend.display_titles import display_title
 from backend.embedder import Embedder
 from backend.engine_adapter import RecordingEncoder, SourceTracker, chunk_copy_bytes, engine_chunks
 from backend.highlight import highlight_span
+from backend.language import PanelLanguage, question_language_line
 from backend.opening_order import opening_order
 from backend.retrieval_sampling import NearTieRetriever, turn_seed
 from backend.routing import LitReviewAccess, Retriever, routed
@@ -109,6 +110,7 @@ class Defense:
     lit_review_access: LitReviewAccess = "none"  # settings.lit_review_access (M9 L2)
     opening_chapter_filter: bool = False  # settings.opening_chapter_filter (M14 D2); setup_defense sets it
     closing_lines: ClosingMode = "off"  # settings.closing_lines (M15); setup_defense sets it
+    language: PanelLanguage = "english"  # what the panel speaks (M16); setup_defense sets it
     chapter_starts: dict[int, int] | None = None  # the session's chapter map (M14 D1)
     chunk_copy_bytes: int = 0  # what `chunks` costs in memory
     pending: ConversationTurn | None = None  # asked, not yet answered
@@ -201,6 +203,7 @@ def setup_defense(
         lit_review_access=lit_review_access,
         opening_chapter_filter=opening_chapter_filter,
         closing_lines=closing_lines,
+        language=config.panel_language,
         chapter_starts=session.chapter_starts,
         other_subtype_line=(
             f"\n- Defense subtype: {profile.other_subtype.value}" if profile.other_subtype is not None else ""
@@ -254,7 +257,7 @@ def answer(defense: Defense, text: str) -> AnswerResult:
             closing, waited_ms = call.take()
             log_closing(working.profile.document_id, len(working.turns), panelist.archetype_key, closing, call.call_ms, waited_ms)
         elif speaker.archetype_key != panelist.archetype_key and defense.closing_lines == "fixed":
-            closing = Closing(FALLBACK_LINE, "fixed", "flag")
+            closing = Closing(fallback_line(defense.language), "fixed", "flag")
             log_closing(working.profile.document_id, len(working.turns), panelist.archetype_key, closing, None, 0)
 
     # Every call succeeded: commit.
@@ -286,8 +289,8 @@ def _start_closing(
     if speaker.archetype_key == outgoing.archetype_key or defense.closing_lines != "llm":
         return None
     earlier = [c.line for _, c in sorted(defense.closings.items())]
-    prompt = closing_prompt(outgoing, session.profile, turn.question, turn.answer or "", earlier)
-    return ClosingCall(defense.providers.defense, prompt).start()
+    prompt = closing_prompt(outgoing, session.profile, turn.question, turn.answer or "", earlier, defense.language)
+    return ClosingCall(defense.providers.defense, prompt, fallback_line(defense.language)).start()
 
 
 def closing_before(defense: Defense, turn: int) -> ClosingOut | None:
@@ -317,6 +320,7 @@ def _next_question(
     turn = _generate_question(
         defense.providers.defense, session, defense.chunks, defense.encoder, panelist,
         defense.other_subtype_line, defense.model, retriever=opening or retriever,
+        language_line=question_language_line(defense.language),
     )
     source = tracker.source_for(turn, defense.encoder.take_query())
     _log_opening(defense, session, panelist.archetype_key, opening, source.page_start)

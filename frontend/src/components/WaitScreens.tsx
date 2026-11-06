@@ -96,11 +96,12 @@ export function ExpiredScreen({ onBack }: { onBack: () => void }) {
 export const PANEL_BUSY_START_TEXT =
   "Gemini, the AI behind the panel, is overloaded right now. This hasn't used one of today's defenses yet. Try again in a moment."
 
-export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseVoice, onStart, onAutoRetry, onStartOver }: {
+export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, taglish = false, onChooseVoice, onStart, onAutoRetry, onStartOver }: {
   chunkCount: number | null
   notice: Notice | null
   voice: VoiceChoice | null
   ttsAvailable: boolean
+  taglish?: boolean // a Taglish panel: the voice choice carries M16's note
   onChooseVoice: (voice: VoiceChoice) => void
   onStart: () => void
   onAutoRetry: () => void
@@ -126,7 +127,7 @@ export function ReadyScreen({ chunkCount, notice, voice, ttsAvailable, onChooseV
           retryLabel={overloaded ? 'Try again' : 'Start again'}
         />
       )}
-      {!stuck && <VoiceGate voice={voice} ttsAvailable={ttsAvailable} onChoose={onChooseVoice} />}
+      {!stuck && <VoiceGate voice={voice} ttsAvailable={ttsAvailable} taglish={taglish} onChoose={onChooseVoice} />}
       {stuck || overloaded ? (
         <Button variant="secondary" onClick={onStartOver}>
           Start over

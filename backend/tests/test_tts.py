@@ -49,7 +49,7 @@ def test_status_says_whether_voices_are_available(client_factory, key, available
     with client_factory(mimo_api_key=key) as client:
         status = client.get("/status")
         health = client.get("/health")
-    assert status.json() == {"status": "ok", "model_loaded": True, "tts_available": available}
+    assert status.json() == {"status": "ok", "model_loaded": True, "tts_available": available, "taglish_mode": False}
     assert health.json() == status.json()  # the alias answers the same
 
 

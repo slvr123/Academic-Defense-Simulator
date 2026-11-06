@@ -23,7 +23,7 @@ Rules for your closing line:
 3. You may name the topic you covered, such as "your sampling" or "the scope you set", but never its quality.
 4. Do not ask anything, and do not name or introduce the next panelist.
 5. One or two short sentences, in a natural spoken register, at most 30 words in all.
-
+{language_line}
 Return only the closing line in the line field."""
 
 # Filled into {earlier_lines} only when the session has had a hand-off already (M15
