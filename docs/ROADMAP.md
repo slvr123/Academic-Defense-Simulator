@@ -22,7 +22,8 @@ Scoring is fair to Taglish answers by the rule set in advance: a mean difference
 In the first Decision 5 run, 4 of 6 openers were all English, so I authorised a second amendment: the opener prompt's language line moved to just before its output-format instructions.
 The rerun passed its pre-set check (5 of 6 openers contain Filipino), I rated the lines and approved Taglish mode, and the flag is on in production.
 Decision 7 retook M13's captures from the live site and added `session-taglish.png` from one live defense.
-**Open, for v2.1:** the turn-1 opener was all English in 2 of 3 Taglish sessions since the amendment; one rated line claimed the paper gives "actionable agricultural advice", which AniCheck says it doesn't; and `session-taglish.png` shows its question in the Reviewing state.
+A third amendment added "Use Taglish from your very first sentence" to the language line, but its pre-set check failed: 5 of 10 turn-1 openers contain Filipino, against 8 needed.
+**Open, for v2.1:** the turn-1 opener, probably held in English by the delivery register's lead-in rule in v1's prompt (all 10 openers start "Regarding ..."); one rated line claimed the paper gives "actionable agricultural advice", which AniCheck says it doesn't; and `session-taglish.png` shows its question in the Reviewing state.
 
 **Known harness bug, for later:** a backend test whose `TestClient` shuts down while an upload is still ingesting hangs forever in the app's lifespan shutdown.
 It's there on the pre-M16 parent: `backend/tests/test_api.py::test_valid_panel_is_stored` hangs 4 runs of 4 when run on its own, though it passes inside the full suite.

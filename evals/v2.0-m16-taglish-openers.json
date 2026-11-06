@@ -1,0 +1,204 @@
+{
+  "recorded_at": "2026-11-06T07:17:29+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "document": "sample-capstone-anicheck.pdf",
+  "panel": [
+    "methodology_expert",
+    "problem_objectives_reviewer",
+    "results_conclusions_reviewer"
+  ],
+  "panel_language": "taglish",
+  "openers": [
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the app does not recommend a specific chemical product or dosage, paano niyo nasasabing may economic utility ang AniCheck kung ang output niya ay limited lang sa identification at hindi nagbibigay ng actionable advice para protektahan ang ani ng farmer?",
+      "filipino_words": [
+        "paano",
+        "niyo",
+        "ang",
+        "kung",
+        "ang",
+        "niya",
+        "ay",
+        "lang",
+        "sa",
+        "hindi",
+        "ng",
+        "para",
+        "ang",
+        "ng"
+      ],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding your focus on 'bacterial leaf blight, brown spot, leaf smut, and tungro', paano niyo masisiguro na ang AniCheck provides a distinct value to the farmer kung ang system ay nag-o-offer lang ng identification at hindi nagbibigay ng susunod na aksyon, tulad ng kung anong tamang pestisidyo o intervention ang kailangan?",
+      "filipino_words": [
+        "paano",
+        "niyo",
+        "na",
+        "ang",
+        "kung",
+        "ang",
+        "ay",
+        "lang",
+        "ng",
+        "hindi",
+        "ng",
+        "na",
+        "ng",
+        "kung",
+        "ang"
+      ],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Al-Farsi",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the system does not recommend a specific chemical product or dosage, how does AniCheck actually solve the farmer's bottleneck kung ang main problem nila pagkatapos malaman ang sakit ay kung paano ito i-treat sa field?",
+      "filipino_words": [
+        "kung",
+        "ang",
+        "nila",
+        "ang",
+        "ay",
+        "kung",
+        "paano",
+        "ito",
+        "sa"
+      ],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the system does not recommend a specific chemical product or dosage, why did you decide to focus on identification alone instead of linking the result to the specific agricultural actions the farmers need to take next?",
+      "filipino_words": [],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the system 'does not recommend a specific chemical product or dosage,' how exactly does this diagnostic aid facilitate a concrete decision for the farmer kung wala naman silang susunod na aksyon na makukuha mula sa app? Isn't it just identifying a problem without providing the necessary support to solve it?",
+      "filipino_words": [
+        "kung",
+        "wala",
+        "naman",
+        "na",
+        "na",
+        "sa"
+      ],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Tanaka",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the application 'does not recommend a specific chemical product or dosage,' how exactly will this tool meaningfully assist a farmer in the field if it only identifies the disease without guiding their immediate next intervention?",
+      "filipino_words": [],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Yamamoto",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision to exclude diseases like sheath blight and false smut, how does this limitation impact the actual value of the tool for the smallholder farmers, considering these diseases might be common in the area?",
+      "filipino_words": [],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Dubois",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the system 'does not recommend a specific chemical product or dosage,' how exactly does this design choice align with the farmers' primary goal of getting a preliminary disease identification to immediately address their crop issues?",
+      "filipino_words": [],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Dumont",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the system does not recommend a specific chemical product or dosage, bakit po ito considered na labas sa competence niyo, if your main objective is to help farmers who actually need that immediate advice to save their crops?",
+      "filipino_words": [
+        "bakit",
+        "po",
+        "ito",
+        "na",
+        "sa",
+        "niyo"
+      ],
+      "gemini_calls": 2
+    },
+    {
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Research Problem & Objectives Reviewer",
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision that the application 'does not recommend a specific chemical product or dosage,' how exactly does this design choice bridge the gap for smallholder farmers who need actionable advice, and why is this limitation not framed as an objective to be addressed in later versions?",
+      "filipino_words": [],
+      "gemini_calls": 2
+    }
+  ],
+  "check": {
+    "rule": "at least 8 of 10 turn-1 openers contain Filipino",
+    "with_filipino": 5,
+    "passed": false
+  },
+  "gemini_calls": 20
+}
