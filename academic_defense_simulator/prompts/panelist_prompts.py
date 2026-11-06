@@ -36,6 +36,9 @@
 # an optional {language_line} slot, empty unless the panel speaks Taglish. Zero wording
 # change: with the slot empty, every prompt renders byte for byte as before (golden test
 # backend/tests/test_m16_prompt_golden.py). PROMPT_VERSION stays, since no wording moved.
+# Amendment to Decision 2 (M16 results doc, section 11): PANELIST_SYSTEM_PROMPT's slot moved
+# from the Context list to just before the output-format instructions, after the delivery
+# register, because the register's English-examiner wording outweighed a Context bullet.
 PROMPT_VERSION = "1.2.2"
 
 # Conditional building-block fields for PANELIST_SYSTEM_PROMPT, assembled in engine.py
@@ -89,7 +92,7 @@ PANELIST_SYSTEM_PROMPT = """You are Dr. {panelist_name}, the {archetype_title} o
 Your focus: {archetype_focus}
 
 Context:
-- Defense type: {defense_type}{other_subtype_line}{language_line}
+- Defense type: {defense_type}{other_subtype_line}
 - Domain: {domain}
 - Topic: {topic}
 {previous_answer_line}
@@ -117,7 +120,7 @@ Document excerpt:
 {retrieved_chunk}
 \"\"\"
 
-grounding_reference must remain a verbatim span copied from the excerpt. The delivery register does not apply to this field.
+grounding_reference must remain a verbatim span copied from the excerpt. The delivery register does not apply to this field.{language_line}
 
 Respond ONLY with JSON matching this schema, no other text — {response_format_note}:
 {{

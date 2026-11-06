@@ -20,6 +20,11 @@ three opening questions (6), its first two follow-ups (4), its Terror Panelist c
 
 Every question is saved with the exact chunk text the scorer would see for it, so
 Decision 4 can score answers to it as the product does.
+
+After the Decision 2 amendment (the opener prompt's language line moved), the run was
+repeated with a check fixed before it ran: at least 5 of the 6 openers contain Filipino.
+"Contains Filipino" is mechanical, not a judgement: at least one word from FILIPINO_WORDS
+below. `--recount FILE` applies the same count to an earlier run without any calls.
 """
 
 from __future__ import annotations
@@ -27,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sys
 import time
 import uuid
@@ -51,6 +57,52 @@ from measure_opening_order import THESIS_PANEL, ask_with_retries, ingest  # noqa
 # Per session, the planned band of each seated domain panelist, in seating order. Mid and
 # weak blocks draw follow-ups; strong ones usually hand off at once.
 PLANS = [["weak", "mid", "strong"], ["mid", "strong", "weak"]]
+
+# Common Filipino function words and discourse words, fixed before the amended run. Words
+# that are also ordinary English ("at", "may", "din", "okay") are left out so English can't match.
+FILIPINO_WORDS = frozenset("""
+    ang ng mga sa si ni kay na ay ba po opo pa nga lang muna rin naman talaga kasi
+    pero sige kaya kung para dahil kapag tapos hindi wala meron mayroon dapat lalo
+    ito iyan yan iyon yon yung dito diyan rito riyan doon ganito ganyan ganoon ganun
+    ako ko ka mo ikaw kayo niyo ninyo inyo inyong tayo natin namin kami sila nila siya niya
+    ano paano bakit saan kailan sino alin ilan
+    tungkol hanggang sabi sinabi kanina balikan medyo paulit ulit bahagi bahaging tanong
+    sagot salamat oo ngayon muli tingnan pag usapan
+""".split())
+
+
+def filipino_words(text: str) -> list[str]:
+    """The FILIPINO_WORDS in `text`, in order. Apostrophe forms split: 'yan -> yan, na't -> na."""
+    return [w for w in re.findall(r"[a-z]+", text.lower()) if w in FILIPINO_WORDS]
+
+
+def count_by_kind(fifteen: list[dict]) -> dict:
+    by_kind: dict[str, dict] = {}
+    for n, item in enumerate(fifteen, 1):
+        words = filipino_words(item.get("question") or item.get("line") or "")
+        entry = by_kind.setdefault(item["kind"], {"lines": 0, "with_filipino": 0, "all_english": []})
+        entry["lines"] += 1
+        if words:
+            entry["with_filipino"] += 1
+        else:
+            entry["all_english"].append(n)
+        item["filipino_words"] = words
+    return by_kind
+
+
+def report_count(fifteen: list[dict]) -> dict:
+    by_kind = count_by_kind(fifteen)
+    total = sum(k["with_filipino"] for k in by_kind.values())
+    print(f"lines with Filipino: {total} of {len(fifteen)}", flush=True)
+    for kind, entry in by_kind.items():
+        print(f"  {kind}: {entry['with_filipino']} of {entry['lines']} (all English: {entry['all_english']})", flush=True)
+    openers = by_kind.get("opening", {"with_filipino": 0})
+    check = {"rule": "at least 5 of the 6 openers contain Filipino", "openers_with_filipino": openers["with_filipino"],
+             "passed": openers["with_filipino"] >= 5}
+    print(f"check: {check}", flush=True)
+    for n, item in enumerate(fifteen, 1):
+        print(f"  {n:2} {item['kind']:<16} {item['filipino_words']}", flush=True)
+    return {"by_kind": by_kind, "lines_with_filipino": total, "check": check}
 
 
 def asked(defense, question, session: int) -> dict:
@@ -134,8 +186,12 @@ def the_fifteen(sessions: list[dict]) -> list[dict]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sessions", type=int, default=2)
-    parser.add_argument("--out", type=Path, default=REPO_ROOT / "evals" / "v2.0-m16-taglish-lines.json")
+    parser.add_argument("--out", type=Path, default=REPO_ROOT / "evals" / "v2.0-m16-taglish-lines-2.json")
+    parser.add_argument("--recount", type=Path, help="count Filipino in an earlier run's 15 lines; no calls")
     args = parser.parse_args()
+    if args.recount is not None:
+        report_count(json.loads(args.recount.read_text(encoding="utf-8"))["decision_5_lines"])
+        return 0
     if args.sessions > 3:
         raise SystemExit("M16 Decision 5 needs two sessions; three at most, for a retry")
     logging.basicConfig(level=logging.WARNING)
@@ -153,6 +209,7 @@ def main() -> int:
         print(f"  session {i + 1}: {len(sessions[-1]['questions'])} questions, {len(sessions[-1]['closings'])} closings, "
               f"{sessions[-1]['gemini_calls']} Gemini calls {sessions[-1]['by_role']}", flush=True)
     fifteen = the_fifteen(sessions)
+    count = report_count(fifteen)
     args.out.write_text(json.dumps({
         "recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "model": settings.gemini_model,
@@ -161,6 +218,7 @@ def main() -> int:
         "panel_language": "taglish",
         "sessions": sessions,
         "decision_5_lines": fifteen,
+        "filipino_count": count,
         "gemini_calls": sum(s["gemini_calls"] for s in sessions),
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     kinds = [line["kind"] for line in fifteen]

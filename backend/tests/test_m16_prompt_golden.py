@@ -27,5 +27,9 @@ def test_a_language_line_lands_once_in_the_brief_before_the_output_format(name):
     assert prompt.count("MARKER-LINE") == 1
     output_format = "Return only the closing line" if name.startswith("closing") else "Respond ONLY with JSON"
     assert prompt.index("MARKER-LINE") < prompt.index(output_format)
+    if name.startswith("panelist"):
+        # The amendment: for new-topic questions the line sits after the delivery register,
+        # immediately before the output-format instructions.
+        assert f"{marker}\n\nRespond ONLY with JSON" in prompt
     # Taking the line out again gives back the golden rendering exactly.
     assert prompt.replace(marker, "", 1).encode("utf-8") == golden_path(name).read_bytes()
