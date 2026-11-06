@@ -52,7 +52,7 @@ export function useFlow(): Flow {
   const [waker] = useState(() =>
     createServerWaker(async () => {
       const result = await api.getStatus()
-      if (result.ok) dispatch({ type: 'serverAwake', ttsAvailable: result.data.tts_available })
+      if (result.ok) dispatch({ type: 'serverAwake', ttsAvailable: result.data.tts_available, taglishMode: result.data.taglish_mode })
       return result.ok
     }),
   )

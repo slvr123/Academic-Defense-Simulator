@@ -135,6 +135,7 @@ describe('panel config (D14, D21, D22) and presets (M10 N7)', () => {
       topic: null,
       archetype_keys: ['technical_implementation_reviewer'],
       starting_difficulty: 4,
+      panel_language: 'english',
     })
   })
 

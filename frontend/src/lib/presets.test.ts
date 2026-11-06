@@ -16,6 +16,7 @@ const panelFor = (defense_type: PanelConfig['defense_type'], other_subtype: Pane
   topic: null,
   archetype_keys: null,
   starting_difficulty: 2,
+  panel_language: 'english',
 })
 
 const TYPES = options.rosters.map((r) => panelFor(r.defense_type, r.other_subtype))

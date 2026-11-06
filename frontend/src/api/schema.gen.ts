@@ -355,6 +355,11 @@ export interface components {
             model_loaded: boolean;
             /** Tts Available */
             tts_available: boolean;
+            /**
+             * Taglish Mode
+             * @default false
+             */
+            taglish_mode: boolean;
         };
         /**
          * Highlight
@@ -661,6 +666,12 @@ export interface components {
              * @default 2
              */
             starting_difficulty: number;
+            /**
+             * Panel Language
+             * @default english
+             * @enum {string}
+             */
+            panel_language: "english" | "taglish";
         };
     };
     responses: never;

@@ -53,13 +53,14 @@ describe('initial state', () => {
       topic: null,
       archetype_keys: null,
       starting_difficulty: 2,
+      panel_language: 'english',
     })
   })
 })
 
 describe('page load', () => {
   it('records the server awake, the quota, the rosters, and hides the quota on failure', () => {
-    let state = run(initialState(), { type: 'serverAwake', ttsAvailable: true }, { type: 'optionsLoaded', options: panelOptions })
+    let state = run(initialState(), { type: 'serverAwake', ttsAvailable: true, taglishMode: false }, { type: 'optionsLoaded', options: panelOptions })
     expect(state.serverAwake).toBe(true)
     expect(state.ttsAvailable).toBe(true)
     expect(state.options).toBe(panelOptions)

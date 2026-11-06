@@ -4,7 +4,7 @@
 import { type DragEvent, type ReactNode, useId, useState } from 'react'
 import { limits } from '../api/constraints.gen'
 import type { PanelOptions } from '../api/types'
-import { DEFENSE_TYPE_LABELS, DEFENSE_TYPES, OTHER_SUBTYPE_LABELS, OTHER_SUBTYPES } from '../lib/labels'
+import { DEFENSE_TYPE_LABELS, DEFENSE_TYPES, OTHER_SUBTYPE_LABELS, OTHER_SUBTYPES, PANEL_LANGUAGE_LABELS, PANEL_LANGUAGES } from '../lib/labels'
 import { rosterFor, seatedKeys, toggleArchetype, withDefenseType, withSubtype } from '../lib/panel'
 import { LITERATURE_KEY, LITERATURE_NOTE, shortTitle } from '../lib/panelCopy'
 import { firstPreset, type PresetId, presetsFor, resolvedKeys } from '../lib/presets'
@@ -26,6 +26,8 @@ type Props = {
   onTrySample: (() => void) | null
   /** Null until a recording is shipped: the button is hidden (N5, deferred to M10.1). */
   onReadRecording: (() => void) | null
+  /** ADS_TAGLISH_MODE (M16): off, the panel-language choice is hidden and the panel speaks English. */
+  taglishMode: boolean
   onChange: (draft: Partial<Draft>) => void
   onSubmit: () => void
 }
@@ -33,7 +35,7 @@ type Props = {
 const fieldClass = 'mt-1 w-full rounded-lg border border-line-strong bg-field px-3 py-2 text-base focus:border-action focus:outline-none'
 const legendClass = 'pb-2.5 text-sm font-semibold text-muted'
 
-export function StartScreen({ draft, options, quota, notice, onTrySample, onReadRecording, onChange, onSubmit }: Props) {
+export function StartScreen({ draft, options, quota, notice, onTrySample, onReadRecording, taglishMode, onChange, onSubmit }: Props) {
   const { panel } = draft
   const ids = { subtype: useId(), domain: useId(), topic: useId() }
   const blocked = quotaUsedUp(quota)
@@ -114,6 +116,20 @@ export function StartScreen({ draft, options, quota, notice, onTrySample, onRead
             </div>
           )}
         </fieldset>
+
+        {taglishMode && (
+          <fieldset>
+            <legend className={legendClass}>Panel language</legend>
+            <div className="flex flex-wrap gap-2">
+              {PANEL_LANGUAGES.map((language) => (
+                <Toggle key={language} pressed={panel.panel_language === language} onClick={() => onChange({ panel: { ...panel, panel_language: language } })}>
+                  {PANEL_LANGUAGE_LABELS[language]}
+                </Toggle>
+              ))}
+            </div>
+            <p className="mt-2 text-sm text-muted">The panel's questions and closing lines. Answer in whatever language you like; the debrief stays in English.</p>
+          </fieldset>
+        )}
 
         <PanelPresets options={options} draft={draft} onChange={onChange} />
 

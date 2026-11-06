@@ -13,6 +13,7 @@ const thesis: PanelConfig = {
   topic: null,
   archetype_keys: null,
   starting_difficulty: 2,
+  panel_language: 'english',
 }
 
 describe('panel choices', () => {

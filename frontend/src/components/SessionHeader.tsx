@@ -9,7 +9,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { VoiceChoice } from '../state/flow'
 import { ThemeToggle } from './ThemeToggle'
 import { Button, DocumentIcon } from './ui'
-import { PANEL_VOICE_DISCLOSURE } from './VoiceGate'
+import { PANEL_VOICE_DISCLOSURE, TAGLISH_VOICE_NOTE } from './VoiceGate'
 
 export const WORDMARK = 'Academic Defense Simulator'
 export const HOME_LABEL = `${WORDMARK}, back to start`
@@ -52,6 +52,8 @@ type Props = {
   badge?: ReactNode
   voice: VoiceChoice | null
   ttsAvailable: boolean
+  /** A Taglish panel (M16): the voice menu carries the mispronunciation note. */
+  taglish?: boolean
   panelDisclosed: boolean
   onChooseVoice: (voice: VoiceChoice) => void
   /** Null when the candidate's file isn't available (after a reload): the button is hidden (N4). */
@@ -64,7 +66,7 @@ type Props = {
   homeConfirm?: boolean
 }
 
-export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailable, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd, homeConfirm = true }: Props) {
+export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailable, taglish = false, panelDisclosed, onChooseVoice, onOpenDocument, documentOpen, endLabel = 'End session', onEnd, homeConfirm = true }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div data-header-row className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -79,7 +81,7 @@ export function SessionHeader({ subtitle, turn, heard, badge, voice, ttsAvailabl
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <p className="min-w-0 truncate font-mono text-xs text-muted">{subtitle}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <VoiceMenu voice={voice} ttsAvailable={ttsAvailable} panelDisclosed={panelDisclosed} onChoose={onChooseVoice} />
+          <VoiceMenu voice={voice} ttsAvailable={ttsAvailable} taglish={taglish} panelDisclosed={panelDisclosed} onChoose={onChooseVoice} />
           {onOpenDocument && (
             <button
               type="button"
@@ -114,7 +116,7 @@ function SpeakerIcon() {
 
 /** Panel voice / Browser voice / No voice, switchable mid-session (N9). The first switch
  * to Panel voice in a session shows the M3b disclosure first, with a confirm. */
-function VoiceMenu({ voice, ttsAvailable, panelDisclosed, onChoose }: { voice: VoiceChoice | null; ttsAvailable: boolean; panelDisclosed: boolean; onChoose: (voice: VoiceChoice) => void }) {
+function VoiceMenu({ voice, ttsAvailable, taglish, panelDisclosed, onChoose }: { voice: VoiceChoice | null; ttsAvailable: boolean; taglish: boolean; panelDisclosed: boolean; onChoose: (voice: VoiceChoice) => void }) {
   const [open, setOpen] = useState(false)
   const [disclosing, setDisclosing] = useState(false)
   const menuId = useId()
@@ -200,6 +202,7 @@ function VoiceMenu({ voice, ttsAvailable, panelDisclosed, onChoose }: { voice: V
                   {VOICE_LABELS[choice]}
                 </label>
               ))}
+              {taglish && <p className="px-3 pt-1 pb-2 text-xs text-muted">{TAGLISH_VOICE_NOTE}</p>}
             </fieldset>
           )}
         </div>

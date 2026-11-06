@@ -48,7 +48,8 @@ export const defaults = {
     "suggestions_fallback_used": false
   },
   "HealthResponse": {
-    "status": "ok"
+    "status": "ok",
+    "taglish_mode": false
   },
   "SessionCreated": {
     "status": "queued"
@@ -62,6 +63,7 @@ export const defaults = {
     "domain": null,
     "topic": null,
     "archetype_keys": null,
-    "starting_difficulty": 2
+    "starting_difficulty": 2,
+    "panel_language": "english"
   }
 } as const

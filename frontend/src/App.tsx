@@ -11,7 +11,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { StartScreen } from './components/StartScreen'
 import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen, UploadingScreen, WakingNotice } from './components/WaitScreens'
 import { useObjectUrl } from './hooks/useObjectUrl'
-import { DEFENSE_TYPE_LABELS } from './lib/labels'
+import { sessionSubtitle } from './lib/labels'
 import { heardFrom, seatedPanel } from './lib/panel'
 import type { VoiceChoice } from './state/flow'
 import { useFlow } from './state/useFlow'
@@ -26,6 +26,7 @@ export default function App() {
   const { phase } = state
   const [demo, setDemo] = useState(false) // "Read a recorded defense" (N5)
   const inDefense = phase.kind === 'question' || phase.kind === 'submitting'
+  const taglish = state.draft.panel.panel_language === 'taglish' // M16: the panel speaks Taglish
 
   // N4: the candidate's own PDF, as an object URL while the defense runs. It goes (and is
   // revoked) when the defense ends, and the buttons hide when there's no file.
@@ -66,6 +67,7 @@ export default function App() {
             notice={phase.notice}
             onTrySample={() => void flow.trySample()}
             onReadRecording={RECORDING_AVAILABLE ? () => setDemo(true) : null}
+            taglishMode={state.taglishMode}
             onChange={flow.editDraft}
             onSubmit={() => void flow.upload()}
           />
@@ -101,6 +103,7 @@ export default function App() {
           notice={phase.notice}
           voice={state.voice}
           ttsAvailable={state.ttsAvailable}
+          taglish={taglish}
           onChooseVoice={chooseVoice}
           onStart={start}
           onAutoRetry={() => void flow.start(true)}
@@ -142,7 +145,6 @@ export default function App() {
       break
   }
 
-  const defenseType = `${DEFENSE_TYPE_LABELS[state.draft.panel.defense_type]} defense`
   const wide = inDefense || phase.kind === 'preparing' || phase.kind === 'configuring'
   const width = wide ? 'max-w-[1280px]' : phase.kind === 'report' ? 'max-w-4xl' : 'max-w-2xl'
 
@@ -150,11 +152,12 @@ export default function App() {
   if (inDefense) {
     header = (
       <SessionHeader
-        subtitle={`${phase.topic} · ${defenseType}`}
+        subtitle={sessionSubtitle(phase.topic, state.draft.panel)}
         turn={phase.question.turn}
         heard={heardFrom(phase.panel, [...phase.turns.map((t) => t.question.panelist.archetype_key), phase.question.panelist.archetype_key])}
         voice={state.voice}
         ttsAvailable={state.ttsAvailable}
+        taglish={taglish}
         panelDisclosed={state.panelDisclosed}
         onChooseVoice={chooseVoice}
         onOpenDocument={toggleDocument}
@@ -168,7 +171,7 @@ export default function App() {
     // are); where nothing is lost (the debrief, a failed or expired upload), it goes at once.
     const leaving = phase.kind === 'uploading' || phase.kind === 'queued' || phase.kind === 'embedding' || phase.kind === 'ready' || phase.kind === 'preparing' || phase.kind === 'finishing'
     const home = phase.kind === 'configuring' ? null : leaving ? () => void flow.endSession() : flow.restart
-    const subtitle = phase.kind === 'preparing' ? `${state.draft.panel.topic ?? state.draft.file?.name ?? 'Your paper'} · ${defenseType}` : TAGLINE
+    const subtitle = phase.kind === 'preparing' ? sessionSubtitle(state.draft.panel.topic ?? state.draft.file?.name ?? 'Your paper', state.draft.panel) : TAGLINE
     header = (
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 flex-col gap-0.5">

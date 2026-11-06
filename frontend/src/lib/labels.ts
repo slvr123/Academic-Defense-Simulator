@@ -1,6 +1,6 @@
 // What users see for each enum value (D22). Records over the generated unions, so the
 // build fails if the backend adds a defense type or subtype without a label here.
-import type { DefenseType, OtherSubtype, PushbackOutcome, Source } from '../api/types'
+import type { DefenseType, OtherSubtype, PanelConfig, PushbackOutcome, Source } from '../api/types'
 
 export const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
   thesis: 'Thesis',
@@ -15,9 +15,23 @@ export const OTHER_SUBTYPE_LABELS: Record<OtherSubtype, string> = {
   grant_defense: 'Grant defense',
 }
 
+// M16: what the panel speaks. The interface and the debrief stay English either way.
+export const PANEL_LANGUAGE_LABELS: Record<PanelConfig['panel_language'], string> = {
+  english: 'English',
+  taglish: 'Taglish',
+}
+
 // Object.keys loses the key type; these keep it, in the label maps' order.
 export const DEFENSE_TYPES = Object.keys(DEFENSE_TYPE_LABELS) as DefenseType[]
 export const OTHER_SUBTYPES = Object.keys(OTHER_SUBTYPE_LABELS) as OtherSubtype[]
+export const PANEL_LANGUAGES = Object.keys(PANEL_LANGUAGE_LABELS) as PanelConfig['panel_language'][]
+
+/** The session header's subtitle: "<topic> · Thesis defense", plus " · Taglish" for a Taglish panel (M16). */
+export function sessionSubtitle(topic: string, panel: Pick<PanelConfig, 'defense_type' | 'panel_language'>): string {
+  const parts = [topic, `${DEFENSE_TYPE_LABELS[panel.defense_type]} defense`]
+  if (panel.panel_language === 'taglish') parts.push(PANEL_LANGUAGE_LABELS.taglish)
+  return parts.join(' · ')
+}
 
 export function panelistName(surname: string): string {
   return `Dr. ${surname}`

@@ -28,7 +28,7 @@ export const DEMO_NOTE = 'Answers in this recording were written to demonstrate 
 export type DemoRecording = {
   recorded_at: string
   document: string
-  panel_config: PanelConfig
+  panel_config: Omit<PanelConfig, 'panel_language'> // the demo is English; recordings before M16 have no panel_language
   session: SessionState
   start: StartResponse
   turns: { answer: string; response: AnswerResponse }[]
