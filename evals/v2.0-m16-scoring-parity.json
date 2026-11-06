@@ -1,0 +1,697 @@
+{
+  "recorded_at": "2026-11-06T03:26:03+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "reps": 3,
+  "scores": {
+    "E1": {
+      "english": [
+        {
+          "clarity": 5,
+          "depth": 3,
+          "grounding": 5,
+          "total": 13,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        }
+      ]
+    },
+    "E2": {
+      "english": [
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 3,
+          "total": 8,
+          "attempts": 1
+        },
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 3,
+          "total": 8,
+          "attempts": 1
+        },
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 3,
+          "total": 8,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 4,
+          "total": 9,
+          "attempts": 1
+        },
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 5,
+          "total": 10,
+          "attempts": 1
+        },
+        {
+          "clarity": 3,
+          "depth": 2,
+          "grounding": 4,
+          "total": 9,
+          "attempts": 1
+        }
+      ]
+    },
+    "E3": {
+      "english": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        }
+      ]
+    },
+    "E4": {
+      "english": [
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 3,
+          "total": 6,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 3,
+          "total": 6,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 3,
+          "total": 6,
+          "attempts": 1
+        }
+      ]
+    },
+    "E5": {
+      "english": [
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 5,
+          "total": 12,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 5,
+          "total": 12,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 4,
+          "total": 11,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 5,
+          "total": 12,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 4,
+          "total": 11,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 4,
+          "total": 11,
+          "attempts": 1
+        }
+      ]
+    },
+    "T1": {
+      "english": [
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 4,
+          "total": 11,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 3,
+          "grounding": 4,
+          "total": 11,
+          "attempts": 1
+        },
+        {
+          "clarity": 4,
+          "depth": 2,
+          "grounding": 3,
+          "total": 9,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 5,
+          "depth": 3,
+          "grounding": 4,
+          "total": 12,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 3,
+          "grounding": 4,
+          "total": 12,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 3,
+          "grounding": 5,
+          "total": 13,
+          "attempts": 1
+        }
+      ]
+    },
+    "T2": {
+      "english": [
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        },
+        {
+          "clarity": 5,
+          "depth": 4,
+          "grounding": 5,
+          "total": 14,
+          "attempts": 1
+        }
+      ]
+    },
+    "T3": {
+      "english": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 1,
+          "total": 3,
+          "attempts": 1
+        }
+      ]
+    },
+    "T4": {
+      "english": [
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 2,
+          "depth": 2,
+          "grounding": 3,
+          "total": 7,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        },
+        {
+          "clarity": 2,
+          "depth": 1,
+          "grounding": 2,
+          "total": 5,
+          "attempts": 1
+        }
+      ]
+    },
+    "T5": {
+      "english": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        }
+      ],
+      "taglish": [
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        },
+        {
+          "clarity": 1,
+          "depth": 1,
+          "grounding": 2,
+          "total": 4,
+          "attempts": 1
+        }
+      ]
+    }
+  },
+  "rows": [
+    {
+      "id": "E1",
+      "strength": "strong",
+      "question_language": "english",
+      "english": [
+        13,
+        14,
+        14
+      ],
+      "taglish": [
+        14,
+        14,
+        14
+      ],
+      "english_mean": 13.667,
+      "taglish_mean": 14,
+      "english_spread": 1,
+      "taglish_spread": 0,
+      "difference": 0.333
+    },
+    {
+      "id": "E2",
+      "strength": "mid",
+      "question_language": "english",
+      "english": [
+        8,
+        8,
+        8
+      ],
+      "taglish": [
+        9,
+        10,
+        9
+      ],
+      "english_mean": 8,
+      "taglish_mean": 9.333,
+      "english_spread": 0,
+      "taglish_spread": 1,
+      "difference": 1.333
+    },
+    {
+      "id": "E3",
+      "strength": "weak",
+      "question_language": "english",
+      "english": [
+        3,
+        3,
+        3
+      ],
+      "taglish": [
+        3,
+        3,
+        3
+      ],
+      "english_mean": 3,
+      "taglish_mean": 3,
+      "english_spread": 0,
+      "taglish_spread": 0,
+      "difference": 0
+    },
+    {
+      "id": "E4",
+      "strength": "mid",
+      "question_language": "english",
+      "english": [
+        5,
+        5,
+        5
+      ],
+      "taglish": [
+        6,
+        6,
+        6
+      ],
+      "english_mean": 5,
+      "taglish_mean": 6,
+      "english_spread": 0,
+      "taglish_spread": 0,
+      "difference": 1
+    },
+    {
+      "id": "E5",
+      "strength": "strong",
+      "question_language": "english",
+      "english": [
+        12,
+        12,
+        11
+      ],
+      "taglish": [
+        12,
+        11,
+        11
+      ],
+      "english_mean": 11.667,
+      "taglish_mean": 11.333,
+      "english_spread": 1,
+      "taglish_spread": 1,
+      "difference": -0.333
+    },
+    {
+      "id": "T1",
+      "strength": "mid",
+      "question_language": "taglish",
+      "english": [
+        11,
+        11,
+        9
+      ],
+      "taglish": [
+        12,
+        12,
+        13
+      ],
+      "english_mean": 10.333,
+      "taglish_mean": 12.333,
+      "english_spread": 2,
+      "taglish_spread": 1,
+      "difference": 2.0
+    },
+    {
+      "id": "T2",
+      "strength": "strong",
+      "question_language": "taglish",
+      "english": [
+        14,
+        14,
+        14
+      ],
+      "taglish": [
+        14,
+        14,
+        14
+      ],
+      "english_mean": 14,
+      "taglish_mean": 14,
+      "english_spread": 0,
+      "taglish_spread": 0,
+      "difference": 0
+    },
+    {
+      "id": "T3",
+      "strength": "weak",
+      "question_language": "taglish",
+      "english": [
+        3,
+        3,
+        3
+      ],
+      "taglish": [
+        3,
+        3,
+        3
+      ],
+      "english_mean": 3,
+      "taglish_mean": 3,
+      "english_spread": 0,
+      "taglish_spread": 0,
+      "difference": 0
+    },
+    {
+      "id": "T4",
+      "strength": "mid",
+      "question_language": "taglish",
+      "english": [
+        5,
+        5,
+        5
+      ],
+      "taglish": [
+        7,
+        5,
+        5
+      ],
+      "english_mean": 5,
+      "taglish_mean": 5.667,
+      "english_spread": 0,
+      "taglish_spread": 2,
+      "difference": 0.667
+    },
+    {
+      "id": "T5",
+      "strength": "weak",
+      "question_language": "taglish",
+      "english": [
+        4,
+        4,
+        4
+      ],
+      "taglish": [
+        4,
+        4,
+        4
+      ],
+      "english_mean": 4,
+      "taglish_mean": 4,
+      "english_spread": 0,
+      "taglish_spread": 0,
+      "difference": 0
+    }
+  ],
+  "mean_difference": 0.5,
+  "largest_pair_difference": {
+    "id": "T1",
+    "difference": 2.0
+  },
+  "rule": "|mean difference| <= 0.75 and every |pair difference| <= 2.0",
+  "passed": true,
+  "gemini_calls": 60
+}

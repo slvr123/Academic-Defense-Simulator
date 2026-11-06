@@ -1,0 +1,742 @@
+{
+  "recorded_at": "2026-11-06T03:18:30+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "document": "sample-capstone-anicheck.pdf",
+  "panel": [
+    "methodology_expert",
+    "problem_objectives_reviewer",
+    "results_conclusions_reviewer"
+  ],
+  "panel_language": "taglish",
+  "sessions": [
+    {
+      "session": 1,
+      "session_id": "f895b5d0-fc99-4ec7-8be8-2c25fcb5ecca",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "weak",
+        "methodology_expert": "mid",
+        "results_conclusions_reviewer": "strong"
+      },
+      "questions": [
+        {
+          "session": 1,
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Al-Fayed",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "new_topic",
+          "difficulty": 2,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "Regarding your decision that the system does not recommend a specific chemical product or dosage, how does this limitation affect the immediate utility of AniCheck for a smallholder farmer who identifies a disease but still lacks the actionable next step to save their crop?",
+          "grounding_reference": "the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "We just picked the diseases that are common in rice.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 1,
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Al-Fayed",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "follow_up",
+          "difficulty": 1,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "I appreciate that you identified common rice diseases, but that doesn't really explain how the farmer gets from 'identification' to 'crop protection.' If your stated objective is to develop a tool for smallholder farmers, and you explicitly state in your Scope and Limitations that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage,' how can you justify the claim that this is a 'decision-support tool' when the most critical decision—the intervention—is entirely left to the user without any guidance?",
+          "grounding_reference": "The system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "I'm not sure, I would have to check with my groupmates.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 1,
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Al-Fayed",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "follow_up",
+          "difficulty": 1,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "Hindi sapat na sagot 'yan, lalo na't thesis niyo ito at kayo dapat ang nakakaalam ng core rationale ng study niyo. If the application is officially described as a 'decision-support tool' in your own text, how can you claim that function while explicitly stating that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage,' given that a decision-support tool implies providing guidance for an actual action, not just a label?",
+          "grounding_reference": "The application is intended as a decision-support tool and not as a replacement for consultation with a qualified agricultural technician.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "I think it's fine because the farmers liked the app.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 1,
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "panelist": "Nguyen",
+          "title": "Methodology Expert",
+          "path": "new_topic",
+          "difficulty": 1,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "User feedback is one thing, but looking at your methodology, I'm concerned about the data quality for your machine learning model. You mention that your model performance was evaluated on a 648-image test set, but your user testing only involved respondents capturing three to five identifications per session. Did you ensure that the image quality from these field-captured samples was diverse enough to actually validate your model's robustness, or are you just testing the UI functionality?",
+          "grounding_reference": "Model performance was evaluated on the 648-image test set using accuracy, precision, recall, and F1-score computed per class, together with a confusion matrix.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "We collected the images ourselves in the barangay and had a technician label them. We used an 80:20 split and augmentation to make the model better. The thirty respondents were chosen from farmers who have Android phones.",
+          "planned": "mid",
+          "total": 3
+        },
+        {
+          "session": 1,
+          "turn": 5,
+          "archetype_key": "methodology_expert",
+          "panelist": "Nguyen",
+          "title": "Methodology Expert",
+          "path": "follow_up",
+          "difficulty": 2,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "Salamat sa response, pero hindi pa rin malinaw kung paano niyo pinaghiwalay ang validation ng model sa usability testing niyo. Kung 'thirty respondents were selected through purposive sampling' at 'each respondent attended a single session' para lang kumuha ng tatlo hanggang limang images, paano niyo nasisiguro na ang performance ng model ay hindi lang basta dahil sa good lighting or specific leaves na pinili nila sa session, kundi dahil sa tunay na robustness ng model niyo laban sa iba't ibang field conditions?",
+          "grounding_reference": "Thirty respondents were selected through purposive sampling from among the rice farmers of Barangay Masagana, the criteria being active cultivation of rice during the current season and ownership of an Android smartphone. Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "The controlled background was to make the images consistent. We think it still works on real photos because the augmentation adds rotation and brightness changes.",
+          "planned": "mid",
+          "total": 4
+        },
+        {
+          "session": 1,
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "panelist": "Nguyen",
+          "title": "Methodology Expert",
+          "path": "follow_up",
+          "difficulty": 3,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "The problem is that augmentation is a mathematical pre-processing step, not a substitute for ground-truth data diversity from varied, uncontrolled environments. If you claim your model is robust, where in your 'Evaluation Design' did you actually test the model against images captured under varying field conditions—like overcast skies or high-glare environments—that were not part of your original controlled training set?",
+          "grounding_reference": "Model performance was evaluated on the 648-image test set using accuracy, precision, recall, and F1-score computed per class, together with a confusion matrix.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "We used purposive sampling because we needed farmers who grow rice and have phones. A bigger sample would be better but we had limited time.",
+          "planned": "mid",
+          "total": 3
+        },
+        {
+          "session": 1,
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "O'Sullivan",
+          "title": "Results & Conclusions Reviewer",
+          "path": "new_topic",
+          "difficulty": 2,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Sige, let's look at the reliability of your findings. You noted that 'respondents were more confident in their ability to operate the application than in the correctness of what it told them,' yet you still conclude that the system is useful. If the end-users themselves are flagging this lack of reliability as a major concern, how can you claim that the system successfully serves its purpose as a diagnostic tool, and why didn't this discrepancy force you to temper your conclusions about the system's overall efficacy?",
+          "grounding_reference": "respondents were more confident in their ability to operate the application than in the correctness of what it told them",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+          "answer": "The weakest class is bacterial leaf blight, with recall 0.813: 102 of 125 test images were correct and 16 went to brown spot, which matters because the two need different treatments. That lines up with reliability being the only ISO/IEC 25010 characteristic below Very Acceptable, at 4.09 against 4.42 for usability; respondents trusted their own use of the app more than its answers, and several leaves carried more than one condition, which a single-class output can't express. So we concluded the app is a preliminary decision-support aid and shouldn't replace a technician where a costly treatment follows.",
+          "planned": "strong",
+          "total": 10
+        },
+        {
+          "session": 1,
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "O'Sullivan",
+          "title": "Results & Conclusions Reviewer",
+          "path": "follow_up",
+          "difficulty": 3,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Hindi ko pa rin makita yung koneksyon, dahil ang sinasabi niyo ay 'the gap between the usability rating and the reliability rating is instructive,' pero kung inamin niyo na mismo sa paper na reliability is 'the more consequential of the two dimensions,' bakit sa conclusion niyo ay pinanatili niyo pa rin yung claim na 'the intended users found the system usable and useful' nang hindi man lang kinokonsidera na yung mismong 'reliability' ay dapat mag-disqualify sa system bilang isang reliable diagnostic tool?",
+          "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them. For a diagnostic tool this is the more consequential of the two dimensions",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+          "answer": "Table 4 shows the errors are concentrated, not spread: of the 23 misclassified bacterial leaf blight images, 16 went to brown spot, and both start as yellowing along the leaf margin. Healthy leaves were almost never wrong, recall 0.994, so the practical risk is a farmer treating a bacterial infection as a fungal one. That is why the conclusion limits the app to preliminary support and recommends validating it against a technician on the same leaves.",
+          "planned": "strong",
+          "total": 12
+        },
+        {
+          "session": 1,
+          "turn": 9,
+          "archetype_key": "devils_advocate",
+          "panelist": "Yamamoto",
+          "title": "Terror Panelist",
+          "path": "devils_advocate",
+          "difficulty": 4,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Wait, medyo problematic ang logic niyo rito. Sabi niyo sa response niyo na justifiable ang system dahil errors are just confined to similar-looking diseases, pero based sa text niyo, inamin niyo na 'respondents were more confident in their ability to operate the application than in the correctness of what it told them' and you explicitly identified that for a diagnostic tool, reliability is 'the more consequential of the two dimensions.' If you acknowledge that reliability is the primary failure point, how can you claim the system is useful just because it confuses similar diseases, when the document itself notes that users already distrust the output? Isn't this just rationalizing a low-reliability tool that fundamentally fails the very diagnostic standard you set for yourselves?",
+          "grounding_reference": "For a diagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to the per-class weakness identified on bacterial leaf blight.",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight."
+        }
+      ],
+      "closings": [
+        {
+          "session": 1,
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Al-Fayed",
+          "title": "Research Problem & Objectives Reviewer",
+          "line": "I will leave it at that regarding the scope of your decision-support tool. Tapos na ako sa bahaging ito.",
+          "source": "llm",
+          "reason": "-"
+        },
+        {
+          "session": 1,
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "panelist": "Nguyen",
+          "title": "Methodology Expert",
+          "line": "Thank you, that is all for my questions regarding your Evaluation Design.",
+          "source": "llm",
+          "reason": "-"
+        },
+        {
+          "session": 1,
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "O'Sullivan",
+          "title": "Results & Conclusions Reviewer",
+          "line": "Sige, hanggang diyan na lang muna ang tanong ko tungkol sa inyong conclusion at reliability.",
+          "source": "llm",
+          "reason": "-"
+        }
+      ],
+      "gemini_calls": 21,
+      "by_role": {
+        "gemini-3.1-flash-lite": 21
+      }
+    },
+    {
+      "session": 2,
+      "session_id": "5eaec21c-9750-4b4a-b516-61f9fd049317",
+      "seated": [
+        "problem_objectives_reviewer",
+        "methodology_expert",
+        "results_conclusions_reviewer"
+      ],
+      "plan": {
+        "problem_objectives_reviewer": "mid",
+        "methodology_expert": "strong",
+        "results_conclusions_reviewer": "weak"
+      },
+      "questions": [
+        {
+          "session": 2,
+          "turn": 1,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Dumont",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "new_topic",
+          "difficulty": 2,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "Regarding the decision not to recommend chemical products, you stated that prescribing chemicals falls outside the competence of the team. Since your stated objective is to support smallholder farmers in obtaining preliminary identification at the moment of observation, how does this limitation impact the actual utility of the app for a farmer who identifies a disease but is left without guidance on the next immediate step?",
+          "grounding_reference": "it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "We chose the four diseases because farmers mentioned them in the interviews and they appear on the leaves. Other diseases were left out because of time. The app is only meant to help farmers, not to replace the technician.",
+          "planned": "mid",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 2,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Dumont",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "follow_up",
+          "difficulty": 3,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "I hear you, but that response really doesn't address the core utility gap here. If the system's purpose is to provide a 'preliminary disease identification at the moment of observation', how can you justify the project's success when the user, upon receiving that identification, is essentially left at a standstill without actionable guidance on what to do next, especially since you explicitly stated that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage'?",
+          "grounding_reference": "The system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "As I said, the scope came from the interviews. We think the four diseases cover most of what the farmers see, and we can add more diseases in a later version.",
+          "planned": "mid",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Dumont",
+          "title": "Research Problem & Objectives Reviewer",
+          "path": "follow_up",
+          "difficulty": 2,
+          "pages": [
+            5,
+            5
+          ],
+          "question": "Paulit-ulit na lang tayo sa scope, but let's be direct: if you admit that 'the application is intended as a decision-support tool', how can you justify it as a meaningful support tool when your objectives specifically exclude any actionable output beyond mere identification, effectively leaving the farmer with nothing but a label when they are standing in the middle of their field?",
+          "grounding_reference": "The application is intended as a decision-support tool and not as a replacement for consultation with a qualified agricultural technician.",
+          "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+          "answer": "I agree it is a limitation. Our objective was mainly to show that the app works offline on the phone, so we kept the scope small for the capstone.",
+          "planned": "mid",
+          "total": 4
+        },
+        {
+          "session": 2,
+          "turn": 4,
+          "archetype_key": "methodology_expert",
+          "panelist": "Al-Farsi",
+          "title": "Methodology Expert",
+          "path": "new_topic",
+          "difficulty": 3,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "Fair enough, pero let's move to your evaluation design. In your methodology, you used purposive sampling to select thirty respondents from Barangay Masagana, but then you guided them through capturing only three to five identifications on leaves available at the session. How can you claim that this limited interaction with the app provides a statistically significant basis for assessing functional suitability and reliability when the farmers weren't actually using the system in their own field conditions?",
+          "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "The 3,240 images came from eleven fields in Barangay Masagana over six weeks of the 2024 wet season. Each leaf was detached and shot against white cardboard between 8 and 10 AM, so lighting and background were controlled, and every label was confirmed on site by the municipal agriculture technician, who discarded anything he couldn't classify confidently. We split 80:20 stratified, 2,592 training and 648 test images, and augmented only the training set, more heavily for tungro because it was 12.7% of the data. I accept the trade-off: the 94.7% measures detached leaves in morning light, not field photos, which is why our first recommendation is field images from more municipalities.",
+          "planned": "strong",
+          "total": 7
+        },
+        {
+          "session": 2,
+          "turn": 5,
+          "archetype_key": "methodology_expert",
+          "panelist": "Al-Farsi",
+          "title": "Methodology Expert",
+          "path": "follow_up",
+          "difficulty": 4,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "Sige, I appreciate the transparency about the training set limitations, but that still doesn't explain the gap here: you used a very controlled lab-like session to test usability, yet your methodology claims to evaluate 'functional suitability' and 'reliability' using an ISO/IEC 25010 instrument. If your farmers only tested the app on pre-selected, detached leaves under your direct guidance, how can you validly claim their responses reflect the 'functional suitability' of the system in an actual, unpredictable agricultural environment, rather than just their satisfaction with a controlled, guided demonstration?",
+          "grounding_reference": "System acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010, covering four characteristics: functional suitability, usability, reliability, and portability.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "On sampling: the thirty respondents were purposively chosen, active rice growers who own an Android phone, from the same barangay as the dataset, and each used the app once for about thirty minutes right after a demonstration. That design measures first impressions from people close to the data source, not independent long-term use, and we state it in the limitations; a longitudinal, unsupervised study across a full season is our fourth recommendation.",
+          "planned": "strong",
+          "total": 7
+        },
+        {
+          "session": 2,
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "panelist": "Al-Farsi",
+          "title": "Methodology Expert",
+          "path": "follow_up",
+          "difficulty": 5,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "I hear your point on acknowledging the scope limitation, pero that admission actually reinforces the problem: if you know the survey only captures 'first impressions' under your direct supervision, why use an ISO/IEC 25010 instrument—which is designed to measure objective functional suitability and reliability—when your own methodology description admits you were the ones guiding the interaction and selecting the leaf samples during these thirty-minute sessions?",
+          "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+          "answer": "The test set is a stratified 20% held out from the same collection, so it shares the capture conditions of the training images. That makes 94.7% an in-distribution figure. The validation study we recommend compares the app's identifications with a technician's judgment on the same leaves in the field, which is the standard the tool is meant to approximate.",
+          "planned": "strong",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 7,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "Tanaka",
+          "title": "Results & Conclusions Reviewer",
+          "path": "new_topic",
+          "difficulty": 5,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Regarding the gap where respondents were less confident in the correctness of the output than in the usability of the app, you mentioned this corresponds to the weakness identified on bacterial leaf blight. If this discrepancy is so consequential, how can you claim the tool is acceptable as a diagnostic aid when your data confirms that the system's own failure modes are directly undermining the user's trust in the diagnosis?",
+          "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them.",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+          "answer": "The results were good and the farmers were satisfied.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 8,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "Tanaka",
+          "title": "Results & Conclusions Reviewer",
+          "path": "follow_up",
+          "difficulty": 4,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Sayang naman, 'yung sagot mo ay masyadong general at hindi sumasagot sa problem na binanggit mo mismo sa document. If you clearly stated in your Discussion that 'the gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them,' paano mo mapapanindigan na 'acceptable' ang tool mo bilang diagnostic aid kung mismong data mo ang nagsasabi na the system's failure modes ay directly eroding the user's trust in the core output of your application?",
+          "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them. For a diagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to the per-class weakness identified on bacterial leaf blight.",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+          "answer": "I think the accuracy is around ninety percent.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 9,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "Tanaka",
+          "title": "Results & Conclusions Reviewer",
+          "path": "follow_up",
+          "difficulty": 3,
+          "pages": [
+            13,
+            13
+          ],
+          "question": "Hindi sapat na sagot 'yung pagbanggit ng accuracy percentage; it doesn't quite address the disconnect I'm raising. If you yourself admitted that 'the gap between the usability rating and the reliability rating is instructive' and specifically linked this to 'the per-class weakness identified on bacterial leaf blight,' paano mo ma-justify ang claim na 'acceptable' ang system mo for diagnosis? How do you reconcile the fact that your own data proves the tool fails exactly where the user needs the most accuracy, thereby eroding the very trust required for a diagnostic tool to be functional?",
+          "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them. For a diagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to the per-class weakness identified on bacterial leaf blight.",
+          "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+          "answer": "We did not have time to analyze that part in detail.",
+          "planned": "weak",
+          "total": 3
+        },
+        {
+          "session": 2,
+          "turn": 10,
+          "archetype_key": "devils_advocate",
+          "panelist": "O'Sullivan",
+          "title": "Terror Panelist",
+          "path": "devils_advocate",
+          "difficulty": 2,
+          "pages": [
+            10,
+            10
+          ],
+          "question": "Balikan natin 'yung sinabi mo kanina about justifying your model's performance; you mentioned that your system evaluation is limited to 'detached leaves,' but your methodology states you evaluated 'functional suitability' and 'reliability' using an ISO/IEC 25010 instrument across thirty respondents. How can you claim that a thirty-minute session where you personally guided the farmers through only three to five leaf captures generates data that actually reflects 'functional suitability' and 'reliability' in a real-world setting, rather than just measuring how well they can follow your instructions in a controlled environment?",
+          "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+          "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device."
+        }
+      ],
+      "closings": [
+        {
+          "session": 2,
+          "turn": 3,
+          "archetype_key": "problem_objectives_reviewer",
+          "panelist": "Dumont",
+          "title": "Research Problem & Objectives Reviewer",
+          "line": "Okay, that is all for my questions regarding the scope you set. Tapos na ako sa bahaging ito.",
+          "source": "llm",
+          "reason": "-"
+        },
+        {
+          "session": 2,
+          "turn": 6,
+          "archetype_key": "methodology_expert",
+          "panelist": "Al-Farsi",
+          "title": "Methodology Expert",
+          "line": "I will leave it at that for the ISO/IEC 25010 implementation. Tapos na ang mga tanong ko sa aspetong ito.",
+          "source": "llm",
+          "reason": "-"
+        },
+        {
+          "session": 2,
+          "turn": 9,
+          "archetype_key": "results_conclusions_reviewer",
+          "panelist": "Tanaka",
+          "title": "Results & Conclusions Reviewer",
+          "line": "Sapat na muna ang mga tanong ko sa diagnostic reliability ng AniCheck. Thank you.",
+          "source": "llm",
+          "reason": "-"
+        }
+      ],
+      "gemini_calls": 23,
+      "by_role": {
+        "gemini-3.1-flash-lite": 23
+      }
+    }
+  ],
+  "decision_5_lines": [
+    {
+      "session": 1,
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Al-Fayed",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "new_topic",
+      "difficulty": 2,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding your decision that the system does not recommend a specific chemical product or dosage, how does this limitation affect the immediate utility of AniCheck for a smallholder farmer who identifies a disease but still lacks the actionable next step to save their crop?",
+      "grounding_reference": "the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "We just picked the diseases that are common in rice.",
+      "planned": "weak",
+      "total": 3,
+      "kind": "opening"
+    },
+    {
+      "session": 1,
+      "turn": 4,
+      "archetype_key": "methodology_expert",
+      "panelist": "Nguyen",
+      "title": "Methodology Expert",
+      "path": "new_topic",
+      "difficulty": 1,
+      "pages": [
+        10,
+        10
+      ],
+      "question": "User feedback is one thing, but looking at your methodology, I'm concerned about the data quality for your machine learning model. You mention that your model performance was evaluated on a 648-image test set, but your user testing only involved respondents capturing three to five identifications per session. Did you ensure that the image quality from these field-captured samples was diverse enough to actually validate your model's robustness, or are you just testing the UI functionality?",
+      "grounding_reference": "Model performance was evaluated on the 648-image test set using accuracy, precision, recall, and F1-score computed per class, together with a confusion matrix.",
+      "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+      "answer": "We collected the images ourselves in the barangay and had a technician label them. We used an 80:20 split and augmentation to make the model better. The thirty respondents were chosen from farmers who have Android phones.",
+      "planned": "mid",
+      "total": 3,
+      "kind": "opening"
+    },
+    {
+      "session": 1,
+      "turn": 7,
+      "archetype_key": "results_conclusions_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Results & Conclusions Reviewer",
+      "path": "new_topic",
+      "difficulty": 2,
+      "pages": [
+        13,
+        13
+      ],
+      "question": "Sige, let's look at the reliability of your findings. You noted that 'respondents were more confident in their ability to operate the application than in the correctness of what it told them,' yet you still conclude that the system is useful. If the end-users themselves are flagging this lack of reliability as a major concern, how can you claim that the system successfully serves its purpose as a diagnostic tool, and why didn't this discrepancy force you to temper your conclusions about the system's overall efficacy?",
+      "grounding_reference": "respondents were more confident in their ability to operate the application than in the correctness of what it told them",
+      "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+      "answer": "The weakest class is bacterial leaf blight, with recall 0.813: 102 of 125 test images were correct and 16 went to brown spot, which matters because the two need different treatments. That lines up with reliability being the only ISO/IEC 25010 characteristic below Very Acceptable, at 4.09 against 4.42 for usability; respondents trusted their own use of the app more than its answers, and several leaves carried more than one condition, which a single-class output can't express. So we concluded the app is a preliminary decision-support aid and shouldn't replace a technician where a costly treatment follows.",
+      "planned": "strong",
+      "total": 10,
+      "kind": "opening"
+    },
+    {
+      "session": 1,
+      "turn": 2,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Al-Fayed",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "follow_up",
+      "difficulty": 1,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "I appreciate that you identified common rice diseases, but that doesn't really explain how the farmer gets from 'identification' to 'crop protection.' If your stated objective is to develop a tool for smallholder farmers, and you explicitly state in your Scope and Limitations that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage,' how can you justify the claim that this is a 'decision-support tool' when the most critical decision—the intervention—is entirely left to the user without any guidance?",
+      "grounding_reference": "The system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "I'm not sure, I would have to check with my groupmates.",
+      "planned": "weak",
+      "total": 3,
+      "kind": "follow_up"
+    },
+    {
+      "session": 1,
+      "turn": 3,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Al-Fayed",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "follow_up",
+      "difficulty": 1,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Hindi sapat na sagot 'yan, lalo na't thesis niyo ito at kayo dapat ang nakakaalam ng core rationale ng study niyo. If the application is officially described as a 'decision-support tool' in your own text, how can you claim that function while explicitly stating that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage,' given that a decision-support tool implies providing guidance for an actual action, not just a label?",
+      "grounding_reference": "The application is intended as a decision-support tool and not as a replacement for consultation with a qualified agricultural technician.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "I think it's fine because the farmers liked the app.",
+      "planned": "weak",
+      "total": 3,
+      "kind": "follow_up"
+    },
+    {
+      "session": 1,
+      "turn": 9,
+      "archetype_key": "devils_advocate",
+      "panelist": "Yamamoto",
+      "title": "Terror Panelist",
+      "path": "devils_advocate",
+      "difficulty": 4,
+      "pages": [
+        13,
+        13
+      ],
+      "question": "Wait, medyo problematic ang logic niyo rito. Sabi niyo sa response niyo na justifiable ang system dahil errors are just confined to similar-looking diseases, pero based sa text niyo, inamin niyo na 'respondents were more confident in their ability to operate the application than in the correctness of what it told them' and you explicitly identified that for a diagnostic tool, reliability is 'the more consequential of the two dimensions.' If you acknowledge that reliability is the primary failure point, how can you claim the system is useful just because it confuses similar diseases, when the document itself notes that users already distrust the output? Isn't this just rationalizing a low-reliability tool that fundamentally fails the very diagnostic standard you set for yourselves?",
+      "grounding_reference": "For a diagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to the per-class weakness identified on bacterial leaf blight.",
+      "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+      "kind": "terror_panelist"
+    },
+    {
+      "session": 2,
+      "turn": 1,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Dumont",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "new_topic",
+      "difficulty": 2,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Regarding the decision not to recommend chemical products, you stated that prescribing chemicals falls outside the competence of the team. Since your stated objective is to support smallholder farmers in obtaining preliminary identification at the moment of observation, how does this limitation impact the actual utility of the app for a farmer who identifies a disease but is left without guidance on the next immediate step?",
+      "grounding_reference": "it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "We chose the four diseases because farmers mentioned them in the interviews and they appear on the leaves. Other diseases were left out because of time. The app is only meant to help farmers, not to replace the technician.",
+      "planned": "mid",
+      "total": 3,
+      "kind": "opening"
+    },
+    {
+      "session": 2,
+      "turn": 4,
+      "archetype_key": "methodology_expert",
+      "panelist": "Al-Farsi",
+      "title": "Methodology Expert",
+      "path": "new_topic",
+      "difficulty": 3,
+      "pages": [
+        10,
+        10
+      ],
+      "question": "Fair enough, pero let's move to your evaluation design. In your methodology, you used purposive sampling to select thirty respondents from Barangay Masagana, but then you guided them through capturing only three to five identifications on leaves available at the session. How can you claim that this limited interaction with the app provides a statistically significant basis for assessing functional suitability and reliability when the farmers weren't actually using the system in their own field conditions?",
+      "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+      "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+      "answer": "The 3,240 images came from eleven fields in Barangay Masagana over six weeks of the 2024 wet season. Each leaf was detached and shot against white cardboard between 8 and 10 AM, so lighting and background were controlled, and every label was confirmed on site by the municipal agriculture technician, who discarded anything he couldn't classify confidently. We split 80:20 stratified, 2,592 training and 648 test images, and augmented only the training set, more heavily for tungro because it was 12.7% of the data. I accept the trade-off: the 94.7% measures detached leaves in morning light, not field photos, which is why our first recommendation is field images from more municipalities.",
+      "planned": "strong",
+      "total": 7,
+      "kind": "opening"
+    },
+    {
+      "session": 2,
+      "turn": 7,
+      "archetype_key": "results_conclusions_reviewer",
+      "panelist": "Tanaka",
+      "title": "Results & Conclusions Reviewer",
+      "path": "new_topic",
+      "difficulty": 5,
+      "pages": [
+        13,
+        13
+      ],
+      "question": "Regarding the gap where respondents were less confident in the correctness of the output than in the usability of the app, you mentioned this corresponds to the weakness identified on bacterial leaf blight. If this discrepancy is so consequential, how can you claim the tool is acceptable as a diagnostic aid when your data confirms that the system's own failure modes are directly undermining the user's trust in the diagnosis?",
+      "grounding_reference": "The gap between the usability rating and the reliability rating is instructive: respondents were more confident in their ability to operate the application than in the correctness of what it told them.",
+      "chunk_text": "13\nrespondent believed to be incorrect. In several such instances the leaf in question carried symptoms\nof more than one condition, a case the present system cannot express since it returns a single class.\nDiscussion\nThe overall accuracy of 94.7% is lower than the figures commonly reported in the plant disease\nclassification literature, where results above 99% on the PlantVillage dataset are routine. The\nproponents attribute the difference principally to dataset scale: 3,240 images across five classes is an\norder of magnitude smaller than the datasets on which those figures were obtained.\nThe acceptability results indicate that the intended users found the system usable and useful. The\ngap between the usability rating and the reliability rating is instructive: respondents were more\nconfident in their ability to operate the application than in the correctness of what it told them. For a\ndiagnostic tool this is the more consequential of the two dimensions, and it corresponds directly to\nthe per-class weakness identified on bacterial leaf blight.",
+      "answer": "The results were good and the farmers were satisfied.",
+      "planned": "weak",
+      "total": 3,
+      "kind": "opening"
+    },
+    {
+      "session": 2,
+      "turn": 2,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Dumont",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "follow_up",
+      "difficulty": 3,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "I hear you, but that response really doesn't address the core utility gap here. If the system's purpose is to provide a 'preliminary disease identification at the moment of observation', how can you justify the project's success when the user, upon receiving that identification, is essentially left at a standstill without actionable guidance on what to do next, especially since you explicitly stated that 'the system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage'?",
+      "grounding_reference": "The system returns an identification and a confidence percentage; it does not recommend a specific chemical product or dosage, since the proponents judged that prescribing agricultural chemicals falls outside both the competence of the development team and the intended function of a diagnostic aid.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "As I said, the scope came from the interviews. We think the four diseases cover most of what the farmers see, and we can add more diseases in a later version.",
+      "planned": "mid",
+      "total": 3,
+      "kind": "follow_up"
+    },
+    {
+      "session": 2,
+      "turn": 3,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Dumont",
+      "title": "Research Problem & Objectives Reviewer",
+      "path": "follow_up",
+      "difficulty": 2,
+      "pages": [
+        5,
+        5
+      ],
+      "question": "Paulit-ulit na lang tayo sa scope, but let's be direct: if you admit that 'the application is intended as a decision-support tool', how can you justify it as a meaningful support tool when your objectives specifically exclude any actionable output beyond mere identification, effectively leaving the farmer with nothing but a label when they are standing in the middle of their field?",
+      "grounding_reference": "The application is intended as a decision-support tool and not as a replacement for consultation with a qualified agricultural technician.",
+      "chunk_text": "5\n3. What level of classification accuracy does the trained convolutional neural network achieve on a\nheld-out test set?\n4. How acceptable is the developed application to its intended users when evaluated against the\nISO/IEC 25010 characteristics of functional suitability, usability, reliability, and portability?\nObjectives of the Study\nThe general objective was to develop and evaluate a mobile application capable of identifying\ncommon rice leaf diseases without requiring an internet connection. Specifically, the study aimed to\nassemble a labeled image dataset of rice leaves representing four disease classes and a healthy class;\nto train a convolutional neural network on that dataset using transfer learning; to convert and embed\nthe trained model in an Android application with an interface suitable for users with limited formal\nschooling; and to evaluate both the classification performance of the model and the acceptability of\nthe application to its intended users.\nScope and Limitations\nThe application identifies four disease classes — bacterial leaf blight, brown spot, leaf smut, and\ntungro — plus a healthy class. These four were selected because they were the diseases most\nfrequently named by farmers during the initial interviews and because they present visible foliar\nsymptoms. Diseases whose symptoms appear principally on the panicle, stem, or root, including\nsheath blight and false smut, are outside the coverage of the system.\nThe image dataset was collected exclusively within Barangay Masagana during a six-week window\nin the 2024 wet season. The application runs on Android 9.0 and above; no iOS version was\nproduced. The system returns an identification and a confidence percentage; it does not recommend\na specific chemical product or dosage, since the proponents judged that prescribing agricultural\nchemicals falls outside both the competence of the development team and the intended function of a\ndiagnostic aid. The application is intended as a decision-support tool and not as a replacement for\nconsultation with a qualified agricultural technician.\nSignificance of the Study\nFor smallholder farmers, the study offers a means of obtaining a preliminary disease identification at\nthe moment of observation rather than at the next available consultation. For agricultural extension\nofficers, a tool that handles routine identification may allow scarce technician time to be directed\ntoward the cases that genuinely require expert judgment. For the local government unit, the\naggregate pattern of identifications could in principle inform the targeting of advisory campaigns,\nalthough the present version of the system does not transmit or aggregate any data. For future\nresearchers, the study contributes a documented dataset collection procedure and a baseline set of\nresults against which alternative architectures may be compared.",
+      "answer": "I agree it is a limitation. Our objective was mainly to show that the app works offline on the phone, so we kept the scope small for the capstone.",
+      "planned": "mid",
+      "total": 4,
+      "kind": "follow_up"
+    },
+    {
+      "session": 2,
+      "turn": 10,
+      "archetype_key": "devils_advocate",
+      "panelist": "O'Sullivan",
+      "title": "Terror Panelist",
+      "path": "devils_advocate",
+      "difficulty": 2,
+      "pages": [
+        10,
+        10
+      ],
+      "question": "Balikan natin 'yung sinabi mo kanina about justifying your model's performance; you mentioned that your system evaluation is limited to 'detached leaves,' but your methodology states you evaluated 'functional suitability' and 'reliability' using an ISO/IEC 25010 instrument across thirty respondents. How can you claim that a thirty-minute session where you personally guided the farmers through only three to five leaf captures generates data that actually reflects 'functional suitability' and 'reliability' in a real-world setting, rather than just measuring how well they can follow your instructions in a controlled environment?",
+      "grounding_reference": "Each respondent attended a single session in which the application was installed on their device, its use was demonstrated, and they were guided through capturing between three and five identifications on leaves available at the session.",
+      "chunk_text": "10\nEvaluation Design\nModel performance was evaluated on the 648-image test set using accuracy, precision, recall, and\nF1-score computed per class, together with a confusion matrix.\nSystem acceptability was evaluated using a survey instrument adapted from ISO/IEC 25010,\ncovering four characteristics: functional suitability, usability, reliability, and portability. The\ninstrument consisted of twenty statements, five per characteristic, rated on a five-point Likert scale.\nThe instrument was translated into Filipino and reviewed for clarity by the adviser and by one\nfaculty member from the college.\nThirty respondents were selected through purposive sampling from among the rice farmers of\nBarangay Masagana, the criteria being active cultivation of rice during the current season and\nownership of an Android smartphone. Each respondent attended a single session in which the\napplication was installed on their device, its use was demonstrated, and they were guided through\ncapturing between three and five identifications on leaves available at the session. Sessions ran\napproximately thirty minutes. The survey was administered immediately afterward, with the\nproponents reading each statement aloud and recording the response.\nResponses were analyzed using weighted mean. The scale was interpreted according to the ranges in\nTable 2.\nRange\nVerbal Interpretation\n4.21 - 5.00\nVery Acceptable\n3.41 - 4.20\nAcceptable\n2.61 - 3.40\nModerately Acceptable\n1.81 - 2.60\nSlightly Acceptable\n1.00 - 1.80\nNot Acceptable\nTable 2. Likert scale interpretation ranges.\nEthical Considerations\nPermission to conduct the study within the barangay was obtained in writing from the barangay\ncaptain. Participation was voluntary and respondents were informed that they could withdraw at any\npoint. Consent was obtained verbally at the start of each session, since several respondents indicated\ndiscomfort with signing documents. No personally identifying information was recorded on the\nsurvey forms, and the application stores identification history only on the user's own device.",
+      "kind": "terror_panelist"
+    },
+    {
+      "session": 1,
+      "turn": 3,
+      "archetype_key": "problem_objectives_reviewer",
+      "panelist": "Al-Fayed",
+      "title": "Research Problem & Objectives Reviewer",
+      "line": "I will leave it at that regarding the scope of your decision-support tool. Tapos na ako sa bahaging ito.",
+      "source": "llm",
+      "reason": "-",
+      "kind": "closing"
+    },
+    {
+      "session": 1,
+      "turn": 6,
+      "archetype_key": "methodology_expert",
+      "panelist": "Nguyen",
+      "title": "Methodology Expert",
+      "line": "Thank you, that is all for my questions regarding your Evaluation Design.",
+      "source": "llm",
+      "reason": "-",
+      "kind": "closing"
+    },
+    {
+      "session": 1,
+      "turn": 8,
+      "archetype_key": "results_conclusions_reviewer",
+      "panelist": "O'Sullivan",
+      "title": "Results & Conclusions Reviewer",
+      "line": "Sige, hanggang diyan na lang muna ang tanong ko tungkol sa inyong conclusion at reliability.",
+      "source": "llm",
+      "reason": "-",
+      "kind": "closing"
+    }
+  ],
+  "gemini_calls": 44
+}
