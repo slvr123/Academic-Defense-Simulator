@@ -14,13 +14,15 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ## Active work - v2.0 M16 Taglish mode (2026-11-06)
 
-Built and merged to `main` 2026-11-06; **next: my push (stop point C), my rating of the 15 lines, then Decision 7's captures.**
+Done and live 2026-11-06, with `ADS_TAGLISH_MODE` on; **next: the README, case study and LinkedIn post, written in chat from M13's fact audit.**
 Decisions: [`v2.0-m16-decisions.md`](v2.0-m16-decisions.md); results: [`v2.0-m16-results.md`](v2.0-m16-results.md).
 A "Panel language" choice (English or Taglish) on the start screen puts the panel's questions, follow-ups, Terror Panelist challenges and closing lines in Taglish; scoring, the debrief and the interface stay English.
 The v1 exception is in, behind a byte-identical golden test, with one amendment I authorised: two v1 test `.format` calls pass `language_line=""`.
 Scoring is fair to Taglish answers by the rule set in advance: a mean difference of +0.50 of 15, and the largest pair +2.00, right on the limit.
-`ADS_TAGLISH_MODE` ships off until I've rated the lines.
-**Open:** 7 of the 15 Taglish lines came out all English, mostly opening questions, where the language line sits highest in the prompt.
+In the first Decision 5 run, 4 of 6 openers were all English, so I authorised a second amendment: the opener prompt's language line moved to just before its output-format instructions.
+The rerun passed its pre-set check (5 of 6 openers contain Filipino), I rated the lines and approved Taglish mode, and the flag is on in production.
+Decision 7 retook M13's captures from the live site and added `session-taglish.png` from one live defense.
+**Open, for v2.1:** the turn-1 opener was all English in 2 of 3 Taglish sessions since the amendment; one rated line claimed the paper gives "actionable agricultural advice", which AniCheck says it doesn't; and `session-taglish.png` shows its question in the Reviewing state.
 
 **Known harness bug, for later:** a backend test whose `TestClient` shuts down while an upload is still ingesting hangs forever in the app's lifespan shutdown.
 It's there on the pre-M16 parent: `backend/tests/test_api.py::test_valid_panel_is_stored` hangs 4 runs of 4 when run on its own, though it passes inside the full suite.
@@ -29,7 +31,7 @@ Until then, new tests wait for every accepted upload to finish ingesting.
 
 ## Active work - v2.0 M15 the outgoing panelist closes (2026-11-05)
 
-Built, merged and live 2026-11-05; **next: M16 (Taglish), then M13's deferred captures.**
+Built, merged and live 2026-11-05; M16 and M13's deferred captures followed.
 Decisions: [`v2.0-m15-decisions.md`](v2.0-m15-decisions.md); results: [`v2.0-m15-results.md`](v2.0-m15-results.md).
 On every hand-off, the outgoing panelist now says one short closing line, in its own voice, before the next panelist asks.
 The line comes from its own Gemini call, run alongside the next question's generation, so a hand-off waits a median of 0 ms; past a 1 s grace, or on any failure, a fixed neutral line stands in.
@@ -42,14 +44,14 @@ The demo was re-recorded on attempt 2 of 3: it opens at Chapter 1, a weak answer
 
 ## Active work - v2.0 M13 launch assets (2026-11-04)
 
-Closed 2026-11-04, except Decision 4's captures; **next: M15/M16 (new UI features), then those captures, then the README, case study and LinkedIn post, written in chat from M13's fact audit.**
+Closed 2026-11-04; Decision 4's captures were done 2026-11-06 as M16 Decision 7; **next: the README, case study and LinkedIn post, written in chat from M13's fact audit.**
 Decisions: [`v2.0-m13-decisions.md`](v2.0-m13-decisions.md); results: [`v2.0-m13-results.md`](v2.0-m13-results.md).
 The light theme is now Red Pen: black ink for everything the user operates, red only for the panel; Chamber is unchanged.
 The public address is https://academic-defense-simulator.onrender.com, and https://defense-sim.onrender.com redirects to it with a 301; `ads-frontend` left the Blueprint.
 The sample-paper button now sets up the thesis panel the recorded demo shows, and the `App.frontDoor` polling flake is fixed in the tests (it was test timing, not a product race).
 The wordmark in every header now goes back to the start screen, asking first wherever leaving would end a defense, and the Devil's Advocate is shown as the "Terror Panelist" (display only: the key and the prompts are unchanged).
 The share image is in Red Pen.
-**Deferred:** the screenshots, `demo.gif` and `demo.mp4` (Decision 4) are retaken after M15/M16, since new UI features come first; the first-pass captures in `docs/img/v2/` predate Decision 0c.
+The screenshots, `demo.gif` and `demo.mp4` (Decision 4) were deferred until after M15/M16 and retaken from the live site on 2026-11-06.
 
 ## Active work - v2.0 M14 opening-question chapter filter (2026-11-03)
 
