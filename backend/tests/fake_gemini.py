@@ -42,6 +42,7 @@ class FakeGemini:
         self.question_prompts: list[str] = []  # every question prompt, in call order
         self.closing_line = "Alright, I'll leave the evaluation there."  # M15: what each closing call says
         self.closing_prompts: list[str] = []  # every closing prompt, in call order
+        self.prompts_by_role: dict[str, list[str]] = defaultdict(list)  # M16: every prompt, by role
 
     def fail_next(self, role: str, *errors: Exception) -> None:
         self.failures[role].extend(errors)
@@ -51,6 +52,7 @@ class FakeGemini:
 
     def respond(self, role: str, prompt: str):
         self.calls_by_role[role] += 1
+        self.prompts_by_role[role].append(prompt)
         self.entered[role].set()
         if role in self.block:
             self.block[role].wait(10)

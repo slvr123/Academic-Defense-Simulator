@@ -26,7 +26,7 @@ def _embedding(body: dict) -> bool:
 
 def test_health_reports_model_loaded(client_factory):
     with client_factory(mimo_api_key=None) as client:
-        assert client.get("/health").json() == {"status": "ok", "model_loaded": True, "tts_available": False}
+        assert client.get("/health").json() == {"status": "ok", "model_loaded": True, "tts_available": False, "taglish_mode": False}
 
 
 def test_pdf_goes_from_queued_to_ready_with_page_ranges(client_factory, pdf):
@@ -157,7 +157,7 @@ def test_valid_panel_is_stored(client_factory, pdf):
     with client_factory() as client:
         session_id = upload(client, pdf, panel=json.dumps(panel)).json()["session_id"]
         stored = client.app.state.store.get(session_id).panel
-    assert stored.model_dump(mode="json") == panel | {"other_subtype": None}
+    assert stored.model_dump(mode="json") == panel | {"other_subtype": None, "panel_language": "english"}
 
 
 # --- failures and the worker ---

@@ -27,6 +27,7 @@ from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.models.panelist_output import PanelistQuestion
 from academic_defense_simulator.models.session import ConversationTurn, DefenseSession
 from academic_defense_simulator.rag.retrieval import Chunk
+from backend.closing import closing_prompt
 
 GOLDEN_DIR = Path(__file__).resolve().parent / "fixtures" / "m16_prompt_golden"
 
@@ -153,12 +154,28 @@ def _devils_advocate(**kw: Any) -> str:
     return render(session, DEVIL, "", CHUNK_A, **kw)
 
 
+def _closing_with_earlier_lines(**kw: Any) -> str:
+    """M15's closing prompt (v2 side), which M16 gives a language slot too. It takes a
+    `language`, not the slot's text, so a `language_line` here stands in for what the
+    Taglish language would put in the slot."""
+    args = (METHODS, profile(), "How did you control for interviewer bias?", "I think they were honest with us.",
+            ["Thank you, that covers my questions on the scope."])
+    if "language_line" not in kw:
+        return closing_prompt(*args)
+    import backend.closing
+    from unittest.mock import patch
+
+    with patch.object(backend.closing, "closing_language_line", lambda _language: kw["language_line"]):
+        return closing_prompt(*args, language="taglish")
+
+
 CASES: dict[str, Callable[..., str]] = {
     "panelist_turn1": _new_topic_turn_one,
     "panelist_ack_hard_other": _new_topic_acknowledged_hard_other,
     "followup_same_panelist": _follow_up_same_panelist,
     "followup_colleague_hard": _follow_up_colleague_hard,
     "devils_advocate": _devils_advocate,
+    "closing_with_earlier_lines": _closing_with_earlier_lines,
 }
 
 

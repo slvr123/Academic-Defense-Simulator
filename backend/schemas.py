@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from academic_defense_simulator.models.defense_profile import DefenseProfile, DefenseType, OtherSubtype
 from academic_defense_simulator.models.report import DefenseReport
 from academic_defense_simulator.panel import DEVILS_ADVOCATE_KEY, PANEL_COMPOSITION
+from backend.language import PanelLanguage
 from backend.tts_split import MAX_PARTS
 
 
@@ -36,6 +37,8 @@ class PanelConfig(BaseModel):
     # recommended panel for the defense type (v1's "Use recommended panel").
     archetype_keys: list[str] | None = Field(default=None, min_length=1, max_length=MAX_DOMAIN_PANELISTS)
     starting_difficulty: int = Field(default=2, ge=1, le=5)
+    # M16: what the panel speaks. Taglish needs ADS_TAGLISH_MODE on; the upload says so.
+    panel_language: PanelLanguage = "english"
 
     @field_validator("domain", "topic", mode="before")
     @classmethod
@@ -209,6 +212,7 @@ class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     model_loaded: bool
     tts_available: bool  # MIMO_API_KEY is set, so POST /tts can synthesize
+    taglish_mode: bool = False  # ADS_TAGLISH_MODE (M16): the start screen may offer a Taglish panel
 
 
 class TtsRequest(BaseModel):

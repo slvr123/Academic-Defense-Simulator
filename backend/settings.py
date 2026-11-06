@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     # "fixed" says a fixed neutral line with no call; "off" says nothing. Switchable on
     # Render with no deploy: ADS_CLOSING_LINES.
     closing_lines: Literal["llm", "fixed", "off"] = "llm"
+    # M16: whether a panel may speak Taglish. Off, the start screen hides the choice and
+    # an upload asking for Taglish gets 422. Ships off; switchable on Render with no
+    # deploy: ADS_TAGLISH_MODE.
+    taglish_mode: bool = False
     # X-Forwarded-For entries appended by proxies in front of us; the client is this many
     # from the right. Render's chain is client -> Cloudflare -> Render's internal proxy,
     # so a browser's request arrives as [client, Cloudflare, Render internal]: 3, as

@@ -27,7 +27,9 @@ from academic_defense_simulator.llm.provider import LLMProvider
 from academic_defense_simulator.models.defense_profile import DefenseProfile
 from academic_defense_simulator.models.panelist import Panelist
 from academic_defense_simulator.prompts.panelist_prompts import ARCHETYPE_CONFIG
+from backend.language import PanelLanguage, closing_language_line
 from backend.prompts.closing_prompts import CLOSING_PROMPT, EARLIER_LINES
+from backend.prompts.language_prompts import TAGLISH_FALLBACK_LINE
 
 logger = logging.getLogger("backend.closing")
 
@@ -59,6 +61,11 @@ class Closing:
     reason: str | None = None
 
 
+def fallback_line(language: PanelLanguage) -> str:
+    """The fixed closing line in the panel's language (M16 Decision 1)."""
+    return FALLBACK_LINE if language == "english" else TAGLISH_FALLBACK_LINE
+
+
 def problem(line: str) -> str | None:
     """Why `line` can't be shown, or None: one or two sentences, at most 30 words, and
     not a question (the prompt's rules 4 and 5)."""
@@ -76,12 +83,18 @@ def problem(line: str) -> str | None:
 
 
 def closing_prompt(
-    panelist: Panelist, profile: DefenseProfile, question: str, answer: str, earlier: Sequence[str] = ()
+    panelist: Panelist,
+    profile: DefenseProfile,
+    question: str,
+    answer: str,
+    earlier: Sequence[str] = (),
+    language: PanelLanguage = "english",
 ) -> str:
     """The closing prompt for the outgoing `panelist`. v1's own archetype title, as its
     question prompts use, so the voice matches; the display title is the API's concern.
     `earlier`: the closing lines already said in this session, in order (fallbacks
-    included, since they were said too)."""
+    included, since they were said too). `language` (M16): English adds nothing, so an
+    English prompt is exactly M15's."""
     earlier_lines = EARLIER_LINES.format(lines="\n".join(f'- "{line}"' for line in earlier)) if earlier else ""
     return CLOSING_PROMPT.format(
         panelist_name=panelist.panelist_name,
@@ -92,6 +105,7 @@ def closing_prompt(
         question=question,
         answer=answer,
         earlier_lines=earlier_lines,
+        language_line=closing_language_line(language),
     )
 
 
@@ -102,6 +116,7 @@ class ClosingCall:
 
     provider: LLMProvider
     prompt: str
+    fallback: str = FALLBACK_LINE  # the fixed line in the panel's language (M16)
     started: float = field(default_factory=time.perf_counter)
     _done: threading.Event = field(default_factory=threading.Event)
     _line: str | None = None
@@ -127,13 +142,13 @@ class ClosingCall:
         landed = self._done.wait(grace_s)
         waited_ms = round((time.perf_counter() - waited_from) * 1000)
         if not landed:
-            return Closing(FALLBACK_LINE, "fixed", "timeout"), waited_ms
+            return Closing(self.fallback, "fixed", "timeout"), waited_ms
         if self._error is not None:
-            return Closing(FALLBACK_LINE, "fixed", f"error:{self._error}"), waited_ms
+            return Closing(self.fallback, "fixed", f"error:{self._error}"), waited_ms
         assert self._line is not None
         reason = problem(self._line)
         if reason is not None:
-            return Closing(FALLBACK_LINE, "fixed", reason), waited_ms
+            return Closing(self.fallback, "fixed", reason), waited_ms
         return Closing(self._line.strip(), "llm"), waited_ms
 
     @property

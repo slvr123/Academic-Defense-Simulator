@@ -210,7 +210,11 @@ def create_app(
     app.state.last_chunk_copy = None  # set by /start, read by /debug/memory
 
     def health() -> HealthResponse:
-        return HealthResponse(model_loaded=app.state.embedder is not None, tts_available=settings.mimo_key is not None)
+        return HealthResponse(
+            model_loaded=app.state.embedder is not None,
+            tts_available=settings.mimo_key is not None,
+            taglish_mode=settings.taglish_mode,
+        )
 
     # EasyPrivacy blocks `||onrender.com/health` (M3b E2), so browsers call /status.
     # /health stays for Render's health check and anything already deployed.
@@ -242,6 +246,8 @@ def create_app(
             if not isinstance(upload, UploadFile):
                 raise HTTPException(422, "Attach the PDF as a multipart field named 'file'.")
             panel = _parse_panel(form.get("panel"))
+            if panel.panel_language == "taglish" and not settings.taglish_mode:
+                raise HTTPException(422, "Taglish mode is off on this server, so the panel speaks English only.")
             try:
                 pdf_path = await asyncio.to_thread(
                     spool_upload, upload.file, settings.upload_dir, settings.max_upload_bytes
