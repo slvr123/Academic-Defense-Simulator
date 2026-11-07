@@ -5,7 +5,9 @@ import type {
   CurrentQuestion,
   ErrorCode,
   HealthResponse,
+  KeyCheck,
   LimitCode,
+  OwnKeyCode,
   PanelConfig,
   PanelOptions,
   QuotaStatus,
@@ -30,13 +32,14 @@ export type ApiError =
   // 429; limit: the starts a network gets per day, sent with per_ip_limit (M6 H6)
   | { kind: 'limited'; code: LimitCode | null; limit: number | null; message: string; retryAfterS: number | null }
   | { kind: 'tts'; code: TtsErrorCode; message: string } // /tts's coded 429, 502 and 503 (E3)
+  | { kind: 'ownKey'; code: OwnKeyCode; message: string } // M17: the visitor's own Gemini key failed
   | { kind: 'unexpected'; message: string }
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError }
 
 // A Record over the generated union: the build fails if the backend adds a code
 // this client hasn't placed.
-const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started' | 'busy'> = {
+const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started' | 'busy' | 'ownKey'> = {
   per_ip_limit: 'limit',
   daily_cap: 'limit',
   tts_limit: 'tts',
@@ -45,7 +48,13 @@ const ERROR_CODES: Record<ErrorCode, 'limit' | 'tts' | 'stale' | 'started' | 'bu
   stale_question: 'stale',
   already_started: 'started',
   panel_busy: 'busy',
+  invalid_key: 'ownKey',
+  own_key_rejected: 'ownKey',
+  own_key_limited: 'ownKey',
 }
+
+/** M17: the header that carries a visitor's own Gemini key, on /keys/check and the upload only. */
+export const KEY_HEADER = 'X-Gemini-Key'
 
 function isErrorCode(value: unknown): value is ErrorCode {
   return typeof value === 'string' && Object.hasOwn(ERROR_CODES, value)
@@ -62,6 +71,10 @@ function isLimitCode(code: ErrorCode | null): code is LimitCode {
 
 function isTtsCode(code: ErrorCode | null): code is TtsErrorCode {
   return code !== null && ERROR_CODES[code] === 'tts'
+}
+
+function isOwnKeyCode(code: ErrorCode | null): code is OwnKeyCode {
+  return code !== null && ERROR_CODES[code] === 'ownKey'
 }
 
 function baseUrl(): string {
@@ -92,6 +105,7 @@ export function toApiError(status: number, body: unknown, retryAfter: string | n
   const message = readDetail(body, `The server answered with an unexpected error (${status}).`)
   const code = errorCode(body)
   if (isTtsCode(code)) return { kind: 'tts', code, message }
+  if (isOwnKeyCode(code)) return { kind: 'ownKey', code, message }
   switch (status) {
     case 404:
       return { kind: 'notFound', message }
@@ -166,6 +180,22 @@ export const submitAnswer = (sessionId: string, text: string, turn: number) =>
 export const getReport = (sessionId: string) => request<ReportResponse>('GET', `${sessionPath(sessionId)}/report`)
 /** Ends the session on the server: its chunks and defense are dropped at once (M10 N2). */
 export const deleteSession = (sessionId: string) => request<void>('DELETE', sessionPath(sessionId))
+/**
+ * M17: whether Google accepts a visitor's own Gemini key (one models.list call on the
+ * server, nothing stored). The key goes in its header, never in the URL or a body.
+ */
+export async function checkKey(key: string): Promise<ApiResult<KeyCheck>> {
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl()}/keys/check`, { method: 'POST', headers: { [KEY_HEADER]: key } })
+  } catch {
+    return { ok: false, error: { kind: 'network' } }
+  }
+  const parsed = parseJson(await response.text().catch(() => ''))
+  if (!response.ok) return { ok: false, error: toApiError(response.status, parsed, response.headers.get('Retry-After')) }
+  return { ok: true, data: { ok: true } }
+}
+
 /** Where the defense is now: the open question, or done (M6 H5). */
 export const getCurrent = (sessionId: string) => request<CurrentQuestion>('GET', `${sessionPath(sessionId)}/current`)
 
@@ -211,16 +241,19 @@ export async function fetchTts(sessionId: string, turn: number, part: number | n
 
 /**
  * POST /sessions. XMLHttpRequest, not fetch, because only XHR reports upload progress,
- * and a 26 MB PDF on a slow mobile connection needs a real progress bar (D5).
+ * and a 26 MB PDF on a slow mobile connection needs a real progress bar (D5). `ownKey`:
+ * the visitor's Gemini key (M17), sent in its header, never as a form field.
  */
 export function createSession(
   file: File,
   panel: PanelConfig,
   onProgress: (loaded: number, total: number) => void,
+  ownKey: string | null = null,
 ): Promise<ApiResult<SessionCreated>> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `${baseUrl()}/sessions`)
+    if (ownKey !== null) xhr.setRequestHeader(KEY_HEADER, ownKey)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded, event.total)
     }

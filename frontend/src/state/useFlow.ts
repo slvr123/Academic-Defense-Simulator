@@ -44,6 +44,10 @@ export type Flow = {
   restart: () => void
   /** End session (M10 N2): DELETE the session, then back to the start screen whatever it answered. */
   endSession: () => Promise<void>
+  /** M17: checks a visitor's Gemini key with the server, and holds it for the next upload if Google accepts it. */
+  submitOwnKey: (key: string) => Promise<api.ApiResult<unknown>>
+  /** M17: forgets the held key; the next upload uses a free defense. */
+  dropOwnKey: () => void
 }
 
 export function useFlow(): Flow {
@@ -61,6 +65,9 @@ export function useFlow(): Flow {
   // Counts End sessions (M13 D0c): an upload whose count moved on while it was in flight
   // was left from the header, so the session it made is deleted, not shown.
   const ended = useRef(0)
+  // M17: the visitor's Gemini key, in memory only, from "Use this key" until an upload
+  // has made a session with it. Never in reducer state, storage or the URL.
+  const ownKey = useRef<string | null>(null)
   const { phase } = state
 
   // Every wake goes through here, so any one that takes over WAKING_NOTICE_MS shows the
@@ -146,9 +153,18 @@ export function useFlow(): Flow {
       }
       panel = { ...panel, archetype_keys: options === null ? null : resolvedKeys(options, panel, preset) }
       const sent = ended.current
-      const result = await api.createSession(file, panel, (loaded, total) =>
-        dispatch({ type: 'uploadProgress', loaded, total }),
+      const result = await api.createSession(
+        file,
+        panel,
+        (loaded, total) => dispatch({ type: 'uploadProgress', loaded, total }),
+        ownKey.current,
       )
+      // The session holds the key now, or Google refused it: either way the page drops it.
+      // Any other failure keeps it, so "Try again" doesn't quietly spend a free defense.
+      if (result.ok || result.error.kind === 'ownKey') {
+        if (!result.ok && ownKey.current !== null) dispatch({ type: 'ownKeySet', on: false })
+        ownKey.current = null
+      }
       if (ended.current !== sent) {
         if (result.ok) await api.deleteSession(result.data.session_id)
         return
@@ -235,8 +251,24 @@ export function useFlow(): Flow {
     editAnswer: (text) => dispatch({ type: 'answerChanged', text }),
     sendAnswer,
     retryReport,
-    restart: () => dispatch({ type: 'restart' }),
+    restart: () => {
+      ownKey.current = null
+      dispatch({ type: 'restart' })
+    },
+    submitOwnKey: async (key) => {
+      const result = await api.checkKey(key)
+      if (result.ok) {
+        ownKey.current = key
+        dispatch({ type: 'ownKeySet', on: true })
+      }
+      return result
+    },
+    dropOwnKey: () => {
+      ownKey.current = null
+      dispatch({ type: 'ownKeySet', on: false })
+    },
     endSession: async () => {
+      ownKey.current = null
       ended.current += 1
       const sessionId = 'sessionId' in phase ? phase.sessionId : null
       if (sessionId !== null) await api.deleteSession(sessionId) // a 404 or a network error still ends it here

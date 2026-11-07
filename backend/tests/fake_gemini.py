@@ -8,6 +8,8 @@ import re
 import threading
 from collections import defaultdict
 
+from pydantic import SecretStr
+
 from academic_defense_simulator.llm.provider import CallCounter
 from academic_defense_simulator.models.answer_score import AnswerScore
 from academic_defense_simulator.models.document_profile_extraction import DocumentProfileExtraction
@@ -43,11 +45,13 @@ class FakeGemini:
         self.closing_line = "Alright, I'll leave the evaluation there."  # M15: what each closing call says
         self.closing_prompts: list[str] = []  # every closing prompt, in call order
         self.prompts_by_role: dict[str, list[str]] = defaultdict(list)  # M16: every prompt, by role
+        self.own_keys: list[str | None] = []  # M17: the own key each defense's providers were built with
 
     def fail_next(self, role: str, *errors: Exception) -> None:
         self.failures[role].extend(errors)
 
-    def providers(self, calls: CallCounter) -> Providers:
+    def providers(self, calls: CallCounter, own_key: SecretStr | None = None) -> Providers:
+        self.own_keys.append(None if own_key is None else own_key.get_secret_value())
         return Providers(defense=_Provider(self, calls, "defense"), suggestions=_Provider(self, calls, "suggestions"))
 
     def respond(self, role: str, prompt: str):

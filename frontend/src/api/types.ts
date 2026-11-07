@@ -12,6 +12,7 @@ export type ErrorBody = Schemas['ErrorBody']
 export type Evaluation = Schemas['Evaluation']
 export type HealthResponse = Schemas['HealthResponse']
 export type IngestSummary = Schemas['IngestSummary']
+export type KeyCheck = Schemas['KeyCheck']
 export type OtherSubtype = Schemas['OtherSubtype']
 export type PageRange = Schemas['PageRange']
 export type AnswerResponse = Schemas['AnswerResponse']
@@ -37,4 +38,6 @@ export type TranscriptTurn = Schemas['TranscriptTurn']
 export type ErrorCode = NonNullable<ErrorBody['code']>
 export type LimitCode = Extract<ErrorCode, 'per_ip_limit' | 'daily_cap'>
 export type TtsErrorCode = Extract<ErrorCode, 'tts_limit' | 'tts_failed' | 'tts_unavailable'>
+// M17: the visitor's own Gemini key was refused, or failed partway through a defense.
+export type OwnKeyCode = Extract<ErrorCode, 'invalid_key' | 'own_key_rejected' | 'own_key_limited'>
 export type IngestErrorCode = NonNullable<SessionState['error_code']>

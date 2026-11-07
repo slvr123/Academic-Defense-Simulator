@@ -23,7 +23,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 from starlette.datastructures import UploadFile
 
 from backend import memory
@@ -34,6 +34,7 @@ from backend.embedder import Embedder, OnnxEmbedder
 from backend.errors import CodedHTTPException, coded_http_exception_handler
 from backend.ingest_queue import IngestJob, IngestQueue, QueueFullError
 from backend.ingest_summary import ingest_summary
+from backend.own_key import KEY_HEADER, KeyChecker, invalid_key, read_key
 from backend.panel_options import panel_options
 from backend.pdf_ingest import UploadRejected, check_pages, reset_upload_dir, spool_upload
 from backend.quota import (
@@ -51,6 +52,7 @@ from backend.schemas import (
     DebugMemory,
     ErrorBody,
     HealthResponse,
+    KeyCheck,
     LimitCode,
     PanelConfig,
     PanelOptions,
@@ -136,6 +138,13 @@ def _load_onnx(settings: Settings) -> Embedder:
     return OnnxEmbedder.load(settings.model_dir, threads=settings.ort_threads)
 
 
+def _check_key_with_google(key: str) -> bool:
+    # v1's own-key probe (v0.4a): one models.list call, no generation quota spent.
+    from academic_defense_simulator.llm.gemini_provider import validate_gemini_key
+
+    return validate_gemini_key(key)
+
+
 def _import_backend_runtime() -> None:
     # Imported at startup, not on the first defense, so the memory measured at
     # startup already includes it.
@@ -149,6 +158,7 @@ def create_app(
     clock: Clock = _utc_now,
     providers_factory: Callable[[Settings], ProvidersFactory] = gemini_providers_factory,
     synthesize: Synthesize | None = None,
+    key_checker: KeyChecker = _check_key_with_google,
 ) -> FastAPI:
     settings = settings or Settings()
     # M8 K5: without an injected one, ADS_TTS_VOICE_MODE picks VoiceDesign or the cloned voices.
@@ -201,7 +211,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_methods=["GET", "POST", "DELETE"],  # DELETE: End session (M10 N2), which refunds (M11 P1)
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", KEY_HEADER],  # M17: a visitor's own Gemini key
         expose_headers=["Retry-After", "X-TTS-Parts"],
     )
     app.state.embedder = None
@@ -225,9 +235,27 @@ def create_app(
     def get_panel_options() -> PanelOptions:
         return panel_options()
 
+    async def _checked_key(request: Request) -> SecretStr | None:
+        """The request's own key once Google has accepted it; None without one.
+        The key is never logged: only whether the check passed."""
+        key = read_key(request)
+        if key is None:
+            return None
+        if not await asyncio.to_thread(key_checker, key.get_secret_value()):
+            logger.info("own key refused by Google")
+            raise invalid_key()
+        return key
+
+    @app.post("/keys/check", response_model=KeyCheck, responses={400: {"model": ErrorBody}})
+    async def check_key(request: Request) -> KeyCheck:
+        """M17: whether Google accepts the X-Gemini-Key header's key. Nothing is stored."""
+        if await _checked_key(request) is None:
+            raise invalid_key()
+        return KeyCheck()
+
     @app.post(
         "/sessions", status_code=202, response_model=SessionCreated,
-        responses={429: {"model": ErrorBody}}, openapi_extra=_UPLOAD_BODY,
+        responses={400: {"model": ErrorBody}, 429: {"model": ErrorBody}}, openapi_extra=_UPLOAD_BODY,
     )
     async def create_session(request: Request) -> SessionCreated:
         # The route reads the form itself, rather than declaring File/Form
@@ -236,7 +264,10 @@ def create_app(
         queue: IngestQueue = app.state.queue
         if not (store.has_capacity() and queue.has_room()):
             raise HTTPException(503, BUSY_MESSAGE)
-        await _refuse_if_quota_used_up()
+        # M17: an own key, in its header, is checked again here; it skips the daily quota.
+        own_key = await _checked_key(request)
+        if own_key is None:
+            await _refuse_if_quota_used_up()
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > settings.max_upload_bytes + _MULTIPART_OVERHEAD_BYTES:
             raise HTTPException(413, f"That PDF is larger than the {settings.max_upload_mb:g} MB limit.")
@@ -267,7 +298,7 @@ def create_app(
             if not queue.has_room():
                 raise HTTPException(503, BUSY_MESSAGE)
             try:
-                session = store.create(panel, upload.filename or "upload.pdf")
+                session = store.create(panel, upload.filename or "upload.pdf", gemini_key=own_key)
             except SessionCapacityError:
                 raise HTTPException(503, BUSY_MESSAGE) from None
             try:

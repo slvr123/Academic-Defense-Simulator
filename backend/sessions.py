@@ -22,6 +22,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+from pydantic import SecretStr
 
 from backend.page_filter import Attribution
 from backend.schemas import IngestErrorCode, PanelConfig
@@ -75,6 +76,10 @@ class Session:
     cancelled: bool = False  # set by DELETE; the worker drops the job after its current chunk
     defense: Defense | None = None  # from POST /start
     charge: Charge | None = None  # /start's reservation, until released or final (M11 P1)
+    # M17: the visitor's own Gemini key, from the upload's X-Gemini-Key header. Builds this
+    # defense's providers and skips the daily quota. Memory only; cleared when the session
+    # is dropped, and never logged, returned or stored.
+    gemini_key: SecretStr | None = field(default=None, repr=False)
     # One defense request at a time per session; a second one gets 409 rather than queueing.
     turn_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -114,11 +119,11 @@ class SessionStore:
         self.sweep()
         return self.live_count() < self._max_live
 
-    def create(self, panel: PanelConfig, filename: str) -> Session:
+    def create(self, panel: PanelConfig, filename: str, gemini_key: SecretStr | None = None) -> Session:
         if not self.has_capacity():
             raise SessionCapacityError
         session = Session(
-            id=str(uuid.uuid4()), panel=panel, filename=filename, last_access=self._clock()
+            id=str(uuid.uuid4()), panel=panel, filename=filename, last_access=self._clock(), gemini_key=gemini_key
         )
         self._sessions[session.id] = session
         return session
@@ -155,6 +160,7 @@ class SessionStore:
     def _dropped(self, session: Session, reason: DropReason) -> None:
         if self._on_drop is not None:
             self._on_drop(session, reason)
+        session.gemini_key = None  # M17: the key dies with the session
 
     def __len__(self) -> int:
         return len(self._sessions)

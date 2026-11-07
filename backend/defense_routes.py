@@ -14,7 +14,8 @@ is too (M6 H4): a resend before the first answer gets the original response, and
 after it 409 `already_started`. GET /current says where the defense is (M6 H5).
 
 Quota: /start reserves one slot for today (Pacific) before any Gemini call, and
-fails closed (503) if the store can't be reached. Nothing else touches it. A
+fails closed (503) if the store can't be reached. Nothing else touches it. An own-key
+defense (M17) reserves nothing: it spends the visitor's Google quota. A
 Gemini 429 or surviving 503 anywhere is "busy" (decisions doc, item 3).
 """
 
@@ -27,9 +28,10 @@ from contextlib import contextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from pydantic import SecretStr
 
 from academic_defense_simulator.llm.gemini_provider import GeminiProvider
-from academic_defense_simulator.llm.provider import CallCounter, LLMProviderError
+from academic_defense_simulator.llm.provider import CallCounter, LLMProvider, LLMProviderError
 from backend.client_ip import StartLimiter, client_ip
 from backend.defense import (
     AnsweredTurn,
@@ -47,6 +49,7 @@ from backend.defense import (
 )
 from backend.errors import CodedHTTPException
 from backend.llm_errors import PANEL_BUSY_MESSAGE, PANEL_BUSY_RETRY_AFTER_S, is_panel_busy
+from backend.own_key import SuggestionsWithFallback, own_key_failure
 from backend.quota import QuotaPlan, QuotaUnavailable, pacific_day
 from backend.refund import Charge, Refunder, finalize
 from backend.routing import may_draw_literature
@@ -94,26 +97,36 @@ Clock = Callable[[], datetime]
 
 
 def gemini_providers_factory(settings: Settings) -> ProvidersFactory:
-    """The real providers, one pair per defense. Fails at startup without a key."""
+    """The real providers, one pair per defense. Fails at startup without a key.
+    With the visitor's own key (M17), both are built on it, and suggestions fall back
+    to the defense model when the key's project can't use the suggestions model."""
     if settings.gemini_api_key is None:
         raise RuntimeError("GEMINI_API_KEY is not set; defenses need it")
-    key = settings.gemini_api_key.get_secret_value()
+    server_key = settings.gemini_api_key
 
-    def build(calls: CallCounter) -> Providers:
+    def build(calls: CallCounter, own_key: SecretStr | None = None) -> Providers:
+        key = (own_key or server_key).get_secret_value()
+
         def provider(model: str, label: str) -> GeminiProvider:
             return GeminiProvider(
                 key, model, call_counter=calls, label=label, rpm_ceiling=settings.rpm_ceiling(model)
             )
 
-        return Providers(
-            defense=provider(settings.gemini_model, settings.gemini_model),
-            suggestions=provider(settings.gemini_suggestions_model, settings.gemini_suggestions_model),
-        )
+        defense = provider(settings.gemini_model, settings.gemini_model)
+        suggestions: LLMProvider = provider(settings.gemini_suggestions_model, settings.gemini_suggestions_model)
+        if own_key is not None:
+            fallback = provider(settings.gemini_model, settings.gemini_model)
+            suggestions = SuggestionsWithFallback(suggestions, fallback, settings.gemini_model)
+        return Providers(defense=defense, suggestions=suggestions)
 
     return build
 
 
-def llm_failure(exc: LLMProviderError) -> HTTPException:
+def llm_failure(exc: LLMProviderError, own_key: bool = False) -> HTTPException:
+    """The response for a failed Gemini call. On an own-key defense, a rejected or
+    rate-limited key gets its own code (M17 Decision 4), never panel_busy."""
+    if own_key and (coded := own_key_failure(exc)) is not None:
+        return coded
     if is_panel_busy(exc):
         # M11 P1: coded, so the client can tell Gemini's overload from the quota store's 503.
         headers = {"Retry-After": str(PANEL_BUSY_RETRY_AFTER_S)}
@@ -211,11 +224,15 @@ def register_defense_routes(
                         f"This document has {untagged} passage(s) outside its literature review, too few for {barred} "
                         "panelists to each open a topic there. Choose fewer panelists or upload a longer document.",
                     )
-                session.charge = reserve_quota(client_ip(request, settings.trusted_proxy_hops))
+                # M17 Decision 2: an own-key defense is on the visitor's Google quota, not ours.
+                if session.gemini_key is None:
+                    session.charge = reserve_quota(client_ip(request, settings.trusted_proxy_hops))
+                else:
+                    logger.info("own-key start session=%s, no quota reserved", session_id)
                 calls = CallCounter()
                 try:
                     defense = setup_defense(
-                        session, app.state.providers_factory(calls), calls, app.state.embedder, settings.gemini_model,
+                        session, app.state.providers_factory(calls, session.gemini_key), calls, app.state.embedder, settings.gemini_model,
                         attribution_notes=settings.attribution_notes, lit_review_access=settings.lit_review_access,
                         opening_chapter_filter=settings.opening_chapter_filter,
                         closing_lines=settings.closing_lines,
@@ -233,7 +250,7 @@ def register_defense_routes(
                 question = ask(defense)
             except LLMProviderError as exc:
                 logger.warning("first question failed session=%s busy=%s: %s", session_id, is_panel_busy(exc), exc)
-                raise llm_failure(exc) from exc
+                raise llm_failure(exc, own_key=session.gemini_key is not None) from exc
             profile = defense.session.profile
             defense.start_response = StartResponse(
                 domain=profile.domain,
@@ -280,7 +297,7 @@ def register_defense_routes(
                 result = answer(defense, body.text)
             except LLMProviderError as exc:
                 logger.warning("turn failed session=%s busy=%s: %s", session_id, is_panel_busy(exc), exc)
-                raise llm_failure(exc) from exc
+                raise llm_failure(exc, own_key=session.gemini_key is not None) from exc
             response = AnswerResponse(
                 evaluation=result.evaluation, next_question=result.next_question, done=defense.done, closing=result.closing
             )

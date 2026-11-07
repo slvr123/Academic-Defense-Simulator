@@ -1,0 +1,549 @@
+2026-11-08 01:45:06,217 INFO m17_leak_check: pass fake
+2026-11-08 01:45:06,232 DEBUG asyncio: Using proactor: IocpProactor
+2026-11-08 01:45:06,272 INFO uvicorn.error: Started server process [42084]
+2026-11-08 01:45:06,272 INFO uvicorn.error: Waiting for application startup.
+2026-11-08 01:45:06,273 INFO backend: memory at startup rss=105.6MB hwm=105.6MB
+2026-11-08 01:45:06,273 INFO backend.quota: quota model=gemini-2.5-flash calls_per_session=1 rpd=20 sessions_per_day=20
+2026-11-08 01:45:06,273 INFO backend.quota: quota model=gemini-3.1-flash-lite calls_per_session=43 rpd=500 sessions_per_day=11
+2026-11-08 01:45:06,273 INFO backend.quota: quota daily_cap=10 binding_model=gemini-3.1-flash-lite margin=1
+2026-11-08 01:45:06,273 INFO backend: tts voice_mode=design split_sentences=False
+2026-11-08 01:45:07,611 INFO backend: memory after runtime imports rss=149.5MB hwm=149.5MB
+2026-11-08 01:45:07,611 INFO backend: memory after model load rss=149.5MB hwm=149.5MB load_s=0.00
+2026-11-08 01:45:07,614 INFO uvicorn.error: Application startup complete.
+2026-11-08 01:45:07,615 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:62021 (Press CTRL+C to quit)
+2026-11-08 01:45:08,049 DEBUG httpcore.connection: connect_tcp.started host='127.0.0.1' port=62021 local_address=None timeout=30 socket_options=None
+2026-11-08 01:45:08,070 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD0EAAE40>
+2026-11-08 01:45:08,070 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,070 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,070 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,070 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,070 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,079 INFO uvicorn.access: 127.0.0.1:62025 - "GET /status HTTP/1.1" 200
+2026-11-08 01:45:08,079 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'78'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,080 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/status "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,080 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,080 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,080 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,080 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,080 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'OPTIONS']>
+2026-11-08 01:45:08,081 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,081 DEBUG httpcore.http11: send_request_body.started request=<Request [b'OPTIONS']>
+2026-11-08 01:45:08,081 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,081 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'OPTIONS']>
+2026-11-08 01:45:08,081 INFO uvicorn.access: 127.0.0.1:62025 - "OPTIONS /sessions HTTP/1.1" 200
+2026-11-08 01:45:08,081 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'vary', b'Origin'), (b'access-control-allow-methods', b'GET, POST, DELETE'), (b'access-control-max-age', b'600'), (b'access-control-allow-headers', b'Accept, Accept-Language, Content-Language, Content-Type, X-Gemini-Key'), (b'access-control-allow-origin', b'http://localhost:5173'), (b'content-length', b'2'), (b'content-type', b'text/plain; charset=utf-8')])
+2026-11-08 01:45:08,082 INFO httpx: HTTP Request: OPTIONS http://127.0.0.1:62021/sessions "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,082 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'OPTIONS']>
+2026-11-08 01:45:08,082 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,082 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,082 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,082 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,083 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,083 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,083 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,083 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,084 INFO backend: own key refused by Google
+2026-11-08 01:45:08,084 INFO uvicorn.access: 127.0.0.1:62025 - "POST /keys/check HTTP/1.1" 400
+2026-11-08 01:45:08,084 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'112'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,084 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/keys/check "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,085 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,086 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,086 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,087 INFO uvicorn.access: 127.0.0.1:62025 - "POST /keys/check HTTP/1.1" 200
+2026-11-08 01:45:08,087 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'11'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,087 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/keys/check "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,087 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,087 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,087 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,087 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,101 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,102 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,102 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,103 INFO backend: own key refused by Google
+2026-11-08 01:45:08,103 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions HTTP/1.1" 400
+2026-11-08 01:45:08,104 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,104 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,104 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'112'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,105 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:08,105 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,105 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,105 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,105 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,106 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,106 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,106 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,107 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,108 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,118 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions HTTP/1.1" 202
+2026-11-08 01:45:08,119 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 202, b'Accepted', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'90'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,119 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions "HTTP/1.1 202 Accepted"
+2026-11-08 01:45:08,119 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,119 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,124 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,124 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,125 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,125 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,125 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,125 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,125 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,212 INFO backend.ingest_queue: memory release (released) session=c6837ace-4b03-48b2-a075-e33ed1a63351 rss_before=154.7MB rss_after=154.7MB malloc_trim=unavailable
+2026-11-08 01:45:08,213 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 HTTP/1.1" 200
+2026-11-08 01:45:08,213 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'37'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,214 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,214 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,214 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,214 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,214 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,301 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,302 INFO backend.ingest_queue: memory release (job_end) session=c6837ace-4b03-48b2-a075-e33ed1a63351 rss_before=156.7MB rss_after=156.7MB malloc_trim=unavailable
+2026-11-08 01:45:08,302 INFO backend.ingest_queue: ingest ready session=c6837ace-4b03-48b2-a075-e33ed1a63351 pages=16 chunks=8 parse_s=0.02 embed_s=0.09 total_s=0.18 job_peak_rss=156.7MB rss=156.7MB hwm=156.7MB
+2026-11-08 01:45:08,302 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,303 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,303 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,303 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,304 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 HTTP/1.1" 200
+2026-11-08 01:45:08,304 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'166'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,304 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,304 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,304 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,305 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,305 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,305 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,305 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,306 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,306 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,306 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,307 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 HTTP/1.1" 200
+2026-11-08 01:45:08,307 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'166'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,307 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,307 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,307 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,307 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,308 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,310 INFO backend.defense: own-key start session=c6837ace-4b03-48b2-a075-e33ed1a63351, no quota reserved
+2026-11-08 01:45:08,312 INFO backend.defense: defense setup session=c6837ace-4b03-48b2-a075-e33ed1a63351 panel=['problem_objectives_reviewer', 'literature_theory_specialist', 'methodology_expert', 'devils_advocate'] persona_fallback=False calls=2 chunks=8 chunk_copy_mb=0.09 attribution_notes=0 lit_review_chunks=0 lit_review_access=none
+2026-11-08 01:45:08,313 INFO backend.defense: opening question session=c6837ace-4b03-48b2-a075-e33ed1a63351 archetype=problem_objectives_reviewer target_chapter=None chapter_filter=no_chapter_map page=3
+2026-11-08 01:45:08,318 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/start HTTP/1.1" 200
+2026-11-08 01:45:08,318 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3665'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,318 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/start "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,318 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,319 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,319 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,319 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,319 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,319 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,320 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,320 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,320 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,321 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current HTTP/1.1" 200
+2026-11-08 01:45:08,321 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3159'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,322 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,322 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,322 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,322 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,322 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,323 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,323 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,323 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,324 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,324 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,325 WARNING backend.defense: turn failed session=c6837ace-4b03-48b2-a075-e33ed1a63351 busy=True: 429 RESOURCE_EXHAUSTED
+2026-11-08 01:45:08,325 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 429
+2026-11-08 01:45:08,325 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 429, b'Too Many Requests', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'retry-after', b'60'), (b'content-length', b'138'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,326 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 429 Too Many Requests"
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,326 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,328 INFO backend.defense: opening question session=c6837ace-4b03-48b2-a075-e33ed1a63351 archetype=literature_theory_specialist target_chapter=None chapter_filter=no_chapter_map page=7
+2026-11-08 01:45:08,329 INFO backend.closing: closing session=c6837ace-4b03-48b2-a075-e33ed1a63351 turn=1 archetype=problem_objectives_reviewer source=llm reason=- words=6 call_ms=0 waited_ms=0
+2026-11-08 01:45:08,330 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 200
+2026-11-08 01:45:08,330 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3531'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,331 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,331 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,332 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,332 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,332 WARNING backend.defense: turn failed session=c6837ace-4b03-48b2-a075-e33ed1a63351 busy=False: Gemini API error, retried once and failed again. (retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT'}}"))
+2026-11-08 01:45:08,332 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 403
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 403, b'Forbidden', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'126'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,333 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 403 Forbidden"
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,333 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,334 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,334 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,336 INFO backend.defense: opening question session=c6837ace-4b03-48b2-a075-e33ed1a63351 archetype=methodology_expert target_chapter=None chapter_filter=no_chapter_map page=15
+2026-11-08 01:45:08,336 INFO backend.closing: closing session=c6837ace-4b03-48b2-a075-e33ed1a63351 turn=2 archetype=literature_theory_specialist source=llm reason=- words=6 call_ms=0 waited_ms=0
+2026-11-08 01:45:08,337 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 200
+2026-11-08 01:45:08,337 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3514'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,337 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,337 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,338 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,339 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,339 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,339 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current HTTP/1.1" 200
+2026-11-08 01:45:08,339 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3324'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,340 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,340 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,342 INFO backend.closing: closing session=c6837ace-4b03-48b2-a075-e33ed1a63351 turn=3 archetype=methodology_expert source=llm reason=- words=6 call_ms=0 waited_ms=0
+2026-11-08 01:45:08,342 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 200
+2026-11-08 01:45:08,342 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3480'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,342 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,343 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,345 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current HTTP/1.1" 200
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'3290'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,345 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,345 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,346 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,346 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,346 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:08,347 INFO backend.defense: defense done session=c6837ace-4b03-48b2-a075-e33ed1a63351 turns=4 calls=17 by_role={'defense': 16, 'suggestions': 1}
+2026-11-08 01:45:08,347 INFO uvicorn.access: 127.0.0.1:62025 - "POST /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers HTTP/1.1" 200
+2026-11-08 01:45:08,347 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'234'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,347 INFO httpx: HTTP Request: POST http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/answers "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,347 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,348 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,349 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current HTTP/1.1" 200
+2026-11-08 01:45:08,349 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'44'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,350 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/current "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,350 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,350 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,350 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,350 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,350 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,351 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,351 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,351 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,351 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,353 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/report HTTP/1.1" 200
+2026-11-08 01:45:08,353 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'15598'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,353 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351/report "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,353 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,354 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,354 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,354 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,354 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,354 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,355 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,355 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,355 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,356 INFO uvicorn.access: 127.0.0.1:62025 - "GET /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 HTTP/1.1" 200
+2026-11-08 01:45:08,356 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'159'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,356 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,356 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,356 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,357 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,357 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,357 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,358 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,358 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,359 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,359 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:08,359 INFO uvicorn.access: 127.0.0.1:62025 - "GET /quota HTTP/1.1" 200
+2026-11-08 01:45:08,359 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn'), (b'content-length', b'74'), (b'content-type', b'application/json')])
+2026-11-08 01:45:08,360 INFO httpx: HTTP Request: GET http://127.0.0.1:62021/quota "HTTP/1.1 200 OK"
+2026-11-08 01:45:08,360 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:08,360 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,360 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,360 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,368 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'DELETE']>
+2026-11-08 01:45:08,368 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:08,369 DEBUG httpcore.http11: send_request_body.started request=<Request [b'DELETE']>
+2026-11-08 01:45:08,369 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:08,369 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'DELETE']>
+2026-11-08 01:45:08,369 INFO uvicorn.access: 127.0.0.1:62025 - "DELETE /sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 HTTP/1.1" 204
+2026-11-08 01:45:08,370 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 204, b'No Content', [(b'date', b'Sat, 07 Nov 2026 17:45:07 GMT'), (b'server', b'uvicorn')])
+2026-11-08 01:45:08,370 INFO httpx: HTTP Request: DELETE http://127.0.0.1:62021/sessions/c6837ace-4b03-48b2-a075-e33ed1a63351 "HTTP/1.1 204 No Content"
+2026-11-08 01:45:08,370 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'DELETE']>
+2026-11-08 01:45:08,370 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:08,370 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:08,370 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:08,371 DEBUG httpcore.connection: close.started
+2026-11-08 01:45:08,371 DEBUG httpcore.connection: close.complete
+2026-11-08 01:45:08,429 INFO uvicorn.error: Shutting down
+2026-11-08 01:45:08,537 INFO uvicorn.error: Waiting for application shutdown.
+2026-11-08 01:45:08,538 INFO uvicorn.error: Application shutdown complete.
+2026-11-08 01:45:08,538 INFO uvicorn.error: Finished server process [42084]
+2026-11-08 01:45:08,871 INFO m17_leak_check: pass real-client
+2026-11-08 01:45:08,887 DEBUG asyncio: Using proactor: IocpProactor
+2026-11-08 01:45:08,888 INFO uvicorn.error: Started server process [42084]
+2026-11-08 01:45:08,888 INFO uvicorn.error: Waiting for application startup.
+2026-11-08 01:45:08,888 INFO backend: memory at startup rss=158.2MB hwm=158.4MB
+2026-11-08 01:45:08,888 INFO backend.quota: quota model=gemini-2.5-flash calls_per_session=1 rpd=20 sessions_per_day=20
+2026-11-08 01:45:08,888 INFO backend.quota: quota model=gemini-3.1-flash-lite calls_per_session=40 rpd=500 sessions_per_day=12
+2026-11-08 01:45:08,889 INFO backend.quota: quota daily_cap=11 binding_model=gemini-3.1-flash-lite margin=1
+2026-11-08 01:45:08,889 INFO backend: tts voice_mode=design split_sentences=False
+2026-11-08 01:45:08,892 INFO backend: memory after runtime imports rss=158.2MB hwm=158.4MB
+2026-11-08 01:45:08,892 INFO backend: memory after model load rss=158.2MB hwm=158.4MB load_s=0.00
+2026-11-08 01:45:08,893 INFO uvicorn.error: Application startup complete.
+2026-11-08 01:45:08,894 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:62026 (Press CTRL+C to quit)
+2026-11-08 01:45:09,257 DEBUG httpcore.connection: connect_tcp.started host='127.0.0.1' port=62026 local_address=None timeout=180 socket_options=None
+2026-11-08 01:45:09,258 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD0FD6E90>
+2026-11-08 01:45:09,258 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:09,259 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:09,259 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:09,261 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:09,261 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:09,290 INFO uvicorn.access: 127.0.0.1:62029 - "POST /sessions HTTP/1.1" 202
+2026-11-08 01:45:09,291 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 202, b'Accepted', [(b'date', b'Sat, 07 Nov 2026 17:45:08 GMT'), (b'server', b'uvicorn'), (b'content-length', b'90'), (b'content-type', b'application/json')])
+2026-11-08 01:45:09,291 INFO httpx: HTTP Request: POST http://127.0.0.1:62026/sessions "HTTP/1.1 202 Accepted"
+2026-11-08 01:45:09,291 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:09,301 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:09,386 INFO backend.ingest_queue: memory release (released) session=15984eba-8e7f-4380-a482-8aff48d7b763 rss_before=158.8MB rss_after=158.8MB malloc_trim=unavailable
+2026-11-08 01:45:09,386 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:09,388 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:09,388 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:09,461 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:09,461 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:09,461 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:09,461 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:09,461 INFO backend.ingest_queue: memory release (job_end) session=15984eba-8e7f-4380-a482-8aff48d7b763 rss_before=158.8MB rss_after=158.8MB malloc_trim=unavailable
+2026-11-08 01:45:09,461 INFO backend.ingest_queue: ingest ready session=15984eba-8e7f-4380-a482-8aff48d7b763 pages=16 chunks=8 parse_s=0.02 embed_s=0.08 total_s=0.17 job_peak_rss=158.8MB rss=158.8MB hwm=158.8MB
+2026-11-08 01:45:09,463 INFO uvicorn.access: 127.0.0.1:62029 - "GET /sessions/15984eba-8e7f-4380-a482-8aff48d7b763 HTTP/1.1" 200
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 07 Nov 2026 17:45:08 GMT'), (b'server', b'uvicorn'), (b'content-length', b'166'), (b'content-type', b'application/json')])
+2026-11-08 01:45:09,464 INFO httpx: HTTP Request: GET http://127.0.0.1:62026/sessions/15984eba-8e7f-4380-a482-8aff48d7b763 "HTTP/1.1 200 OK"
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:09,464 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:09,465 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:09,465 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:09,465 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:09,465 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:09,466 INFO backend.defense: own-key start session=15984eba-8e7f-4380-a482-8aff48d7b763, no quota reserved
+2026-11-08 01:45:09,466 INFO academic_defense_simulator.llm.gemini_provider: Gemini provider timeout resolved to 30000 ms
+2026-11-08 01:45:10,184 INFO academic_defense_simulator.llm.gemini_provider: Gemini provider timeout resolved to 30000 ms
+2026-11-08 01:45:10,851 INFO academic_defense_simulator.llm.gemini_provider: Gemini provider timeout resolved to 30000 ms
+2026-11-08 01:45:11,527 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:11,529 DEBUG httpcore.connection: connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=30.0 socket_options=None
+2026-11-08 01:45:11,544 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD1040050>
+2026-11-08 01:45:11,544 DEBUG httpcore.connection: start_tls.started ssl_context=<ssl.SSLContext object at 0x000001DFD0FD8370> server_hostname='generativelanguage.googleapis.com' timeout=30.0
+2026-11-08 01:45:11,580 DEBUG httpcore.connection: start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD0F03820>
+2026-11-08 01:45:11,581 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:11,581 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:11,581 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:11,581 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:11,581 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:11,741 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:12 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=151'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:11,741 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:11,741 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:11,741 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:11,742 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:11,742 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:13,742 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:13,744 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:13,744 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:13,744 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:13,745 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:13,745 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:13,814 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:14 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=60'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:13,814 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:13,815 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:13,815 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:13,815 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:13,815 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:13,815 WARNING academic_defense_simulator.document_profile: Domain/topic extraction failed on attempt 1: Gemini API error — retried once and failed again. Session aborted. (first: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"), retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"))
+2026-11-08 01:45:13,815 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:13,816 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:13,816 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:13,816 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:13,816 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:13,816 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:13,858 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:14 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=34'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:13,858 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:13,859 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:13,859 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:13,859 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:13,859 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:15,860 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:15,861 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:15,862 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:15,862 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:15,862 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:15,862 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:15,906 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:16 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=34'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:15,906 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:15,906 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:15,907 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:15,907 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:15,907 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:15,907 WARNING academic_defense_simulator.document_profile: Domain/topic extraction failed on attempt 2: Gemini API error — retried once and failed again. Session aborted. (first: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"), retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"))
+2026-11-08 01:45:15,907 WARNING academic_defense_simulator.document_profile: Domain/topic extraction failed after retry — leaving domain/topic blank for user entry.
+2026-11-08 01:45:15,908 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:15,910 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:15,910 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:15,910 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:15,910 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:15,911 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:15,953 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:16 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=34'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:15,954 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:15,954 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:15,954 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:15,954 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:15,955 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:17,955 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:17,956 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:17,957 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:17,957 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:17,957 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:17,957 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:18,003 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:18 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=37'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:18,003 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:18,003 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:18,004 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:18,004 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:18,004 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:18,004 WARNING academic_defense_simulator.panel: Persona generation call failed on attempt 1: Gemini API error — retried once and failed again. Session aborted. (first: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"), retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"))
+2026-11-08 01:45:18,004 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:18,005 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:18,006 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:18,006 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:18,006 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:18,006 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:18,051 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:18 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=36'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:18,051 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:18,051 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:18,052 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:18,052 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:18,052 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:20,053 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:20,055 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:20,055 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:20,055 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:20,055 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:20,055 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:20,096 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:20 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=32'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:20,096 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:20,096 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:20,096 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:20,096 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:20,096 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:20,097 WARNING academic_defense_simulator.panel: Persona generation call failed on attempt 2: Gemini API error — retried once and failed again. Session aborted. (first: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"), retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"))
+2026-11-08 01:45:20,097 WARNING academic_defense_simulator.panel: Persona generation failed after retry — falling back to the static panel for roster ['methodology_expert', 'literature_theory_specialist', 'problem_objectives_reviewer', 'devils_advocate']
+2026-11-08 01:45:20,099 INFO backend.defense: defense setup session=15984eba-8e7f-4380-a482-8aff48d7b763 panel=['problem_objectives_reviewer', 'literature_theory_specialist', 'methodology_expert', 'devils_advocate'] persona_fallback=True calls=8 chunks=8 chunk_copy_mb=0.09 attribution_notes=0 lit_review_chunks=0 lit_review_access=none
+2026-11-08 01:45:20,099 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:20,101 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:20,101 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:20,101 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:20,101 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:20,101 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:20,153 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:20 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=40'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:20,154 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:20,154 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:20,154 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:20,155 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:20,155 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:22,156 INFO google_genai.models: AFC is enabled with max remote calls: 10.
+2026-11-08 01:45:22,157 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:22,157 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:22,158 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-11-08 01:45:22,158 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:22,158 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-11-08 01:45:22,197 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:22 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=31'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:22,198 INFO httpx: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:22,198 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:22,198 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:22,198 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:22,198 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:22,199 WARNING backend.defense: first question failed session=15984eba-8e7f-4380-a482-8aff48d7b763 busy=False: Gemini API error — retried once and failed again. Session aborted. (first: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"), retry: ClientError("400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"))
+2026-11-08 01:45:22,199 INFO uvicorn.access: 127.0.0.1:62029 - "POST /sessions/15984eba-8e7f-4380-a482-8aff48d7b763/start HTTP/1.1" 403
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 403, b'Forbidden', [(b'date', b'Sat, 07 Nov 2026 17:45:08 GMT'), (b'server', b'uvicorn'), (b'content-length', b'126'), (b'content-type', b'application/json')])
+2026-11-08 01:45:22,200 INFO httpx: HTTP Request: POST http://127.0.0.1:62026/sessions/15984eba-8e7f-4380-a482-8aff48d7b763/start "HTTP/1.1 403 Forbidden"
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:22,200 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'DELETE']>
+2026-11-08 01:45:22,201 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:22,201 DEBUG httpcore.http11: send_request_body.started request=<Request [b'DELETE']>
+2026-11-08 01:45:22,201 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:22,201 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'DELETE']>
+2026-11-08 01:45:22,202 INFO uvicorn.access: 127.0.0.1:62029 - "DELETE /sessions/15984eba-8e7f-4380-a482-8aff48d7b763 HTTP/1.1" 204
+2026-11-08 01:45:22,202 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 204, b'No Content', [(b'date', b'Sat, 07 Nov 2026 17:45:21 GMT'), (b'server', b'uvicorn')])
+2026-11-08 01:45:22,202 INFO httpx: HTTP Request: DELETE http://127.0.0.1:62026/sessions/15984eba-8e7f-4380-a482-8aff48d7b763 "HTTP/1.1 204 No Content"
+2026-11-08 01:45:22,202 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'DELETE']>
+2026-11-08 01:45:22,202 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:22,202 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:22,203 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:22,203 DEBUG httpcore.connection: close.started
+2026-11-08 01:45:22,203 DEBUG httpcore.connection: close.complete
+2026-11-08 01:45:22,859 DEBUG httpcore.connection: connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=30.0 socket_options=None
+2026-11-08 01:45:22,873 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD105E3F0>
+2026-11-08 01:45:22,873 DEBUG httpcore.connection: start_tls.started ssl_context=<ssl.SSLContext object at 0x000001DFCFEA2210> server_hostname='generativelanguage.googleapis.com' timeout=30.0
+2026-11-08 01:45:22,907 DEBUG httpcore.connection: start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DFD0F48CB0>
+2026-11-08 01:45:22,907 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:22,907 DEBUG httpcore.http11: send_request_headers.complete
+2026-11-08 01:45:22,907 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-11-08 01:45:22,907 DEBUG httpcore.http11: send_request_body.complete
+2026-11-08 01:45:22,908 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-11-08 01:45:23,060 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 400, b'Bad Request', [(b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Content-Encoding', b'gzip'), (b'Date', b'Sat, 07 Nov 2026 17:45:23 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=145'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-11-08 01:45:23,061 INFO httpx: HTTP Request: GET https://generativelanguage.googleapis.com/v1beta/models "HTTP/1.1 400 Bad Request"
+2026-11-08 01:45:23,061 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-11-08 01:45:23,061 DEBUG httpcore.http11: receive_response_body.complete
+2026-11-08 01:45:23,061 DEBUG httpcore.http11: response_closed.started
+2026-11-08 01:45:23,061 DEBUG httpcore.http11: response_closed.complete
+2026-11-08 01:45:23,062 INFO m17_leak_check: real models.list probe accepted=False
+2026-11-08 01:45:23,085 INFO uvicorn.error: Shutting down
+2026-11-08 01:45:23,191 INFO uvicorn.error: Waiting for application shutdown.
+2026-11-08 01:45:23,192 INFO uvicorn.error: Application shutdown complete.
+2026-11-08 01:45:23,192 INFO uvicorn.error: Finished server process [42084]

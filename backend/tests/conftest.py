@@ -201,6 +201,23 @@ def gemini() -> FakeGemini:
     return FakeGemini()
 
 
+class FakeKeyChecker:
+    """Google's models.list probe (M17): accepts only the keys in `accepted`."""
+
+    def __init__(self) -> None:
+        self.accepted: set[str] = set()
+        self.calls = 0
+
+    def __call__(self, key: str) -> bool:
+        self.calls += 1
+        return key in self.accepted
+
+
+@pytest.fixture
+def key_checker() -> FakeKeyChecker:
+    return FakeKeyChecker()
+
+
 @pytest.fixture
 def mimo() -> Iterator[FakeMimo]:
     fake = FakeMimo()
@@ -217,7 +234,7 @@ def make_settings(**overrides: object) -> Settings:
 @pytest.fixture
 def client_factory(
     tmp_path: Path, embedder: FakeEmbedder, quota_store: InMemoryQuotaStore, clock: FakeClock, gemini: FakeGemini,
-    mimo: FakeMimo,
+    mimo: FakeMimo, key_checker: FakeKeyChecker,
 ) -> Callable[..., object]:
     @contextmanager
     def factory(**overrides: object) -> Iterator[TestClient]:
@@ -225,7 +242,7 @@ def client_factory(
         app = create_app(
             settings, embedder_factory=lambda _settings: embedder,
             quota_store_factory=lambda _settings: quota_store, clock=clock,
-            providers_factory=lambda _settings: gemini.providers, synthesize=mimo,
+            providers_factory=lambda _settings: gemini.providers, synthesize=mimo, key_checker=key_checker,
         )
         with TestClient(app) as client:
             try:

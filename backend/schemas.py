@@ -243,7 +243,10 @@ TtsErrorCode = Literal["tts_limit", "tts_failed", "tts_unavailable"]
 AnswerErrorCode = Literal["stale_question"]
 StartErrorCode = Literal["already_started"]
 BusyCode = Literal["panel_busy"]  # a 503 from Gemini's overload or rate limit (M11 P1)
-ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode, BusyCode]
+# M17: a visitor's own Gemini key. invalid_key: Google refused it on /keys/check or the
+# upload; own_key_rejected and own_key_limited: it failed partway through a defense.
+OwnKeyCode = Literal["invalid_key", "own_key_rejected", "own_key_limited"]
+ErrorCode = Literal[LimitCode, TtsErrorCode, AnswerErrorCode, StartErrorCode, BusyCode, OwnKeyCode]
 IngestErrorCode = Literal["scanned_pdf"]
 
 
@@ -287,6 +290,12 @@ class ErrorBody(BaseModel):
     detail: str | list[dict[str, object]]
     code: ErrorCode | None = None
     limit: int | None = None  # with per_ip_limit: the starts a network gets per day (M6 H6)
+
+
+class KeyCheck(BaseModel):
+    """POST /keys/check (M17): Google accepted the key. A refused key is a 400 invalid_key."""
+
+    ok: Literal[True] = True
 
 
 class QuotaStatus(BaseModel):

@@ -28,6 +28,8 @@ type Props = {
   onReadRecording: (() => void) | null
   /** ADS_TAGLISH_MODE (M16): off, the panel-language choice is hidden and the panel speaks English. */
   taglishMode: boolean
+  /** M17: the next upload runs on the visitor's own Gemini key, so the free count doesn't block it. */
+  ownKey?: boolean
   onChange: (draft: Partial<Draft>) => void
   onSubmit: () => void
 }
@@ -35,10 +37,10 @@ type Props = {
 const fieldClass = 'mt-1 w-full rounded-lg border border-line-strong bg-field px-3 py-2 text-base focus:border-action focus:outline-none'
 const legendClass = 'pb-2.5 text-sm font-semibold text-muted'
 
-export function StartScreen({ draft, options, quota, notice, onTrySample, onReadRecording, taglishMode, onChange, onSubmit }: Props) {
+export function StartScreen({ draft, options, quota, notice, onTrySample, onReadRecording, taglishMode, ownKey = false, onChange, onSubmit }: Props) {
   const { panel } = draft
   const ids = { subtype: useId(), domain: useId(), topic: useId() }
-  const blocked = quotaUsedUp(quota)
+  const blocked = quotaUsedUp(quota) && !ownKey
   // A new panel type selects its first offered preset: the Recommended row when it's valid there.
   const setPanelType = (next: Draft['panel']) => onChange({ panel: next, preset: firstPreset(options, next) })
 
@@ -66,7 +68,7 @@ export function StartScreen({ draft, options, quota, notice, onTrySample, onRead
             <PathButton
               icon={<path d="M8 5v14l11-7z" />}
               title="Try it with the sample paper"
-              detail="A live panel on the same capstone. Uses one of today's defenses."
+              detail={ownKey ? 'A live panel on the same capstone, on your own key.' : "A live panel on the same capstone. Uses one of today's defenses."}
               onClick={onTrySample}
               disabled={blocked}
             />

@@ -84,6 +84,14 @@ describe('toApiError maps each status to the error the UI branches on', () => {
     expect(toApiError(status, { detail: 'no voice', code }, '60')).toEqual({ kind: 'tts', code, message: 'no voice' })
   })
 
+  it.each([
+    [400, 'invalid_key'],
+    [403, 'own_key_rejected'],
+    [429, 'own_key_limited'],
+  ] as const)('reads a %i with code %s as an own-key error, not as a limit or busy (M17)', (status, code) => {
+    expect(toApiError(status, { detail: 'your key', code }, '60')).toEqual({ kind: 'ownKey', code, message: 'your key' })
+  })
+
   it('reads Retry-After on a 503, and null without it', () => {
     expect(toApiError(503, { detail: 'busy' }, '60')).toEqual({ kind: 'busy', message: 'busy', retryAfterS: 60, panelBusy: false })
     expect(toApiError(503, { detail: 'busy' }, null)).toEqual({ kind: 'busy', message: 'busy', retryAfterS: null, panelBusy: false })

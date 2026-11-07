@@ -20,6 +20,9 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import PurePath
+from typing import Protocol
+
+from pydantic import SecretStr
 
 from academic_defense_simulator.document_profile import extract_document_profile
 from academic_defense_simulator.engine import (
@@ -73,8 +76,11 @@ class Providers:
     suggestions: LLMProvider
 
 
-# Built per defense, so the counter tallies that defense's calls alone.
-ProvidersFactory = Callable[[CallCounter], Providers]
+class ProvidersFactory(Protocol):
+    """Built per defense, so the counter tallies that defense's calls alone. `own_key`
+    is the visitor's Gemini key (M17); None builds them on the server's key."""
+
+    def __call__(self, calls: CallCounter, own_key: SecretStr | None = None) -> Providers: ...
 
 # One synthesis and one retry per question (M3b E3), or per part of it (M6 H9).
 TTS_CALLS_PER_QUESTION = 2

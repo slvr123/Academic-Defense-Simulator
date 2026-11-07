@@ -51,6 +51,9 @@ export const defaults = {
     "status": "ok",
     "taglish_mode": false
   },
+  "KeyCheck": {
+    "ok": true
+  },
   "SessionCreated": {
     "status": "queued"
   },

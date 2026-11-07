@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/keys/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Key
+         * @description M17: whether Google accepts the X-Gemini-Key header's key. Nothing is stored.
+         */
+        post: operations["check_key_keys_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -314,7 +334,7 @@ export interface components {
                 [key: string]: unknown;
             }[];
             /** Code */
-            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question" | "already_started" | "panel_busy") | null;
+            code?: ("per_ip_limit" | "daily_cap" | "tts_limit" | "tts_failed" | "tts_unavailable" | "stale_question" | "already_started" | "panel_busy" | "invalid_key" | "own_key_rejected" | "own_key_limited") | null;
             /** Limit */
             limit?: number | null;
         };
@@ -388,6 +408,18 @@ export interface components {
             literature_review: components["schemas"]["PageRange"] | null;
             /** Held Back Passages */
             held_back_passages: number;
+        };
+        /**
+         * KeyCheck
+         * @description POST /keys/check (M17): Google accepted the key. A refused key is a 400 invalid_key.
+         */
+        KeyCheck: {
+            /**
+             * Ok
+             * @default true
+             * @constant
+             */
+            ok: true;
         };
         /**
          * OtherSubtype
@@ -742,6 +774,35 @@ export interface operations {
             };
         };
     };
+    check_key_keys_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyCheck"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     create_session_sessions_post: {
         parameters: {
             query?: never;
@@ -767,6 +828,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionCreated"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description Too Many Requests */

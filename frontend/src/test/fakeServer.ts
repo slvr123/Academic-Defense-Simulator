@@ -15,6 +15,8 @@ export type FakeServer = {
   calls: string[]
   count: (route: string) => number
   upload: FakeUpload
+  /** The request headers of the last fetch to "METHOD /path" (M17's X-Gemini-Key). */
+  headersOf: (route: string) => Record<string, string> | undefined
 }
 
 export type FakeUpload = {
@@ -34,11 +36,16 @@ export class FakeXhr {
   onerror: (() => void) | null = null
   ontimeout: (() => void) | null = null
   form: FormData | null = null
+  requestHeaders: Record<string, string> = {} // set by setRequestHeader (M17's X-Gemini-Key)
   private headers: Record<string, string> = {}
   private path = ''
 
   open(method: string, url: string): void {
     this.path = `${method} ${url.replace(API, '')}`
+  }
+
+  setRequestHeader(name: string, value: string): void {
+    this.requestHeaders[name] = value
   }
 
   send(form: FormData): void {
@@ -85,11 +92,13 @@ export function fakeServer(): FakeServer {
   const handlers = new Map<string, Handler>()
   const calls: string[] = []
   const upload: FakeUpload = { current: null, sent: 0 }
+  const sentHeaders = new Map<string, Record<string, string>>()
 
   const fetchFake = vi.fn(async (input: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
     const route = `${method} ${input.replace(API, '')}`
     calls.push(route)
+    sentHeaders.set(route, Object.fromEntries(new Headers(init?.headers).entries()))
     const handler = handlers.get(route)
     if (handler === undefined) throw new Error(`no fake handler for ${route}`)
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
@@ -109,5 +118,6 @@ export function fakeServer(): FakeServer {
     calls,
     count: (route) => calls.filter((call) => call === route).length,
     upload,
+    headersOf: (route) => sentHeaders.get(route),
   }
 }

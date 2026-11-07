@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { FinishingScreen, PreparingScreen, QuestionScreen } from './components/DefenseScreens'
 import { DemoReplay, RECORDING_AVAILABLE } from './components/DemoReplay'
 import { DocumentPanel } from './components/DocumentPanel'
+import { HowItWorks, HowItWorksLink } from './components/HowItWorks'
+import { OwnKeyPanel } from './components/OwnKeyPanel'
 import { QuotaLine } from './components/QuotaLine'
 import { ReportScreen } from './components/ReportScreen'
 import { HomeTitle, SessionHeader } from './components/SessionHeader'
@@ -13,7 +15,7 @@ import { EmbeddingScreen, ExpiredScreen, FailedScreen, QueuedScreen, ReadyScreen
 import { useObjectUrl } from './hooks/useObjectUrl'
 import { sessionSubtitle } from './lib/labels'
 import { heardFrom, seatedPanel } from './lib/panel'
-import type { VoiceChoice } from './state/flow'
+import { quotaUsedUp, type VoiceChoice } from './state/flow'
 import { useFlow } from './state/useFlow'
 import { createPlayer } from './voice/player'
 
@@ -25,6 +27,10 @@ export default function App() {
   const { state } = flow
   const { phase } = state
   const [demo, setDemo] = useState(false) // "Read a recorded defense" (N5)
+  // M17: the own-key panel, opened from the header; open on its own once today's free defenses are used.
+  const [keyOpen, setKeyOpen] = useState(false)
+  const freeUsedUp = quotaUsedUp(state.quota)
+  const showKeyPanel = keyOpen || freeUsedUp || state.ownKey
   const inDefense = phase.kind === 'question' || phase.kind === 'submitting'
   const taglish = state.draft.panel.panel_language === 'taglish' // M16: the panel speaks Taglish
 
@@ -60,6 +66,9 @@ export default function App() {
       screen = (
         <div className="space-y-5">
           {state.waking && <WakingNotice />}
+          {showKeyPanel && (
+            <OwnKeyPanel active={state.ownKey} prominent={freeUsedUp} onSubmit={flow.submitOwnKey} onRemove={flow.dropOwnKey} />
+          )}
           <StartScreen
             draft={state.draft}
             options={state.options}
@@ -68,9 +77,11 @@ export default function App() {
             onTrySample={() => void flow.trySample()}
             onReadRecording={RECORDING_AVAILABLE ? () => setDemo(true) : null}
             taglishMode={state.taglishMode}
+            ownKey={state.ownKey}
             onChange={flow.editDraft}
             onSubmit={() => void flow.upload()}
           />
+          <HowItWorks />
         </div>
       )
       break
@@ -180,8 +191,24 @@ export default function App() {
             <p className={`min-w-0 truncate ${phase.kind === 'preparing' ? 'font-mono text-xs' : 'text-sm'} text-muted`}>{subtitle}</p>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {phase.kind === 'configuring' && <QuotaLine quota={state.quota} />}
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+          {phase.kind === 'configuring' && (
+            <>
+              <HowItWorksLink />
+              <QuotaLine quota={state.quota} ownKey={state.ownKey} />
+              {!freeUsedUp && !state.ownKey && (
+                <button
+                  type="button"
+                  aria-expanded={keyOpen}
+                  aria-controls="own-key"
+                  onClick={() => setKeyOpen((open) => !open)}
+                  className="inline-flex min-h-11 items-center text-sm text-action-text underline-offset-[3px] hover:underline"
+                >
+                  Use your own Gemini key
+                </button>
+              )}
+            </>
+          )}
           <ThemeToggle />
         </div>
       </div>

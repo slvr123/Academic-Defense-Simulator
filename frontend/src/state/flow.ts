@@ -81,6 +81,9 @@ export type State = {
   panelDisclosed: boolean // the MiMo disclosure was shown this session (M10 N9)
   options: PanelOptions | null
   quota: QuotaView
+  // M17: the next upload goes on the visitor's own Gemini key. The key itself never
+  // enters this state: useFlow holds it in a ref until the upload has sent it.
+  ownKey: boolean
   draft: Draft
   phase: Phase
 }
@@ -92,6 +95,7 @@ export type Action =
   | { type: 'optionsLoaded'; options: PanelOptions }
   | { type: 'quotaLoaded'; quota: QuotaStatus }
   | { type: 'quotaHidden' }
+  | { type: 'ownKeySet'; on: boolean } // M17: a key Google accepted is waiting for the upload, or was dropped
   | { type: 'draftChanged'; draft: Partial<Draft> }
   | { type: 'startNotice'; notice: Notice } // a start-screen problem before any upload (the sample paper didn't load)
   | { type: 'uploadRequested' }
@@ -111,7 +115,7 @@ export type Action =
   | { type: 'reportFinished'; sessionId: string; result: ApiResult<ReportResponse>; now: number }
   | { type: 'restart' }
 
-/** No defenses left today, so Start is disabled (D15). */
+/** No defenses left today, so Start is disabled (D15), unless the visitor brings a key (M17). */
 export function quotaUsedUp(quota: QuotaView): boolean {
   return quota.kind === 'known' && quota.quota.remaining === 0
 }
@@ -126,6 +130,7 @@ export function initialState(): State {
     panelDisclosed: false,
     options: null,
     quota: { kind: 'loading' },
+    ownKey: false,
     draft: { file: null, panel: { ...defaults.PanelConfig }, preset: 'recommended' },
     phase: { kind: 'configuring', notice: null },
   }
@@ -158,6 +163,7 @@ export function noticeFor(error: ApiError, now: number, autoRetryAllowed: boolea
     case 'notFound': // callers send a 404 to the expired phase before asking for a notice
     case 'stale':
     case 'alreadyStarted':
+    case 'ownKey': // M17: the server's copy says what happened and what to do
     case 'tts': // /tts errors never reach the flow; the voice falls back on its own (E8)
     case 'tooLarge':
     case 'invalid':
@@ -306,6 +312,8 @@ export function reducer(state: State, action: Action): State {
       return { ...state, quota: { kind: 'known', quota: action.quota } }
     case 'quotaHidden':
       return { ...state, quota: { kind: 'hidden' } }
+    case 'ownKeySet':
+      return { ...state, ownKey: action.on }
 
     case 'draftChanged':
       if (phase.kind !== 'configuring') return state
@@ -365,10 +373,11 @@ export function reducer(state: State, action: Action): State {
     case 'reportFinished':
       return reported(state, action.sessionId, action.result, action.now)
 
-    case 'restart': // a new document is a new defense: the voice is chosen again
+    case 'restart': // a new document is a new defense: the voice is chosen again, and an own key pasted again
       return {
         ...state,
         voice: null,
+        ownKey: false,
         panelDisclosed: false,
         draft: { ...state.draft, file: null },
         phase: { kind: 'configuring', notice: null },
