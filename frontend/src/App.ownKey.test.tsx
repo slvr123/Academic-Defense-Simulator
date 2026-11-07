@@ -99,7 +99,9 @@ describe('use your own Gemini key (M17 Decision 1)', () => {
     await submitDocument(user)
     const upload = server.upload.current
     expect(upload?.requestHeaders).toEqual({ 'X-Gemini-Key': KEY })
-    expect([...(upload?.form?.values() ?? [])].some((value) => typeof value === 'string' && value.includes(KEY))).toBe(false)
+    const fields: string[] = []
+    upload?.form?.forEach((value, name) => fields.push(name, typeof value === 'string' ? value : value.name))
+    expect(fields.some((field) => field.includes(KEY))).toBe(false) // only the file and the panel go in the form
     await act(async () => upload?.respond(202, { session_id: 'abc', status: 'queued', queue_position: 1 }))
     await advance(2000)
     await startDefense(user)

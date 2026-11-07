@@ -98,7 +98,11 @@ export function fakeServer(): FakeServer {
     const method = init?.method ?? 'GET'
     const route = `${method} ${input.replace(API, '')}`
     calls.push(route)
-    sentHeaders.set(route, Object.fromEntries(new Headers(init?.headers).entries()))
+    const headers: Record<string, string> = {}
+    new Headers(init?.headers).forEach((value, name) => {
+      headers[name] = value
+    })
+    sentHeaders.set(route, headers)
     const handler = handlers.get(route)
     if (handler === undefined) throw new Error(`no fake handler for ${route}`)
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
