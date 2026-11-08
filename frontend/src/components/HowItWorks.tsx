@@ -11,7 +11,7 @@ const BLOCKS: { title: string; body: ReactNode }[] = [
     title: 'RAG, turned around.',
     body: (
       <>
-        It searches your paper to question <em>you</em>, not to answer your questions. Each panelist looks for something worth
+        Instead of searching your paper to answer your questions, the panel searches it to question <em>you</em>. Each panelist looks for something worth
         challenging (a claim, a number, a decision) and asks about it. After you answer, you see the exact passage and page it
         came from.
       </>

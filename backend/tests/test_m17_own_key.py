@@ -308,11 +308,41 @@ def test_suggestions_fall_back_when_the_model_isnt_available(api_error, caplog):
     assert SENTINEL not in caplog.text
 
 
+def test_suggestions_fall_back_on_a_free_tier_429(caplog):
+    """Amendment (2026-11-08): Google often blocks a free-tier model with a 429 whose limit
+    is 0. v1 doesn't retry a 429, so the primary is called once, then the fallback once."""
+    limit_zero = _api_error(
+        429, "RESOURCE_EXHAUSTED",
+        "Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, "
+        "limit: 0, model: gemini-2.5-flash",
+    )
+    primary, primary_client = _gemini("gemini-2.5-flash", [limit_zero])
+    fallback, fallback_client = _gemini("gemini-3.1-flash-lite", [_ok()])
+    wrapped = SuggestionsWithFallback(primary, fallback, "gemini-3.1-flash-lite")
+    with caplog.at_level(logging.DEBUG):
+        assert wrapped.generate_structured("p", Out) == Out(x=7)
+    assert primary_client.models.generate_content.call_count == 1
+    assert fallback_client.models.generate_content.call_count == 1
+    [line] = [r.getMessage() for r in caplog.records if r.name == "backend.own_key"]
+    assert line == "suggestions fallback to=gemini-3.1-flash-lite reason=429 RESOURCE_EXHAUSTED"
+    assert SENTINEL not in caplog.text
+
+
+def test_a_failed_fallback_raises_after_one_try():
+    """Only one fallback: if flash-lite also fails, the error goes up, and v1's report
+    builder ships the debrief without suggestions, as it does today."""
+    limit_zero = _api_error(429, "RESOURCE_EXHAUSTED", "limit: 0")
+    primary, _ = _gemini("gemini-2.5-flash", [limit_zero])
+    fallback, fallback_client = _gemini("gemini-3.1-flash-lite", [limit_zero])
+    with pytest.raises(LLMQuotaExhaustedError):
+        SuggestionsWithFallback(primary, fallback, "gemini-3.1-flash-lite").generate_structured("p", Out)
+    assert fallback_client.models.generate_content.call_count == 1
+
+
 @pytest.mark.parametrize(
     "api_error, raised",
     [
         (_api_error(503, "UNAVAILABLE", "The model is overloaded."), LLMServiceUnavailableError),
-        (_api_error(429, "RESOURCE_EXHAUSTED", "Quota exceeded."), LLMQuotaExhaustedError),
         (_api_error(500, "INTERNAL", "Internal error."), LLMProviderError),
     ],
 )

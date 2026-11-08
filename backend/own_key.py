@@ -45,8 +45,10 @@ OWN_KEY_RETRY_AFTER_S = 60
 # validate_gemini_key in production; tests inject a fake.
 KeyChecker = Callable[[str], bool]
 
-# Google's statuses for "this model isn't available to this project" (Decision 3).
-_MODEL_UNAVAILABLE_CODES = frozenset({403, 404})
+# Google's statuses for "this model isn't available to this project" (Decision 3), plus
+# 429: Google often reports a free-tier block on a model as a 429 with a limit of 0
+# (my amendment, 2026-11-08).
+_MODEL_UNAVAILABLE_CODES = frozenset({403, 404, 429})
 
 
 def read_key(request: Request) -> SecretStr | None:
@@ -103,8 +105,10 @@ def own_key_failure(exc: LLMProviderError) -> HTTPException | None:
 
 class SuggestionsWithFallback(LLMProvider):
     """Decision 3: answer suggestions on `primary` (gemini-2.5-flash), retried once on
-    `fallback` (the defense model) when Google says the model isn't available to this
-    key's project. Any other failure, a 503 included, raises as before."""
+    `fallback` (the defense model) when Google answers 403, 404 or 429: the model isn't
+    available to this key's project, or its free tier allows it no requests. Any other
+    failure, a 503 included, raises as before, and so does a failed fallback; v1's report
+    then ships without suggestions."""
 
     def __init__(self, primary: LLMProvider, fallback: LLMProvider, fallback_model: str) -> None:
         self._primary = primary
