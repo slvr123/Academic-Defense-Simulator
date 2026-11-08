@@ -21,8 +21,8 @@ const BLOCKS: { title: string; body: ReactNode }[] = [
     title: 'A panel, not a chatbot.',
     body: (
       <>
-        Each panelist has a lane, such as problem and objectives, methodology, or results. Each opens in its own chapter when your
-        PDF's chapter headings can be read, so the first round walks forward through your paper. A Terror Panelist speaks last
+        Each panelist has a lane, such as problem and objectives, methodology, or results. Each opens in its own chapter when your PDF's
+        chapter headings can be read, and with the preset panels the first round walks forward through your paper. A Terror Panelist speaks last
         and goes after your earlier answers.
       </>
     ),

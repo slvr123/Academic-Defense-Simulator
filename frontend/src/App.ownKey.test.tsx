@@ -191,6 +191,9 @@ describe('how it works (M17 Decision 5)', () => {
     }
     expect(section).toHaveTextContent('Instead of searching your paper to answer your questions, the panel searches it to question you.')
     expect(section).not.toHaveTextContent(/harder as you do well|Most RAG apps/) // cut in M17: false, and unbacked
+    // Claim 5, scoped after the live check: a Custom panel with the Literature Specialist opened backwards.
+    expect(section).toHaveTextContent('with the preset panels the first round walks forward through your paper.')
+    expect(section).not.toHaveTextContent(/so the first round walks forward|the way a real defense does/)
     expect(within(section).getByRole('link', { name: 'Source on GitHub' })).toHaveAttribute('href', SOURCE_URL)
     const scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView

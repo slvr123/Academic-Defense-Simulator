@@ -12,6 +12,19 @@ pre-publish rename pass; interim `dayN`-style names until then).
 
 ---
 
+## Active work - v2.0 M17 bring your own key, and "How it works" (2026-11-08)
+
+Done and live 2026-11-08.
+Decisions: [`v2.0-m17-decisions.md`](v2.0-m17-decisions.md); results: [`v2.0-m17-results.md`](v2.0-m17-results.md).
+A visitor can paste their own free Gemini key: it's checked with one `models.list` call, held only on the in-memory session, and never logged, returned or stored (the leak test found the sentinel 0 times).
+Own-key defenses skip the daily quota and the per-IP limit; their suggestions fall back to flash-lite on a 403, 404 or 429.
+The live own-key defense left the free quota at 0 used before and after, and 2.5-flash wrote its suggestions first try.
+The start screen gained a "How it works" section, every claim listed with its evidence; one claim was cut as false and two as unbacked.
+**Open, for v2.1:** a Custom panel that seats the Literature & Theory Specialist opens its first round out of chapter order.
+Its home chapter is the literature review, which `lit_review_access = "none"` bars, so its opener falls back elsewhere: the live check read Chapter 1, 5, 3 (M17 results, section 9).
+"How it works" now claims the forward walk only for the preset panels, none of which seat it.
+A fix would seat it by the chapter its opener actually draws from, or give it a home chapter it may use.
+
 ## Active work - v2.0 M16 Taglish mode (2026-11-06)
 
 Done and live 2026-11-06, with `ADS_TAGLISH_MODE` on; **next: the README, case study and LinkedIn post, written in chat from M13's fact audit.**
