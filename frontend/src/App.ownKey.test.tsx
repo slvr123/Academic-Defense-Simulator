@@ -189,6 +189,8 @@ describe('how it works (M17 Decision 5)', () => {
     for (const title of ['RAG, turned around.', 'A panel, not a chatbot.', 'It adapts, quietly.', 'Measured, not guessed.']) {
       expect(within(section).getByText(title)).toBeInTheDocument()
     }
+    expect(section).toHaveTextContent('Instead of searching your paper to answer your questions, the panel searches it to question you.')
+    expect(section).not.toHaveTextContent(/harder as you do well|Most RAG apps/) // cut in M17: false, and unbacked
     expect(within(section).getByRole('link', { name: 'Source on GitHub' })).toHaveAttribute('href', SOURCE_URL)
     const scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView
