@@ -1,0 +1,90 @@
+{
+  "base_url": "https://ads-backend-bv63.onrender.com",
+  "started_at": "2026-11-08T11:34:47+0800",
+  "status": {
+    "status": "ok",
+    "model_loaded": true,
+    "tts_available": true,
+    "taglish_mode": true
+  },
+  "defense_s": 162.5,
+  "end_session_status": 204,
+  "quota_before": {
+    "used": 0,
+    "cap": 10,
+    "remaining": 10,
+    "resets_at": "2026-11-08T00:00:00-08:00"
+  },
+  "quota_after": {
+    "used": 0,
+    "cap": 10,
+    "remaining": 10,
+    "resets_at": "2026-11-08T00:00:00-08:00"
+  },
+  "quota_used_unchanged": true,
+  "turns": [
+    {
+      "turn": 1,
+      "panelist": "Research Problem & Objectives Reviewer",
+      "page": 5
+    },
+    {
+      "turn": 2,
+      "panelist": "Research Problem & Objectives Reviewer",
+      "page": 5
+    },
+    {
+      "turn": 3,
+      "panelist": "Research Problem & Objectives Reviewer",
+      "page": 5
+    },
+    {
+      "turn": 4,
+      "panelist": "Literature & Theory Specialist",
+      "page": 15
+    },
+    {
+      "turn": 5,
+      "panelist": "Literature & Theory Specialist",
+      "page": 15
+    },
+    {
+      "turn": 6,
+      "panelist": "Literature & Theory Specialist",
+      "page": 15
+    },
+    {
+      "turn": 7,
+      "panelist": "Methodology Expert",
+      "page": 10
+    },
+    {
+      "turn": 8,
+      "panelist": "Methodology Expert",
+      "page": 10
+    },
+    {
+      "turn": 9,
+      "panelist": "Methodology Expert",
+      "page": 10
+    },
+    {
+      "turn": 10,
+      "panelist": "Terror Panelist",
+      "page": 5
+    },
+    {
+      "turn": 11,
+      "panelist": "Terror Panelist",
+      "page": 5
+    },
+    {
+      "turn": 12,
+      "panelist": "Terror Panelist",
+      "page": 5
+    }
+  ],
+  "suggestions_fallback_used": false,
+  "suggestions": 12,
+  "narrative_fallback_used": false
+}
