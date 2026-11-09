@@ -294,23 +294,26 @@ def test_delete_nonexistent_session_does_not_raise(tmp_path):
 # --- v1.0b-2 Decision 1: old-shaped persisted files load with new fields defaulted ---
 
 
-def test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults():
-    """One of Sean's three real completed sessions, generated before v1.0b-2 existed
-    — `session.report` in this file on disk has no `answer_suggestions` or
-    `suggestions_fallback_used` key at all (confirmed: only the eight v0.3c fields
-    are present). Must still load, with the new fields correctly defaulted, no
-    migration, no schema_version bump."""
-    real_file = Path(__file__).resolve().parent.parent / "sessions" / "b4bfb649-e3fc-4aab-b930-645c309bb3c4.json"
-    raw = real_file.read_text(encoding="utf-8")
-    raw_dict = json.loads(raw)
-    assert "answer_suggestions" not in raw_dict["session"]["report"]
-    assert "suggestions_fallback_used" not in raw_dict["session"]["report"]
+PRE_V1_0B2_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "pre_v1_0b2_completed_session.json"
+
+
+def test_pre_v1_0b2_file_missing_answer_suggestions_loads_with_defaults():
+    """A completed session saved before v1.0b-2 existed: `session.report` has no
+    `answer_suggestions` or `suggestions_fallback_used` key at all, only the eight
+    v0.3c fields. It must still load, with the new fields defaulted, no migration,
+    no schema_version bump. The fixture is a committed, synthetic stand-in for the
+    real (gitignored) session files this test used to read."""
+    raw = PRE_V1_0B2_FIXTURE.read_text(encoding="utf-8")
+    raw_report = json.loads(raw)["session"]["report"]
+    assert "answer_suggestions" not in raw_report
+    assert "suggestions_fallback_used" not in raw_report
 
     persisted = PersistedSession.model_validate_json(raw)
 
     assert persisted.session.report.answer_suggestions == []
     assert persisted.session.report.suggestions_fallback_used is False
     assert persisted.schema_version == CURRENT_SCHEMA_VERSION  # no migration, no version bump
+    assert persisted.session.report.narrative == raw_report["narrative"]  # the rest loaded as written
 
 
 def test_old_shaped_report_dict_defaults_new_fields():
