@@ -1,243 +1,187 @@
 # Academic Defense Simulator
 
-**Most RAG demos retrieve documents to answer your questions. This one reads
-your research paper and uses it to interrogate you.**
+**Instead of searching your paper to answer your questions, the panel searches it to question you.**
 
-Upload a thesis, capstone, or research document and face a live, adaptive
-cross-examination from a panel of AI examiners — each grounded in a specific
-passage of your actual document, each holding a distinct role, and each quietly
-adjusting difficulty based on how well you're holding up.
+Upload a thesis or capstone and defend it in front of a panel of AI examiners.
+Each panelist retrieves a passage from your own pages, finds a claim, a number or a decision worth challenging, and asks about it.
+After you answer, you see the exact passage and page the question came from.
 
-**[Try the live demo →](https://academic-defense-simulator.streamlit.app/)**
+**[Try it live →](https://academic-defense-simulator.onrender.com)** · no PDF needed: *Read a recorded defense* replays a real session in the real UI, instantly, with zero backend calls.
 
-> Demo mode runs on a shared key with a small daily session cap. Paste your own
-> Gemini API key in the sidebar to bypass it — the key is held in session memory
-> only, never written to disk and never logged (verified with a sentinel-key
-> trace, not just by inspection). First load takes ~30s; see
-> [Known limitations](#known-limitations).
+![A recorded defense on the sample capstone: the panel asks, the answer goes in, the source passage is revealed](docs/img/v2/demo.gif)
 
-![A full panel session, mid-exchange](docs/img/demo.gif)
+> The backend runs on Render's free tier and sleeps when idle, so the first visit of the day can take up to a minute ("Waking the panel").
+> The shared demo allows 10 defenses a day, and 3 per IP address. Paste your own Gemini key on the start screen to skip both limits; it's held in server memory for that one defense and never logged (checked with a sentinel key: 0 occurrences across 549 log lines).
 
-**[Read the case study →](docs/case-study.md)** — the evals, the findings, and
-the one that a later eval walked back.
+**[Read the case study →](docs/case-study.md)**: the evals, what they changed, and the finding a later eval walked back.
 
 ---
 
 ## Why this is interesting
 
-- **RAG inverted.** Retrieval feeds *question generation*, not answering. Every
-  question a panelist asks is grounded in a passage retrieved from your
-  document, and the grounding is programmatically checked on every turn rather
-  than trusted.
-- **Adaptive difficulty you can't see.** Every answer is scored internally —
-  clarity, depth, grounding — via structured output, and those scores steer the
-  next question's difficulty without ever surfacing mid-session. The thermostat
-  is hidden because a defense you can read isn't practice.
-- **A panel, not a chatbot.** Nine examiner archetypes hold character across a
-  full session, with turn-taking, follow-up chains when a panelist smells
-  weakness, and a Devil's Advocate who cross-references earlier answers to
-  contest your strongest claim.
-- **Eval-driven, and the evals changed the design.** Model choice, prompt
-  wording, and orchestration were measured against real output, not assumed —
-  including one case where a second-document eval contradicted a headline
-  finding of mine and I published the contradiction. See the
-  [case study](docs/case-study.md).
+**RAG, turned around.** Retrieval here feeds question generation only. The API's one free-text input is your answer, and it goes to scoring, never to retrieval. Every question carries a reference that's checked against the passage it was built on.
+
+**Measured, not guessed.** Early panelists asked students about *other authors'* studies cited in their literature review as if that work were the student's own. I measured it (11 of 20 probe questions on literature-review passages got it wrong), an independent judge on a different model confirmed it, and I fixed it by routing: the panel no longer receives those passages. Then a chapter filter took opening rounds that walk forward through the paper from **5 of 10 to 10 of 10**.
+
+**A panel, not a chatbot.** Each panelist has a lane (problem and objectives, methodology, results, and so on) and opens in its own chapter. A **Terror Panelist** speaks last and goes after the strongest claim you've made in the earlier answers. When a panelist hands off, it closes with one line of its own.
+
+**It adapts, quietly.** Every answer is scored on clarity, depth and grounding against a rubric you never see. Answers with gaps draw follow-ups and raise the stakes. Scores stay sealed until the debrief.
+
+**Taglish mode.** The panel can question you in Taglish. Scoring, the debrief and the suggestions stay in English, and a scoring-parity check on the same answers passed (mean difference +0.50 out of 15).
+
+<p align="center">
+  <img src="docs/img/v2/followup-desktop.png" alt="A follow-up from the Methodology panelist, with the passage it was reading revealed on the right" width="49%">
+  <img src="docs/img/v2/session-taglish.png" alt="A Taglish panel: the Problem and Objectives reviewer pressing on the paper's significance claim" width="49%">
+</p>
 
 ## The panel
 
-You compose the panel; a Devil's Advocate is always seated.
+Pick a preset or build your own, up to three panelists. A Terror Panelist is always seated and always speaks last.
 
 | Archetype | Lane |
 |---|---|
-| Methodology Expert | Research design, sampling, instrumentation |
-| Literature & Theory Specialist | Framing, citation, theoretical grounding |
+| Research Problem & Objectives Reviewer | Problem statement, scope, whether the objectives line up |
+| Methodology Expert | Research design, sampling, instruments |
 | Technical Implementation Reviewer | Architecture, tooling, build decisions |
-| Ethics & Practicality Reviewer | Consent, risk, real-world deployability |
-| Research Problem & Objectives Reviewer | Problem statement, scope, objective alignment |
 | Statistical & Data Analysis Reviewer | Analysis choices, inference, data handling |
 | Results & Conclusions Reviewer | Whether the conclusions follow from the results |
-| Industry & Professional Practice Reviewer | Standards, practice, professional relevance |
-| Devil's Advocate | Contests your strongest claim, using your earlier answers |
+| Ethics & Practicality Reviewer | Consent, risk, real-world deployability |
+| Industry & Professional Practice Reviewer | Standards and professional relevance |
+| Literature & Theory Specialist | Framing and theory (in no preset; see [limitations](#known-limitations)) |
+| Terror Panelist | Contests your strongest claim using your earlier answers |
+
+Defense types: thesis, capstone, and other (oral comps, scholarship panels, certification interviews, grant defenses). The type shapes which panelists are offered and how they frame questions.
 
 ## How it works
 
 ```
-PDF ──► chunk (PyMuPDF, paragraph-aware) ──► relevance gate ──► embed locally
-                                                                (MiniLM)
-        ┌───────────────────────────────────────────────────────────┘
-        ▼
-  Defense profile (type, domain, selected archetypes) ──► persona generation
-        ▼
-  ┌─ Agent loop ─────────────────────────────────────────────────┐
-  │ retrieve chunk ► panelist asks grounded question ► you answer │
-  │ ► internal scoring ► difficulty adjusts ► follow-up or next   │
-  │   panelist (weakness = they keep the floor)                   │
-  └───────────────────────────────────────────────────────────────┘
-        ▼
-  Scoring report — narrative, difficulty trajectory, per-panelist averages,
-  pressure moments (did you recover, hold, or deteriorate?), and per-answer
-  suggestions grounded in the same passages the questions came from
-        ▼
-  Persisted to disk ──► cross-session analytics (recurring gap themes)
+Browser ─ React 19 + TypeScript (Render static site)
+   │  your PDF, your answers                ▲  questions, revealed passages, the debrief
+   ▼                                        │
+FastAPI ─ one worker, sessions in memory (Render free tier)
+   │
+   ├─ Ingest   PyMuPDF ─► drop navigation pages and the reference list ─► chunk
+   │           ─► find chapters and the literature review ─► embed locally (MiniLM on ONNX)
+   │
+   ├─ Ask      panelist's focus query ─► numpy cosine over your paper's chunks
+   │           ─► routing: literature-review passages are withheld
+   │           ─► first question only: restricted to the panelist's home chapter
+   │           ─► near-tie sampling, so sessions differ
+   │           ─► Gemini writes one question grounded in that passage ─► grounding check
+   │
+   ├─ Answer   sealed score (clarity, depth, grounding) ─► follow-up, or hand-off with a closing line
+   │
+   └─ Debrief  scores, the panel's view, per-answer suggestions grounded in the same passages
+                                                                  (gemini-2.5-flash)
+
+Postgres on Neon holds one thing: the shared daily quota, reserved atomically.
 ```
 
-![Defense profile setup — the panel composed from type, domain, and selected archetypes](docs/img/intake-panel.jpg)
+Choices worth explaining:
 
-Key implementation choices, and why:
+- **Fresh prompts from typed state, not a replayed transcript.** Each call renders its prompt from a Pydantic session model, so a panelist's persona can't dilute over a long session.
+- **Brute-force retrieval on purpose.** A paper is a few dozen chunks (the sample capstone yields 13). numpy cosine similarity is instant at that scale; a vector database would be complexity with no payoff.
+- **Embeddings run locally.** MiniLM on ONNX Runtime, fetched and hash-checked at build time, so cold starts don't download weights and no embedding call touches an API.
+- **The provider is isolated.** Only one module imports `google.genai`. Every LLM call goes through one choke point that counts calls and paces requests under the free tier's per-minute limit.
+- **v2 wraps v1, it doesn't rewrite it.** The FastAPI backend runs the original engine. Prompt changes for Taglish went through a single language slot, and a golden test proves the English prompts are byte-for-byte unchanged.
 
-- **Structured state, not chat-history replay.** Each LLM call renders a fresh
-  prompt from a typed session model instead of replaying a growing transcript.
-  Persona framing is re-injected every call and can't dilute over distance —
-  and as a free consequence, crash-resume is loading state rather than
-  reconstructing a conversation, because no context ever lived only in memory.
-- **Grounding is checked, not hoped for.** Every generated question carries a
-  reference that's matched against the retrieved chunk (exact, then fuzzy). At
-  high difficulty, failures trigger a retry-then-flag path; flagged turns stay
-  visible in the exported transcript. This check has a known false-negative
-  mode, documented below rather than buried.
-- **Local embeddings, brute-force retrieval.** sentence-transformers plus numpy
-  cosine similarity. At a few dozen vectors per document a vector database is
-  complexity without payoff — a deliberate scale decision, recorded, with the
-  upgrade path known.
-- **Provider-isolated LLM layer.** All Gemini-specific code sits behind one
-  interface, and every call passes through a single choke point that logs
-  lifecycle, counts calls, and enforces a sliding-window rate limit. That choke
-  point is how a real orchestration bug was caught.
-- **Suggestions are post-mortem, by design.** Per-answer coaching is generated
-  once, at session end, from the full transcript — never during the session.
-  Scores and advice both stay out of the room while you're still in it.
+<p align="center">
+  <img src="docs/img/v2/start-desktop.png" alt="The start screen: upload, defense type, panel language and panel presets" width="49%">
+  <img src="docs/img/v2/debrief-desktop.png" alt="The debrief: overall score, clarity, depth and grounding, and the panel's view" width="49%">
+</p>
 
-## Engineering process
+## What the evals changed
 
-The decision record in [`docs/`](docs/) is the part I'd point at first. Retired
-decisions stay in it alongside current ones, with provenance recorded and
-deviations logged — including a rule I pre-committed to that turned out to be
-wrong, and a workflow violation I accused myself of that turned out never to
-have happened and was struck once `git reflog` disproved it.
+The decision record in [`docs/`](docs/) is the part I'd point at first. Every milestone has a decisions doc written before the work and a results doc with real command output after it. Pass rules are set before the data comes in, and they include a branch for "none of the above".
 
-- **A founding assumption, retired by evidence — then partly walked back by more
-  evidence.** I designed the internal scoring signal as a correctness detector;
-  a probe showed it was measuring something else. A later eval on a document the
-  system had never seen failed to reproduce the key contrast. Both halves are in
-  the [case study](docs/case-study.md), in that order.
-- **Model fitness tested per task, not assumed from price.** The cheap dev
-  default (`gemini-3.1-flash-lite`) was diagnosed unfit for judgment work, with
-  probe results committed as permanent artifacts. Judgment paths that fit the
-  free-tier budget run on `gemini-2.5-flash`; the one that doesn't is named in
-  [Known limitations](#known-limitations) rather than quietly left out.
-- **Predicted, then measured.** Per-session LLM call count was derived from the
-  design docs as a formula before instrumentation existed, then verified live by
-  a counter at the provider boundary. The first instrumented run measured a
-  session ending two turns early — the counter exposed an orchestration bug
-  where one panelist's spent follow-up budget silently blocked another's,
-  characterized with line-level evidence before any fix was written.
-- **Measured, never derived by arithmetic.** The rate limiter's ceiling doesn't
-  behave as a literal cap — observed peak runs one request above the configured
-  value. The shipped setting is the one empirically verified clean against the
-  real tier. Any tier change re-verifies from scratch.
-- **No LLM grading an LLM.** Every probe's quality columns are judged by hand.
-  The difficulty-tone probe emits a shuffled judging file with labels stripped
-  and a separate key, so the judgment is blind and the unblinding is mechanical.
+The clearest pattern across them: **changing what the model is given beat telling it to behave differently, every time I measured both.**
+
+| Problem | Telling the model | Changing what it's given |
+|---|---|---|
+| Panelists treated cited studies as the student's own | A "this is cited work" note: 11 of 20 → 6 of 20 wrong | Withholding literature-review passages: the problem can't occur |
+| Opening rounds jumped around the paper | Ordering speakers by chapter: 5 of 10 rounds walked forward | A home-chapter filter on the first question: 10 of 10 |
+| Closing lines repeated themselves | "Vary the phrasing": 4–5 of 10 sessions varied | Showing the session's earlier lines: 10 of 10 |
+
+The attribution counts come from a careful check that wasn't blind; the verdict that decided the fix came from the independent judge described below.
+
+Some of the other things the record shows:
+
+- **Retrieval was evaluated, and the eval found a different bug than expected.** Archetypes do retrieve different evidence (the median pair shares 1 of its top 5 passages). The real defect was that on one paper, 6 of 8 archetypes' best match was front matter, some of it a table of contents. Dropping navigation pages, and later the reference list, fixed it.
+- **Embeddings match vocabulary, not position in the argument.** Before the chapter filter, the only Chapter 1 chunk ranked 6th of 13 for the Problem & Objectives query. That's why the fix was a filter and not a better query.
+- **A finding I published, then walked back.** I designed the internal score as a correctness detector; a probe showed it detects concession instead. A second document didn't reproduce the key contrast, and the case study leads with the non-replication instead of burying it.
+- **Model fitness tested per task.** The cheap model (`gemini-3.1-flash-lite`) was measured unfit for judgment work. The free tier can't afford `gemini-2.5-flash` for every turn, so it's spent on the suggestions.
+- **Judging I couldn't do myself went to an independent judge.** For the attribution verdict, a fresh agent on a different model saw only the questions and passages, with the rubric verbatim.
 
 ## Known limitations
 
-Stated here so they're read rather than discovered.
+**Panel voices are slow.** Panelist voices run on Xiaomi's MiMo API and take about 7–15 seconds per question (a 7.9 s median when measured directly; 6.8–14.1 s on a live run). Voice is off until you choose it, and the browser's own voice or no voice are one click away.
 
-**Retrieval isn't independently evaluated.** The central claim of the project is
-RAG-for-question-generation. The generation half is evaluated hard; the retrieval
-half never has been, and that's the largest gap here. One defect is already
-documented: the retrieval query for each archetype is a fixed string, so the
-embedding is fixed, so the ranking is identical across every session for a given
-document. It surfaces as repeated questions across runs and occasional
-front-matter hits. Three checks that need no labeled data are specified in
-`docs/` and not yet run.
+**The panel doesn't question your literature review.** Withholding those passages fixed the attribution problem by removing the topic. The Literature & Theory Specialist is in no preset for that reason, and a Custom panel that seats it opens out of chapter order.
 
-**The internal scoring signal did not reproduce across documents.** On the
-development document, a fluent non-committal answer and a genuine non-answer
-drew opposite difficulty responses — the contrast the whole interpretation rests
-on. On a held-out document, both eased. The mechanism runs; its reliability on
-the production model is unestablished. Full detail in the
-[case study](docs/case-study.md).
+**The internal score didn't reproduce across documents.** The mechanism runs; its reliability is unestablished. Adaptive difficulty is implemented, not calibration-verified, and no figure is claimed for it.
 
-**Adaptive difficulty is implemented, not calibration-verified.** No figure is
-claimed for it anywhere in this repo, and the one probe column that looks like
-evidence is explicitly declined as such in the case study.
+**Per-answer scoring runs on the cheaper model**, the one measured unfit for judgment, because the free tier can't sustain `gemini-2.5-flash` on every turn. This is the single biggest thing a paid tier would change.
 
-**Per-answer scoring still runs on the model diagnosed unfit for judgment.**
-`gemini-2.5-flash` can't sustain two calls per turn on a free tier, so scoring
-stays on the cheap model as a deliberate, documented tradeoff. `gemini-2.5-flash`
-is used where the budget allows: the relevance gate, answer suggestions, and gap
-clustering — two calls per session, capping the app at roughly ten full sessions
-a day. This is the single biggest thing a paid tier would change.
+**The grounding check has a false-negative mode.** It matches one contiguous span, so a question that correctly cites two figure captions or two cells of a table fails the check while being accurate. The fix is widening the schema's single reference field.
 
-**The grounding check has a systematic false-negative mode.** It matches a
-contiguous span, so a reference that legitimately assembles non-contiguous text
-— two figure captions, a range across rows, two cells of one table row — fails
-while being entirely accurate. It concentrates in the archetypes that must cite
-two things through a schema with one slot, which means the metric penalises the
-more sophisticated question types.
+**The embedder sees only part of most chunks.** MiniLM stops at 256 tokens, and most chunks run past it; on the eval papers it saw about half to two thirds of the average chunk.
 
-**Analytics is local-only by design.** Sessions persist to disk on whichever
-machine runs the app, so the public demo shows an empty analytics view. That's
-the intended privacy behaviour, not a broken feature.
+**Taglish turn 1 usually starts in English.** A v1 prompt rule asks every question to open with a lead-in clause, and that clause comes out in English. Text-to-speech may also mispronounce Filipino.
 
-**Panelist voice runs on Xiaomi's Mimo API, with a browser fallback.** Every
-question is spoken aloud by default, through nine distinct designed voices (one
-per archetype, via Mimo's voice-design model, not a fixed preset) when
-`MIMO_API_KEY` is configured — which it is on the live demo. Any synthesis
-failure — auth, quota, timeout, or the API's free-tier promo lapsing — falls
-back silently to the browser's own speech engine for that turn only, never
-breaking the session. On the fallback path, which voices exist is the
-browser's business, not the app's: Edge ships several neural and accented
-English voices that Chrome doesn't have, so the same session sounds noticeably
-better there.
+**Refreshing the page loses the defense on screen.** The server still holds the session; the frontend doesn't resume it yet.
 
-**Live demo operational caveats.** The app sleeps after 12 hours without traffic,
-so a first visitor gets a wake-up click plus roughly 30 seconds. The embedding
-weights are fetched from HuggingFace at cold start — a real runtime dependency,
-not just latency. Working memory sits under Streamlit Community Cloud's
-documented maximum but above its guaranteed floor: it runs fine, and it isn't
-guaranteed to.
+**Chapter-aware openings need readable chapter headings.** Without them, nothing is filtered and openers fall back to plain retrieval.
 
 ## Stack
 
-Python · Gemini API (`google-genai`) · Xiaomi Mimo TTS · sentence-transformers
-(`all-MiniLM-L6-v2`, local) · numpy retrieval · PyMuPDF · Pydantic · Streamlit ·
-pytest
+**Backend:** Python 3.13 · FastAPI · Pydantic · Gemini API (`google-genai`) · MiniLM on ONNX Runtime · numpy · PyMuPDF · Postgres on Neon (`psycopg`) · Xiaomi MiMo TTS
+**Frontend:** React 19 · TypeScript · Vite 8 · Tailwind 4 · GSAP
+**Hosting:** Render (backend, static site, and a redirect)
 
-321 tests, 320 passing. The one failure reads a real local session fixture
-that lives outside the repo (gitignored), so it's absent on a fresh clone —
-logged in `ROADMAP.md` rather than skipped to keep the suite honestly green.
-
-Business logic is Streamlit-free by rule, verified by grep rather than assumed —
-no module outside the UI layer imports it. The UI is a thin shell over typed
-models, which is the migration seam for a future FastAPI + React frontend.
+**Tests:** 632 backend (pytest), 293 frontend (Vitest), plus the v1 engine's 410. One v1 test fails on a fresh clone because it reads a gitignored local session fixture; it's logged in [`docs/ROADMAP.md`](docs/ROADMAP.md) instead of being skipped.
 
 ## Run it locally
 
+You need Python 3.13, Node 20.19 or later, a Gemini API key, and a Postgres database for the daily quota (a free Neon database works; the table is created on first run).
+
+**Backend**, from the repo root:
+
 ```bash
-git clone https://github.com/slvr123/Academic-Defense-Simulator.git
-cd Academic-Defense-Simulator
-pip install -r requirements.txt
-# .env — see .env.example; requires a Gemini API key
-streamlit run academic_defense_simulator/streamlit_app.py
+python -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt   # Windows: backend\.venv\Scripts\pip
+backend/.venv/bin/python -m backend.fetch_model             # downloads and hash-checks MiniLM
 ```
 
-## Roadmap
+Create `backend/.env`:
 
-**Shipped:** multi-panelist orchestration · adaptive difficulty · Devil's
-Advocate · scoring report with grounded per-answer suggestions · document
-relevance gate · session persistence and resume · cross-session analytics ·
-bring-your-own-key with a capped demo mode · nine archetypes · deployment
-hardening · AI voice narration (Xiaomi Mimo, nine designed voices, browser
-fallback)
+```
+GEMINI_API_KEY=your-key
+DATABASE_URL=postgresql://...
+ADS_CORS_ORIGINS=http://localhost:5173
+# Optional: MIMO_API_KEY=... for panel voices
+```
 
-**Next:** a retrieval eval, closing the gap named above · a difficulty
-discrimination probe · widening `grounding_reference` to fix the false-negative
-mode at the schema rather than at the check
+Then run it with exactly one worker, since sessions live in memory:
+
+```bash
+backend/.venv/bin/uvicorn backend.app:app --port 8000 --workers 1
+```
+
+**Frontend**, from `frontend/`:
+
+```bash
+npm ci
+cp .env.example .env.local   # points the app at http://localhost:8000
+npm run dev                  # http://localhost:5173
+```
+
+The original Streamlit version (v1) still runs with `streamlit run academic_defense_simulator/streamlit_app.py`.
+
+## What's next
+
+v2.1 is parked in the [ROADMAP](docs/ROADMAP.md). The main items: faster voice, a Literature Specialist with real access to the literature, a fix for Custom panels' opening order, resuming a defense after a refresh, Taglish from the first question, and widening the grounding reference.
 
 ---
 
-Built by **Sean Silver Allata** — [GitHub](https://github.com/slvr123) ·
-[LinkedIn](https://www.linkedin.com/in/sean-silver-allata-9b1885395/)
-BS Computer Science, Technological Institute of the Philippines.
+Built by **Sean Silver Allata**, BS Computer Science, Technological Institute of the Philippines.
+[GitHub](https://github.com/slvr123) · [LinkedIn](https://www.linkedin.com/in/sean-silver-allata-9b1885395/)
