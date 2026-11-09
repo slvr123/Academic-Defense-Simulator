@@ -64,7 +64,7 @@ export function EmbeddingScreen({ progress, notice, onRetry }: { progress: numbe
   return (
     <Card className="space-y-3">
       <Heading>Reading your document</Heading>
-      <p className="text-sm text-muted">Large documents take about a minute.</p>
+      <p className="text-sm text-muted">Large documents can take a minute or two.</p>
       <ProgressBar value={progress} label="Reading progress" />
       {notice && <NoticeBanner notice={notice} onRetry={onRetry} />}
     </Card>

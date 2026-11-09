@@ -182,7 +182,7 @@ describe('upload, queue and embedding (D16)', () => {
     await advance(2000)
     expect(server.count('GET /sessions/abc')).toBe(2)
     expect(screen.getByText('Reading your document')).toBeInTheDocument()
-    expect(screen.getByText('Large documents take about a minute.')).toBeInTheDocument()
+    expect(screen.getByText('Large documents can take a minute or two.')).toBeInTheDocument()
     expect(screen.getByText('40%')).toBeInTheDocument()
 
     state = { status: 'ready', chunk_count: 92, defense: 'not_started' }
