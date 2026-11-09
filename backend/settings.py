@@ -2,7 +2,9 @@
 
 The upload limits come from the M1 Render memory measurement
 (docs/v2.0-m1-memory-results.md): DAZSMA, 26.43 MB and 224 pages, peaked at
-346.6 MB VmHWM on Render free.
+346.6 MB VmHWM on Render free. The page cap rose from 250 to 400 on 2026-11-09:
+a local run showed peak memory follows the file's bytes (held by the size cap),
+not its page count, so pages bound ingest time rather than memory.
 
 The Gemini limits are the free tier of my project as AI Studio showed them on
 2026-10-20. They size the daily session cap (backend/quota.py) and the per-minute
@@ -27,6 +29,9 @@ BACKEND_DIR = Path(__file__).resolve().parent
 # v1 verified 13 RPM clean against flash-lite's 15 (gemini_provider._RPM_CEILING): its
 # limiter peaks one call above its ceiling, so it runs this far under the real limit.
 RPM_PACING_MARGIN = 2
+
+# The user-facing page cap on uploads; ADS_MAX_PAGES overrides it per deploy.
+MAX_PDF_PAGES = 400
 
 
 class ModelLimits(BaseModel):
@@ -55,7 +60,7 @@ class Settings(BaseSettings):
     session_ttl_seconds: float = Field(default=1800, gt=0)
     sweep_interval_seconds: float = Field(default=60, gt=0)
     max_upload_mb: float = Field(default=30, gt=0)
-    max_pages: int = Field(default=250, ge=1)
+    max_pages: int = Field(default=MAX_PDF_PAGES, ge=1)
     ort_threads: int = Field(default=1, ge=1)
     # GET /debug/memory exists only when this is on (ADS_DEBUG_MEMORY=1); M1 measurement only.
     debug_memory: bool = False

@@ -84,7 +84,7 @@ class FakeBackend:
         if path == "/debug/memory":
             return httpx.Response(200, json={
                 "pid": self.pid, "process_started_at": self.started_at, "commit": "abc1234",
-                "max_upload_mb": 30, "max_pages": 250, "rss_mb": 300.0, "hwm_mb": self.hwm_mb,
+                "max_upload_mb": 30, "max_pages": 400, "rss_mb": 300.0, "hwm_mb": self.hwm_mb,
                 "last_job": self.last_job,
             })
         if path == "/sessions" and request.method == "POST":
@@ -277,7 +277,7 @@ def test_results_replace_only_the_measured_section(tmp_path, pdf):
     doc.write_text(f"# Title\n\nkept above\n\n{DOC_START}\nSTALE RESULTS\n{DOC_END}\n\nkept below\n", encoding="utf-8")
     runs = [_ready(1), _ready(2), _ready(3)]
     verdict, reasons = evaluate(runs)
-    debug = {"commit": "abc1234", "max_upload_mb": 30, "max_pages": 250}
+    debug = {"commit": "abc1234", "max_upload_mb": 30, "max_pages": 400}
     block = results_markdown(
         runs, verdict, reasons, pdf=pdf, size_mb=26.43, pages=224, base_url="https://svc",
         debug=debug, finished=datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc),
@@ -288,7 +288,7 @@ def test_results_replace_only_the_measured_section(tmp_path, pdf):
     text = doc.read_text(encoding="utf-8")
     assert text.startswith("# Title\n\nkept above\n\n") and text.endswith("\n\nkept below\n")
     assert "STALE RESULTS" not in text and text.count(DOC_START) == 1
-    assert "Verdict: **GO**" in text and "`abc1234`" in text and "`ADS_MAX_PAGES` = 250" in text
+    assert "Verdict: **GO**" in text and "`abc1234`" in text and "`ADS_MAX_PAGES` = 400" in text
 
 
 # --- phase breakdown ---

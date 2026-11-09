@@ -7,8 +7,9 @@ import time
 from pathlib import Path
 
 from academic_defense_simulator.rag.chunking import chunk_pdf_with_pages
-from backend.settings import Settings
-from backend.tests.conftest import CONTENTS_MARKER, make_navigation_pdf, make_pdf, upload, wait_for
+from backend.pdf_ingest import check_pages
+from backend.settings import MAX_PDF_PAGES, Settings
+from backend.tests.conftest import CONTENTS_MARKER, make_navigation_pdf, make_pdf, make_settings, upload, wait_for
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -131,6 +132,28 @@ def test_too_many_pages_is_413(client_factory, tmp_path):
         response = upload(client, long)
         assert response.status_code == 413
         assert response.json()["detail"] == "That PDF has 4 pages; the limit is 3."
+        assert list(client.app.state.settings.upload_dir.iterdir()) == []
+
+
+def test_a_pdf_at_the_default_page_limit_passes_the_page_check(monkeypatch, tmp_path):
+    # check_pages directly, not through the API: an accepted upload starts a real
+    # ingest, and 400 pages of it would only slow the test without checking more.
+    monkeypatch.delenv("ADS_MAX_PAGES", raising=False)
+    limit = make_settings().max_pages
+    assert limit == MAX_PDF_PAGES == 400
+    at_limit = make_pdf(tmp_path / "at-limit.pdf", pages=limit, text=False)
+    assert check_pages(at_limit, limit) == 400
+
+
+def test_a_pdf_over_the_default_page_limit_is_rejected_before_ingest(monkeypatch, client_factory, tmp_path):
+    monkeypatch.delenv("ADS_MAX_PAGES", raising=False)
+    over = make_pdf(tmp_path / "over-limit.pdf", pages=MAX_PDF_PAGES + 1, text=False)
+    with client_factory() as client:
+        response = upload(client, over)
+        assert response.status_code == 413
+        assert response.json()["detail"] == "That PDF has 401 pages; the limit is 400."
+        # Rejected before a session or queue job exists, so nothing was chunked or embedded.
+        assert len(client.app.state.store) == 0 and client.app.state.queue.last_job is None
         assert list(client.app.state.settings.upload_dir.iterdir()) == []
 
 
@@ -315,9 +338,9 @@ def test_debug_memory_is_404_by_default(client_factory, monkeypatch):
 
 
 def test_debug_memory_reports_the_process_and_the_last_job(client_factory, pdf):
-    with client_factory(debug_memory=True, max_pages=250) as client:
+    with client_factory(debug_memory=True, max_pages=400) as client:
         first = client.get("/debug/memory").json()
-        assert first["last_job"] is None and first["max_pages"] == 250
+        assert first["last_job"] is None and first["max_pages"] == 400
         assert first["pid"] > 0 and first["process_started_at"] > 0 and first["rss_mb"] > 0
 
         session_id = upload(client, pdf).json()["session_id"]
@@ -359,7 +382,7 @@ def test_production_defaults_need_no_env_vars(monkeypatch):
     ):
         monkeypatch.delenv(name, raising=False)
     settings = Settings(_env_file=None)
-    assert (settings.max_upload_mb, settings.max_pages) == (30, 250)  # M1 measurement, approved 2026-10-19
+    assert (settings.max_upload_mb, settings.max_pages) == (30, 400)  # 30 MB from M1 (2026-10-19); 400 pages from 2026-11-09
     assert settings.debug_memory is False
     # The v1 model split and AI Studio's free-tier numbers, approved 2026-10-20.
     assert (settings.gemini_model, settings.gemini_suggestions_model) == ("gemini-3.1-flash-lite", "gemini-2.5-flash")
