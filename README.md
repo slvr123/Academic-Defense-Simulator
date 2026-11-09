@@ -138,7 +138,7 @@ Some of the other things the record shows:
 **Frontend:** React 19 · TypeScript · Vite 8 · Tailwind 4 · GSAP
 **Hosting:** Render (backend, static site, and a redirect)
 
-**Tests:** 632 backend (pytest), 293 frontend (Vitest), plus the v1 engine's 410. One v1 test fails on a fresh clone because it reads a gitignored local session fixture; it's logged in [`docs/ROADMAP.md`](docs/ROADMAP.md) instead of being skipped.
+**Tests:** 634 backend (pytest), 294 frontend (Vitest) and the v1 engine's 410, all passing.
 
 ## Run it locally
 

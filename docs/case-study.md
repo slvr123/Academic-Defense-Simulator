@@ -437,9 +437,9 @@ I haven't run the same paper twice and diffed the questions.
 - Incoming acknowledgments ("clear enough") may leak score tone, and haven't had M15's neutrality test.
 - The suggestions call returns 503s under load and the debrief loses its suggestions; how often is unmeasured.
 
-**Tests:** 632 backend and 293 frontend pass.
-v1's suite has 409 passing and 1 failing: that test reads a session file that lives outside the repo, so it's absent on a fresh clone.
-It's logged in the ROADMAP instead of skipped, so the suite stays honestly green rather than cosmetically green.
+**Tests:** 634 backend, 294 frontend and 410 v1 tests, all passing.
+For months the v1 suite carried one known failure: a test that read a session file living only on my machine.
+I logged it in the ROADMAP instead of skipping it, so the suite stayed honestly red rather than cosmetically green, and fixed it before launch by pointing the test at a committed synthetic fixture.
 
 ---
 
