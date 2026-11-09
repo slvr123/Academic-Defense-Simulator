@@ -15,7 +15,7 @@ import { Button } from './ui'
 
 const PANEL = limits.PanelConfig
 // backend/settings.py's max_pages; the server's 413 stays the backstop, as for size.
-export const MAX_PAGES = 250
+export const MAX_PAGES = 400
 
 type Props = {
   draft: Draft

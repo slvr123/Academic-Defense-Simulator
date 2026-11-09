@@ -30,9 +30,9 @@ describe('toApiError maps each status to the error the UI branches on', () => {
   })
 
   it('keeps the server message verbatim', () => {
-    expect(toApiError(413, { detail: 'That PDF has 300 pages; the limit is 250.' }, null)).toEqual({
+    expect(toApiError(413, { detail: 'That PDF has 512 pages; the limit is 400.' }, null)).toEqual({
       kind: 'tooLarge',
-      message: 'That PDF has 300 pages; the limit is 250.',
+      message: 'That PDF has 512 pages; the limit is 400.',
     })
   })
 

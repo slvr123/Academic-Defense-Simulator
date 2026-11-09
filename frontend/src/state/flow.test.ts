@@ -420,9 +420,9 @@ describe('noticeFor', () => {
   })
 
   it('shows 413 and unexpected errors verbatim', () => {
-    expect(noticeFor({ kind: 'tooLarge', message: 'That PDF has 300 pages; the limit is 250.' }, NOW, true)).toEqual({
+    expect(noticeFor({ kind: 'tooLarge', message: 'That PDF has 512 pages; the limit is 400.' }, NOW, true)).toEqual({
       kind: 'message',
-      text: 'That PDF has 300 pages; the limit is 250.',
+      text: 'That PDF has 512 pages; the limit is 400.',
     })
     expect(noticeFor({ kind: 'unexpected', message: 'x' }, NOW, true)).toEqual({ kind: 'message', text: 'x' })
   })

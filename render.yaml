@@ -35,7 +35,7 @@ services:
       # Caps glibc malloc arenas; part of the configuration that passed hosting spike 2.
       - key: MALLOC_ARENA_MAX
         value: "2"
-      # Upload limits (30 MB, 250 pages) are defaults in backend/settings.py, not set here.
+      # Upload limits (30 MB, 400 pages) are defaults in backend/settings.py, not set here.
       # Browser origins allowed to call the API: the static site's URL (and
       # http://localhost:5173 for local dev), comma-separated. Set in the dashboard once
       # the static site exists and its URL is known.

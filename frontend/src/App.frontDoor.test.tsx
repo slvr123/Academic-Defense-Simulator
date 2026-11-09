@@ -232,6 +232,12 @@ describe('upload, queue and embedding (D16)', () => {
 })
 
 describe('upload errors (D16, D23, D24)', () => {
+  it('states both upload limits in the drop zone', async () => {
+    defaultServer()
+    renderApp()
+    expect(await screen.findByText('PDF with selectable text · up to 30 MB · 400 pages')).toBeInTheDocument()
+  })
+
   it('blocks a file over 30 MB before uploading', async () => {
     const server = defaultServer()
     const user = renderApp()
@@ -244,7 +250,7 @@ describe('upload errors (D16, D23, D24)', () => {
   })
 
   it.each([
-    [413, 'That PDF has 300 pages; the limit is 250.'],
+    [413, 'That PDF has 512 pages; the limit is 400.'],
     [422, "That file isn't a PDF. Upload a .pdf document."],
   ])('shows a server %i message verbatim', async (status, detail) => {
     const server = defaultServer()
