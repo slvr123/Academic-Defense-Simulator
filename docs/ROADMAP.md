@@ -111,7 +111,7 @@ M1 builds the FastAPI backend skeleton (upload, single-worker embedding queue, i
 It starts ahead of the v1.3b-c sequence and the FastAPI decision gate below, on the strength of the [hosting spike](v2.0-hosting-spike-results.md) (GO with ONNX at batch size 1, pending its OOM-event and cold-start checks).
 The brief is the more recent document, so it wins where the order below disagrees.
 v1 stays as it is: the backend imports v1's chunking, engine and panel modules but does not change the Streamlit app or its requirements.
-Known v1 test failure, not a regression: `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` fails in every run because it reads a gitignored local session file that is no longer on disk (Parking Lot, "Missing-session-file test").
+No known v1 test failures: the missing-session-file test was fixed on 2026-11-09 in `77d7831` (Parking Lot, "Missing-session-file test").
 
 ## Active work - v1.3a first-impression fixes (2026-10-18)
 
@@ -607,6 +607,8 @@ Each one points at the appendix entry in `v1.0.1-presentation-slice-decisions.md
 - **Missing-session-file test** (added 2026-10-18).
   `test_real_pre_existing_file_missing_answer_suggestions_loads_with_defaults` reads a gitignored local session file that is no longer on disk, so it is the one known failure in every v1.3a run.
   It is [public pilot](public-pilot-roadmap.md) Phase 0 item 1 (replace it with a committed synthetic fixture), and out of v1.3a scope.
+  **Resolved 2026-11-09 (`77d7831`).** The test, renamed `test_pre_v1_0b2_file_missing_answer_suggestions_loads_with_defaults`, now reads the committed synthetic fixture `tests/fixtures/pre_v1_0b2_completed_session.json`, whose report has only the eight v0.3c fields.
+  A mutation check confirmed it still fails when either new field loses its default, and the full v1 suite passes (410 passed).
 - **Scanned-PDF support via Gemini PDF input** (added 2026-10-18, from the [v2.0 hosting spike](v2.0-hosting-spike-results.md)).
   PyMuPDF extracts no text from a scanned PDF; Gemini can read the PDF itself.
   Trigger: scanned uploads show up as a real failure mode.
