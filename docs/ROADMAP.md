@@ -671,6 +671,15 @@ fixture (mirroring `example_session.py`'s pattern) rather than depending on a
 real file that only exists on the machine that recorded it — scoped to its
 own session, same as the entry above.
 
+**Resolved 2026-11-09 (`77d7831`).** I took the fix this entry named: the test,
+renamed `test_pre_v1_0b2_file_missing_answer_suggestions_loads_with_defaults`,
+now reads `tests/fixtures/pre_v1_0b2_completed_session.json`, a committed
+synthetic session whose report has only the eight v0.3c fields and no real
+document content. It still checks the same property: the old-shaped file loads,
+`answer_suggestions` and `suggestions_fallback_used` take their defaults, and
+`schema_version` stays put. A mutation check confirmed it fails when either
+field loses its default, and the full v1 suite passes (410 passed).
+
 ### Known issue — dev-hot-reload can invalidate a live session's persisted save (logged 2026-07-23)
 
 Editing a file in `DefenseSession`'s import chain (`models/session.py` or
