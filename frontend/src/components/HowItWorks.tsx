@@ -40,9 +40,11 @@ const BLOCKS: { title: string; body: ReactNode }[] = [
     title: 'Measured, not guessed.',
     body: (
       <>
-        Early panelists asked students about other authors' studies cited in their literature review, as if that work were
-        theirs. That was measured, independently judged, and fixed by keeping those passages away from the panel. A chapter
-        filter took opening rounds that walk forward through the paper from 5 of 10 to 10 of 10 on our eval.
+        We test the panel against real papers and change it when the results say so. When the faster model misjudged weak
+        answers, scoring moved to a stronger one. When panelists quizzed students on other authors' studies as if the work
+        were theirs, we measured it, had it independently judged, and fixed it. Opening rounds that walk forward through the
+        paper went from 5 of 10 to 10 of 10 on our eval. And when a scoring result didn't hold up on a second paper, we said
+        so instead of quietly dropping it.
       </>
     ),
   },
